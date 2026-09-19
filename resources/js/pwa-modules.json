@@ -1,0 +1,51 @@
+{
+  "modules": [
+    {
+      "id": "landing_page",
+      "type": "public",
+      "components": {
+        "hero": {
+          "type": "auto_slider_mask",
+          "mask_gradient": "linear-gradient(to bottom, #263D26 70%, transparent 100%)",
+          "cta_buttons": [
+            {"id": "btn_login", "label": "Masuk Sistem", "style": "#EDD330", "action": "open_login_modal"},
+            {"id": "btn_announcement", "label": "Pengumuman", "style": "#A7B92A", "action": "scroll_announcement"}
+          ]
+        },
+        "audio_player": {
+          "id": "mars_player",
+          "asset": "Mars Ambalan Rimba Nusantara",
+          "type": "floating_soundbar"
+        },
+        "stats_bar": ["total_angkatan", "anggota_aktif", "dokumen_terbit", "capaian_bantara"],
+        "recent_feed": "berita_dan_kegiatan_terbaru"
+      }
+    },
+    {
+      "id": "materi_hub",
+      "type": "access_controlled",
+      "categories": [
+        {
+          "type": "umum",
+          "access": ["tamu", "anggota_aktif", "dewan_amblan", "admin"],
+          "items": ["Kepramukaan Umum", "Tali Temali", "Navigasi Darat", "P3K"]
+        },
+        {
+          "type": "restricted",
+          "access": ["dewan_amblan", "admin"],
+          "items": ["Upgrading Dewan Ambalan"]
+        }
+      ]
+    },
+    {
+      "id": "panduan_kegiatan",
+      "type": "interactive_timeline",
+      "events": ["PTA", "Bantara", "Upabuklat", "Upatuplat"]
+    },
+    {
+      "id": "persuratan",
+      "type": "dewan_only",
+      "features": ["surat_masuk", "surat_keluar", "draft_proposal"]
+    }
+  ]
+}
