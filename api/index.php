@@ -5,7 +5,7 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
-// 1. Buat seluruh direktori temporary yang dibutuhkan Laravel di /tmp
+// 1. Buat struktur folder sementara di /tmp Vercel
 $storagePath = '/tmp/storage';
 $directories = [
     $storagePath . '/app/public',
@@ -22,7 +22,7 @@ foreach ($directories as $dir) {
     }
 }
 
-// 2. Redirect Path Bootstrap & Storage
+// 2. Set Environment Variables untuk path temporary
 putenv('APP_STORAGE=' . $storagePath);
 putenv('VIEW_COMPILED_PATH=' . $storagePath . '/framework/views');
 putenv('APP_SERVICES_CACHE=/tmp/bootstrap/cache/services.php');
@@ -31,7 +31,7 @@ putenv('APP_CONFIG_CACHE=/tmp/bootstrap/cache/config.php');
 putenv('APP_ROUTES_CACHE=/tmp/bootstrap/cache/routes.php');
 putenv('APP_EVENTS_CACHE=/tmp/bootstrap/cache/events.php');
 
-// 3. Force Sinkronisasi Environment Variables ke getenv, $_ENV, dan $_SERVER
+// 3. Fallback Environment Variables
 $fallbacks = [
     'SESSION_DRIVER'   => 'file',
     'CACHE_STORE'      => 'file',
@@ -53,13 +53,26 @@ foreach ($fallbacks as $key => $default) {
     }
 }
 
-// 4. Load Autoloader & Application Bootstrap
+// 4. Load Autoload & Application Bootstrap
 require __DIR__ . '/../vendor/autoload.php';
 
 /** @var Application $app */
 $app = require_once __DIR__ . '/../bootstrap/app.php';
 
-// 5. Bind Storage Path & Run Request
+// 5. Hard-fix: Pastikan Config Repository Laravel tidak menyimpan NULL pada Session & Cache driver
+$app->booted(function ($app) {
+    $sessionDriver = config('session.driver');
+    if (empty($sessionDriver)) {
+        config(['session.driver' => env('SESSION_DRIVER', 'file') ?: 'file']);
+    }
+
+    $cacheStore = config('cache.default');
+    if (empty($cacheStore)) {
+        config(['cache.default' => env('CACHE_STORE', 'file') ?: 'file']);
+    }
+});
+
+// 6. Bind Storage Path & Run Request
 $app->useStoragePath($storagePath);
 
 $app->handleRequest(Request::capture());
