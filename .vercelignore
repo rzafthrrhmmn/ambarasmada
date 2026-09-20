@@ -6,7 +6,12 @@
 /VERCEL
 /tests
 /.vscode
+/.idea
+/Thumbs.db
 Dockerfile
 docker-compose.yml
-/.idea
 /.aws-sam
+/.zed
+/nul
+/bootstrap/cache/*.php
+!/bootstrap/cache/.gitignore
