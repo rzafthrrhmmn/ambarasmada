@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Ambalan;
 use App\Models\User;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
@@ -31,6 +32,9 @@ class AppServiceProvider extends ServiceProvider
                 }
 
                 return User::where('status', 'pending')->count();
+            },
+            'ambalan' => function () {
+                return Ambalan::first();
             },
         ]);
     }

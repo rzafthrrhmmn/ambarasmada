@@ -38,3 +38,8 @@ file dokumen/
 *.tif
 *.geojson
 public/bin/
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+

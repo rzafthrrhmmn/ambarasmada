@@ -89,9 +89,7 @@ Route::middleware(['auth', 'approved'])->group(function () {
         Route::patch('/attendance/{attendanceSession}', [AttendanceController::class, 'update'])->name('attendance.update');
         Route::delete('/attendance/{attendanceSession}', [AttendanceController::class, 'destroy'])->name('attendance.destroy');
         Route::patch('/attendance-records/{attendance}', [AttendanceController::class, 'updateAttendance'])->name('attendance.records.update');
-        Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.check-in');
-
-        Route::post('/finance', [FinanceController::class, 'store'])->name('finance.store');
+        Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.member.check-in');
         Route::patch('/finance/{finance}', [FinanceController::class, 'update'])->name('finance.update');
         Route::delete('/finance/{finance}', [FinanceController::class, 'destroy'])->name('finance.destroy');
         Route::post('/finance/{finance}/post', [FinanceController::class, 'post'])->name('finance.post');
@@ -166,7 +164,7 @@ Route::middleware(['auth', 'approved'])->group(function () {
         Route::post('/tkk/points', [TkkPointController::class, 'store'])->name('tkk.points.store');
         Route::patch('/tkk/points/{tkkPoint}', [TkkPointController::class, 'update'])->name('tkk.points.update');
 
-        Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.check-in');
+        Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.member.check-in');
     });
 
     Route::get('/profile', [MemberController::class, 'profile'])->name('profile.show');

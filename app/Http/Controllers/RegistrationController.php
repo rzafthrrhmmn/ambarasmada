@@ -33,7 +33,7 @@ class RegistrationController extends Controller
         $nomorUrut = (int) ($angkatanParts[2] ?? 1);
 
         $memberData = [
-            'ambalan_id' => $ambalan?->id ?? 1,
+            'ambalan_id' => $ambalan?->id,
             'nta' => $user->username,
             'angkatan' => $angkatanNomor,
             'nomor_urut' => $nomorUrut,

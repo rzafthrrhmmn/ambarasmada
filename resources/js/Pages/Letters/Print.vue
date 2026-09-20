@@ -1,10 +1,10 @@
 <template>
   <AppLayout>
     <div class="mx-auto max-w-3xl rounded-2xl border border-[#6F9435] bg-[#335233] p-8 shadow-sm border-[#6F9435]">
-      <div class="mb-6 text-center">
-        <p class="text-xs font-semibold uppercase tracking-wide text-[#EDD330]">Ambalan UPT SMAN 2 Maros</p>
-        <h1 class="mt-2 text-2xl font-bold text-[#f0ead8]">{{ letter.perihal }}</h1>
-      </div>
+    <div class="mb-6 text-center">
+      <p class="text-xs font-semibold uppercase tracking-wide text-[#EDD330]">{{ letter.ambalan?.nama || 'Ambalan Pramuka' }}</p>
+      <h1 class="mt-2 text-2xl font-bold text-[#f0ead8]">{{ letter.perihal }}</h1>
+    </div>
 
       <div class="grid gap-3 text-sm sm:grid-cols-2">
         <div><span class="text-[#8fa06a]">Nomor Surat:</span> <strong>{{ letter.nomor_surat || '-' }}</strong></div>

@@ -16,7 +16,7 @@ class ActivityGuideController extends Controller
     {
         $guides = ActivityGuide::query()
             ->with(['ambalan', 'createdBy'])
-            ->when($request->string('kegiatan')->isNotEmpty(), fn ($q, $k) => $q->where('nama_kegiatan', $k))
+            ->when($request->string('kecamatan')->isNotEmpty(), fn ($q, $k) => $q->where('kecamatan', $k))
             ->orderByDesc('created_at')
             ->paginate(15)
             ->withQueryString();
@@ -24,9 +24,9 @@ class ActivityGuideController extends Controller
         return Inertia::render('Guides/Index', [
             'guides' => $guides,
             'ambalans' => Ambalan::orderBy('nama')->get(),
-            'kegiatanOptions' => ['PTA', 'Bantara', 'Upabuklat', 'Upatuplat', 'Lainnya'],
+            'kecamatanOptions' => ['PTA', 'Bantara', 'Upabuklat', 'Upatuplat', 'Lainnya'],
             'filters' => [
-                'kegiatan' => $request->string('kegiatan')->toString(),
+                'kecamatan' => $request->string('kecamatan')->toString(),
             ],
         ]);
     }
@@ -44,7 +44,7 @@ class ActivityGuideController extends Controller
     {
         $data = $request->validate([
             'ambalan_id' => ['nullable', 'exists:ambalans,id'],
-            'nama_kegiatan' => ['required', 'in:PTA,Bantara,Upabuklat,Upatuplat,Lainnya'],
+            'kecamatan' => ['required', 'in:PTA,Bantara,Upabuklat,Upatuplat,Lainnya'],
             'nama' => ['required', 'string', 'max:200'],
             'teks_susunan_upacara' => ['nullable', 'string'],
             'checklist_perlengkapan' => ['nullable', 'array'],
@@ -53,7 +53,7 @@ class ActivityGuideController extends Controller
 
         $guide = ActivityGuide::create([
             'ambalan_id' => $data['ambalan_id'] ?? null,
-            'nama_kegiatan' => $data['nama_kegiatan'],
+            'kecamatan' => $data['kecamatan'],
             'nama' => $data['nama'],
             'teks_susunan_upacara' => $data['teks_susunan_upacara'] ?? null,
             'checklist_perlengkapan' => $data['checklist_perlengkapan'] ?? null,
@@ -75,7 +75,7 @@ class ActivityGuideController extends Controller
     {
         $data = $request->validate([
             'ambalan_id' => ['nullable', 'exists:ambalans,id'],
-            'nama_kegiatan' => ['required', 'in:PTA,Bantara,Upabuklat,Upatuplat,Lainnya'],
+            'kecamatan' => ['required', 'in:PTA,Bantara,Upabuklat,Upatuplat,Lainnya'],
             'nama' => ['required', 'string', 'max:200'],
             'teks_susunan_upacara' => ['nullable', 'string'],
             'checklist_perlengkapan' => ['nullable', 'array'],
@@ -84,7 +84,7 @@ class ActivityGuideController extends Controller
 
         $guide->update([
             'ambalan_id' => $data['ambalan_id'] ?? null,
-            'nama_kegiatan' => $data['nama_kegiatan'],
+            'kecamatan' => $data['kecamatan'],
             'nama' => $data['nama'],
             'teks_susunan_upacara' => $data['teks_susunan_upacara'] ?? null,
             'checklist_perlengkapan' => $data['checklist_perlengkapan'] ?? null,

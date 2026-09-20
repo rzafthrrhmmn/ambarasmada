@@ -65,7 +65,7 @@ class AttendanceController extends Controller
             'materi_nama' => $materiPath ? $request->file('materi')->getClientOriginalName() : null,
             'materi_mime_type' => $materiPath ? $request->file('materi')->getMimeType() : null,
             'materi_size' => $materiPath ? $request->file('materi')->getSize() : null,
-            'ambalan_id' => $request->user()->member?->ambalan_id ?? (Ambalan::first()?->id ?? 1),
+            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
             'qr_token' => Str::upper(Str::random(12)),
             'created_by' => $request->user()->id,
         ]);

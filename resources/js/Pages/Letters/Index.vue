@@ -50,8 +50,8 @@
           </div>
           <div class="flex flex-col gap-1">
             <a v-if="item.file_path" :href="`/letters/${item.id}/download`" target="_blank" class="text-xs text-[#EDD330] hover:underline">Unduh Berkas</a>
-            <button @click="generate(item, 'pdf')" class="text-xs text-[#A7B92A] hover:underline">Generate PDF</button>
-            <button @click="generate(item, 'docx')" class="text-xs text-[#6F9435] hover:underline">Generate DOCX</button>
+            <a :href="`/letters/${item.id}/generate?format=pdf`" target="_blank" v-if="item.perihal && item.isi_surat" class="text-xs text-[#A7B92A] hover:underline">Generate PDF</a>
+            <a :href="`/letters/${item.id}/generate?format=docx`" target="_blank" v-if="item.perihal && item.isi_surat" class="text-xs text-[#6F9435] hover:underline">Generate DOCX</a>
             <button v-if="canManage" @click="openEdit(item)" class="text-xs text-[#EDD330] hover:underline">Edit</button>
             <button v-if="canManage" @click="confirmDelete(item)" class="text-xs text-[#ef4419] hover:underline">Hapus</button>
           </div>
@@ -279,14 +279,18 @@ function generate(item, format) {
         const downloadUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = downloadUrl;
-        a.download = `surat-${item.perihal}.${format}`;
+        a.download = `surat-${item.perihal.replace(/[^a-zA-Z0-9\u00C0-\u017f\s]/g, '').replace(/\s+/g, '-')}.${format}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(downloadUrl);
     })
     .catch((err) => {
-        alert('Terjadi kesalahan: ' + err.message);
+        if (err.message.includes('500') || err.message.includes('Internal Server')) {
+            alert('Gagal generate surat. Pastikan perihal dan isi surat sudah diisi.');
+        } else {
+            alert('Terjadi kesalahan: ' + err.message);
+        }
     });
 }
 

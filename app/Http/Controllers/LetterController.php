@@ -14,7 +14,6 @@ use Illuminate\Http\BinaryFileResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use PDF;
@@ -168,8 +167,10 @@ class LetterController extends Controller
 
         $path = Storage::disk('public')->path($letter->file_path);
 
-        return response()->file($path, [
-            'Content-Disposition' => 'attachment; filename="'.Str::basename($letter->file_path).'"',
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        }, "surat-{$letter->perihal}.pdf", [
+            'Content-Type' => 'application/pdf',
         ]);
     }
 
@@ -189,7 +190,11 @@ class LetterController extends Controller
             return redirect()->back()->with('error', 'Isi surat belum diisi.');
         }
 
-        $ambalan = $letter->ambalan ?? $letter;
+        $ambalan = $letter->ambalan;
+
+        if (! $ambalan) {
+            return redirect()->back()->with('error', 'Ambalan tidak ditemukan.');
+        }
 
         if ($format === 'docx') {
             return $this->generateDocx($letter, $ambalan);
@@ -224,7 +229,7 @@ class LetterController extends Controller
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
 
         $data = $request->validate([
-            'ambalan_id' => ['nullable', 'exists:ambalans,id'],
+            'ambalan_id' => ['required', 'exists:ambalans,id'],
             'nomor_surat' => ['nullable', 'string', 'max:100'],
             'jenis_surat' => ['required', 'in:Masuk,Keluar,Keputusan'],
             'perihal' => ['required', 'string', 'max:255'],
@@ -233,11 +238,12 @@ class LetterController extends Controller
             'tgl_surat' => ['required', 'date'],
             'waktu_kegiatan' => ['nullable', 'string', 'max:255'],
             'lokasi_kegiatan' => ['nullable', 'string', 'max:255'],
+            'file' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png'],
             'template_id' => ['nullable', 'exists:letter_templates,id'],
         ]);
 
         $letter = new Letter($data);
-        $ambalan = $data['ambalan_id'] ? Ambalan::find($data['ambalan_id']) : $letter;
+        $ambalan = Ambalan::findOrFail($data['ambalan_id']);
 
         $pdf = $this->renderPdf($letter, $ambalan);
 
@@ -259,20 +265,27 @@ class LetterController extends Controller
             return $names;
         }
 
-        $putra = Member::where('ambalan_id', $ambalanId)
-            ->whereHas('memberPositions', fn ($q) => $q->where('position_id', PengurusPosition::where('code', 'pradana_putra')->value('id')))
-            ->first();
-        $putri = Member::where('ambalan_id', $ambalanId)
-            ->whereHas('memberPositions', fn ($q) => $q->where('position_id', PengurusPosition::where('code', 'pradana_putri')->value('id')))
-            ->first();
+        $pradanaPutraPosId = PengurusPosition::where('code', 'pradana_putra')->value('id');
+        $pradanaPutriPosId = PengurusPosition::where('code', 'pradana_putri')->value('id');
 
-        if ($putra) {
-            $names['nama_pradana_putra'] = $putra->nama_lengkap;
-            $names['nis_pradana_putra'] = $putra->nta ?? '-';
+        if ($pradanaPutraPosId) {
+            $putra = Member::where('ambalan_id', $ambalanId)
+                ->whereHas('memberPositions', fn ($q) => $q->where('position_id', $pradanaPutraPosId))
+                ->first();
+            if ($putra) {
+                $names['nama_pradana_putra'] = $putra->nama_lengkap;
+                $names['nis_pradana_putra'] = $putra->nta ?? '-';
+            }
         }
-        if ($putri) {
-            $names['nama_pradana_putri'] = $putri->nama_lengkap;
-            $names['nis_pradana_putri'] = $putri->nta ?? '-';
+
+        if ($pradanaPutriPosId) {
+            $putri = Member::where('ambalan_id', $ambalanId)
+                ->whereHas('memberPositions', fn ($q) => $q->where('position_id', $pradanaPutriPosId))
+                ->first();
+            if ($putri) {
+                $names['nama_pradana_putri'] = $putri->nama_lengkap;
+                $names['nis_pradana_putri'] = $putri->nta ?? '-';
+            }
         }
 
         return $names;
@@ -290,7 +303,7 @@ class LetterController extends Controller
             'tgl_surat' => $letter->tgl_surat ? Carbon::parse($letter->tgl_surat)->translatedFormat('d F Y') : '-',
             'waktu_kegiatan' => $letter->waktu_kegiatan ?? '-',
             'lokasi_kegiatan' => $letter->lokasi_kegiatan ?? '-',
-            'nama_ambalan' => $ambalan->nama ?? 'Ambalan UPT SMAN 2 Maros',
+            'nama_ambalan' => $ambalan->nama,
             'tanggal' => now()->translatedFormat('d F Y'),
             'jenis_surat' => $letter->jenis_surat ?? '-',
             'nama_pradana_putra' => $pradana['nama_pradana_putra'],
@@ -343,7 +356,7 @@ class LetterController extends Controller
         $styleFont = ['size' => 12, 'name' => 'DejaVu Sans'];
         $styleTitle = ['size' => 16, 'bold' => true, 'name' => 'DejaVu Sans'];
 
-        $section->addText($ambalan->nama ?? 'Ambalan UPT SMAN 2 Maros', $styleTitle, ['align' => 'center']);
+        $section->addText($ambalan->nama ?? 'Ambalan Pramuka', $styleTitle, ['align' => 'center']);
         $section->addText('Persuratan Digital', ['size' => 11, 'italic' => true, 'name' => 'DejaVu Sans'], ['align' => 'center']);
         $section->addText('---', ['size' => 10], ['align' => 'center']);
 
@@ -380,11 +393,12 @@ class LetterController extends Controller
         $section->addTextBreak(3);
         $section->addText('Dikeluarkan pada: '.now()->translatedFormat('d F Y'), $styleFont);
 
-        @mkdir(dirname($path), 0755, true);
-        $writer = IOFactory::createWriter($phpWord, 'Word2007');
-        $writer->save($path);
-
-        return response()->download($path, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])->deleteFileAfterSend(true);
+        return response()->streamDownload(function () use ($phpWord) {
+            $writer = IOFactory::createWriter($phpWord, 'Word2007');
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ]);
     }
 
     public function templates(Request $request): Response

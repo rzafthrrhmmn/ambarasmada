@@ -303,14 +303,27 @@ class MemberController extends Controller
                     ->orderByDesc('nomor')
                     ->first();
 
+            if (! $currentAngkatan) {
+                $year = (string) now()->year;
+                $currentAngkatan = Angkatan::firstOrCreate(
+                    ['angkatan' => $year],
+                    [
+                        'nomor' => '001',
+                        'nama' => "Angkatan {$year}",
+                        'is_active' => true,
+                        'is_current' => true,
+                    ]
+                );
+            }
+
             $member = Member::create([
                 'user_id' => $request->user()->id,
                 'nta' => $request->user()->username,
-                'angkatan' => $currentAngkatan?->nomor ?? '001',
+                'angkatan' => $currentAngkatan->nomor,
                 'nomor_urut' => 999,
                 'nta_username' => $request->user()->username,
                 'nama_lengkap' => $request->user()->name,
-                'ambalan_id' => Ambalan::first()?->id ?? 1,
+                'ambalan_id' => Ambalan::first()?->id,
                 'kelas' => '-',
                 'tingkatan' => 'Tamu',
                 'tahun_lulus' => null,
@@ -338,14 +351,27 @@ class MemberController extends Controller
                     ->orderByDesc('nomor')
                     ->first();
 
+            if (! $currentAngkatan) {
+                $year = (string) now()->year;
+                $currentAngkatan = Angkatan::firstOrCreate(
+                    ['angkatan' => $year],
+                    [
+                        'nomor' => '001',
+                        'nama' => "Angkatan {$year}",
+                        'is_active' => true,
+                        'is_current' => true,
+                    ]
+                );
+            }
+
             $member = Member::create([
                 'user_id' => $request->user()->id,
                 'nta' => $request->user()->username,
-                'angkatan' => $currentAngkatan?->nomor ?? '001',
+                'angkatan' => $currentAngkatan->nomor,
                 'nomor_urut' => 999,
                 'nta_username' => $request->user()->username,
                 'nama_lengkap' => $request->user()->name,
-                'ambalan_id' => Ambalan::first()?->id ?? 1,
+                'ambalan_id' => Ambalan::first()?->id,
                 'kelas' => '-',
                 'tingkatan' => 'Tamu',
                 'tahun_lulus' => null,
@@ -365,6 +391,7 @@ class MemberController extends Controller
             'tahun_lulus' => ['nullable', 'integer', 'min:2000', 'max:2100'],
             'status_aktif' => ['required', 'in:Aktif,Non-Aktif,Alumni'],
             'foto' => ['nullable', 'file', 'max:2048', 'mimes:jpg,jpeg,png,webp'],
+            'delete_foto' => ['nullable', 'boolean'],
         ]);
 
         $member->update([
@@ -373,14 +400,18 @@ class MemberController extends Controller
             'tempat_lahir' => $data['tempat_lahir'] ?? null,
             'tanggal_lahir' => $data['tanggal_lahir'] ?? null,
             'jenis_kelamin' => $data['jenis_kelamin'] ?? null,
-            'kelas' => $data['kelas'] ?? null,
+            'kelas' => $data['kelas'],
             'tingkatan' => $data['tingkatan'] ?? null,
             'tahun_lulus' => $data['tahun_lulus'] ?? null,
             'status_aktif' => $data['status_aktif'] ?? null,
         ]);
 
-        // Handle photo upload
-        if ($request->hasFile('foto')) {
+        if ($data['delete_foto'] ?? false) {
+            if ($member->user && $member->user->foto) {
+                Storage::disk('public')->delete($member->user->foto);
+                $member->user->update(['foto' => null]);
+            }
+        } elseif ($request->hasFile('foto')) {
             if ($member->user && $member->user->foto) {
                 Storage::disk('public')->delete($member->user->foto);
             }
