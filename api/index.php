@@ -6,9 +6,6 @@ use Throwable;
 
 define('LARAVEL_START', microtime(true));
 
-ini_set('display_errors', '1');
-error_reporting(E_ALL);
-
 file_put_contents('/tmp/vercel_marker_start', 'START '.date('c'));
 
 function vercelLog(string $message): void
@@ -148,9 +145,13 @@ try {
 
     if (! headers_sent()) {
         $response->send();
+        vercelLog('STEP 12: response sent normally');
+    } else {
+        vercelLog('STEP 12a: headers already sent, sending body only');
+        echo $response->getContent();
     }
 
-    vercelLog('STEP 12: response sent');
+    vercelLog('STEP 13: script exit');
 
     exit(0);
 
