@@ -5,7 +5,7 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
-// 1. Buat seluruh direktori temporary yang dibutuhan Laravel di /tmp
+// 1. Buat seluruh direktori temporary yang dibutuhkan Laravel di /tmp
 $storagePath = '/tmp/storage';
 $directories = [
     $storagePath . '/app/public',
@@ -31,15 +31,22 @@ putenv('APP_CONFIG_CACHE=/tmp/bootstrap/cache/config.php');
 putenv('APP_ROUTES_CACHE=/tmp/bootstrap/cache/routes.php');
 putenv('APP_EVENTS_CACHE=/tmp/bootstrap/cache/events.php');
 
-// 2b. Fallback aman bila env Vercel belum lengkap (hindari Manager::createDriver crash)
-foreach ([
-    'SESSION_DRIVER' => 'file',
-    'CACHE_STORE'    => 'file',
-    'APP_URL'        => 'https://ambarasmada.vercel.app',
-] as $key => $default) {
+// 2b. Fallback aman untuk semua Driver (Mencegah ArgumentCountError pada Manager::createDriver)
+$fallbacks = [
+    'SESSION_DRIVER'   => 'file',
+    'CACHE_STORE'      => 'file',
+    'CACHE_DRIVER'     => 'file',
+    'QUEUE_CONNECTION' => 'sync',
+    'DB_CONNECTION'    => 'mysql',
+    'APP_URL'          => 'https://ambarasmada.vercel.app',
+];
+
+foreach ($fallbacks as $key => $default) {
     $current = getenv($key);
     if ($current === false || $current === '' || $current === null) {
         putenv($key . '=' . $default);
+        $_ENV[$key] = $default;
+        $_SERVER[$key] = $default;
     }
 }
 
