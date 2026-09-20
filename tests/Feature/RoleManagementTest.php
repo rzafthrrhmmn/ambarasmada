@@ -103,14 +103,14 @@ class RoleManagementTest extends TestCase
         $response->assertForbidden();
     }
 
-    public function test_admin_cannot_access_letters(): void
+    public function test_admin_can_access_letters(): void
     {
         $admin = User::factory()->create(['role' => 'Admin']);
         $this->actingAs($admin);
 
         $response = $this->get('/letters');
 
-        $response->assertForbidden();
+        $response->assertOk();
     }
 
     public function test_pembina_can_access_letters(): void

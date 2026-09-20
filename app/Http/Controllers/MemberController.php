@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
@@ -289,14 +290,23 @@ class MemberController extends Controller
     public function profile(Request $request): Response|SymfonyResponse
     {
         $member = Member::where('user_id', $request->user()->id)
-            ->with(['user', 'attendances.session'])
+            ->with(['user', 'attendances.session', 'ambalan'])
             ->first();
 
         if (! $member) {
+            $currentAngkatan = Angkatan::query()
+                ->where('is_active', true)
+                ->where('is_current', true)
+                ->first()
+                ?? Angkatan::query()
+                    ->where('is_active', true)
+                    ->orderByDesc('nomor')
+                    ->first();
+
             $member = Member::create([
                 'user_id' => $request->user()->id,
                 'nta' => $request->user()->username,
-                'angkatan' => '001',
+                'angkatan' => $currentAngkatan?->nomor ?? '001',
                 'nomor_urut' => 999,
                 'nta_username' => $request->user()->username,
                 'nama_lengkap' => $request->user()->name,
@@ -309,7 +319,9 @@ class MemberController extends Controller
             ]);
         }
 
-        return Inertia::render('Profile/Show', ['member' => $member]);
+        return Inertia::render('Profile/Show', [
+            'member' => $member,
+        ]);
     }
 
     public function updateProfile(Request $request): SymfonyResponse
@@ -317,10 +329,19 @@ class MemberController extends Controller
         $member = Member::where('user_id', $request->user()->id)->first();
 
         if (! $member) {
+            $currentAngkatan = Angkatan::query()
+                ->where('is_active', true)
+                ->where('is_current', true)
+                ->first()
+                ?? Angkatan::query()
+                    ->where('is_active', true)
+                    ->orderByDesc('nomor')
+                    ->first();
+
             $member = Member::create([
                 'user_id' => $request->user()->id,
                 'nta' => $request->user()->username,
-                'angkatan' => '001',
+                'angkatan' => $currentAngkatan?->nomor ?? '001',
                 'nomor_urut' => 999,
                 'nta_username' => $request->user()->username,
                 'nama_lengkap' => $request->user()->name,
@@ -332,16 +353,18 @@ class MemberController extends Controller
                 'no_hp' => '-',
             ]);
         }
+
         $data = $request->validate([
             'nama_lengkap' => ['required', 'string', 'max:255'],
             'no_hp' => ['nullable', 'string', 'max:20'],
             'tempat_lahir' => ['nullable', 'string', 'max:255'],
             'tanggal_lahir' => ['nullable', 'date'],
             'jenis_kelamin' => ['nullable', 'in:Laki-laki,Perempuan'],
-            'kelas' => ['nullable', 'string', 'max:255'],
-            'tingkatan' => ['nullable', 'in:Tamu,Calon,Bantara,Laksana,Alumni'],
+            'kelas' => ['required', 'string', 'max:255'],
+            'tingkatan' => ['required', 'in:Tamu,Calon,Bantara,Laksana,Alumni'],
             'tahun_lulus' => ['nullable', 'integer', 'min:2000', 'max:2100'],
-            'status_aktif' => ['nullable', 'in:Aktif,Non-Aktif,Alumni'],
+            'status_aktif' => ['required', 'in:Aktif,Non-Aktif,Alumni'],
+            'foto' => ['nullable', 'file', 'max:2048', 'mimes:jpg,jpeg,png,webp'],
         ]);
 
         $member->update([
@@ -355,6 +378,15 @@ class MemberController extends Controller
             'tahun_lulus' => $data['tahun_lulus'] ?? null,
             'status_aktif' => $data['status_aktif'] ?? null,
         ]);
+
+        // Handle photo upload
+        if ($request->hasFile('foto')) {
+            if ($member->user && $member->user->foto) {
+                Storage::disk('public')->delete($member->user->foto);
+            }
+            $path = $request->file('foto')->store('profile-photos', 'public');
+            $member->user->update(['foto' => $path]);
+        }
 
         if ($member->user) {
             $member->user->update(['name' => $data['nama_lengkap']]);

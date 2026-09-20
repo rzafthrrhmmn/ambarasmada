@@ -118,11 +118,11 @@ class FinanceController extends Controller
                 'period_id' => $data['period_id'] ?? null,
                 'jenis_transaksi' => 'Masuk',
                 'nominal' => $data['nominal'],
-                'keterangan' => 'Pembayaran iuran: ' . $data['keterangan'],
+                'keterangan' => 'Pembayaran iuran: '.$data['keterangan'],
                 'tgl_transaksi' => now()->toDateString(),
                 'created_by' => $user->id,
                 'status' => 'Posted',
-                'receipt_no' => 'KAS-' . now()->format('Ymd') . '-' . str_pad((string) Finance::max('id') + 1, 5, '0', STR_PAD_LEFT),
+                'receipt_no' => 'KAS-'.now()->format('Ymd').'-'.str_pad((string) Finance::max('id') + 1, 5, '0', STR_PAD_LEFT),
             ]);
             AuditLog::create([
                 'actor_id' => $user->id,

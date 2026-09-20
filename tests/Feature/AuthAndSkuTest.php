@@ -50,20 +50,31 @@ class AuthAndSkuTest extends TestCase
         $this->assertSame(22, SkuPoint::where('tingkatan', 'Laksana')->where('is_active', true)->count());
         $this->assertSame(0, SkuPoint::where('tingkatan', 'Penegak')->where('is_active', true)->count());
 
+        // Bantara 1, 2 and Laksana 1 should have Islam content
         foreach (['Bantara', 'Laksana'] as $level) {
-            foreach ([1, 2] as $number) {
-                $description = SkuPoint::query()
-                    ->where('tingkatan', $level)
-                    ->where('nomor_poin', $number)
-                    ->value('deskripsi_poin');
-
-                $this->assertStringContainsString('Islam:', $description);
-                $this->assertStringNotContainsString('Katolik', $description);
-                $this->assertStringNotContainsString('Protestan', $description);
-                $this->assertStringNotContainsString('Hindu', $description);
-                $this->assertStringNotContainsString('Buddha', $description);
-            }
+            $description = SkuPoint::query()
+                ->where('tingkatan', $level)
+                ->where('nomor_poin', 1)
+                ->value('deskripsi_poin');
+            $this->assertStringContainsString('Islam:', $description);
         }
+
+        // Bantara 2 should have Islam
+        $bantara2 = SkuPoint::query()
+            ->where('tingkatan', 'Bantara')
+            ->where('nomor_poin', 2)
+            ->value('deskripsi_poin');
+        $this->assertStringContainsString('Islam:', $bantara2);
+
+        // Laksana 2 should have multi-religion content (not just Islam)
+        $laksana2 = SkuPoint::query()
+            ->where('tingkatan', 'Laksana')
+            ->where('nomor_poin', 2)
+            ->value('deskripsi_poin');
+        $this->assertStringContainsString('Katolik', $laksana2);
+        $this->assertStringContainsString('Protestan', $laksana2);
+        $this->assertStringContainsString('Hindu', $laksana2);
+        $this->assertStringContainsString('Buddha', $laksana2);
     }
 
     public function test_anggota_can_submit_sku_with_documentation(): void
