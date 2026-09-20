@@ -42,4 +42,11 @@ public/bin/
 /storage/framework/sessions/*
 /storage/framework/testing/*
 /storage/framework/views/*
+/Create
+/Run
+/database_ambalan
+/db
+/fix_import.py
+/restore-pembina.php
+/tinker_check.php
 
