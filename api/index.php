@@ -22,7 +22,7 @@ foreach ($directories as $dir) {
     }
 }
 
-// 2. Set Environment variable untuk me-redirect path bootstrap & storage
+// 2. Redirect Path Bootstrap & Storage
 putenv('APP_STORAGE=' . $storagePath);
 putenv('VIEW_COMPILED_PATH=' . $storagePath . '/framework/views');
 putenv('APP_SERVICES_CACHE=/tmp/bootstrap/cache/services.php');
@@ -31,7 +31,7 @@ putenv('APP_CONFIG_CACHE=/tmp/bootstrap/cache/config.php');
 putenv('APP_ROUTES_CACHE=/tmp/bootstrap/cache/routes.php');
 putenv('APP_EVENTS_CACHE=/tmp/bootstrap/cache/events.php');
 
-// 2b. Fallback aman untuk semua Driver (Mencegah ArgumentCountError pada Manager::createDriver)
+// 3. Force Sinkronisasi Environment Variables ke getenv, $_ENV, dan $_SERVER
 $fallbacks = [
     'SESSION_DRIVER'   => 'file',
     'CACHE_STORE'      => 'file',
@@ -42,22 +42,24 @@ $fallbacks = [
 ];
 
 foreach ($fallbacks as $key => $default) {
-    $current = getenv($key);
-    if ($current === false || $current === '' || $current === null) {
-        putenv($key . '=' . $default);
+    $val = getenv($key);
+    if ($val === false || $val === '' || $val === null) {
+        putenv("{$key}={$default}");
         $_ENV[$key] = $default;
         $_SERVER[$key] = $default;
+    } else {
+        $_ENV[$key] = $val;
+        $_SERVER[$key] = $val;
     }
 }
 
-// 3. Load Autoloader
+// 4. Load Autoloader & Application Bootstrap
 require __DIR__ . '/../vendor/autoload.php';
 
 /** @var Application $app */
 $app = require_once __DIR__ . '/../bootstrap/app.php';
 
-// 4. Bind ulang storage path ke instance aplikasi
+// 5. Bind Storage Path & Run Request
 $app->useStoragePath($storagePath);
 
-// 5. Eksekusi Request
 $app->handleRequest(Request::capture());
