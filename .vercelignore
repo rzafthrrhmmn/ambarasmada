@@ -11,7 +11,5 @@
 Dockerfile
 docker-compose.yml
 /.aws-sam
-/.zed
-/nul
-/bootstrap/cache/*.php
-!/bootstrap/cache/.gitignore
+ /.zed
+ /nul

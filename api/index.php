@@ -1,88 +1,94 @@
 <?php
-// Minimal test - REMOVE AFTER DEBUGGING
 
-error_log('[VERCEL-MINIMAL] Starting minimal test');
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
+use Throwable;
 
-// Step 1: Basic PHP output
-echo "MINIMAL_TEST_OK\n";
-
-// Step 2: Check vendor autoload
-error_log('[VERCEL-MINIMAL] Step 2: Checking autoload');
-if (!file_exists(__DIR__.'/../vendor/autoload.php')) {
-    error_log('[VERCEL-MINIMAL] ERROR: vendor/autoload.php not found');
-    echo "ERROR: autoload not found";
-    exit(1);
-}
-
-require __DIR__.'/../vendor/autoload.php';
-echo "AUTOLOAD_OK\n";
-
-error_log('[VERCEL-MINIMAL] Step 2 OK: autoload loaded');
-
-// Step 3: Set storage path env var BEFORE bootstrap
-error_log('[VERCEL-MINIMAL] Step 3: Setting APP_STORAGE');
-$storagePath = '/tmp/storage';
-mkdir($storagePath.'/logs', 0755, true);
-putenv('APP_STORAGE='.$storagePath);
-putenv('VIEW_COMPILED_PATH='.$storagePath.'/framework/views');
-putenv('APP_CONFIG_CACHE='.$storagePath.'/../bootstrap/cache/config.php');
-putenv('APP_SERVICES_CACHE='.$storagePath.'/../bootstrap/cache/services.php');
-putenv('APP_PACKAGES_CACHE='.$storagePath.'/../bootstrap/cache/packages.php');
-putenv('APP_ROUTES_CACHE='.$storagePath.'/../bootstrap/cache/routes.php');
-putenv('APP_EVENTS_CACHE='.$storagePath.'/../bootstrap/cache/events.php');
-putenv('SESSION_DRIVER=file');
-putenv('CACHE_STORE=file');
-putenv('CACHE_DRIVER=file');
-putenv('QUEUE_CONNECTION=sync');
-putenv('DB_CONNECTION=pgsql');
-
-error_log('[VERCEL-MINIMAL] Step 3 OK');
-
-// Step 4: Bootstrap Laravel
-echo "BOOTSTRAP_START\n";
-error_log('[VERCEL-MINIMAL] Step 4: Bootstrapping Laravel');
-
-/** @var \Illuminate\Foundation\Application $app */
-$app = require_once __DIR__.'/../bootstrap/app.php';
-echo "APP_CREATED\n";
-
-error_log('[VERCEL-MINIMAL] Step 4a: Application created');
-
-// Override storage path
-$app->useStoragePath($storagePath);
-error_log('[VERCEL-MINIMAL] Step 4b: Storage path overridden');
-
-// Override config for logging
-$app['config']['logging.default'] = 'stderr';
-error_log('[VERCEL-MINIMAL] Step 4c: Logging overridden to stderr');
-
-// Step 5: Kernel
-echo "KERNEL_START\n";
-error_log('[VERCEL-MINIMAL] Step 5: Kernel resolve');
+define('LARAVEL_START', microtime(true));
 
 try {
-    $kernel = $app->make(\Illuminate\Contracts\Http\Kernel::class);
-    echo "KERNEL_OK\n";
-    
-    $request = \Illuminate\Http\Request::capture();
-    error_log('[VERCEL-MINIMAL] Step 6: Request captured');
-    
+    $storagePath = '/tmp/storage';
+
+    $directories = [
+        $storagePath.'/app/public',
+        $storagePath.'/framework/cache/data',
+        $storagePath.'/framework/cache/routes',
+        $storagePath.'/framework/sessions',
+        $storagePath.'/framework/views',
+        $storagePath.'/logs',
+        '/tmp/bootstrap/cache',
+    ];
+
+    foreach ($directories as $dir) {
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+    }
+
+    $sessionDriver = trim((string) getenv('SESSION_DRIVER')) ?: 'file';
+    $cacheStore = trim((string) (getenv('CACHE_STORE') ?: getenv('CACHE_DRIVER'))) ?: 'file';
+    $dbConnection = trim((string) getenv('DB_CONNECTION')) ?: 'mysql';
+    $queueConnection = trim((string) getenv('QUEUE_CONNECTION')) ?: 'sync';
+
+    putenv('APP_STORAGE='.$storagePath);
+    putenv('VIEW_COMPILED_PATH='.$storagePath.'/framework/views');
+    putenv('APP_SERVICES_CACHE='.$storagePath.'/../bootstrap/cache/services.php');
+    putenv('APP_PACKAGES_CACHE='.$storagePath.'/../bootstrap/cache/packages.php');
+    putenv('APP_CONFIG_CACHE='.$storagePath.'/../bootstrap/cache/config.php');
+    putenv('APP_ROUTES_CACHE='.$storagePath.'/../bootstrap/cache/routes.php');
+    putenv('APP_EVENTS_CACHE='.$storagePath.'/../bootstrap/cache/events.php');
+
+    putenv('SESSION_DRIVER='.$sessionDriver);
+    putenv('CACHE_STORE='.$cacheStore);
+    putenv('CACHE_DRIVER='.$cacheStore);
+    putenv('DB_CONNECTION='.$dbConnection);
+    putenv('QUEUE_CONNECTION='.$queueConnection);
+
+    $_ENV['SESSION_DRIVER'] = $sessionDriver;
+    $_SERVER['SESSION_DRIVER'] = $sessionDriver;
+    $_ENV['CACHE_STORE'] = $cacheStore;
+    $_SERVER['CACHE_STORE'] = $cacheStore;
+    $_ENV['CACHE_DRIVER'] = $cacheStore;
+    $_SERVER['CACHE_DRIVER'] = $cacheStore;
+    $_ENV['DB_CONNECTION'] = $dbConnection;
+    $_SERVER['DB_CONNECTION'] = $dbConnection;
+    $_ENV['QUEUE_CONNECTION'] = $queueConnection;
+    $_SERVER['QUEUE_CONNECTION'] = $queueConnection;
+
+    require __DIR__.'/../vendor/autoload.php';
+
+    /** @var Application $app */
+    $app = require_once __DIR__.'/../bootstrap/app.php';
+
+    $app->useStoragePath($storagePath);
+
+    $app->booting(function () use ($sessionDriver, $cacheStore, $dbConnection, $queueConnection) {
+        config([
+            'session.driver' => $sessionDriver,
+            'cache.default' => $cacheStore,
+            'database.default' => $dbConnection,
+            'queue.default' => $queueConnection,
+            'logging.default' => 'stderr',
+        ]);
+    });
+
+    $request = Request::capture();
+
+    /** @var Kernel $kernel */
+    $kernel = $app->make(Kernel::class);
+
     $response = $kernel->handle($request);
-    error_log('[VERCEL-MINIMAL] Step 7: Handle OK');
-    
-    if (!headers_sent()) {
+
+    if (! headers_sent()) {
         $response->send();
-        error_log('[VERCEL-MINIMAL] Step 8: Response sent normally');
     } else {
         echo $response->getContent();
-        error_log('[VERCEL-MINIMAL] Step 8a: Headers already sent, body sent');
     }
-    
+
     $kernel->terminate($request, $response);
-    error_log('[VERCEL-MINIMAL] Step 9: Done');
-    
-    echo "DONE_OK\n";
-} catch (\Throwable $e) {
-    error_log('[VERCEL-MINIMAL-CATCH] '.$e->getMessage());
-    error_log('[VERCEL-MINIMAL-CATCH] '.$e->getTraceAsString());
+
+} catch (Throwable $e) {
+    error_log('[VERCEL-CATCH] '.$e->getMessage());
+    error_log('[VERCEL-CATCH] '.$e->getTraceAsString());
 }
