@@ -5,24 +5,40 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
-// Arahkan folder storage & cache sementara ke /tmp di lingkungan Vercel
+// 1. Buat seluruh direktori temporary yang dibutuhan Laravel di /tmp
 $storagePath = '/tmp/storage';
+$directories = [
+    $storagePath . '/app/public',
+    $storagePath . '/framework/cache/data',
+    $storagePath . '/framework/sessions',
+    $storagePath . '/framework/views',
+    $storagePath . '/logs',
+    '/tmp/bootstrap/cache',
+];
 
-if (! is_dir($storagePath)) {
-    mkdir($storagePath . '/framework/views', 0755, true);
-    mkdir($storagePath . '/framework/sessions', 0755, true);
-    mkdir($storagePath . '/framework/cache', 0755, true);
-    mkdir($storagePath . '/logs', 0755, true);
+foreach ($directories as $dir) {
+    if (! is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
 }
 
+// 2. Set Environment variable untuk me-redirect path bootstrap & storage
 putenv('APP_STORAGE=' . $storagePath);
 putenv('VIEW_COMPILED_PATH=' . $storagePath . '/framework/views');
+putenv('APP_SERVICES_CACHE=/tmp/bootstrap/cache/services.php');
+putenv('APP_PACKAGES_CACHE=/tmp/bootstrap/cache/packages.php');
+putenv('APP_CONFIG_CACHE=/tmp/bootstrap/cache/config.php');
+putenv('APP_ROUTES_CACHE=/tmp/bootstrap/cache/routes.php');
+putenv('APP_EVENTS_CACHE=/tmp/bootstrap/cache/events.php');
 
+// 3. Load Autoloader
 require __DIR__ . '/../vendor/autoload.php';
 
 /** @var Application $app */
 $app = require_once __DIR__ . '/../bootstrap/app.php';
 
+// 4. Bind ulang storage path ke instance aplikasi
 $app->useStoragePath($storagePath);
 
+// 5. Eksekusi Request
 $app->handleRequest(Request::capture());
