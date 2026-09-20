@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
+use Illuminate\Contracts\Http\Kernel;
 use Throwable;
 
 define('LARAVEL_START', microtime(true));
@@ -38,16 +39,9 @@ try {
     vercelLog('STEP 2: storage directories ready');
 
     $sessionDriver = trim((string) getenv('SESSION_DRIVER')) ?: 'file';
-
-    $cacheStore = trim(
-        (string) (getenv('CACHE_STORE') ?: getenv('CACHE_DRIVER'))
-    ) ?: 'file';
-
+    $cacheStore = trim((string) (getenv('CACHE_STORE') ?: getenv('CACHE_DRIVER'))) ?: 'file';
     $dbConnection = trim((string) getenv('DB_CONNECTION')) ?: 'mysql';
-
     $queueConnection = trim((string) getenv('QUEUE_CONNECTION')) ?: 'sync';
-
-    vercelLog('STEP 3: environment read');
 
     vercelLog('SESSION_DRIVER = '.$sessionDriver);
     vercelLog('CACHE_STORE = '.$cacheStore);
@@ -56,26 +50,11 @@ try {
 
     putenv('APP_STORAGE='.$storagePath);
     putenv('VIEW_COMPILED_PATH='.$storagePath.'/framework/views');
-
-    putenv(
-        'APP_SERVICES_CACHE='.$storagePath.'/../bootstrap/cache/services.php'
-    );
-
-    putenv(
-        'APP_PACKAGES_CACHE='.$storagePath.'/../bootstrap/cache/packages.php'
-    );
-
-    putenv(
-        'APP_CONFIG_CACHE='.$storagePath.'/../bootstrap/cache/config.php'
-    );
-
-    putenv(
-        'APP_ROUTES_CACHE='.$storagePath.'/../bootstrap/cache/routes.php'
-    );
-
-    putenv(
-        'APP_EVENTS_CACHE='.$storagePath.'/../bootstrap/cache/events.php'
-    );
+    putenv('APP_SERVICES_CACHE='.$storagePath.'/../bootstrap/cache/services.php');
+    putenv('APP_PACKAGES_CACHE='.$storagePath.'/../bootstrap/cache/packages.php');
+    putenv('APP_CONFIG_CACHE='.$storagePath.'/../bootstrap/cache/config.php');
+    putenv('APP_ROUTES_CACHE='.$storagePath.'/../bootstrap/cache/routes.php');
+    putenv('APP_EVENTS_CACHE='.$storagePath.'/../bootstrap/cache/events.php');
 
     putenv('SESSION_DRIVER='.$sessionDriver);
     putenv('CACHE_STORE='.$cacheStore);
@@ -85,24 +64,20 @@ try {
 
     $_ENV['SESSION_DRIVER'] = $sessionDriver;
     $_SERVER['SESSION_DRIVER'] = $sessionDriver;
-
     $_ENV['CACHE_STORE'] = $cacheStore;
     $_SERVER['CACHE_STORE'] = $cacheStore;
-
     $_ENV['CACHE_DRIVER'] = $cacheStore;
     $_SERVER['CACHE_DRIVER'] = $cacheStore;
-
     $_ENV['DB_CONNECTION'] = $dbConnection;
     $_SERVER['DB_CONNECTION'] = $dbConnection;
-
     $_ENV['QUEUE_CONNECTION'] = $queueConnection;
     $_SERVER['QUEUE_CONNECTION'] = $queueConnection;
 
-    vercelLog('STEP 4: environment overrides applied');
+    vercelLog('STEP 3: environment overrides applied');
 
-    vercelLog('STEP 5: before composer autoload');
+    vercelLog('STEP 4: before composer autoload');
     require __DIR__.'/../vendor/autoload.php';
-    vercelLog('STEP 5b: composer autoload loaded');
+    vercelLog('STEP 5: composer autoload loaded');
 
     /** @var Application $app */
     $app = require_once __DIR__.'/../bootstrap/app.php';
@@ -135,32 +110,36 @@ try {
         'STEP 9: request captured: '.$request->method().' '.$request->path()
     );
 
-    vercelLog('STEP 9b: about to call handleRequest');
+    vercelLog('STEP 9b: using kernel handle instead of handleRequest');
 
-    $response = $app->handleRequest($request);
+    /*
+    |--------------------------------------------------------------------------
+    | Kernel-based request handling
+    |
+    | Using $kernel->handle() instead of $app->handleRequest() gives us
+    | full control over when/when-not to send the response, preventing
+    | the Symfony Response "headers already sent" issue on Vercel.
+    |--------------------------------------------------------------------------
+    */
 
-    vercelLog('STEP 10: handleRequest completed, response type: '.gettype($response));
+    /** @var Kernel $kernel */
+    $kernel = $app->make(Kernel::class);
 
-    if ($response === null) {
-        vercelLog('ERROR: handleRequest returned null');
-        $exception = $app->make(\Illuminate\Contracts\Debug\ExceptionHandler::class);
-        vercelLog('Exception handler resolved');
-        http_response_code(500);
-        echo 'Internal Server Error';
-        exit(1);
-    }
+    $response = $kernel->handle($request);
 
-    vercelLog('STEP 11: about to send response');
+    vercelLog('STEP 10: kernel handle completed, response type: '.gettype($response));
 
     if (! headers_sent()) {
         $response->send();
-        vercelLog('STEP 12: response sent normally');
+        vercelLog('STEP 11: response sent via response.send()');
     } else {
-        vercelLog('STEP 12a: headers already sent, sending body only');
+        vercelLog('STEP 11a: headers already sent, sending body only');
         echo $response->getContent();
     }
 
-    vercelLog('STEP 13: script exit');
+    $kernel->terminate($request, $response);
+
+    vercelLog('STEP 12: terminate completed');
 
     exit(0);
 
