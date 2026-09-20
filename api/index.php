@@ -3,158 +3,88 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\Http\Kernel;
-use Throwable;
 
 define('LARAVEL_START', microtime(true));
 
-file_put_contents('/tmp/vercel_marker_start', 'START '.date('c'));
+// 1. Buat direktori temporary yang dibutuhkan Laravel di /tmp Vercel
+$storagePath = '/tmp/storage';
+$directories = [
+    $storagePath.'/app/public',
+    $storagePath.'/framework/cache/data',
+    $storagePath.'/framework/cache/routes',
+    $storagePath.'/framework/sessions',
+    $storagePath.'/framework/views',
+    $storagePath.'/logs',
+    '/tmp/bootstrap/cache',
+];
 
-function vercelLog(string $message): void
-{
-    file_put_contents('/tmp/vercel_debug.log', date('c').' '.$message."\n", FILE_APPEND | LOCK_EX);
-    error_log('[VERCEL-DEBUG] '.$message);
+foreach ($directories as $dir) {
+    if (! is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
 }
 
-vercelLog('STEP 1: api/index.php started');
+// 2. Set environment paths agar tidak menulis ke filesystem read-only Vercel
+putenv('APP_STORAGE='.$storagePath);
+putenv('VIEW_COMPILED_PATH='.$storagePath.'/framework/views');
+putenv('APP_SERVICES_CACHE='.$storagePath.'/../bootstrap/cache/services.php');
+putenv('APP_PACKAGES_CACHE='.$storagePath.'/../bootstrap/cache/packages.php');
+putenv('APP_CONFIG_CACHE='.$storagePath.'/../bootstrap/cache/config.php');
+putenv('APP_ROUTES_CACHE='.$storagePath.'/../bootstrap/cache/routes.php');
+putenv('APP_EVENTS_CACHE='.$storagePath.'/../bootstrap/cache/events.php');
 
-try {
-    $storagePath = '/tmp/storage';
+// 3. Pastikan driver tidak pernah string kosong yang menyebabkan createDriver crash
+//    Vercel butuh nilai eksplisit untuk CACHE_STORE & SESSION_DRIVER
+$sessionDriver = trim((string) getenv('SESSION_DRIVER')) ?: 'file';
+$cacheStore = trim(
+    (string) (getenv('CACHE_STORE') ?: getenv('CACHE_DRIVER'))
+) ?: 'file';
+$dbConnection = trim((string) getenv('DB_CONNECTION')) ?: 'mysql';
+$queueConnection = trim((string) getenv('QUEUE_CONNECTION')) ?: 'sync';
 
-    $directories = [
-        $storagePath.'/app/public',
-        $storagePath.'/framework/cache/data',
-        $storagePath.'/framework/cache/routes',
-        $storagePath.'/framework/sessions',
-        $storagePath.'/framework/views',
-        $storagePath.'/logs',
-        '/tmp/bootstrap/cache',
-    ];
+putenv('SESSION_DRIVER='.$sessionDriver);
+putenv('CACHE_STORE='.$cacheStore);
+putenv('CACHE_DRIVER='.$cacheStore);
+putenv('DB_CONNECTION='.$dbConnection);
+putenv('QUEUE_CONNECTION='.$queueConnection);
 
-    foreach ($directories as $dir) {
-        if (! is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-    }
+$_ENV['SESSION_DRIVER'] = $_SERVER['SESSION_DRIVER'] = $sessionDriver;
+$_ENV['CACHE_STORE'] = $_SERVER['CACHE_STORE'] = $cacheStore;
+$_ENV['CACHE_DRIVER'] = $_SERVER['CACHE_DRIVER'] = $cacheStore;
+$_ENV['DB_CONNECTION'] = $_SERVER['DB_CONNECTION'] = $dbConnection;
+$_ENV['QUEUE_CONNECTION'] = $_SERVER['QUEUE_CONNECTION'] = $queueConnection;
 
-    vercelLog('STEP 2: storage directories ready');
+// 4. Autoload vendor & bootstrap Laravel
+require __DIR__.'/../vendor/autoload.php';
 
-    $sessionDriver = trim((string) getenv('SESSION_DRIVER')) ?: 'file';
-    $cacheStore = trim((string) (getenv('CACHE_STORE') ?: getenv('CACHE_DRIVER'))) ?: 'file';
-    $dbConnection = trim((string) getenv('DB_CONNECTION')) ?: 'mysql';
-    $queueConnection = trim((string) getenv('QUEUE_CONNECTION')) ?: 'sync';
+/** @var Application $app */
+$app = require_once __DIR__.'/../bootstrap/app.php';
 
-    vercelLog('SESSION_DRIVER = '.$sessionDriver);
-    vercelLog('CACHE_STORE = '.$cacheStore);
-    vercelLog('DB_CONNECTION = '.$dbConnection);
-    vercelLog('QUEUE_CONNECTION = '.$queueConnection);
+// 5. Bind storage path ke /tmp
+$app->useStoragePath($storagePath);
 
-    putenv('APP_STORAGE='.$storagePath);
-    putenv('VIEW_COMPILED_PATH='.$storagePath.'/framework/views');
-    putenv('APP_SERVICES_CACHE='.$storagePath.'/../bootstrap/cache/services.php');
-    putenv('APP_PACKAGES_CACHE='.$storagePath.'/../bootstrap/cache/packages.php');
-    putenv('APP_CONFIG_CACHE='.$storagePath.'/../bootstrap/cache/config.php');
-    putenv('APP_ROUTES_CACHE='.$storagePath.'/../bootstrap/cache/routes.php');
-    putenv('APP_EVENTS_CACHE='.$storagePath.'/../bootstrap/cache/events.php');
+// 6. Inject configuration sebelum Service Provider / Middleware boot
+$app->booting(function () use ($sessionDriver, $cacheStore, $dbConnection, $queueConnection) {
+    config([
+        'session.driver' => $sessionDriver,
+        'cache.default' => $cacheStore,
+        'database.default' => $dbConnection,
+        'queue.default' => $queueConnection,
+    ]);
+});
 
-    putenv('SESSION_DRIVER='.$sessionDriver);
-    putenv('CACHE_STORE='.$cacheStore);
-    putenv('CACHE_DRIVER='.$cacheStore);
-    putenv('DB_CONNECTION='.$dbConnection);
-    putenv('QUEUE_CONNECTION='.$queueConnection);
+// 7. HandleRequest via HTTP Kernel for full response control
+$request = Request::capture();
 
-    $_ENV['SESSION_DRIVER'] = $sessionDriver;
-    $_SERVER['SESSION_DRIVER'] = $sessionDriver;
-    $_ENV['CACHE_STORE'] = $cacheStore;
-    $_SERVER['CACHE_STORE'] = $cacheStore;
-    $_ENV['CACHE_DRIVER'] = $cacheStore;
-    $_SERVER['CACHE_DRIVER'] = $cacheStore;
-    $_ENV['DB_CONNECTION'] = $dbConnection;
-    $_SERVER['DB_CONNECTION'] = $dbConnection;
-    $_ENV['QUEUE_CONNECTION'] = $queueConnection;
-    $_SERVER['QUEUE_CONNECTION'] = $queueConnection;
+/** @var Kernel $kernel */
+$kernel = $app->make(Kernel::class);
 
-    vercelLog('STEP 3: environment overrides applied');
+$response = $kernel->handle($request);
 
-    vercelLog('STEP 4: before composer autoload');
-    require __DIR__.'/../vendor/autoload.php';
-    vercelLog('STEP 5: composer autoload loaded');
-
-    /** @var Application $app */
-    $app = require_once __DIR__.'/../bootstrap/app.php';
-
-    vercelLog('STEP 6: bootstrap/app.php loaded');
-
-    $app->useStoragePath($storagePath);
-
-    vercelLog('STEP 7: storage path configured');
-
-    $app->booting(function () use (
-        $sessionDriver,
-        $cacheStore,
-        $dbConnection,
-        $queueConnection
-    ) {
-        config([
-            'session.driver' => $sessionDriver,
-            'cache.default' => $cacheStore,
-            'database.default' => $dbConnection,
-            'queue.default' => $queueConnection,
-        ]);
-
-        error_log('[VERCEL-DEBUG] STEP 8: configuration overridden');
-    });
-
-    $request = Request::capture();
-
-    vercelLog(
-        'STEP 9: request captured: '.$request->method().' '.$request->path()
-    );
-
-    vercelLog('STEP 9b: using kernel handle instead of handleRequest');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Kernel-based request handling
-    |
-    | Using $kernel->handle() instead of $app->handleRequest() gives us
-    | full control over when/when-not to send the response, preventing
-    | the Symfony Response "headers already sent" issue on Vercel.
-    |--------------------------------------------------------------------------
-    */
-
-    /** @var Kernel $kernel */
-    $kernel = $app->make(Kernel::class);
-
-    $response = $kernel->handle($request);
-
-    vercelLog('STEP 10: kernel handle completed, response type: '.gettype($response));
-
-    if (! headers_sent()) {
-        $response->send();
-        vercelLog('STEP 11: response sent via response.send()');
-    } else {
-        vercelLog('STEP 11a: headers already sent, sending body only');
-        echo $response->getContent();
-    }
-
-    $kernel->terminate($request, $response);
-
-    vercelLog('STEP 12: terminate completed');
-
-    exit(0);
-
-} catch (Throwable $e) {
-
-    error_log('[VERCEL-DEBUG] ===============================');
-    error_log('[VERCEL-DEBUG] FATAL EXCEPTION');
-    error_log('[VERCEL-DEBUG] CLASS: '.get_class($e));
-    error_log('[VERCEL-DEBUG] MESSAGE: '.$e->getMessage());
-    error_log('[VERCEL-DEBUG] FILE: '.$e->getFile());
-    error_log('[VERCEL-DEBUG] LINE: '.$e->getLine());
-    error_log('[VERCEL-DEBUG] TRACE: '.$e->getTraceAsString());
-    error_log('[VERCEL-DEBUG] ===============================');
-
-    file_put_contents('/tmp/vercel_exception_'.time().'.txt', $e->getTraceAsString());
-
-    exit(1);
+if (! headers_sent()) {
+    $response->send();
+} else {
+    echo $response->getContent();
 }
+
+$kernel->terminate($request, $response);
