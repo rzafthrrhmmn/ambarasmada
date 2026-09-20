@@ -84,15 +84,10 @@ try {
     // Force error reporting untuk aplikasi
     error_reporting(E_ALL);
 
-    // Force APP_DEBUG untuk melihat error
-    $app['config']['app.debug'] = true;
-    config()->set('app.debug', true);
-
-    // Force exception handler untuk merender dengan verbose mode
-    $app->instance(
-        \Illuminate\Contracts\Debug\ExceptionHandler::class,
-        new \Illuminate\Foundation\Exceptions\Handler($app)
-    );
+    // Force APP_DEBUG via env var (bukan via container)
+    putenv('APP_DEBUG=true');
+    $_ENV['APP_DEBUG'] = true;
+    $_SERVER['APP_DEBUG'] = true;
 
     // Tangkap semua exception di dalam handle
     $response = null;
