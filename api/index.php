@@ -84,6 +84,9 @@ try {
     // Force error reporting untuk aplikasi
     error_reporting(E_ALL);
 
+    // Force APP_DEBUG untuk melihat error
+    $app['config']['app.debug'] = true;
+
     // Tangkap semua exception di dalam handle
     $response = null;
 
