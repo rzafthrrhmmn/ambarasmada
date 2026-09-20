@@ -72,37 +72,12 @@ try {
         ]);
     });
 
-    // Force debug mode di runtime
-    $app['config']['app.debug'] = true;
-    error_reporting(E_ALL);
-
     $request = Request::capture();
 
     /** @var Kernel $kernel */
     $kernel = $app->make(Kernel::class);
 
-    try {
-        $response = $kernel->handle($request);
-    } catch (Throwable $e) {
-        // Log error langsung
-        error_log('[VERCEL-KERNEL-EXCEPTION] '.$e->getMessage());
-        error_log('[VERCEL-KERNEL-EXCEPTION] '.$e->getTraceAsString());
-        
-        // Bangun response error secara manual
-        http_response_code(500);
-        header('Content-Type: text/plain; charset=UTF-8');
-        echo "KERNEL EXCEPTION:\n";
-        echo "Class: ".get_class($e)."\n";
-        echo "Message: ".$e->getMessage()."\n";
-        echo "File: ".$e->getFile().":".$e->getLine()."\n";
-        echo "\nTrace:\n".$e->getTraceAsString();
-        exit(1);
-    }
-
-    // If response has 500 status, extract error content
-    if ($response && $response->getStatusCode() === 500) {
-        error_log('[VERCEL-500-TRACE] '.$response->getContent());
-    }
+    $response = $kernel->handle($request);
 
     if (! headers_sent()) {
         $response->send();
