@@ -14,12 +14,6 @@ function vercelLog(string $message): void
 vercelLog('STEP 1: api/index.php started');
 
 try {
-    /*
-    |--------------------------------------------------------------------------
-    | Temporary storage for Vercel
-    |--------------------------------------------------------------------------
-    */
-
     $storagePath = '/tmp/storage';
 
     $directories = [
@@ -40,12 +34,6 @@ try {
 
     vercelLog('STEP 2: storage directories ready');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Environment
-    |--------------------------------------------------------------------------
-    */
-
     $sessionDriver = trim((string) getenv('SESSION_DRIVER')) ?: 'file';
 
     $cacheStore = trim(
@@ -58,23 +46,10 @@ try {
 
     vercelLog('STEP 3: environment read');
 
-    /*
-    |--------------------------------------------------------------------------
-    | IMPORTANT:
-    | Only log driver names, never secrets.
-    |--------------------------------------------------------------------------
-    */
-
-    vercelLog('SESSION_DRIVER = '.($sessionDriver ?: '[EMPTY]'));
-    vercelLog('CACHE_STORE = '.($cacheStore ?: '[EMPTY]'));
-    vercelLog('DB_CONNECTION = '.($dbConnection ?: '[EMPTY]'));
-    vercelLog('QUEUE_CONNECTION = '.($queueConnection ?: '[EMPTY]'));
-
-    /*
-    |--------------------------------------------------------------------------
-    | Force safe environment values
-    |--------------------------------------------------------------------------
-    */
+    vercelLog('SESSION_DRIVER = '.$sessionDriver);
+    vercelLog('CACHE_STORE = '.$cacheStore);
+    vercelLog('DB_CONNECTION = '.$dbConnection);
+    vercelLog('QUEUE_CONNECTION = '.$queueConnection);
 
     putenv('APP_STORAGE='.$storagePath);
     putenv('VIEW_COMPILED_PATH='.$storagePath.'/framework/views');
@@ -122,42 +97,18 @@ try {
 
     vercelLog('STEP 4: environment overrides applied');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Composer
-    |--------------------------------------------------------------------------
-    */
-
     require __DIR__.'/../vendor/autoload.php';
 
     vercelLog('STEP 5: composer autoload loaded');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Laravel Application
-    |--------------------------------------------------------------------------
-    */
 
     /** @var Application $app */
     $app = require_once __DIR__.'/../bootstrap/app.php';
 
     vercelLog('STEP 6: bootstrap/app.php loaded');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Force application storage path
-    |--------------------------------------------------------------------------
-    */
-
     $app->useStoragePath($storagePath);
 
     vercelLog('STEP 7: storage path configured');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Force configuration
-    |--------------------------------------------------------------------------
-    */
 
     $app->booting(function () use (
         $sessionDriver,
@@ -175,35 +126,17 @@ try {
         error_log('[VERCEL-DEBUG] STEP 8: configuration overridden');
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Request
-    |--------------------------------------------------------------------------
-    */
-
     $request = Request::capture();
 
-    vercelLog('STEP 9: request captured: '.$request->method().' '.$request->path());
+    vercelLog(
+        'STEP 9: request captured: '.$request->method().' '.$request->path()
+    );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Laravel request handling
-    |--------------------------------------------------------------------------
-    */
+    $app->handleRequest($request);
 
-    $response = $app->handleRequest($request);
-
-    vercelLog('STEP 10: Laravel returned response');
-
-    return $response;
+    vercelLog('STEP 10: handleRequest completed');
 
 } catch (Throwable $e) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | Diagnostic logging
-    |--------------------------------------------------------------------------
-    */
 
     error_log('[VERCEL-DEBUG] ===============================');
     error_log('[VERCEL-DEBUG] FATAL EXCEPTION');
@@ -211,13 +144,8 @@ try {
     error_log('[VERCEL-DEBUG] MESSAGE: '.$e->getMessage());
     error_log('[VERCEL-DEBUG] FILE: '.$e->getFile());
     error_log('[VERCEL-DEBUG] LINE: '.$e->getLine());
-    error_log('[VERCEL-DEBUG] TRACE:');
-    error_log($e->getTraceAsString());
+    error_log('[VERCEL-DEBUG] TRACE: '.$e->getTraceAsString());
     error_log('[VERCEL-DEBUG] ===============================');
 
-    http_response_code(500);
-
-    echo 'Vercel Laravel bootstrap error: '.$e->getMessage();
-
-    exit;
+    exit(1);
 }
