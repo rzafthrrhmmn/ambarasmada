@@ -86,6 +86,13 @@ try {
 
     // Force APP_DEBUG untuk melihat error
     $app['config']['app.debug'] = true;
+    config()->set('app.debug', true);
+
+    // Force exception handler untuk merender dengan verbose mode
+    $app->instance(
+        \Illuminate\Contracts\Debug\ExceptionHandler::class,
+        new \Illuminate\Foundation\Exceptions\Handler($app)
+    );
 
     // Tangkap semua exception di dalam handle
     $response = null;
