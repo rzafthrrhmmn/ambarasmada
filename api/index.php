@@ -81,12 +81,58 @@ try {
     /** @var Kernel $kernel */
     $kernel = $app->make(Kernel::class);
 
-    $response = $kernel->handle($request);
+    // Force error reporting untuk aplikasi
+    error_reporting(E_ALL);
+
+    // Tangkap semua exception di dalam handle
+    $response = null;
+
+    try {
+        $response = $kernel->handle($request);
+
+        error_log('[VERCEL-HANDLE] Response type: '.gettype($response).' status: '.($response ? $response->getStatusCode() : 'NULL').' class: '.($response ? get_class($response) : 'NULL'));
+
+    } catch (Throwable $e) {
+
+        // Log ke file sebelum exit
+        $trace = $e->getTraceAsString();
+
+        file_put_contents('/tmp/vercel_kernel_error.log', date('c')."\n".$e->getMessage()."\n".$trace."\n", FILE_APPEND | LOCK_EX);
+
+        error_log('[VERCEL-KERNEL-ERROR] '.$e->getMessage());
+        error_log('[VERCEL-KERNEL-ERROR] '.$trace);
+
+        // Bangun error response manual
+        header('HTTP/1.1 500 Internal Server Error');
+        header('Content-Type: text/html; charset=UTF-8');
+
+        if (!headers_sent()) {
+            echo '<h1>500 Server Error</h1>';
+            echo '<p>'.$e->getMessage().'</p>';
+            echo '<pre>'.$trace.'</pre>';
+        } else {
+            // Jika headers sudah terkirim, flush buffer
+            if (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            echo '<h1>500 Server Error</h1>';
+            echo '<p>'.$e->getMessage().'</p>';
+            echo '<pre>'.$trace.'</pre>';
+        }
+
+        $kernel->terminate($request, null);
+        exit(1);
+    }
+
+    if ($response === null) {
+        error_log('[VERCEL-FATAL] Kernel returned null response');
+        echo 'Fatal error: Response is NULL';
+        exit(1);
+    }
 
     if (! headers_sent()) {
         $response->send();
     } else {
-        // Clear output buffer lalu kirim content
         if (ob_get_level() > 0) {
             ob_end_clean();
         }
@@ -95,7 +141,6 @@ try {
 
     $kernel->terminate($request, $response);
 
-    // Clean up output buffer
     if (ob_get_level() > 0) {
         ob_end_clean();
     }
