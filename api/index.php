@@ -73,6 +73,7 @@ try {
     /** @var Application $app */
     $app = require_once __DIR__.'/../bootstrap/app.php';
 
+    // Set storage path AFTER application creation
     $app->useStoragePath($storagePath);
 
     $app->booting(function () use ($sessionDriver, $cacheStore, $dbConnection, $queueConnection) {
@@ -81,6 +82,7 @@ try {
             'cache.default' => $cacheStore,
             'database.default' => $dbConnection,
             'queue.default' => $queueConnection,
+            'logging.default' => 'stderr',
         ]);
     });
 
