@@ -1,11 +1,8 @@
 <?php
 
-// Vercel-specific: Start output buffering untuk mencegah "headers already sent"
-ob_start();
-
-use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
+use Illuminate\Contracts\Http\Kernel;
 use Throwable;
 
 define('LARAVEL_START', microtime(true));
@@ -72,7 +69,6 @@ try {
             'cache.default' => $cacheStore,
             'database.default' => $dbConnection,
             'queue.default' => $queueConnection,
-            'logging.default' => 'stderr',
         ]);
     });
 
@@ -81,86 +77,17 @@ try {
     /** @var Kernel $kernel */
     $kernel = $app->make(Kernel::class);
 
-    // Force error reporting untuk aplikasi
-    error_reporting(E_ALL);
-
-    // Force APP_DEBUG via env var (bukan via container)
-    putenv('APP_DEBUG=true');
-    $_ENV['APP_DEBUG'] = true;
-    $_SERVER['APP_DEBUG'] = true;
-
-    // Tangkap semua exception di dalam handle
-    $response = null;
-
-    try {
-        $response = $kernel->handle($request);
-
-        $statusCode = $response ? $response->getStatusCode() : 'NULL';
-        $responseClass = $response ? get_class($response) : 'NULL';
-
-        error_log('[VERCEL-HANDLE] Response type: '.gettype($response).' status: '.$statusCode.' class: '.$responseClass);
-
-        // Jika 500, log response content
-        if ($response && $statusCode === 500) {
-            $content = $response->getContent();
-            error_log('[VERCEL-500-CONTENT] '.$content);
-            file_put_contents('/tmp/vercel_500_response.txt', $content);
-        }
-
-    } catch (Throwable $e) {
-
-        // Log ke file sebelum exit
-        $trace = $e->getTraceAsString();
-
-        file_put_contents('/tmp/vercel_kernel_error.log', date('c')."\n".$e->getMessage()."\n".$trace."\n", FILE_APPEND | LOCK_EX);
-
-        error_log('[VERCEL-KERNEL-ERROR] '.$e->getMessage());
-        error_log('[VERCEL-KERNEL-ERROR] '.$trace);
-
-        // Bangun error response manual
-        header('HTTP/1.1 500 Internal Server Error');
-        header('Content-Type: text/html; charset=UTF-8');
-
-        if (!headers_sent()) {
-            echo '<h1>500 Server Error</h1>';
-            echo '<p>'.$e->getMessage().'</p>';
-            echo '<pre>'.$trace.'</pre>';
-        } else {
-            // Jika headers sudah terkirim, flush buffer
-            if (ob_get_level() > 0) {
-                ob_end_clean();
-            }
-            echo '<h1>500 Server Error</h1>';
-            echo '<p>'.$e->getMessage().'</p>';
-            echo '<pre>'.$trace.'</pre>';
-        }
-
-        $kernel->terminate($request, null);
-        exit(1);
-    }
-
-    if ($response === null) {
-        error_log('[VERCEL-FATAL] Kernel returned null response');
-        echo 'Fatal error: Response is NULL';
-        exit(1);
-    }
+    $response = $kernel->handle($request);
 
     if (! headers_sent()) {
         $response->send();
     } else {
-        if (ob_get_level() > 0) {
-            ob_end_clean();
-        }
         echo $response->getContent();
     }
 
     $kernel->terminate($request, $response);
 
-    if (ob_get_level() > 0) {
-        ob_end_clean();
-    }
-
 } catch (Throwable $e) {
-    error_log('[VERCEL-CATCH] '.$e->getMessage());
-    error_log('[VERCEL-CATCH] '.$e->getTraceAsString());
+    error_log('[VERCEL-ERROR] '.$e->getMessage());
+    error_log('[VERCEL-ERROR] '.$e->getTraceAsString());
 }
