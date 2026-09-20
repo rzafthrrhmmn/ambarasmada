@@ -90,7 +90,17 @@ try {
     try {
         $response = $kernel->handle($request);
 
-        error_log('[VERCEL-HANDLE] Response type: '.gettype($response).' status: '.($response ? $response->getStatusCode() : 'NULL').' class: '.($response ? get_class($response) : 'NULL'));
+        $statusCode = $response ? $response->getStatusCode() : 'NULL';
+        $responseClass = $response ? get_class($response) : 'NULL';
+
+        error_log('[VERCEL-HANDLE] Response type: '.gettype($response).' status: '.$statusCode.' class: '.$responseClass);
+
+        // Jika 500, log response content
+        if ($response && $statusCode === 500) {
+            $content = $response->getContent();
+            error_log('[VERCEL-500-CONTENT] '.$content);
+            file_put_contents('/tmp/vercel_500_response.txt', $content);
+        }
 
     } catch (Throwable $e) {
 
