@@ -33,4 +33,22 @@ export default defineConfig({
             '@': fileURLToPath(new URL('./resources/js', import.meta.url)),
         },
     },
+    build: {
+        chunkSizeWarningLimit: 1600,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('node_modules')) {
+                        if (id.includes('maplibre-gl') || id.includes('pmtiles')) {
+                            return 'vendor-map';
+                        }
+                        if (id.includes('vue') || id.includes('@inertiajs')) {
+                            return 'vendor-vue';
+                        }
+                        return 'vendor';
+                    }
+                },
+            },
+        },
+    },
 });
