@@ -18,13 +18,6 @@
       0 => 'Inertia\\ServiceProvider',
     ),
   ),
-  'laravel/boost' => 
-  array (
-    'providers' => 
-    array (
-      0 => 'Laravel\\Boost\\BoostServiceProvider',
-    ),
-  ),
   'laravel/mcp' => 
   array (
     'aliases' => 
