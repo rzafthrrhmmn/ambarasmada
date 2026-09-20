@@ -11,14 +11,14 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table): void {
             $table->string('username', 30)->change();
-            $table->enum('role', ['Admin', 'Pembina', 'Pengurus', 'Anggota', 'Alumni'])->default('Anggota')->change();
+            $table->string('role', 30)->default('Anggota')->change();
         });
 
         Schema::table('members', function (Blueprint $table): void {
             $table->string('angkatan', 3)->nullable()->index();
             $table->unsignedInteger('nomor_urut')->nullable();
             $table->string('nta_username', 30)->nullable()->unique();
-            $table->enum('status_aktif', ['Aktif', 'Alumni', 'Non-Aktif'])->default('Aktif')->change();
+            $table->string('status_aktif', 30)->default('Aktif')->change();
         });
 
         $prefix = (string) config('app.gudep_prefix', '31082008');
