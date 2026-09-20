@@ -139,7 +139,16 @@ try {
 
     $response = $app->handleRequest($request);
 
-    vercelLog('STEP 10: handleRequest completed');
+    vercelLog('STEP 10: handleRequest completed, response type: '.gettype($response));
+
+    if ($response === null) {
+        vercelLog('ERROR: handleRequest returned null');
+        $exception = $app->make(\Illuminate\Contracts\Debug\ExceptionHandler::class);
+        vercelLog('Exception handler resolved');
+        http_response_code(500);
+        echo 'Internal Server Error';
+        exit(1);
+    }
 
     vercelLog('STEP 11: about to send response');
 
