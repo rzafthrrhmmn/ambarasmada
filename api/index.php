@@ -31,6 +31,18 @@ putenv('APP_CONFIG_CACHE=/tmp/bootstrap/cache/config.php');
 putenv('APP_ROUTES_CACHE=/tmp/bootstrap/cache/routes.php');
 putenv('APP_EVENTS_CACHE=/tmp/bootstrap/cache/events.php');
 
+// 2b. Fallback aman bila env Vercel belum lengkap (hindari Manager::createDriver crash)
+foreach ([
+    'SESSION_DRIVER' => 'file',
+    'CACHE_STORE'    => 'file',
+    'APP_URL'        => 'https://ambarasmada.vercel.app',
+] as $key => $default) {
+    $current = getenv($key);
+    if ($current === false || $current === '' || $current === null) {
+        putenv($key . '=' . $default);
+    }
+}
+
 // 3. Load Autoloader
 require __DIR__ . '/../vendor/autoload.php';
 
