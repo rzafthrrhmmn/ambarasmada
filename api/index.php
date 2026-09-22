@@ -38,6 +38,8 @@ $_SERVER = array_merge($_SERVER, $_ENV);
 require __DIR__.'/../vendor/autoload.php';
 $app = require_once __DIR__.'/../bootstrap/app.php';
 $app->useStoragePath($storagePath);
+$app->register(Illuminate\Filesystem\FilesystemServiceProvider::class);
+$app->register(Illuminate\Events\EventServiceProvider::class);
 $app->boot();
 
 $request = Request::capture();
