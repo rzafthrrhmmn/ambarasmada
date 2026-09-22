@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        error_log('[VERCEL-BOOT] Registering middleware');
         $middleware->web(prepend: [
             SecurityHeaders::class,
         ]);
@@ -30,9 +31,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'pembina' => EnsureRole::class.':Pembina,Admin',
         ]);
         $middleware->redirectTo(guests: fn () => route('login'));
+        error_log('[VERCEL-BOOT] Middleware registered');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        error_log('[VERCEL-BOOT] Configuring exception handler');
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+        error_log('[VERCEL-BOOT] Exception handler configured');
     })->create();
