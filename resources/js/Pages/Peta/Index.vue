@@ -34,6 +34,18 @@
       <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/70">
         <p class="text-lg font-bold text-[#EDD330]">Memuat peta...</p>
       </div>
+      <div v-if="mapError" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/90">
+        <div class="text-center p-6">
+          <p class="text-2xl font-bold text-[#f87171]">Gagal Memuat Peta</p>
+          <p class="mt-2 text-sm text-[#8fa06a]">{{ mapError }}</p>
+          <button
+            @click="initMap"
+            class="mt-4 inline-flex items-center rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-4 py-2 text-sm font-bold text-[#A7B92A] transition hover:bg-[#A7B92A]/20"
+          >
+            Coba Lagi
+          </button>
+        </div>
+      </div>
     </div>
 
     <div v-if="mapStatus" class="mt-3 rounded-lg border border-[#6F9435]/30 bg-[#335233] p-3 text-xs text-[#d4dc9a]">
@@ -85,6 +97,7 @@ const props = defineProps({
 const mapContainer = ref(null);
 const map = ref(null);
 const loading = ref(true);
+const mapError = ref(null);
 const showContour = ref(true);
 const showOfflineModal = ref(false);
 const downloading = ref(false);
@@ -95,6 +108,11 @@ const offlineZoomMax = ref(15);
 
 const hasPmtiles = computed(() => props.mapConfig?.hasPmtiles ?? false);
 const boundingBox = computed(() => props.mapConfig?.boundingBox ?? { west: 118.5, east: 125.5, south: -6.0, north: 2.0 });
+
+const geojsonUrl = computed(() => {
+  return props.mapConfig?.geojsonUrl ?? '/storage/maps/batas_kabupaten_sulsel.geojson';
+});
+
 const pmtilesSourceUrl = computed(() => {
   const url = props.mapConfig?.pmtilesUrl ?? '';
   if (url.startsWith('http')) {
@@ -116,6 +134,9 @@ function toggleLayer() {
 async function initMap() {
   if (!mapContainer.value || !hasPmtiles.value) return;
 
+  mapError.value = null;
+  loading.value = true;
+
   try {
     const maplibregl = (await import('maplibre-gl')).default;
     const pmtilesModule = (await import('pmtiles')).default;
@@ -131,6 +152,10 @@ async function initMap() {
           'kontur-sulawesi': {
             type: 'vector',
             url: pmtilesSourceUrl.value,
+          },
+          'batas-kabupaten': {
+            type: 'geojson',
+            data: geojsonUrl.value,
           },
           'osm-tiles': {
             type: 'raster',
@@ -163,6 +188,16 @@ async function initMap() {
               ],
             },
           },
+          {
+            id: 'kabupaten-border',
+            type: 'line',
+            source: 'batas-kabupaten',
+            paint: {
+              'line-color': '#2563eb',
+              'line-width': 1.5,
+              'line-dasharray': [2, 2],
+            },
+          },
         ],
       },
       center: props.mapConfig.center ?? [119.863, -0.900],
@@ -172,15 +207,21 @@ async function initMap() {
 
     map.value.on('load', () => {
       loading.value = false;
+      mapError.value = null;
       mapStatus.value = 'Peta kontur Sulawesi dimuat. Garis kontur setiap 10 meter elevasi.';
     });
 
     map.value.on('error', (e) => {
-      mapStatus.value = `Peringatan: ${e.error?.message || 'Kesalahan peta'}`;
+      loading.value = false;
+      const errorMsg = e.error?.message || 'Kesalahan peta';
+      mapStatus.value = `Peringatan: ${errorMsg}`;
+      if (errorMsg.includes('source') || errorMsg.includes('tile') || errorMsg.includes('network') || errorMsg.includes('404') || errorMsg.includes('500')) {
+        mapError.value = `Gagal memuat data peta: ${errorMsg}. Periksa koneksi dan coba lagi.`;
+      }
     });
   } catch (error) {
     loading.value = false;
-    mapStatus.value = `Gagal memuat peta: ${error.message}`;
+    mapError.value = `Gagal memuat peta: ${error.message}`;
     console.error('Map initialization error:', error);
   }
 }
@@ -207,7 +248,8 @@ async function downloadOffline() {
     const minZoom = offlineZoomMin.value;
     const maxZoom = offlineZoomMax.value;
 
-    const pmtilesUrl = props.mapConfig.pmtilesUrl;
+    const pmtilesUrl = props.mapConfig.pmtilesUrl.replace(/^https?:\/\/[^\/]+/, '');
+    const geojsonUrlRelative = geojsonUrl.value.replace(/^https?:\/\/[^\/]+/, '');
 
     const channel = new MessageChannel();
     channel.port1.onmessage = (event) => {
@@ -228,6 +270,7 @@ async function downloadOffline() {
         zoomMin: minZoom,
         zoomMax: maxZoom,
         pmtilesUrl,
+        geojsonUrl: geojsonUrlRelative,
       },
       [channel.port2]
     );

@@ -147,13 +147,13 @@ self.addEventListener('message', (event) => {
     }
 
     if (event.data?.type === 'DOWNLOAD_OFFLINE_TILES') {
-        const { bbox, zoomMin, zoomMax, pmtilesUrl, layoutOptions, areaName } = event.data;
+        const { bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName } = event.data;
         const port = event.ports[0];
-        event.waitUntil(handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, layoutOptions, areaName));
+        event.waitUntil(handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName));
     }
 });
 
-async function handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, layoutOptions, areaName) {
+async function handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName) {
     const west = bbox.west;
     const east = bbox.east;
     const south = bbox.south;
@@ -211,7 +211,7 @@ async function handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, l
     // Generate offline map HTML with professional layout (before closing db)
     if (layoutOptions) {
         sendProgress('Membuat layout peta offline...', downloadedTiles, totalTiles);
-        await generateOfflineMapHTML(db, bbox, zoomMin, zoomMax, layoutOptions, areaName);
+        await generateOfflineMapHTML(db, bbox, zoomMin, zoomMax, geojsonUrl, layoutOptions, areaName);
     }
 
     await db.close();
@@ -375,7 +375,7 @@ function findTile(entries, tileId) {
     return null;
 }
 
-async function generateOfflineMapHTML(db, bbox, zoomMin, zoomMax, layoutOptions, areaName) {
+async function generateOfflineMapHTML(db, bbox, zoomMin, zoomMax, geojsonUrl, layoutOptions, areaName) {
     const centerLon = (bbox.west + bbox.east) / 2;
     const centerLat = (bbox.south + bbox.north) / 2;
     const centerZoom = Math.floor((zoomMin + zoomMax) / 2);
@@ -391,6 +391,7 @@ async function generateOfflineMapHTML(db, bbox, zoomMin, zoomMax, layoutOptions,
         zoomMax,
         bbox,
         areaName,
+        geojsonUrl,
         layoutOptions,
         elevStats,
         tileCount: await getTileCount(db),
@@ -470,7 +471,7 @@ async function getTileCount(db) {
     });
 }
 
-function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, bbox, areaName, layoutOptions, elevStats, tileCount }) {
+function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, bbox, areaName, geojsonUrl, layoutOptions, elevStats, tileCount }) {
     const scaleBarHtml = layoutOptions.scaleBar ? `
         <div id="scale-bar" class="map-control scale-bar" style="bottom: 20px; left: 20px;">
             <canvas id="scale-canvas" width="200" height="30"></canvas>
@@ -587,7 +588,7 @@ function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, b
                     },
                     'batas': {
                         type: 'geojson',
-                        data: '/storage/maps/batas_kabupaten_sulsel.geojson',
+                        data: '${geojsonUrl}',
                     },
                     'osm': {
                         type: 'raster',

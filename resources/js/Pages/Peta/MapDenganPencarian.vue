@@ -612,6 +612,7 @@ async function downloadOffline() {
     const maxZoom = offlineZoomMax.value;
     // Use relative path for Service Worker to avoid CORS issues
     const pmtilesUrl = props.mapConfig.pmtilesUrl.replace(/^https?:\/\/[^\/]+/, '');
+    const geojsonUrlRelative = geojsonUrl.value.replace(/^https?:\/\/[^\/]+/, '');
 
     const layoutOptions = {
       scaleBar: includeScaleBar.value,
@@ -640,6 +641,7 @@ async function downloadOffline() {
         zoomMin: minZoom,
         zoomMax: maxZoom,
         pmtilesUrl,
+        geojsonUrl: geojsonUrlRelative,
         layoutOptions,
         areaName,
       },
