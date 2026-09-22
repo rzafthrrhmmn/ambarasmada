@@ -3,6 +3,11 @@
 error_log('[VERCEL-START] api/index.php started, PHP version: '.PHP_VERSION);
 error_log('[VERCEL-START] Current dir: '.getcwd());
 error_log('[VERCEL-START] APP_KEY from env: '.(getenv('APP_KEY') ?: 'NOT SET'));
+error_log('[VERCEL-START] DB_HOST from env: '.(getenv('DB_HOST') ?: 'NOT SET'));
+error_log('[VERCEL-START] DB_PASSWORD from env: '.(getenv('DB_PASSWORD') ? 'SET' : 'NOT SET'));
+error_log('[VERCEL-START] DB_PORT from env: '.(getenv('DB_PORT') ?: 'NOT SET'));
+error_log('[VERCEL-START] DB_USERNAME from env: '.(getenv('DB_USERNAME') ?: 'NOT SET'));
+error_log('[VERCEL-START] DB_DATABASE from env: '.(getenv('DB_DATABASE') ?: 'NOT SET'));
 
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
@@ -77,7 +82,7 @@ try {
 
     if (!headers_sent()) {
         http_response_code(500);
-        header('Content-Type: application/json');
+        header('Content-Type: application/json; charset=utf-8');
     }
     echo json_encode([
         'exception' => get_class($e),
@@ -85,7 +90,7 @@ try {
         'file' => $e->getFile(),
         'line' => $e->getLine(),
         'trace' => $e->getTraceAsString(),
-    ]);
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     $kernel->terminate($request, null);
     exit(500);
 }
