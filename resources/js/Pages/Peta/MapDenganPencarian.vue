@@ -137,7 +137,15 @@
           <label class="text-xs font-medium text-[#d4dc9a]">Preview Wilayah</label>
           <span v-if="selectedOfflineRegionData" class="text-xs text-[#EDD330]">{{ selectedOfflineRegionData.nama_kab }}</span>
         </div>
-        <div ref="miniMapContainer" class="h-[200px] w-full rounded-lg overflow-hidden border border-[#6F9435]/30"></div>
+        <div ref="miniMapContainer" class="h-[200px] w-full rounded-lg overflow-hidden border border-[#6F9435]/30 relative">
+          <div v-if="miniMapLoading" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/90">
+            <p class="text-sm text-[#8fa06a]">Memuat preview...</p>
+          </div>
+          <div v-if="miniMapError" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/90 text-center p-4">
+            <p class="text-sm text-[#f87171]">{{ miniMapError }}</p>
+            <button @click="initMiniMap" class="mt-2 text-xs text-[#A7B92A] hover:underline">Coba lagi</button>
+          </div>
+        </div>
       </div>
 
       <!-- Zoom Settings -->
@@ -259,6 +267,8 @@ const mapStatus = ref('');
 const offlineZoomMin = ref(8);
 const offlineZoomMax = ref(14);
 const selectedKabupaten = ref('');
+const miniMapLoading = ref(false);
+const miniMapError = ref('');
 
 // Offline download state
 const downloadMode = ref('full');
@@ -273,6 +283,10 @@ const includeGrid = ref(false);
 const hasPmtiles = computed(() => props.mapConfig?.hasPmtiles ?? false);
 const boundingBox = computed(() => props.mapConfig?.boundingBox ?? { west: 118.9, east: 121.6, south: -5.8, north: -1.8 });
 const kabupatens = computed(() => props.kabupatens ?? []);
+
+const geojsonUrl = computed(() => {
+  return props.mapConfig?.geojsonUrl ?? '/storage/maps/batas_kabupaten_sulsel.geojson';
+});
 
 const selectedKabData = computed(() => {
   return kabupatens.value.find((k) => k.id_kab === selectedKabupaten.value) ?? null;
@@ -307,7 +321,7 @@ const estimatedTiles = computed(() => {
 
 const estimatedSize = computed(() => {
   const tiles = estimatedTiles.value;
-  const avgTileSizeKb = 15; // ~15KB per MVT tile average
+  const avgTileSizeKb = 15;
   const mb = (tiles * avgTileSizeKb) / 1024;
   if (mb < 1) return `${Math.round(tiles * avgTileSizeKb)} KB`;
   if (mb < 1024) return `${mb.toFixed(1)} MB`;
@@ -404,31 +418,57 @@ function initMiniMap() {
   const kab = selectedOfflineRegionData.value;
   const [west, south, east, north] = kab.bbox;
 
+  miniMapLoading.value = true;
+  miniMapError.value = '';
+
   import('maplibre-gl').then(({ default: maplibregl }) => {
     import('pmtiles').then(({ Protocol }) => {
       const protocol = new Protocol();
       maplibregl.addProtocol('pmtiles', protocol.tile);
 
-      miniMap.value = new maplibregl.Map({
-        container: miniMapContainer.value,
-        style: {
-          version: 8,
-          sources: {
-            'kontur': { type: 'vector', url: pmtilesSourceUrl.value },
-            'batas': { type: 'geojson', data: props.mapConfig?.geojsonUrl ?? '/storage/maps/batas_kabupaten_sulsel.geojson' },
+      try {
+        miniMap.value = new maplibregl.Map({
+          container: miniMapContainer.value,
+          style: {
+            version: 8,
+            sources: {
+              'kontur': { type: 'vector', url: pmtilesSourceUrl.value },
+              'batas': { type: 'geojson', data: geojsonUrl.value },
+            },
+            layers: [
+              { id: 'mini-kontur', type: 'line', source: 'kontur', 'source-layer': 'kontur',
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: { 'line-color': '#8c510a', 'line-width': 0.8 } },
+              { id: 'mini-batas', type: 'line', source: 'batas',
+                paint: { 'line-color': '#2563eb', 'line-width': 1, 'line-dasharray': [1, 1] } },
+            ],
           },
-          layers: [
-            { id: 'mini-kontur', type: 'line', source: 'kontur', 'source-layer': 'kontur',
-              layout: { 'line-join': 'round', 'line-cap': 'round' },
-              paint: { 'line-color': '#8c510a', 'line-width': 0.8 } },
-            { id: 'mini-batas', type: 'line', source: 'batas',
-              paint: { 'line-color': '#2563eb', 'line-width': 1, 'line-dasharray': [1, 1] } },
-          ],
-        },
-        center: [(west + east) / 2, (south + north) / 2],
-        zoom: 8,
-        maxZoom: 14,
-      });
+          center: [(west + east) / 2, (south + north) / 2],
+          zoom: 8,
+          maxZoom: 14,
+        });
+
+        miniMap.value.on('load', () => {
+          miniMapLoading.value = false;
+          // Fit to the region's bbox for better preview
+          if (miniMap.value && kab.bbox) {
+            miniMap.value.fitBounds(
+              [[kab.bbox[0], kab.bbox[1]], [kab.bbox[2], kab.bbox[3]]],
+              { padding: 20, duration: 1000 }
+            );
+          }
+        });
+
+        miniMap.value.on('error', (e) => {
+          miniMapLoading.value = false;
+          miniMapError.value = `Gagal memuat preview: ${e.error?.message || 'Kesalahan peta'}`;
+          console.error('Mini map error:', e);
+        });
+      } catch (error) {
+        miniMapLoading.value = false;
+        miniMapError.value = `Gagal inisialisasi preview: ${error.message}`;
+        console.error('Mini map init error:', error);
+      }
     });
   });
 }

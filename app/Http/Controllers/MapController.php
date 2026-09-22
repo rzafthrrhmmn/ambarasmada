@@ -14,6 +14,10 @@ class MapController extends Controller
         $pmtilesUrl = asset($pmtilesPath);
         $hasPmtiles = file_exists(public_path($pmtilesPath));
 
+        $geojsonPath = 'storage/maps/batas_kabupaten_sulsel.geojson';
+        $geojsonUrl = asset($geojsonPath);
+        $hasGeojson = file_exists(public_path($geojsonPath));
+
         $kabupatens = [
             ['id_kab' => '7301', 'nama_kab' => 'Kepulauan Selayar', 'bbox' => [120.30, -7.60, 121.30, -5.70]],
             ['id_kab' => '7302', 'nama_kab' => 'Bulukumba', 'bbox' => [120.00, -5.60, 120.50, -5.20]],
@@ -44,7 +48,9 @@ class MapController extends Controller
         return Inertia::render('Peta/MapDenganPencarian', [
             'mapConfig' => [
                 'pmtilesUrl' => $pmtilesUrl,
+                'geojsonUrl' => $geojsonUrl,
                 'hasPmtiles' => $hasPmtiles,
+                'hasGeojson' => $hasGeojson,
                 'center' => [120.2, -3.3],
                 'zoom' => 10,
                 'boundingBox' => [
