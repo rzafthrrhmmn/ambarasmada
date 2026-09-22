@@ -10,7 +10,9 @@ class SecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
+        error_log('[VERCEL-MIDDLEWARE] SecurityHeaders: before next');
         $response = $next($request);
+        error_log('[VERCEL-MIDDLEWARE] SecurityHeaders: after next, status: '.$response->getStatusCode());
 
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'DENY');
@@ -22,7 +24,7 @@ class SecurityHeaders
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
         }
 
-$csp = [
+        $csp = [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://[::1]:5173 http://[::1]:5174 https://unpkg.com https://tile.openstreetmap.org",
             "style-src 'self' 'unsafe-inline' http://[::1]:5173 http://[::1]:5174 https://unpkg.com https://fonts.googleapis.com",
@@ -37,6 +39,7 @@ $csp = [
 
         $response->headers->set('Content-Security-Policy', implode('; ', $csp));
 
+        error_log('[VERCEL-MIDDLEWARE] SecurityHeaders: headers set, returning response');
         return $response;
     }
 }
