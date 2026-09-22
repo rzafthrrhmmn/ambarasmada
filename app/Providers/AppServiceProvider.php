@@ -29,14 +29,6 @@ class AppServiceProvider extends ServiceProvider
             \URL::forceScheme('https');
         }
 
-        if ($this->app->environment('local')) {
-            config([
-                'app.csp.script_src' => "'self' 'unsafe-inline' 'unsafe-eval' http://[::1]:5173",
-                'app.csp.style_src' => "'self' 'unsafe-inline' http://[::1]:5173 https://fonts.googleapis.com",
-                'app.csp.font_src' => "'self' data: https://fonts.gstatic.com http://[::1]:5173",
-            ]);
-        }
-
         Inertia::share([
             'pendingCount' => function () {
                 if (! auth()->check() || ! in_array(auth()->user()->role, ['Admin', 'Pembina'], true)) {
