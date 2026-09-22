@@ -60,7 +60,8 @@ require __DIR__.'/../vendor/autoload.php';
     try {
         $response = $kernel->handle($request);
         error_log('[VERCEL-DEBUG] Request handled, status: '.$response->getStatusCode());
-        error_log('[VERCEL-DEBUG] Response content: '.substr($response->getContent(), 0, 500));
+        error_log('[VERCEL-DEBUG] Response content: '.substr($response->getContent(), 0, 1000));
+        error_log('[VERCEL-DEBUG] Response headers: '.json_encode($response->headers->all()));
     } catch (\Throwable $e) {
     error_log('[VERCEL-APP-ERROR] '.$e->getMessage());
     error_log('[VERCEL-APP-ERROR] '.$e->getFile().':'.$e->getLine());
