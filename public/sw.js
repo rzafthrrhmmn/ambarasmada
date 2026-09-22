@@ -414,7 +414,7 @@ function zxyToTileId(z, x, y) {
     return id + ((1 << (2 * z)) - 1) / 3;
 }
 
-function parseDirectory(data, compression) {
+async function parseDirectory(data, compression) {
     let bytes = new Uint8Array(data);
     if (compression === 2) { // Gzip
         const ds = new DecompressionStream('gzip');
@@ -793,21 +793,7 @@ function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, b
 </html>`;
 }
 
-function openTilesDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open('offline-tiles', 1);
-        request.onupgradeneeded = (event) => {
-            const db = event.target.result;
-            if (!db.objectStoreNames.contains('tiles')) {
-                const store = db.createObjectStore('tiles', { keyPath: 'id' });
-                store.createIndex('zxy', 'zxy', { unique: true });
-            }
-        };
-        request.onsuccess = (event) => resolve(event.target.result);
-        request.onerror = (e) => reject(e.target.error);
-    });
-}
-
+// Database operations for offline tiles
 async function storeTile(db, z, x, y, data) {
     return new Promise((resolve, reject) => {
         const tx = db.transaction('tiles', 'readwrite');
