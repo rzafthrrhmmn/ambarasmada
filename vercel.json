@@ -1,12 +1,12 @@
 {
   "version": 2,
   "framework": null,
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build && php artisan config:clear && php artisan route:clear && php artisan view:clear",
   "outputDirectory": "dist",
   "functions": {
       "api/index.php": {
           "runtime": "vercel-php@0.9.0",
-          "maxDuration": 10
+          "maxDuration": 30
       }
   },
   "routes": [
@@ -59,28 +59,16 @@
       "APP_ENV": "production",
       "APP_DEBUG": "false",
       "APP_URL": "https://ambarasmada.vercel.app",
-
-      "APP_CONFIG_CACHE": "/tmp/config.php",
-      "APP_EVENTS_CACHE": "/tmp/events.php",
-      "APP_PACKAGES_CACHE": "/tmp/packages.php",
-      "APP_ROUTES_CACHE": "/tmp/routes.php",
-      "APP_SERVICES_CACHE": "/tmp/services.php",
-      "VIEW_COMPILED_PATH": "/tmp/views",
-      "APP_STORAGE": "/tmp/storage",
-
-      "CACHE_STORE": "array",
-      "CACHE_DRIVER": "array",
       "LOG_CHANNEL": "stderr",
       "SESSION_DRIVER": "cookie",
+      "CACHE_DRIVER": "array",
+      "CACHE_STORE": "array",
       "QUEUE_CONNECTION": "sync",
-
-"DB_CONNECTION": "pgsql",
-       "DB_HOST": "aws-0-ap-southeast-1.pooler.supabase.com",
-       "DB_PORT": "6543",
-       "DB_DATABASE": "postgres",
-       "DB_USERNAME": "postgres.ugbpqikqduptseeslfri",
-       "DB_PASSWORD": "RezaNeko26@",
-       "DB_SSLMODE": "disable",
-       "STORAGE_PATH": "/tmp/storage"
+      "DB_CONNECTION": "pgsql",
+      "DB_HOST": "aws-0-ap-southeast-1.pooler.supabase.com",
+      "DB_PORT": "6543",
+      "DB_DATABASE": "postgres",
+      "DB_USERNAME": "postgres.ugbpqikqduptseeslfri",
+      "DB_SSLMODE": "require"
   }
 }
