@@ -25,12 +25,24 @@ putenv('SESSION_DRIVER=cookie');
 putenv('CACHE_DRIVER=array');
 putenv('CACHE_STORE=array');
 putenv('DB_CONNECTION=pgsql');
+putenv('DB_HOST=db.ugbpqikqduptseeslfri.supabase.co');
+putenv('DB_PORT=5432');
+putenv('DB_DATABASE=postgres');
+putenv('DB_USERNAME=postgres');
+putenv('DB_PASSWORD=RezaNeko26@');
+putenv('DB_SSLMODE=require');
 putenv('QUEUE_CONNECTION=sync');
 $_ENV = array_merge($_ENV, [
     'SESSION_DRIVER' => 'cookie',
     'CACHE_DRIVER' => 'array',
     'CACHE_STORE' => 'array',
     'DB_CONNECTION' => 'pgsql',
+    'DB_HOST' => 'db.ugbpqikqduptseeslfri.supabase.co',
+    'DB_PORT' => '5432',
+    'DB_DATABASE' => 'postgres',
+    'DB_USERNAME' => 'postgres',
+    'DB_PASSWORD' => 'RezaNeko26@',
+    'DB_SSLMODE' => 'require',
     'QUEUE_CONNECTION' => 'sync',
 ]);
 $_SERVER = array_merge($_SERVER, $_ENV);
@@ -57,30 +69,31 @@ require __DIR__.'/../vendor/autoload.php';
     $kernel = $app->make(Kernel::class);
     error_log('[VERCEL-DEBUG] Kernel created');
 
-    try {
+try {
         $response = $kernel->handle($request);
         error_log('[VERCEL-DEBUG] Request handled, status: '.$response->getStatusCode());
         error_log('[VERCEL-DEBUG] Response content: '.$response->getContent());
         error_log('[VERCEL-DEBUG] Response headers: '.json_encode($response->headers->all()));
     } catch (\Throwable $e) {
-    error_log('[VERCEL-APP-ERROR] '.$e->getMessage());
-    error_log('[VERCEL-APP-ERROR] '.$e->getFile().':'.$e->getLine());
-    error_log('[VERCEL-APP-ERROR] '.$e->getTraceAsString());
+        error_log('[VERCEL-EXCEPTION] Class: '.get_class($e));
+        error_log('[VERCEL-EXCEPTION] Message: '.$e->getMessage());
+        error_log('[VERCEL-EXCEPTION] File: '.$e->getFile().':'.$e->getLine());
+        error_log('[VERCEL-EXCEPTION] Trace: '.$e->getTraceAsString());
 
-    if (!headers_sent()) {
-        http_response_code(500);
-        header('Content-Type: application/json');
+        if (!headers_sent()) {
+            http_response_code(500);
+            header('Content-Type: application/json');
+        }
+        echo json_encode([
+            'exception' => get_class($e),
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+        $kernel->terminate($request, null);
+        exit(500);
     }
-    echo json_encode([
-        'exception' => get_class($e),
-        'message' => $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine(),
-        'trace' => $e->getTraceAsString(),
-    ]);
-    $kernel->terminate($request, null);
-    exit(500);
-}
 
 if (!headers_sent()) $response->send();
     else {
