@@ -22,13 +22,13 @@ foreach ($directories as $dir) {
 
 putenv('APP_STORAGE='.$storagePath);
 putenv('VIEW_COMPILED_PATH='.$storagePath.'/framework/views');
-putenv('SESSION_DRIVER=file');
+putenv('SESSION_DRIVER=cookie');
 putenv('CACHE_DRIVER=array');
 putenv('CACHE_STORE=array');
 putenv('DB_CONNECTION=pgsql');
 putenv('QUEUE_CONNECTION=sync');
 $_ENV = array_merge($_ENV, [
-    'SESSION_DRIVER' => 'file',
+    'SESSION_DRIVER' => 'cookie',
     'CACHE_DRIVER' => 'array',
     'CACHE_STORE' => 'array',
     'DB_CONNECTION' => 'pgsql',
