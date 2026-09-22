@@ -1,29 +1,52 @@
 {
   "version": 2,
-    "framework": null,
+  "framework": null,
   "functions": {
-      "api/index.php": { "runtime": "vercel-php@0.7.4" }
+      "api/index.php": {
+          "runtime": "vercel-php@0.7.4",
+          "maxDuration": 10
+      }
   },
   "routes": [
       {
           "src": "/build/(.*)",
-          "dest": "/public/build/"
+          "dest": "/public/build/$1",
+          "headers": {
+              "Cache-Control": "public, max-age=31536000, immutable"
+          }
       },
       {
           "src": "/css/(.*)",
-          "dest": "/public/css/"
+          "dest": "/public/css/$1",
+          "headers": {
+              "Cache-Control": "public, max-age=31536000, immutable"
+          }
       },
       {
           "src": "/images/(.*)",
-          "dest": "/public/images/"
+          "dest": "/public/images/$1",
+          "headers": {
+              "Cache-Control": "public, max-age=31536000, immutable"
+          }
       },
       {
           "src": "/js/(.*)",
-          "dest": "/public/js/"
+          "dest": "/public/js/$1",
+          "headers": {
+              "Cache-Control": "public, max-age=31536000, immutable"
+          }
       },
       {
-          "src": "/vendors/(.*)",
-          "dest": "/public/vendors/"
+          "src": "/favicon.ico",
+          "dest": "/public/favicon.ico"
+      },
+      {
+          "src": "/manifest.webmanifest",
+          "dest": "/public/manifest.webmanifest"
+      },
+      {
+          "src": "/sw.js",
+          "dest": "/public/sw.js"
       },
       {
           "src": "/(.*)",
@@ -32,18 +55,24 @@
   ],
   "env": {
       "APP_ENV": "production",
-      "APP_DEBUG": "true",
-      "APP_URL": "",
+      "APP_DEBUG": "false",
+      "APP_URL": "https://ambarasmada.vercel.app",
 
       "APP_CONFIG_CACHE": "/tmp/config.php",
       "APP_EVENTS_CACHE": "/tmp/events.php",
       "APP_PACKAGES_CACHE": "/tmp/packages.php",
       "APP_ROUTES_CACHE": "/tmp/routes.php",
       "APP_SERVICES_CACHE": "/tmp/services.php",
-      "VIEW_COMPILED_PATH": "/tmp",
+      "VIEW_COMPILED_PATH": "/tmp/views",
+      "APP_STORAGE": "/tmp/storage",
 
-      "CACHE_DRIVER": "array",
+      "CACHE_STORE": "file",
+      "CACHE_DRIVER": "file",
       "LOG_CHANNEL": "stderr",
-      "SESSION_DRIVER": "cookie"
+      "SESSION_DRIVER": "file",
+      "QUEUE_CONNECTION": "sync",
+
+      "DB_CONNECTION": "pgsql",
+      "STORAGE_PATH": "/tmp/storage"
   }
 }
