@@ -40,14 +40,12 @@ require __DIR__.'/../vendor/autoload.php';
 $app = require_once __DIR__.'/../bootstrap/app.php';
 $app->useStoragePath($storagePath);
 
-// Critical: Boot container with proper service provider order
-$app->register(FilesystemServiceProvider::class);
-$app->boot();
+// Register filesystem provider manually (critical for eventsAreCached())
+$app->register(FilesystemServiceProvider::class, force: true);
 
-// Clear event cache to prevent files binding issue
-if (file_exists($storagePath.'/../bootstrap/cache/events.php')) {
-    unlink($storagePath.'/../bootstrap/cache/events.php');
-}
+// Remove cached events to prevent boot issues
+$cachedEvents = $storagePath.'/../bootstrap/cache/events.php';
+if (file_exists($cachedEvents)) unlink($cachedEvents);
 
 $request = Request::capture();
 /** @var Kernel $kernel */
