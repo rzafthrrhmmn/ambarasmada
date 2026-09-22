@@ -36,23 +36,31 @@ $_ENV = array_merge($_ENV, [
 $_SERVER = array_merge($_SERVER, $_ENV);
 
 require __DIR__.'/../vendor/autoload.php';
-$app = require_once __DIR__.'/../bootstrap/app.php';
-$app->useStoragePath($storagePath);
+    error_log('[VERCEL-DEBUG] Autoload loaded');
+    $app = require_once __DIR__.'/../bootstrap/app.php';
+    error_log('[VERCEL-DEBUG] App bootstrapped');
+    $app->useStoragePath($storagePath);
 
-// Register filesystem provider manually (critical for eventsAreCached())
-$app->register(FilesystemServiceProvider::class, force: true);
+    // Register filesystem provider manually (critical for eventsAreCached())
+    $app->register(FilesystemServiceProvider::class, force: true);
+    error_log('[VERCEL-DEBUG] Filesystem provider registered');
 
 // Remove cached events to prevent boot issues
-$cachedEvents = $storagePath.'/../bootstrap/cache/events.php';
-if (file_exists($cachedEvents)) unlink($cachedEvents);
+    $cachedEvents = $storagePath.'/../bootstrap/cache/events.php';
+    if (file_exists($cachedEvents)) unlink($cachedEvents);
 
-$request = Request::capture();
+    error_log('[VERCEL-DEBUG] Booting Laravel app...');
+    error_log('[VERCEL-DEBUG] Storage path: '.$storagePath);
+
+    $request = Request::capture();
 /** @var Kernel $kernel */
-$kernel = $app->make(Kernel::class);
+    $kernel = $app->make(Kernel::class);
+    error_log('[VERCEL-DEBUG] Kernel created');
 
-try {
-    $response = $kernel->handle($request);
-} catch (Throwable $e) {
+    try {
+        $response = $kernel->handle($request);
+        error_log('[VERCEL-DEBUG] Request handled, status: '.$response->getStatusCode());
+    } catch (\Throwable $e) {
     error_log('[VERCEL-APP-ERROR] '.$e->getMessage());
     error_log('[VERCEL-APP-ERROR] '.$e->getFile().':'.$e->getLine());
     error_log('[VERCEL-APP-ERROR] '.$e->getTraceAsString());
