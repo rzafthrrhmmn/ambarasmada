@@ -28,8 +28,8 @@ putenv('DB_CONNECTION=pgsql');
 putenv('QUEUE_CONNECTION=sync');
 $_ENV = array_merge($_ENV, [
     'SESSION_DRIVER' => 'file',
-    'CACHE_DRIVER' => 'file',
-    'CACHE_STORE' => 'file',
+    'CACHE_DRIVER' => 'array',
+    'CACHE_STORE' => 'array',
     'DB_CONNECTION' => 'pgsql',
     'QUEUE_CONNECTION' => 'sync',
 ]);
