@@ -4,7 +4,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Filesystem\FilesystemServiceProvider;
-use Throwable;
 
 define('LARAVEL_START', microtime(true));
 
