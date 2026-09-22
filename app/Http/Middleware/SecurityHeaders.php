@@ -24,11 +24,11 @@ class SecurityHeaders
 
 $csp = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://[::1]:5173 https://unpkg.com https://tile.openstreetmap.org",
-            "style_src 'self' 'unsafe-inline' http://[::1]:5173 https://unpkg.com https://fonts.googleapis.com",
-            "font-src 'self' data: https://fonts.gstatic.com http://[::1]:5173",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://[::1]:5173 http://[::1]:5174 https://unpkg.com https://tile.openstreetmap.org",
+            "style-src 'self' 'unsafe-inline' http://[::1]:5173 http://[::1]:5174 https://unpkg.com https://fonts.googleapis.com",
+            "font-src 'self' data: https://fonts.gstatic.com http://[::1]:5173 http://[::1]:5174",
             "img-src 'self' data: https: blob:",
-            "connect_src 'self' http://[::1]:5173 https://tile.openstreetmap.org https://unpkg.com",
+            "connect-src 'self' http://[::1]:5173 http://[::1]:5174 https://tile.openstreetmap.org https://unpkg.com",
             "frame-ancestors 'none'",
             "form-action 'self'",
             "base-uri 'self'",
