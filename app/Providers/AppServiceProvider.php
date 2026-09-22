@@ -25,6 +25,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+    if ($this->app->environment('production')) {
+            \URL::forceScheme('https');
+        }
         Inertia::share([
             'pendingCount' => function () {
                 if (! auth()->check() || ! in_array(auth()->user()->role, ['Admin', 'Pembina'], true)) {

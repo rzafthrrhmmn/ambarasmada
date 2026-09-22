@@ -58,6 +58,7 @@ Route::middleware(['auth', 'approved'])->group(function () {
 
     // Peta Kontur Sulawesi (viewable by all authenticated users)
     Route::get('/peta', [MapController::class, 'index'])->name('peta.index');
+    Route::get('/peta/kontur', [MapController::class, 'kontur'])->name('peta.kontur');
 
     // Attendance (viewable by all authenticated users)
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');

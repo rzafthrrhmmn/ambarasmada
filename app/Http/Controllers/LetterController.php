@@ -316,7 +316,6 @@ class LetterController extends Controller
     protected function generateDocx(Letter $letter, $ambalan): \Symfony\Component\HttpFoundation\Response
     {
         $filename = "surat-{$letter->perihal}.docx";
-        $path = storage_path("app/public/letters/generated/{$filename}");
 
         if ($letter->template_id) {
             $template = $letter->template;
@@ -327,20 +326,119 @@ class LetterController extends Controller
                     throw new \RuntimeException("File template tidak ditemukan: {$template->file_path}");
                 }
 
-                $templateProcessor = new TemplateProcessor($templatePath);
                 $values = $this->resolveTemplateValues($letter, $ambalan);
-                $templateProcessor->setValues($values);
 
-                @mkdir(dirname($path), 0755, true);
-                $templateProcessor->saveAs($path);
-
-                return response()->download($path, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])->deleteFileAfterSend(true);
+                return response()->streamDownload(function () use ($templatePath, $values, $filename) {
+                    $this->streamModifiedDocx($templatePath, $values, $filename);
+                }, $filename, [
+                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+                ]);
             }
 
             throw new \RuntimeException('Template tidak valid atau bukan file .docx');
         }
 
-        return $this->generateDocxFromScratch($letter, $ambalan, $filename, $path);
+        return $this->generateDocxFromScratch($letter, $ambalan, $filename, storage_path("app/public/letters/generated/{$filename}"));
+    }
+
+    protected function streamModifiedDocx(string $templatePath, array $values, string $filename): void
+    {
+        $zip = new \ZipArchive;
+        $zip->open($templatePath);
+
+        $xml = $zip->getFromName('word/document.xml');
+        $modifiedXml = $this->replaceTemplatePlaceholders($xml, $values);
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'docx_');
+        $newZip = new \ZipArchive;
+        $newZip->open($tempFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = $zip->getNameIndex($i);
+            if ($name === 'word/document.xml') {
+                $newZip->addFromString($name, $modifiedXml);
+            } else {
+                $content = $zip->getFromIndex($i);
+                $newZip->addFromString($name, $content === false ? '' : $content);
+            }
+        }
+        $newZip->close();
+        $zip->close();
+
+        readfile($tempFile);
+        unlink($tempFile);
+    }
+
+    protected function replaceTemplatePlaceholders(string $xml, array $values): string
+    {
+        $plainPos = 0;
+        $xmlPosMap = [];
+        $xmlLen = strlen($xml);
+        for ($i = 0; $i < $xmlLen; $i++) {
+            if ($xml[$i] === '<') {
+                while ($i < $xmlLen && $xml[$i] !== '>') {
+                    $i++;
+                }
+            } else {
+                $xmlPosMap[$plainPos] = $i;
+                $plainPos++;
+            }
+        }
+        $xmlPosMap[$plainPos] = $xmlLen;
+
+        $plainText = strip_tags($xml);
+
+        preg_match_all('/\$\{([^}]+)\}/', $plainText, $matches, PREG_OFFSET_CAPTURE);
+
+        $replacements = [];
+        foreach ($matches[0] as $idx => $fullMatch) {
+            $name = $matches[1][$idx][0];
+            $value = $values[$name] ?? null;
+            if ($value === null) {
+                continue;
+            }
+
+            $plainStart = $fullMatch[1];
+            $plainEnd = $plainStart + strlen($fullMatch[0]);
+
+            $xmlStart = null;
+            $xmlEnd = null;
+
+            for ($p = $plainStart; $p >= 0; $p--) {
+                if (isset($xmlPosMap[$p])) {
+                    $xmlStart = $xmlPosMap[$p];
+                    $wOpen = strrpos(substr($xml, 0, $xmlStart), '<w:t');
+                    if ($wOpen !== false) {
+                        $xmlStart = $wOpen;
+                    }
+                    break;
+                }
+            }
+
+            for ($p = $plainEnd - 1; $p <= $plainPos; $p++) {
+                if (isset($xmlPosMap[$p])) {
+                    $xmlEnd = $xmlPosMap[$p] + 1;
+                    $after = substr($xml, $xmlEnd);
+                    if (preg_match('/<\/w:t>/', $after, $closeMatch, PREG_OFFSET_CAPTURE)) {
+                        $xmlEnd += $closeMatch[0][1] + strlen('</w:t>');
+                    }
+                    break;
+                }
+            }
+
+            if ($xmlStart !== null && $xmlEnd !== null) {
+                $replacements[] = [$xmlStart, $xmlEnd, $value];
+            }
+        }
+
+        usort($replacements, fn ($a, $b) => $b[0] - $a[0]);
+
+        foreach ($replacements as [$start, $end, $value]) {
+            $xml = substr($xml, 0, $start).'<w:t>'.$value.'</w:t>'.substr($xml, $end);
+        }
+
+        return $xml;
     }
 
     protected function generateDocxFromScratch(Letter $letter, $ambalan, string $filename, string $path): \Symfony\Component\HttpFoundation\Response

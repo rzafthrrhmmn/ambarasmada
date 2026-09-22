@@ -131,6 +131,15 @@
         </div>
       </div>
 
+      <!-- Mini Map Preview (when region selected) -->
+      <div v-if="showMiniMap" class="rounded-lg border border-[#6F9435]/30 bg-[#263D26] p-3">
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-medium text-[#d4dc9a]">Preview Wilayah</label>
+          <span v-if="selectedOfflineRegionData" class="text-xs text-[#EDD330]">{{ selectedOfflineRegionData.nama_kab }}</span>
+        </div>
+        <div ref="miniMapContainer" class="h-[200px] w-full rounded-lg overflow-hidden border border-[#6F9435]/30"></div>
+      </div>
+
       <!-- Zoom Settings -->
       <div class="rounded-lg border border-[#6F9435]/30 bg-[#335233] p-4">
         <label class="block text-xs font-medium text-[#d4dc9a] mb-3">Level Zoom</label>
@@ -226,7 +235,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
@@ -238,7 +247,9 @@ const props = defineProps({
 
 const page = usePage();
 const mapContainer = ref(null);
+const miniMapContainer = ref(null);
 const map = ref(null);
+const miniMap = ref(null);
 const loading = ref(true);
 const showContour = ref(true);
 const showOfflineModal = ref(false);
@@ -250,8 +261,9 @@ const offlineZoomMax = ref(14);
 const selectedKabupaten = ref('');
 
 // Offline download state
-const downloadMode = ref('full'); // 'full' or 'region'
+const downloadMode = ref('full');
 const selectedOfflineRegion = ref('');
+const showMiniMap = computed(() => downloadMode.value === 'region' && !!selectedOfflineRegion.value);
 const includeScaleBar = ref(true);
 const includeNorthArrow = ref(true);
 const includeLegend = ref(true);
@@ -378,6 +390,47 @@ function clearSelection() {
     );
   }
   mapStatus.value = 'Peta dikembalikan ke tampilan Sulawesi Selatan.';
+}
+
+let miniMapWatch = null;
+
+function initMiniMap() {
+  if (!miniMapContainer.value || !selectedOfflineRegionData.value || !hasPmtiles.value) return;
+  if (miniMap.value) {
+    miniMap.value.remove();
+    miniMap.value = null;
+  }
+
+  const kab = selectedOfflineRegionData.value;
+  const [west, south, east, north] = kab.bbox;
+
+  import('maplibre-gl').then(({ default: maplibregl }) => {
+    import('pmtiles').then(({ Protocol }) => {
+      const protocol = new Protocol();
+      maplibregl.addProtocol('pmtiles', protocol.tile);
+
+      miniMap.value = new maplibregl.Map({
+        container: miniMapContainer.value,
+        style: {
+          version: 8,
+          sources: {
+            'kontur': { type: 'vector', url: pmtilesSourceUrl.value },
+            'batas': { type: 'geojson', data: props.mapConfig?.geojsonUrl ?? '/storage/maps/batas_kabupaten_sulsel.geojson' },
+          },
+          layers: [
+            { id: 'mini-kontur', type: 'line', source: 'kontur', 'source-layer': 'kontur',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: { 'line-color': '#8c510a', 'line-width': 0.8 } },
+            { id: 'mini-batas', type: 'line', source: 'batas',
+              paint: { 'line-color': '#2563eb', 'line-width': 1, 'line-dasharray': [1, 1] } },
+          ],
+        },
+        center: [(west + east) / 2, (south + north) / 2],
+        zoom: 8,
+        maxZoom: 14,
+      });
+    });
+  });
 }
 
 async function initMap() {
@@ -546,10 +599,32 @@ onMounted(() => {
   initMap();
 });
 
+watch(showMiniMap, async (visible) => {
+  if (visible) {
+    await nextTick();
+    initMiniMap();
+  } else {
+    if (miniMap.value) {
+      miniMap.value.remove();
+      miniMap.value = null;
+    }
+  }
+});
+
+watch(selectedOfflineRegion, () => {
+  if (showMiniMap.value) {
+    nextTick().then(() => initMiniMap());
+  }
+});
+
 onBeforeUnmount(() => {
   if (map.value) {
     map.value.remove();
     map.value = null;
+  }
+  if (miniMap.value) {
+    miniMap.value.remove();
+    miniMap.value = null;
   }
 });
 </script>
