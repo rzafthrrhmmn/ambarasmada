@@ -24,13 +24,19 @@ class SecurityHeaders
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
         }
 
+        $isLocal = app()->environment('local');
+
+        $viteSources = $isLocal
+            ? 'http://localhost:5173 http://localhost:5174'
+            : '';
+
         $csp = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://[::1]:5173 http://[::1]:5174 https://unpkg.com https://tile.openstreetmap.org",
-            "style-src 'self' 'unsafe-inline' http://[::1]:5173 http://[::1]:5174 https://unpkg.com https://fonts.googleapis.com",
-            "font-src 'self' data: https://fonts.gstatic.com http://[::1]:5173 http://[::1]:5174",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' {$viteSources} https://unpkg.com https://tile.openstreetmap.org",
+            "style-src 'self' 'unsafe-inline' {$viteSources} https://unpkg.com https://fonts.googleapis.com",
+            "font-src 'self' data: https://fonts.gstatic.com {$viteSources}",
             "img-src 'self' data: https: blob:",
-            "connect-src 'self' http://[::1]:5173 http://[::1]:5174 https://tile.openstreetmap.org https://unpkg.com",
+            "connect-src 'self' {$viteSources} https://tile.openstreetmap.org https://unpkg.com",
             "frame-ancestors 'none'",
             "form-action 'self'",
             "base-uri 'self'",
@@ -40,6 +46,7 @@ class SecurityHeaders
         $response->headers->set('Content-Security-Policy', implode('; ', $csp));
 
         error_log('[VERCEL-MIDDLEWARE] SecurityHeaders: headers set, returning response');
+
         return $response;
     }
 }
