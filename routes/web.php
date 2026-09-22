@@ -38,9 +38,11 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/pending-approval', [AuthController::class, 'pendingApproval'])->name('pending-approval');
-    Route::get('/members/pending', [RegistrationController::class, 'pendingUsers'])->name('members.pending');
-    Route::post('/members/pending/{user}/approve', [RegistrationController::class, 'approve'])->name('members.pending.approve');
-    Route::post('/members/pending/{user}/reject', [RegistrationController::class, 'reject'])->name('members.pending.reject');
+    Route::middleware('pembina')->group(function () {
+        Route::get('/members/pending', [RegistrationController::class, 'pendingUsers'])->name('members.pending');
+        Route::post('/members/pending/{user}/approve', [RegistrationController::class, 'approve'])->name('members.pending.approve');
+        Route::post('/members/pending/{user}/reject', [RegistrationController::class, 'reject'])->name('members.pending.reject');
+    });
 });
 
 Route::middleware(['auth', 'approved'])->group(function () {

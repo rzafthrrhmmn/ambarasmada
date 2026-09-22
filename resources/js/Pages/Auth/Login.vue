@@ -78,10 +78,6 @@
         </p>
       </div>
 
-      <div v-if="!isRegistration" class="mt-6 rounded-lg border-2 border-[#A7B92A]/40 bg-[#263D26] p-3 text-xs leading-5 text-[#d4dc9a]">
-        Akun demo: <strong class="text-[#EDD330]">admin</strong>, <strong class="text-[#EDD330]">pembina</strong>, <strong class="text-[#EDD330]">pradana</strong>, <strong class="text-[#EDD330]">bendahara</strong>, <strong class="text-[#EDD330]">anggota</strong>, atau <strong class="text-[#EDD330]">alumni</strong> dengan password <strong class="text-[#EDD330]">password</strong>.
-      </div>
-
       <div v-if="!isRegistration && hasSavedCredentials" class="mt-3 rounded-lg border-2 border-[#EDD330]/40 bg-[#2d4a2d]/60 p-3 text-center text-sm font-medium text-[#EDD330]">
         Kredensial tersimpan — klik <span class="font-bold">Masuk</span> untuk melanjutkan.
       </div>
@@ -124,10 +120,9 @@ function toggleMode() {
 function submitLogin() {
   form.post('/login', {
     onSuccess: () => {
-      if (form.remember && form.identity && form.password) {
+      if (form.remember && form.identity) {
         localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify({
           identity: form.identity,
-          password: form.password,
         }));
       } else {
         localStorage.removeItem(CREDENTIALS_STORAGE_KEY);
@@ -150,9 +145,8 @@ function loadSavedCredentials() {
     try {
       const creds = JSON.parse(saved);
       form.identity = creds.identity || '';
-      form.password = creds.password || '';
       form.remember = true;
-      hasSavedCredentials.value = !!(creds.identity && creds.password);
+      hasSavedCredentials.value = !!creds.identity;
     } catch {
       localStorage.removeItem(CREDENTIALS_STORAGE_KEY);
     }

@@ -93,7 +93,7 @@ class MemberController extends Controller
                 'password' => Hash::make($data['password']),
                 'role' => 'Anggota',
                 'is_active' => true,
-                'status' => 'active',
+                'status' => 'approved',
             ]);
 
             $member = Member::create([

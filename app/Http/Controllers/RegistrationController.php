@@ -23,7 +23,7 @@ class RegistrationController extends Controller
 
     public function approve(Request $request, User $user): RedirectResponse
     {
-        abort_unless($request->user()->role === 'Pembina', 403);
+        abort_unless(in_array($request->user()->role, ['Pembina', 'Admin'], true), 403);
 
         $user->update(['status' => 'approved']);
 
@@ -56,7 +56,7 @@ class RegistrationController extends Controller
 
     public function reject(Request $request, User $user): RedirectResponse
     {
-        abort_unless($request->user()->role === 'Pembina', 403);
+        abort_unless(in_array($request->user()->role, ['Pembina', 'Admin'], true), 403);
 
         $user->update(['status' => 'rejected']);
 

@@ -69,8 +69,8 @@ class AuthController extends Controller
         }
 
         if ($user->status === 'pending') {
-            Auth::login($user, (bool) $credentials['remember']);
             $request->session()->regenerate();
+            Auth::login($user, (bool) $credentials['remember']);
 
             return redirect()->route('pending-approval');
         }
@@ -241,6 +241,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route('home');
     }
 }

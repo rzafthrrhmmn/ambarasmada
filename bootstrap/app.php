@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureRole::class,
             'approved' => EnsureApproved::class,
             'throttle' => ThrottleRequests::class,
+            'pembina' => EnsureRole::class.':Pembina,Admin',
         ]);
         $middleware->redirectTo(guests: fn () => route('login'));
     })

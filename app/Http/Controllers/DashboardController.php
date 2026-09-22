@@ -142,6 +142,15 @@ class DashboardController extends Controller
             ];
         }
 
+        if ($user->role === 'Pengurus' && $member) {
+            return [
+                'members' => 0,
+                'attendance' => $member->attendances()->count(),
+                'sku' => $member->approvedSkuCount(),
+                'finance' => $member->finances()->count(),
+            ];
+        }
+
         return [
             'members' => Member::count(),
             'attendance' => Attendance::count(),
