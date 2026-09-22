@@ -67,9 +67,9 @@ require __DIR__.'/../vendor/autoload.php';
     $request = Request::capture();
 /** @var Kernel $kernel */
     $kernel = $app->make(Kernel::class);
-    error_log('[VERCEL-DEBUG] Kernel created');
+    error_log('[VERCEL-DEBUG] Kernel created, class: '.get_class($kernel));
 
-try {
+    try {
         $response = $kernel->handle($request);
         error_log('[VERCEL-DEBUG] Request handled, status: '.$response->getStatusCode());
         error_log('[VERCEL-DEBUG] Response content: '.$response->getContent());
