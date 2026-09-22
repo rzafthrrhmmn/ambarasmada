@@ -50,7 +50,7 @@ return new class extends Migration
         Schema::create('sku_points', function (Blueprint $table) {
             $table->id();
             $table->string('tingkatan');
-            $table->unsignedSmallInteger('nomor_poin');
+            $table->smallInteger('nomor_poin')->unsigned();
             $table->text('deskripsi_poin');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
@@ -166,7 +166,7 @@ return new class extends Migration
             $table->string('nama_barang');
             $table->string('jenis')->default('Aset');
             $table->string('satuan')->default('Unit');
-            $table->unsignedInteger('jumlah')->default(0);
+            $table->integer('jumlah')->default(0);
             $table->string('kondisi')->default('Baik');
             $table->string('status_pinjam')->default('Tersedia');
             $table->timestamps();
@@ -234,8 +234,8 @@ return new class extends Migration
             $table->foreignId('actor_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('action');
             $table->string('entity_type');
-            $table->unsignedBigInteger('entity_id');
-            $table->json('metadata')->nullable();
+            $table->bigInteger('entity_id')->unsigned();
+            $table->jsonb('metadata')->nullable();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->timestamps();
@@ -259,7 +259,7 @@ return new class extends Migration
             $table->string('type');
             $table->string('title');
             $table->text('body');
-            $table->json('data')->nullable();
+            $table->jsonb('data')->nullable();
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
 

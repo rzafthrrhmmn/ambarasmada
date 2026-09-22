@@ -34,6 +34,11 @@ class User extends Authenticatable
         return $this->hasMany(Donation::class, 'verified_by');
     }
 
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

@@ -11,7 +11,10 @@
         "inertiajs/inertia-laravel": "^3.3",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
-        "phpoffice/phpword": "*"
+        "phpoffice/phpword": "*",
+        "phpunit/phpunit": "^12.5",
+        "sebastian/type": "^6.0.4",
+        "vlucas/phpdotenv": "^5.7"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -20,8 +23,7 @@
         "laravel/pao": "^1.0.6",
         "laravel/pint": "^1.27",
         "mockery/mockery": "^1.6",
-        "nunomaduro/collision": "^8.6",
-        "phpunit/phpunit": "^12.5.12"
+        "nunomaduro/collision": "^8.6"
     },
     "autoload": {
         "psr-4": {

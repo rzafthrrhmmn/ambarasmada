@@ -46,7 +46,7 @@ return new class extends Migration
             $table->string('kecamatan', 100);
             $table->string('nama', 200);
             $table->longText('teks_susunan_upacara')->nullable();
-            $table->json('checklist_perlengkapan')->nullable();
+            $table->jsonb('checklist_perlengkapan')->nullable();
             $table->foreignId('created_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->softDeletes();

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('materi_path', 255)->nullable()->after('lokasi');
             $table->string('materi_nama', 255)->nullable()->after('materi_path');
             $table->string('materi_mime_type', 255)->nullable()->after('materi_nama');
-            $table->unsignedBigInteger('materi_size')->nullable()->after('materi_mime_type');
+            $table->bigInteger('materi_size')->unsigned()->nullable()->after('materi_mime_type');
         });
     }
 
