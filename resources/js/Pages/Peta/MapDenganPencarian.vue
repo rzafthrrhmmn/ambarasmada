@@ -66,6 +66,18 @@
       <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/70">
         <p class="text-lg font-bold text-[#EDD330]">Memuat peta...</p>
       </div>
+      <div v-if="mapError" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/90">
+        <div class="text-center p-6">
+          <p class="text-2xl font-bold text-[#f87171]">Gagal Memuat Peta</p>
+          <p class="mt-2 text-sm text-[#8fa06a]">{{ mapError }}</p>
+          <button
+            @click="initMap"
+            class="mt-4 inline-flex items-center rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-4 py-2 text-sm font-bold text-[#A7B92A] transition hover:bg-[#A7B92A]/20"
+          >
+            Coba Lagi
+          </button>
+        </div>
+      </div>
     </div>
 
     <div v-if="mapStatus" class="mt-3 rounded-lg border border-[#6F9435]/30 bg-[#335233] p-3 text-xs text-[#d4dc9a]">
@@ -259,6 +271,7 @@ const miniMapContainer = ref(null);
 const map = ref(null);
 const miniMap = ref(null);
 const loading = ref(true);
+const mapError = ref(null);
 const showContour = ref(true);
 const showOfflineModal = ref(false);
 const downloading = ref(false);
@@ -494,7 +507,7 @@ async function initMap() {
           },
           'batas-kabupaten': {
             type: 'geojson',
-            data: '/storage/maps/batas_kabupaten_sulsel.geojson',
+            data: geojsonUrl.value,
           },
           'osm-tiles': {
             type: 'raster',
@@ -556,15 +569,22 @@ async function initMap() {
 
     map.value.on('load', () => {
       loading.value = false;
+      mapError.value = null;
       mapStatus.value = 'Peta kontur Sulawesi Selatan dimuat. GeoJSON batas kabupaten aktif.';
     });
 
     map.value.on('error', (e) => {
-      mapStatus.value = `Peringatan: ${e.error?.message || 'Kesalahan peta'}`;
+      loading.value = false;
+      const errorMsg = e.error?.message || 'Kesalahan peta';
+      mapStatus.value = `Peringatan: ${errorMsg}`;
+      // Set mapError for critical errors (like source loading failures)
+      if (errorMsg.includes('source') || errorMsg.includes('tile') || errorMsg.includes('network') || errorMsg.includes('404') || errorMsg.includes('500')) {
+        mapError.value = `Gagal memuat data peta: ${errorMsg}. Periksa koneksi dan coba lagi.`;
+      }
     });
   } catch (error) {
     loading.value = false;
-    mapStatus.value = `Gagal memuat peta: ${error.message}`;
+    mapError.value = `Gagal memuat peta: ${error.message}`;
     console.error('Map initialization error:', error);
   }
 }

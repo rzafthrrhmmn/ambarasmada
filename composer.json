@@ -11,8 +11,7 @@
         "inertiajs/inertia-laravel": "^3.3",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
-        "phpoffice/phpword": "*",
-        "symfony/http-foundation": "^7.1"
+        "phpoffice/phpword": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
