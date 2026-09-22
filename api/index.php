@@ -38,7 +38,9 @@ $_SERVER = array_merge($_SERVER, $_ENV);
 require __DIR__.'/../vendor/autoload.php';
 $app = require_once __DIR__.'/../bootstrap/app.php';
 $app->useStoragePath($storagePath);
-$app['config']->set('events.cache', false);
+$app->booted(function() {
+    config(['events.cache' => false]);
+});
 $app->boot();
 
 $request = Request::capture();
