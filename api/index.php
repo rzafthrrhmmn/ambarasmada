@@ -60,6 +60,7 @@ require __DIR__.'/../vendor/autoload.php';
     try {
         $response = $kernel->handle($request);
         error_log('[VERCEL-DEBUG] Request handled, status: '.$response->getStatusCode());
+        error_log('[VERCEL-DEBUG] Response content: '.substr($response->getContent(), 0, 500));
     } catch (\Throwable $e) {
     error_log('[VERCEL-APP-ERROR] '.$e->getMessage());
     error_log('[VERCEL-APP-ERROR] '.$e->getFile().':'.$e->getLine());
@@ -81,6 +82,9 @@ require __DIR__.'/../vendor/autoload.php';
 }
 
 if (!headers_sent()) $response->send();
-else echo $response->getContent();
+    else {
+        error_log('[VERCEL-DEBUG] Headers already sent, echoing content: '.substr($response->getContent(), 0, 500));
+        echo $response->getContent();
+    }
 
 $kernel->terminate($request, $response);
