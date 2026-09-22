@@ -13,7 +13,10 @@ use Carbon\Carbon;
 use Illuminate\Http\BinaryFileResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Factory;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use PDF;
@@ -57,13 +60,15 @@ class LetterController extends Controller
             'tgl_surat' => ['required', 'date'],
             'waktu_kegiatan' => ['nullable', 'string', 'max:255'],
             'lokasi_kegiatan' => ['nullable', 'string', 'max:255'],
-            'file' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png'],
+            'file' => ['nullable', 'file', 'max:10240', 'mimetypes:application/pdf,image/jpeg,image/png'],
             'template_id' => ['nullable', 'exists:letter_templates,id'],
         ]);
 
         $path = null;
         if ($request->hasFile('file')) {
-            $path = $request->file('file')->store('letters', 'public');
+            $file = $request->file('file');
+            $this->validateFileContent($file);
+            $path = $file->store('letters', 'public');
         }
 
         $letter = Letter::create([
@@ -105,16 +110,18 @@ class LetterController extends Controller
             'tgl_surat' => ['required', 'date'],
             'waktu_kegiatan' => ['nullable', 'string', 'max:255'],
             'lokasi_kegiatan' => ['nullable', 'string', 'max:255'],
-            'file' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png'],
+            'file' => ['nullable', 'file', 'max:10240', 'mimetypes:application/pdf,image/jpeg,image/png'],
             'template_id' => ['nullable', 'exists:letter_templates,id'],
         ]);
 
         $path = $letter->file_path;
         if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $this->validateFileContent($file);
             if ($path) {
                 Storage::disk('public')->delete($path);
             }
-            $path = $request->file('file')->store('letters', 'public');
+            $path = $file->store('letters', 'public');
         }
 
         $letter->update([
@@ -238,7 +245,7 @@ class LetterController extends Controller
             'tgl_surat' => ['required', 'date'],
             'waktu_kegiatan' => ['nullable', 'string', 'max:255'],
             'lokasi_kegiatan' => ['nullable', 'string', 'max:255'],
-            'file' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png'],
+            'file' => ['nullable', 'file', 'max:10240', 'mimetypes:application/pdf,image/jpeg,image/png'],
             'template_id' => ['nullable', 'exists:letter_templates,id'],
         ]);
 
@@ -514,11 +521,13 @@ class LetterController extends Controller
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'file' => ['required', 'file', 'max:10240', 'mimes:docx'],
+            'file' => ['required', 'file', 'max:10240', 'mimetypes:application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
             'description' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $path = $request->file('file')->store('letter-templates', 'public');
+        $file = $request->file('file');
+        $this->validateFileContent($file);
+        $path = $file->store('letter-templates', 'public');
 
         // Validate template placeholders
         $validation = $this->validateTemplatePlaceholders($path);
@@ -581,6 +590,32 @@ class LetterController extends Controller
                 'valid' => false,
                 'message' => 'Gagal membaca template: '.$e->getMessage(),
             ];
+        }
+    }
+
+    protected function validateFileContent(UploadedFile $file): void
+    {
+        $allowedMimes = [
+            'application/pdf' => '%PDF',
+            'image/jpeg' => "\xFF\xD8\xFF",
+            'image/png' => "\x89PNG\r\n\x1A\n",
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'PK\x03\x04',
+        ];
+
+        $mime = $file->getMimeType();
+        if (! isset($allowedMimes[$mime])) {
+            throw new ValidationException(
+                Factory::make()->make([], [], ['file' => 'Tipe file tidak diizinkan.'])
+            );
+        }
+
+        $header = file_get_contents($file->getRealPath(), false, null, 0, 8);
+        $expectedHeader = $allowedMimes[$mime];
+
+        if (strpos($header, $expectedHeader) !== 0) {
+            throw new ValidationException(
+                Factory::make()->make([], [], ['file' => 'Konten file tidak sesuai dengan tipe yang dideklarasikan.'])
+            );
         }
     }
 

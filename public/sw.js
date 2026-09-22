@@ -22,6 +22,13 @@ const MAP_LIBRARIES = [
     { pattern: /\/assets\/.*maplibre.*\.css$/, fallback: 'network-first' },
 ];
 
+// External libraries to cache for offline use
+const EXTERNAL_LIBS = [
+    'https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js',
+    'https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css',
+    'https://unpkg.com/pmtiles@2.11.0/dist/pmtiles.js',
+];
+
 const OFFLINE_FALLBACK = '/offline.html';
 
 self.addEventListener('install', (event) => {
@@ -32,6 +39,16 @@ self.addEventListener('install', (event) => {
             caches.open(CACHE_NAME).then((cache) =>
                 Promise.all(
                     GEOJSON_ASSETS.map((url) =>
+                        fetch(url).then((response) => {
+                            if (response.ok) return cache.put(url, response.clone());
+                        }).catch(() => {})
+                    )
+                )
+            ),
+            // Cache external map libraries for offline use
+            caches.open(ASSETS_CACHE).then((cache) =>
+                Promise.all(
+                    EXTERNAL_LIBS.map((url) =>
                         fetch(url).then((response) => {
                             if (response.ok) return cache.put(url, response.clone());
                         }).catch(() => {})
@@ -66,6 +83,18 @@ self.addEventListener('fetch', (event) => {
     }
 
     const url = new URL(request.url);
+
+    // Handle pmtiles:// protocol requests for offline map tiles
+    if (url.protocol === 'pmtiles:') {
+        event.respondWith(handlePMTilesRequest(request));
+        return;
+    }
+
+    // Handle external map library requests (unpkg.com) for offline use
+    if (url.origin === 'https://unpkg.com' && EXTERNAL_LIBS.includes(request.url)) {
+        event.respondWith(cacheFirstThenNetwork(request));
+        return;
+    }
 
     if (request.method !== 'GET' || url.origin !== location.origin) {
         return;
@@ -139,6 +168,77 @@ async function updateCache(request) {
     } catch (error) {
         // Silent fail
     }
+}
+
+// Handle pmtiles:// protocol requests for offline map tiles
+async function handlePMTilesRequest(request) {
+    const url = new URL(request.url);
+    
+    // Parse the pmtiles URL format: pmtiles:///path/to/file.pmtiles/{z}/{x}/{y}.pbf
+    // or pmtiles:///path/to/file.pmtiles/{z}/{x}/{y}.mvt
+    const pathname = url.pathname;
+    const match = pathname.match(/^\/([^\/]+\.pmtiles)\/(\d+)\/(\d+)\/(\d+)\.(pbf|mvt)$/);
+    
+    if (!match) {
+        return new Response(null, { status: 404, statusText: 'Invalid PMTiles URL format' });
+    }
+    
+    const [, pmtilesPath, z, x, y] = match;
+    const zoom = parseInt(z, 10);
+    const tileX = parseInt(x, 10);
+    const tileY = parseInt(y, 10);
+    
+    // Open IndexedDB and retrieve tile
+    const db = await openTilesDB();
+    
+    try {
+        const tile = await getTileFromDB(db, zoom, tileX, tileY);
+        
+        if (tile && tile.data) {
+            // Return tile data with appropriate headers
+            return new Response(tile.data, {
+                status: 200,
+                headers: {
+                    'Content-Type': 'application/vnd.mapbox-vector-tile',
+                    'Content-Encoding': 'gzip',
+                    'Cache-Control': 'public, max-age=31536000, immutable',
+                },
+            });
+        }
+        
+        // Tile not found in offline DB
+        return new Response(null, { status: 404, statusText: 'Tile not available offline' });
+    } finally {
+        await db.close();
+    }
+}
+
+// Open IndexedDB for offline tiles
+function openTilesDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('offline-tiles', 1);
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('tiles')) {
+                const store = db.createObjectStore('tiles', { keyPath: 'id' });
+                store.createIndex('zxy', 'zxy', { unique: true });
+            }
+        };
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (e) => reject(e.target.error);
+    });
+}
+
+// Get tile from IndexedDB
+function getTileFromDB(db, z, x, y) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('tiles', 'readonly');
+        const store = tx.objectStore('tiles');
+        const tileId = `${z}/${x}/${y}`;
+        const request = store.get(tileId);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
 }
 
 self.addEventListener('message', (event) => {
@@ -572,6 +672,7 @@ function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, b
 
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/pmtiles@3.1.4/dist/pmtiles.js"></script>
     <script>
         // Initialize offline map with MapLibre GL
         const protocol = new PMTiles.Protocol();

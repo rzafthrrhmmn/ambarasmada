@@ -3,10 +3,12 @@
 use App\Http\Middleware\EnsureApproved;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,12 +17,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(prepend: [
+            SecurityHeaders::class,
+        ]);
         $middleware->web(append: [
             HandleInertiaRequests::class,
         ]);
         $middleware->alias([
             'role' => EnsureRole::class,
             'approved' => EnsureApproved::class,
+            'throttle' => ThrottleRequests::class,
         ]);
         $middleware->redirectTo(guests: fn () => route('login'));
     })

@@ -10,9 +10,12 @@ use App\Models\MemberPosition;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Factory;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
@@ -390,7 +393,7 @@ class MemberController extends Controller
             'tingkatan' => ['required', 'in:Tamu,Calon,Bantara,Laksana,Alumni'],
             'tahun_lulus' => ['nullable', 'integer', 'min:2000', 'max:2100'],
             'status_aktif' => ['required', 'in:Aktif,Non-Aktif,Alumni'],
-            'foto' => ['nullable', 'file', 'max:2048', 'mimes:jpg,jpeg,png,webp'],
+            'foto' => ['nullable', 'file', 'max:2048', 'mimetypes:image/jpeg,image/png,image/webp'],
             'delete_foto' => ['nullable', 'boolean'],
         ]);
 
@@ -415,7 +418,9 @@ class MemberController extends Controller
             if ($member->user && $member->user->foto) {
                 Storage::disk('public')->delete($member->user->foto);
             }
-            $path = $request->file('foto')->store('profile-photos', 'public');
+            $file = $request->file('foto');
+            $this->validateFileContent($file);
+            $path = $file->store('profile-photos', 'public');
             $member->user->update(['foto' => $path]);
         }
 
@@ -424,5 +429,30 @@ class MemberController extends Controller
         }
 
         return redirect()->route('profile.show')->with('success', 'Profil berhasil diperbarui.');
+    }
+
+    protected function validateFileContent(UploadedFile $file): void
+    {
+        $allowedMimes = [
+            'image/jpeg' => "\xFF\xD8\xFF",
+            'image/png' => "\x89PNG\r\n\x1A\n",
+            'image/webp' => 'RIFF',
+        ];
+
+        $mime = $file->getMimeType();
+        if (! isset($allowedMimes[$mime])) {
+            throw new ValidationException(
+                Factory::make()->make([], [], ['foto' => 'Tipe file tidak diizinkan. Hanya JPEG, PNG, dan WebP.'])
+            );
+        }
+
+        $header = file_get_contents($file->getRealPath(), false, null, 0, 12);
+        $expectedHeader = $allowedMimes[$mime];
+
+        if (strpos($header, $expectedHeader) !== 0) {
+            throw new ValidationException(
+                Factory::make()->make([], [], ['foto' => 'Konten file tidak sesuai dengan tipe yang dideklarasikan.'])
+            );
+        }
     }
 }
