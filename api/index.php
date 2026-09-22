@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Filesystem\FilesystemServiceProvider;
 use Throwable;
 
 define('LARAVEL_START', microtime(true));
@@ -22,8 +23,8 @@ foreach ($directories as $dir) {
 putenv('APP_STORAGE='.$storagePath);
 putenv('VIEW_COMPILED_PATH='.$storagePath.'/framework/views');
 putenv('SESSION_DRIVER=file');
-putenv('CACHE_DRIVER=file');
-putenv('CACHE_STORE=file');
+putenv('CACHE_DRIVER=array');
+putenv('CACHE_STORE=array');
 putenv('DB_CONNECTION=pgsql');
 putenv('QUEUE_CONNECTION=sync');
 $_ENV = array_merge($_ENV, [
@@ -38,10 +39,15 @@ $_SERVER = array_merge($_SERVER, $_ENV);
 require __DIR__.'/../vendor/autoload.php';
 $app = require_once __DIR__.'/../bootstrap/app.php';
 $app->useStoragePath($storagePath);
-$app->booted(function() {
-    config(['events.cache' => false]);
-});
+
+// Critical: Boot container with proper service provider order
+$app->register(FilesystemServiceProvider::class);
 $app->boot();
+
+// Clear event cache to prevent files binding issue
+if (file_exists($storagePath.'/../bootstrap/cache/events.php')) {
+    unlink($storagePath.'/../bootstrap/cache/events.php');
+}
 
 $request = Request::capture();
 /** @var Kernel $kernel */
