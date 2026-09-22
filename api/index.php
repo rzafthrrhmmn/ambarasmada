@@ -1,5 +1,9 @@
 <?php
 
+error_log('[VERCEL-START] api/index.php started, PHP version: '.PHP_VERSION);
+error_log('[VERCEL-START] Current dir: '.getcwd());
+error_log('[VERCEL-START] APP_KEY from env: '.(getenv('APP_KEY') ?: 'NOT SET'));
+
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\Http\Kernel;
@@ -25,24 +29,24 @@ putenv('SESSION_DRIVER=cookie');
 putenv('CACHE_DRIVER=array');
 putenv('CACHE_STORE=array');
 putenv('DB_CONNECTION=pgsql');
-putenv('DB_HOST=db.ugbpqikqduptseeslfri.supabase.co');
-putenv('DB_PORT=5432');
+putenv('DB_HOST=aws-0-ap-southeast-1.pooler.supabase.com');
+putenv('DB_PORT=6543');
 putenv('DB_DATABASE=postgres');
-putenv('DB_USERNAME=postgres');
+putenv('DB_USERNAME=postgres.ugbpqikqduptseeslfri');
 putenv('DB_PASSWORD=RezaNeko26@');
-putenv('DB_SSLMODE=require');
+putenv('DB_SSLMODE=disable');
 putenv('QUEUE_CONNECTION=sync');
 $_ENV = array_merge($_ENV, [
     'SESSION_DRIVER' => 'cookie',
     'CACHE_DRIVER' => 'array',
     'CACHE_STORE' => 'array',
     'DB_CONNECTION' => 'pgsql',
-    'DB_HOST' => 'db.ugbpqikqduptseeslfri.supabase.co',
-    'DB_PORT' => '5432',
+    'DB_HOST' => 'aws-0-ap-southeast-1.pooler.supabase.com',
+    'DB_PORT' => '6543',
     'DB_DATABASE' => 'postgres',
-    'DB_USERNAME' => 'postgres',
+    'DB_USERNAME' => 'postgres.ugbpqikqduptseeslfri',
     'DB_PASSWORD' => 'RezaNeko26@',
-    'DB_SSLMODE' => 'require',
+    'DB_SSLMODE' => 'disable',
     'QUEUE_CONNECTION' => 'sync',
 ]);
 $_SERVER = array_merge($_SERVER, $_ENV);
