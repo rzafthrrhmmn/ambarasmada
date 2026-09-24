@@ -101,6 +101,16 @@ try {
         ]);
     });
 
+    $app->instance(\Illuminate\Contracts\Debug\ExceptionHandler::class, new class extends \Illuminate\Foundation\Exceptions\Handler {
+        public function render($request, \Throwable $e)
+        {
+            http_response_code(500);
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo '[VERCEL-ERROR] '.$e->getMessage()."\n".$e->getTraceAsString();
+            exit;
+        }
+    });
+
     $request = Request::capture();
 
     /** @var Kernel $kernel */
