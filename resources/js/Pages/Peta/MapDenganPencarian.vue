@@ -6,7 +6,7 @@
         <h1 class="mt-1 text-2xl font-extrabold text-[#f0ead8]">Peta Kontur Sulawesi Selatan</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Cari kabupaten, lihat batas administratif, dan jelajahi kontur topografi.</p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         <button
           v-if="hasPmtiles"
           @click="showOfflineModal = true"
@@ -19,6 +19,24 @@
           class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
         >
           {{ showContour ? 'Sembunyikan Kontur' : 'Tampilkan Kontur' }}
+        </button>
+        <button
+          @click="toggleHillshade"
+          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
+        >
+          {{ showHillshade ? 'Sembunyikan Hillshade' : 'Tampilkan Hillshade' }}
+        </button>
+        <button
+          @click="toggleDistrictLabels"
+          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
+        >
+          {{ showDistrictLabels ? 'Sembunyikan Label' : 'Tampilkan Label' }}
+        </button>
+        <button
+          @click="toggleContourLabels"
+          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
+        >
+          {{ showContourLabels ? 'Sembunyikan Label Kontur' : 'Tampilkan Label Kontur' }}
         </button>
       </div>
     </div>
@@ -57,6 +75,123 @@
 
     <div class="relative overflow-hidden rounded-2xl border-2 border-[#A7B92A]/40 bg-[#263D26] shadow-lg">
       <div ref="mapContainer" class="h-[70vh] w-full min-h-[400px]"></div>
+      
+      <!-- Coordinate display on mouse hover -->
+      <div v-if="showCoordinates && mouseCoords" class="absolute bottom-4 left-4 z-20 rounded-lg bg-[#1a1a1a]/90 border border-[#6F9435]/30 px-3 py-1.5 text-xs font-mono text-[#EDD330] pointer-events-none">
+        Lon: {{ mouseCoords.lng.toFixed(6) }}° | Lat: {{ mouseCoords.lat.toFixed(6) }}°
+      </div>
+
+      <!-- Scale bar -->
+      <div v-if="showScaleBar" class="absolute bottom-4 left-4 z-20" ref="scaleBarContainer"></div>
+
+      <!-- North arrow -->
+      <div v-if="showNorthArrow" class="absolute top-4 right-4 z-20" ref="northArrowContainer"></div>
+
+      <!-- Elevation legend -->
+      <div v-if="showElevationLegend" class="absolute bottom-4 right-4 z-20" ref="legendContainer"></div>
+
+      <!-- Measurement tool panel -->
+      <div v-if="measurementMode !== 'none'" class="absolute top-4 left-4 z-20 rounded-lg bg-[#1a1a1a]/90 border border-[#6F9435]/30 p-3 text-xs text-[#EDD330] min-w-[200px]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-bold">{{ measurementMode === 'distance' ? '📏 Ukur Jarak' : '📐 Ukur Luas' }}</span>
+          <button @click="cancelMeasurement" class="text-[#f87171] hover:underline">Batal</button>
+        </div>
+        <div v-if="measurementPoints.length > 0" class="space-y-1">
+          <div>Titik: {{ measurementPoints.length }}</div>
+          <div v-if="measurementMode === 'distance' && measurementDistance > 0">
+            Jarak: {{ formatDistance(measurementDistance) }}
+          </div>
+          <div v-if="measurementMode === 'area' && measurementArea > 0">
+            Luas: {{ formatArea(measurementArea) }}
+          </div>
+        </div>
+        <button @click="finishMeasurement" class="mt-2 w-full rounded bg-[#A7B92A] px-3 py-1.5 text-xs font-bold text-white">Selesai</button>
+      </div>
+
+      <!-- Search panel -->
+      <div class="absolute top-4 left-4 z-20 flex gap-2" style="max-width: 300px;">
+        <div class="relative flex-1">
+          <input
+            v-model="searchQuery"
+            @keyup.enter="searchPlace"
+            @focus="searchFocused = true"
+            @blur="searchFocused = false"
+            placeholder="Cari tempat atau koordinat (lat, lng)..."
+            class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] pr-10"
+          />
+          <button
+            v-if="searchQuery"
+            @click="searchQuery = ''"
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-[#8fa06a] hover:text-[#EDD330]"
+          >
+            ✕
+          </button>
+        </div>
+        <button
+          @click="searchPlace"
+          :disabled="!searchQuery.trim()"
+          class="rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-3 py-2 text-sm font-bold text-[#A7B92A] transition hover:bg-[#A7B92A]/20 disabled:opacity-50"
+        >
+          Cari
+        </button>
+      </div>
+
+      <!-- Search results dropdown -->
+      <div v-if="searchFocused && searchResults.length > 0" class="absolute top-12 left-4 z-30 w-[300px] rounded-lg border border-[#6F9435] bg-[#263D26] shadow-lg max-h-60 overflow-y-auto">
+        <div v-for="result in searchResults" :key="result.place_id || result.lat + ',' + result.lon" @click="selectSearchResult(result)" class="px-4 py-2 hover:bg-[#335233] cursor-pointer border-b border-[#6F9435]/20 last:border-0">
+          <div class="font-medium text-[#f0ead8]">{{ result.display_name || result.label }}</div>
+          <div class="text-xs text-[#8fa06a]">{{ result.lat }}, {{ result.lon }}</div>
+        </div>
+      </div>
+
+      <!-- GPS locate button -->
+      <button
+        v-if="hasGeolocation"
+        @click="locateUser"
+        :disabled="locating"
+        class="absolute bottom-4 right-4 z-20 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30 disabled:opacity-50"
+        title="Lokasi saya"
+      >
+        {{ locating ? '⟳' : '📍' }}
+      </button>
+
+      <!-- Basemap selector -->
+      <div class="absolute top-4 right-4 z-20" style="width: 180px;">
+        <select
+          v-model="basemap"
+          @change="changeBasemap"
+          class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
+        >
+          <option value="osm">🗺️ OpenStreetMap</option>
+          <option value="satellite">🛰️ Satelit</option>
+          <option value="terrain">🏔️ Terrain</option>
+          <option value="dark">🌙 Dark</option>
+        </select>
+      </div>
+
+      <!-- Bookmark/save view button -->
+      <button
+        @click="saveBookmark"
+        class="absolute top-4 right-52 z-20 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
+        title="Simpan tampilan"
+      >
+        🔖
+      </button>
+
+      <!-- Print button -->
+      <button
+        @click="printMap"
+        class="absolute top-4 right-96 z-20 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
+        title="Cetak peta"
+      >
+        🖨️
+      </button>
+
+      <!-- Offline indicator -->
+      <div v-if="isOffline" class="absolute top-4 left-4 z-20 rounded-lg bg-[#f59e0b]/90 px-3 py-1.5 text-xs font-bold text-white animate-pulse">
+        📴 Mode Offline
+      </div>
+
       <div v-if="!hasPmtiles" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/90">
         <div class="text-center p-6">
           <p class="text-2xl font-bold text-[#EDD330]">Peta Belum Tersedia</p>
