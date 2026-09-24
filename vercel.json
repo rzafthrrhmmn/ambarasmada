@@ -6,12 +6,6 @@
         },
         "api/status.php": {
             "runtime": "vercel-php@0.8.0"
-        },
-        "api/simple_test.php": {
-            "runtime": "vercel-php@0.8.0"
-        },
-        "api/minimal.php": {
-            "runtime": "vercel-php@0.8.0"
         }
     },
     "headers": [
@@ -26,14 +20,6 @@
         }
     ],
     "routes": [
-        {
-            "src": "/minimal-test",
-            "dest": "/api/minimal.php"
-        },
-        {
-            "src": "/simple-test",
-            "dest": "/api/simple_test.php"
-        },
         {
             "src": "/api/status.php",
             "dest": "/api/status.php"
@@ -95,7 +81,7 @@
         "CACHE_DRIVER": "array",
         "LOG_CHANNEL": "stderr",
         "LOG_PATH": "/tmp/laravel.log",
-        "LOG_LEVEL": "error",
+        "LOG_LEVEL": "debug",
         "SESSION_DRIVER": "cookie",
         "SESSION_LIFETIME": "120",
         "SESSION_PATH": "/",
