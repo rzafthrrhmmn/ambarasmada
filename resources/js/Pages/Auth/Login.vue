@@ -131,10 +131,11 @@
             </template>
 
             <label v-if="!isRegistration" class="flex items-center gap-2 text-sm font-medium text-[#d4dc9a]">
-              <input v-model="form.remember" type="checkbox" class="rounded border-2 border-[#6F9435] bg-[#263D26] text-[#EDD330]" /> Ingat saya
+              <input id="remember" name="remember" v-model="form.remember" type="checkbox" class="rounded border-2 border-[#6F9435] bg-[#263D26] text-[#EDD330]" />
+              <span for="remember" class="cursor-pointer">Ingat saya</span>
             </label>
 
-            <button :disabled="form.processing || regForm.processing" :class="['group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#EDD330] px-4 py-3 font-extrabold text-[#263D26] shadow-lg shadow-[#EDD330]/30 transition hover:shadow-xl hover:shadow-[#EDD330]/40 hover:-translate-y-0.5 disabled:cursor-wait border-2 border-[#EDD330]', (form.processing || regForm.processing) ? 'animate-pulse shadow-[#EDD330]/50' : '']">
+            <button id="login-submit" name="login-submit" type="submit" :disabled="form.processing || regForm.processing" :class="['group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#EDD330] px-4 py-3 font-extrabold text-[#263D26] shadow-lg shadow-[#EDD330]/30 transition hover:shadow-xl hover:shadow-[#EDD330]/40 hover:-translate-y-0.5 disabled:cursor-wait border-2 border-[#EDD330]', (form.processing || regForm.processing) ? 'animate-pulse shadow-[#EDD330]/50' : '']">
               <span class="relative z-10 flex items-center justify-center gap-2">
                 <svg v-if="form.processing || regForm.processing" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-5 w-5 animate-spin text-[#263D26]">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" opacity="0.25"></circle>
