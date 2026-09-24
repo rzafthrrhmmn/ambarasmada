@@ -31,7 +31,6 @@ class HandleInertiaRequests extends Middleware
                     'username' => $request->user()->username,
                     'name' => $request->user()->name,
                     'role' => $request->user()->role,
-                    'foto' => $request->user()->foto,
                     'member_id' => $request->user()->member?->id,
                     'is_juru_uang' => $request->user()->member?->memberPositions()
                         ->whereHas('position', fn ($q) => $q->whereIn('code', ['juru_uang_putra', 'juru_uang_putri']))
@@ -49,3 +48,9 @@ class HandleInertiaRequests extends Middleware
         ];
     }
 }
+
+
+
+
+
+
