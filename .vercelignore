@@ -6,7 +6,6 @@ file dokumen/komponen_peta/sulsel_kontur.gpkg
 
 # Other common exclusions
 node_modules
-vendor
 .env
 *.log
 storage/*.log
