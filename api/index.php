@@ -57,10 +57,28 @@ try {
     $_ENV['QUEUE_CONNECTION'] = $queueConnection;
     $_SERVER['QUEUE_CONNECTION'] = $queueConnection;
 
-    $configCache = $storagePath.'/../bootstrap/cache/config.php';
-    if (is_file($configCache)) {
-        @unlink($configCache);
+    $cacheFiles = [
+        $storagePath.'/../bootstrap/cache/config.php',
+        $storagePath.'/../bootstrap/cache/services.php',
+        $storagePath.'/../bootstrap/cache/packages.php',
+        $storagePath.'/../bootstrap/cache/routes.php',
+        $storagePath.'/../bootstrap/cache/events.php',
+        __DIR__.'/../bootstrap/cache/config.php',
+        __DIR__.'/../bootstrap/cache/services.php',
+        __DIR__.'/../bootstrap/cache/packages.php',
+        __DIR__.'/../bootstrap/cache/routes.php',
+        __DIR__.'/../bootstrap/cache/events.php',
+        __DIR__.'/../bootstrap/cache/app.php',
+    ];
+
+    foreach ($cacheFiles as $cacheFile) {
+        if (is_file($cacheFile)) {
+            @unlink($cacheFile);
+        }
     }
+
+    $_SERVER['REMOTE_ADDR'] ??= '127.0.0.1';
+    $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?: '127.0.0.1';
 
     $maintenance = __DIR__.'/../storage/framework/maintenance.php';
     if (file_exists($maintenance)) {
@@ -101,4 +119,12 @@ try {
 } catch (Throwable $e) {
     error_log('[VERCEL-ERROR] '.$e->getMessage());
     error_log('[VERCEL-ERROR] '.$e->getTraceAsString());
+
+    if (! headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo '[VERCEL-ERROR] '.$e->getMessage()."\n".$e->getTraceAsString();
+    } else {
+        echo '[VERCEL-ERROR] '.$e->getMessage();
+    }
 }
