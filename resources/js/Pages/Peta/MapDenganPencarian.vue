@@ -694,7 +694,7 @@ async function initMap() {
   if (!mapContainer.value || !hasPmtiles.value) return;
 
   try {
-    const { Map, addProtocol, config } = await import('maplibre-gl');
+    const { Map, addProtocol, config, Popup, ScaleControl, NavigationControl, GeolocateControl } = await import('maplibre-gl');
     const { Protocol } = await import('pmtiles');
 
     // Disable workers to avoid worker loading issues on Vercel
@@ -703,6 +703,7 @@ async function initMap() {
     const protocol = new Protocol();
     addProtocol('pmtiles', protocol.tile);
 
+    // Create map with multiple basemap sources
     map.value = new Map({
       container: mapContainer.value,
       style: {
@@ -720,14 +721,75 @@ async function initMap() {
             type: 'raster',
             tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
             tileSize: 256,
+            attribution: '© OpenStreetMap',
+          },
+          'satellite-tiles': {
+            type: 'raster',
+            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+            tileSize: 256,
+            attribution: '© Esri',
+          },
+          'terrain-tiles': {
+            type: 'raster',
+            tiles: ['https://tile.opentopomap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© OpenTopoMap',
+          },
+          'dark-tiles': {
+            type: 'raster',
+            tiles: ['https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'],
+            tileSize: 256,
+            attribution: '© Stadia Maps',
+          },
+          'hillshade-tiles': {
+            type: 'raster-dem',
+            tiles: ['https://tiles.opentopomap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            maxzoom: 14,
           },
         },
         layers: [
+          // Base layers (only one visible at a time)
           {
             id: 'osm-layer',
             type: 'raster',
             source: 'osm-tiles',
+            layout: { visibility: 'visible' },
           },
+          {
+            id: 'satellite-layer',
+            type: 'raster',
+            source: 'satellite-tiles',
+            layout: { visibility: 'none' },
+          },
+          {
+            id: 'terrain-layer',
+            type: 'raster',
+            source: 'terrain-tiles',
+            layout: { visibility: 'none' },
+          },
+          {
+            id: 'dark-layer',
+            type: 'raster',
+            source: 'dark-tiles',
+            layout: { visibility: 'none' },
+          },
+          // Hillshade layer (optional)
+          {
+            id: 'hillshade-layer',
+            type: 'hillshade',
+            source: 'hillshade-tiles',
+            layout: { visibility: showHillshade.value ? 'visible' : 'none' },
+            paint: {
+              'hillshade-illumination-direction': 315,
+              'hillshade-illumination-anchor': 'map',
+              'hillshade-exaggeration': 0.5,
+              'hillshade-shadow-color': 'rgba(0, 0, 0, 0.5)',
+              'hillshade-highlight-color': 'rgba(255, 255, 255, 0.5)',
+              'hillshade-accent-color': 'rgba(140, 81, 10, 0.3)',
+            },
+          },
+          // Contour lines
           {
             id: 'garis-kontur',
             type: 'line',
@@ -736,6 +798,7 @@ async function initMap() {
             layout: {
               'line-join': 'round',
               'line-cap': 'round',
+              visibility: showContour.value ? 'visible' : 'none',
             },
             paint: {
               'line-color': '#8c510a',
@@ -745,8 +808,30 @@ async function initMap() {
                 1.8,
                 0.8,
               ],
+              'line-opacity': 0.8,
             },
           },
+          // Contour labels (index contours every 50m)
+          {
+            id: 'kontur-labels',
+            type: 'symbol',
+            source: 'kontur-sulsel',
+            'source-layer': 'kontur',
+            filter: ['==', ['%', ['get', 'ELEV'], 50], 0],
+            layout: {
+              visibility: showContourLabels.value ? 'visible' : 'none',
+              'symbol-placement': 'line',
+              'text-field': ['concat', ['get', 'ELEV'], ' m'],
+              'text-font': ['Open Sans Regular'],
+              'text-size': 10,
+              'text-fill': '#8c510a',
+              'text-halo-color': '#fff',
+              'text-halo-width': 1.5,
+              'text-halo-blur': 1,
+            },
+            paint: {},
+          },
+          // District borders
           {
             id: 'kabupaten-border',
             type: 'line',
@@ -757,6 +842,7 @@ async function initMap() {
               'line-dasharray': [2, 2],
             },
           },
+          // District highlight
           {
             id: 'kabupaten-highlight',
             type: 'fill',
@@ -767,6 +853,31 @@ async function initMap() {
               'fill-opacity': 0.15,
             },
           },
+          // District name labels
+          {
+            id: 'kabupaten-labels',
+            type: 'symbol',
+            source: 'batas-kabupaten',
+            filter: ['==', ['get', 'id_kab'], ['get', 'id_kab']],
+            layout: {
+              visibility: showDistrictLabels.value ? 'visible' : 'none',
+              'text-field': ['get', 'nama_kab'],
+              'text-font': ['Open Sans Bold', 'Open Sans Regular'],
+              'text-size': [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                8, 10,
+                12, 14,
+              ],
+              'text-fill': '#1f2937',
+              'text-halo-color': '#fff',
+              'text-halo-width': 2,
+              'text-halo-blur': 1,
+              'text-anchor': 'center',
+              'text-allow-overlap': true,
+            },
+          },
         ],
       },
       center: [120.2, -3.3],
@@ -774,17 +885,104 @@ async function initMap() {
       maxZoom: 14,
     });
 
+    // Add scale bar
+    if (showScaleBar.value) {
+      const scale = new ScaleControl({ maxWidth: 200, unit: 'metric' });
+      map.value.addControl(scale, 'bottom-left');
+    }
+
+    // Add north arrow (navigation control with compass)
+    if (showNorthArrow.value) {
+      const nav = new NavigationControl({ showCompass: true, showZoom: false });
+      map.value.addControl(nav, 'top-right');
+    }
+
+    // Add geolocate control
+    if ('geolocation' in navigator) {
+      hasGeolocation.value = true;
+      const geolocate = new GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: true,
+        showAccuracyCircle: true,
+      });
+      map.value.addControl(geolocate, 'bottom-right');
+    }
+
+    // Mouse move - coordinate display
+    map.value.on('mousemove', (e) => {
+      if (showCoordinates.value) {
+        mouseCoords.value = { lng: e.lngLat.lng, lat: e.lngLat.lat };
+      }
+    });
+
+    map.value.on('mouseleave', () => {
+      mouseCoords.value = null;
+    });
+
+    // Click - feature info (district popup)
+    map.value.on('click', 'batas-kabupaten', (e) => {
+      const feature = e.features[0];
+      if (feature && feature.properties) {
+        const props = feature.properties;
+        const content = `
+          <div class="p-2 min-w-[200px]">
+            <h3 class="font-bold text-[#1f2937] mb-1">${props.nama_kab || 'Kabupaten'}</h3>
+            <div class="text-sm text-[#6b7280]">
+              <div>ID: ${props.id_kab || 'N/A'}</div>
+              <div>Provinsi: ${props.nama_prov || 'Sulawesi Selatan'}</div>
+            </div>
+            <div class="mt-2 flex gap-2">
+              <button onclick="window.dispatchEvent(new CustomEvent('map-zoom-to', {detail: ${JSON.stringify([e.lngLat.lng, e.lngLat.lat])})}))" class="text-xs bg-[#A7B92A] text-white px-2 py-1 rounded">Zoom</button>
+              <button onclick="window.dispatchEvent(new CustomEvent('map-bookmark', {detail: ${JSON.stringify({name: props.nama_kab, coords: [e.lngLat.lng, e.lngLat.lat]})})}))" class="text-xs bg-[#6F9435] text-white px-2 py-1 rounded">Bookmark</button>
+            </div>
+          </div>
+        `;
+        new Popup({ closeButton: true, maxWidth: '300px' })
+          .setLngLat(e.lngLat)
+          .setHTML(content)
+          .addTo(map.value);
+      }
+    });
+
+    // Change cursor on hover
+    map.value.on('mouseenter', 'batas-kabupaten', () => {
+      map.value.getCanvas().style.cursor = 'pointer';
+    });
+    map.value.on('mouseleave', 'batas-kabupaten', () => {
+      map.value.getCanvas().style.cursor = '';
+    });
+
+    // Offline/online detection
+    window.addEventListener('online', () => { isOffline.value = false; });
+    window.addEventListener('offline', () => { isOffline.value = true; });
+
+    // Listen for bookmark events from popup
+    window.addEventListener('map-bookmark', (e) => {
+      const { name, coords } = e.detail;
+      saveBookmark(name, coords);
+    });
+
+    window.addEventListener('map-zoom-to', (e) => {
+      const [lng, lat] = e.detail;
+      map.value.flyTo({ center: [lng, lat], zoom: 12, duration: 2000 });
+    });
+
     map.value.on('load', () => {
       loading.value = false;
       mapError.value = null;
       mapStatus.value = 'Peta kontur Sulawesi Selatan dimuat. GeoJSON batas kabupaten aktif.';
+
+      // Initialize elevation legend
+      initElevationLegend();
+
+      // Restore bookmarks from localStorage
+      loadBookmarks();
     });
 
     map.value.on('error', (e) => {
       loading.value = false;
       const errorMsg = e.error?.message || 'Kesalahan peta';
       mapStatus.value = `Peringatan: ${errorMsg}`;
-      // Set mapError for critical errors (like source loading failures)
       if (errorMsg.includes('source') || errorMsg.includes('tile') || errorMsg.includes('network') || errorMsg.includes('404') || errorMsg.includes('500')) {
         mapError.value = `Gagal memuat data peta: ${errorMsg}. Periksa koneksi dan coba lagi.`;
       }
