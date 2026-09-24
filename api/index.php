@@ -98,6 +98,7 @@ try {
             'cache.default' => $cacheStore,
             'database.default' => $dbConnection,
             'queue.default' => $queueConnection,
+            'maintenance.driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         ]);
     });
 
