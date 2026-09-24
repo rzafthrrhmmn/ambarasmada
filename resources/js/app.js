@@ -74,10 +74,15 @@ router.on('navigate', (event) => {
 window.addEventListener('error', function(event) {
     const err = event.error;
     if (err && (err.message && err.message.includes('cookie') || err.message && err.message.includes('431'))) {
-        // 431 Request Header Fields Too Large - clear all non-essential cookies
-        document.cookie.split(';').forEach(function(c) { 
-            document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/'); 
+        // 431 Request Header Fields Too Large - clear only non-essential cookies
+        document.cookie.split(';').forEach(function(c) {
+            const cookie = c.trim();
+            const eq = cookie.indexOf('=');
+            const name = eq > -1 ? cookie.substr(0, eq) : cookie;
+            // Don't delete session or remember cookies
+            if (name && !name.includes('session') && !name.includes('remember')) {
+                document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+            }
         });
-        window.location.reload();
     }
 });

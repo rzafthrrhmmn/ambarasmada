@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeders\DatabaseSeeder as BaseSeeder;
+use Illuminate\Database\Seeder;
 
-class OfficialPramukaPenegakSeeder extends BaseSeeder
+class OfficialPramukaPenegakSeeder extends Seeder
 {
     public function run(): void
     {
