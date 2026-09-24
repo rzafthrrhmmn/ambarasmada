@@ -403,11 +403,17 @@ const props = defineProps({
 const page = usePage();
 const mapContainer = ref(null);
 const miniMapContainer = ref(null);
+const scaleBarContainer = ref(null);
+const northArrowContainer = ref(null);
+const legendContainer = ref(null);
 const map = ref(null);
 const miniMap = ref(null);
 const loading = ref(true);
 const mapError = ref(null);
 const showContour = ref(true);
+const showHillshade = ref(false);
+const showDistrictLabels = ref(false);
+const showContourLabels = ref(false);
 const showOfflineModal = ref(false);
 const downloading = ref(false);
 const downloadStatus = ref('');
@@ -418,17 +424,43 @@ const selectedKabupaten = ref('');
 const miniMapLoading = ref(false);
 const miniMapError = ref('');
 
-// Offline download state
-const downloadMode = ref('full');
-const selectedOfflineRegion = ref('');
-const showMiniMap = computed(() => downloadMode.value === 'region' && !!selectedOfflineRegion.value);
-const includeScaleBar = ref(true);
-const includeNorthArrow = ref(true);
-const includeLegend = ref(true);
-const includeHistogram = ref(true);
-const includeGrid = ref(false);
+// Map controls state
+const showScaleBar = ref(true);
+const showNorthArrow = ref(true);
+const showElevationLegend = ref(true);
+const showCoordinates = ref(true);
+const mouseCoords = ref(null);
+const hasGeolocation = ref(false);
+const locating = ref(false);
 
-const hasPmtiles = computed(() => props.mapConfig?.hasPmtiles ?? false);
+// Basemap
+const basemap = ref('osm');
+const basemapSources = {
+  osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap' },
+  satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, attribution: '© Esri' },
+  terrain: { type: 'raster', tiles: ['https://tile.opentopomap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenTopoMap' },
+  dark: { type: 'raster', tiles: ['https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'], tileSize: 256, attribution: '© Stadia Maps' },
+};
+
+// Search
+const searchQuery = ref('');
+const searchFocused = ref(false);
+const searchResults = ref([]);
+
+// Measurement
+const measurementMode = ref('none'); // 'none', 'distance', 'area'
+const measurementPoints = ref([]);
+const measurementDistance = ref(0);
+const measurementArea = ref(0);
+const measurementSource = ref(null);
+const measurementLineLayer = ref(null);
+const measurementFillLayer = ref(null);
+
+// Bookmarks
+const bookmarks = ref([]);
+
+// Offline detection
+const isOffline = ref(!navigator.onLine);
 const boundingBox = computed(() => props.mapConfig?.boundingBox ?? { west: 118.9, east: 121.6, south: -5.8, north: -1.8 });
 const kabupatens = computed(() => props.kabupatens ?? []);
 
@@ -488,6 +520,38 @@ const pmtilesSourceUrl = computed(() => {
   }
   return `pmtiles://${url}`;
 });
+
+// Utility functions
+function formatDistance(meters) {
+  if (meters >= 1000) return `${(meters / 1000).toFixed(2)} km`;
+  return `${Math.round(meters)} m`;
+}
+
+function formatArea(sqMeters) {
+  if (sqMeters >= 1000000) return `${(sqMeters / 1000000).toFixed(2)} km²`;
+  if (sqMeters >= 10000) return `${(sqMeters / 10000).toFixed(2)} ha`;
+  return `${Math.round(sqMeters)} m²`;
+}
+
+function calculateDistance(coord1, coord2) {
+  const R = 6371000; // Earth radius in meters
+  const lat1 = coord1[1] * Math.PI / 180;
+  const lat2 = coord2[1] * Math.PI / 180;
+  const dLat = (coord2[1] - coord1[1]) * Math.PI / 180;
+  const dLon = (coord2[0] - coord1[0]) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+function calculateArea(coords) {
+  // Shoelace formula for polygon area on sphere (approximate)
+  let area = 0;
+  for (let i = 0; i < coords.length - 1; i++) {
+    area += (coords[i+1][0] - coords[i][0]) * (2 + Math.sin(coords[i][1] * Math.PI/180) + Math.sin(coords[i+1][1] * Math.PI/180));
+  }
+  return Math.abs(area * 6371000 * 6371000 * Math.PI / 180 / 2);
+}
 
 function toggleLayer() {
   if (!map.value) return;
