@@ -67,7 +67,7 @@
     ],
     "env": {
         "APP_ENV": "production",
-        "APP_DEBUG": "false",
+        "APP_DEBUG": "true",
         "APP_KEY": "base64:lrIAJGYPuiMxkpMgNptP180djlQVTNp8zkA9i8Vn2UA=",
         "APP_URL": "https://ambarasmada.vercel.app",
         "APP_NAME": "AMBARA-SISTEM DIGITAL",
@@ -86,7 +86,7 @@
         "SESSION_LIFETIME": "120",
         "SESSION_PATH": "/",
         "SESSION_SECURE_COOKIE": "true",
-        "SESSION_SAME_SITE": "none",
+        "SESSION_SAME_SITE": "lax",
         "SESSION_PARTITIONED_COOKIE": "false",
         "DB_CONNECTION": "pgsql",
         "DB_HOST": "aws-0-ap-southeast-1.pooler.supabase.com",
