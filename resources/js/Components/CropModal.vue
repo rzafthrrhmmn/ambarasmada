@@ -60,6 +60,15 @@ const cropping = ref(false);
 const initCropper = () => {
   if (cropper) cropper.destroy();
   
+  const img = cropperImage.value;
+  if (!img || !img.complete) {
+    img.onload = () => createCropper();
+    return;
+  }
+  createCropper();
+};
+
+const createCropper = () => {
   cropper = new Cropper(cropperImage.value, {
     aspectRatio: 3 / 4,
     viewMode: 2,
@@ -76,7 +85,7 @@ const initCropper = () => {
     minContainerWidth: 300,
     minContainerHeight: 200,
     ready() {
-      this.cropper.crop();
+      this.crop();
     },
   });
 };
@@ -98,7 +107,10 @@ watch(() => props.show, (val) => {
 
 watch(() => props.imageUrl, (val) => {
   if (props.show && val && cropper) {
-    cropper.replace(val);
+    const img = cropperImage.value;
+    img.onload = () => {
+      if (cropper) cropper.replace(val);
+    };
   }
 });
 
