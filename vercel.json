@@ -9,6 +9,9 @@
         },
         "api/simple_test.php": {
             "runtime": "vercel-php@0.8.0"
+        },
+        "api/minimal.php": {
+            "runtime": "vercel-php@0.8.0"
         }
     },
     "headers": [
@@ -23,6 +26,10 @@
         }
     ],
     "routes": [
+        {
+            "src": "/minimal-test",
+            "dest": "/api/minimal.php"
+        },
         {
             "src": "/simple-test",
             "dest": "/api/simple_test.php"
