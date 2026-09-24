@@ -1059,10 +1059,11 @@ function locateUser() {
   if (!map.value || !hasGeolocation.value) return;
   locating.value = true;
   navigator.geolocation.getCurrentPosition(
-    (pos) => {
+    async (pos) => {
       const { longitude, latitude } = pos.coords;
       map.value.flyTo({ center: [longitude, latitude], zoom: 14, duration: 2000 });
-      new (await import('maplibre-gl')).Popup()
+      const { Popup } = await import('maplibre-gl');
+      new Popup()
         .setLngLat([longitude, latitude])
         .setHTML('<div class="p-2 text-[#1f2937]">Lokasi Anda</div>')
         .addTo(map.value);
@@ -1117,10 +1118,11 @@ async function searchPlace() {
   }
 }
 
-function selectSearchResult(result) {
+async function selectSearchResult(result) {
   if (!map.value) return;
   map.value.flyTo({ center: [result.lon, result.lat], zoom: 14, duration: 2000 });
-  new (await import('maplibre-gl')).Popup()
+  const { Popup } = await import('maplibre-gl');
+  new Popup()
     .setLngLat([result.lon, result.lat])
     .setHTML(`<div class="p-2 text-[#1f2937]">${result.display_name}</div>`)
     .addTo(map.value);
@@ -1300,10 +1302,10 @@ function generatePrintHTML(center, zoom, bearing) {
     <div class="legend-item"><span class="legend-color" style="background:#2563eb; border:1px dashed #2563eb"></span> Batas Kabupaten</div>
   </div>
 </div>
-<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+&lt;script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"&gt;&lt;/script&gt;
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-<script src="https://unpkg.com/pmtiles@3.1.4/dist/pmtiles.js"></script>
-<script>
+&lt;script src="https://unpkg.com/pmtiles@3.1.4/dist/pmtiles.js"&gt;&lt;/script&gt;
+&lt;script&gt;
   const protocol = new PMTiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
   const map = new maplibregl.Map({
@@ -1330,7 +1332,6 @@ function generatePrintHTML(center, zoom, bearing) {
     pitch: ${map.value?.getPitch() || 0},
   });
   map.once('load', () => { window.print(); });
-</script>
 </body></html>`;
 }
 
