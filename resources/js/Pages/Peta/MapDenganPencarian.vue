@@ -434,13 +434,13 @@ function initMiniMap() {
   miniMapLoading.value = true;
   miniMapError.value = '';
 
-  import('maplibre-gl').then(({ default: maplibregl }) => {
+  import('maplibre-gl').then(({ Map, addProtocol }) => {
     import('pmtiles').then(({ Protocol }) => {
       const protocol = new Protocol();
-      maplibregl.addProtocol('pmtiles', protocol.tile);
+      addProtocol('pmtiles', protocol.tile);
 
       try {
-        miniMap.value = new maplibregl.Map({
+        miniMap.value = new Map({
           container: miniMapContainer.value,
           style: {
             version: 8,
@@ -490,13 +490,13 @@ async function initMap() {
   if (!mapContainer.value || !hasPmtiles.value) return;
 
   try {
-    const maplibregl = (await import('maplibre-gl')).default;
+    const { Map, addProtocol } = await import('maplibre-gl');
     const { Protocol } = await import('pmtiles');
 
     const protocol = new Protocol();
-    maplibregl.addProtocol('pmtiles', protocol.tile);
+    addProtocol('pmtiles', protocol.tile);
 
-    map.value = new maplibregl.Map({
+    map.value = new Map({
       container: mapContainer.value,
       style: {
         version: 8,

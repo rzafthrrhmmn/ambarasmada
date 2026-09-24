@@ -139,13 +139,13 @@ async function initMap() {
   loading.value = true;
 
   try {
-    const maplibregl = (await import('maplibre-gl')).default;
-    const pmtilesModule = (await import('pmtiles')).default;
+    const { Map, addProtocol } = await import('maplibre-gl');
+    const { Protocol } = await import('pmtiles');
 
-    const protocol = new pmtilesModule.Protocol();
-    maplibregl.addProtocol('pmtiles', protocol.tile);
+    const protocol = new Protocol();
+    addProtocol('pmtiles', protocol.tile);
 
-    map.value = new maplibregl.Map({
+    map.value = new Map({
       container: mapContainer.value,
       style: {
         version: 8,
