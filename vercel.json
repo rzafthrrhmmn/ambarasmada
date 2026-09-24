@@ -1,11 +1,13 @@
 {
-    "outputDirectory": "public",
+    "version": 3,
     "functions": {
         "api/index.php": {
-            "runtime": "vercel-php@0.6.2"
+            "runtime": "vercel-php@0.5.2",
+            "maxDuration": 30
         },
         "api/status.php": {
-            "runtime": "vercel-php@0.6.2"
+            "runtime": "vercel-php@0.5.2",
+            "maxDuration": 30
         }
     },
     "headers": [
@@ -71,23 +73,10 @@
         "APP_KEY": "base64:lrIAJGYPuiMxkpMgNptP180djlQVTNp8zkA9i8Vn2UA=",
         "APP_URL": "https://ambarasmada.vercel.app",
         "APP_NAME": "AMBARA-SISTEM DIGITAL",
-        "APP_MAINTENANCE_DRIVER": "file",
-        "APP_CONFIG_CACHE": "/tmp/config.php",
-        "APP_EVENTS_CACHE": "/tmp/events.php",
-        "APP_PACKAGES_CACHE": "/tmp/packages.php",
-        "APP_ROUTES_CACHE": "/tmp/routes.php",
-        "APP_SERVICES_CACHE": "/tmp/services.php",
-        "VIEW_COMPILED_PATH": "/tmp",
         "CACHE_DRIVER": "array",
-        "LOG_CHANNEL": "stderr",
-        "LOG_PATH": "/tmp/laravel.log",
-        "LOG_LEVEL": "debug",
         "SESSION_DRIVER": "cookie",
-        "SESSION_LIFETIME": "120",
-        "SESSION_PATH": "/",
-        "SESSION_SECURE_COOKIE": "true",
         "SESSION_SAME_SITE": "lax",
-        "SESSION_PARTITIONED_COOKIE": "false",
+        "SESSION_SECURE_COOKIE": "true",
         "DB_CONNECTION": "pgsql",
         "DB_HOST": "aws-0-ap-southeast-1.pooler.supabase.com",
         "DB_PORT": "6543",

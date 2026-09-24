@@ -6,7 +6,7 @@
         <h1 class="mt-1 text-2xl font-extrabold text-[#f0ead8]">Peta Kontur Sulawesi</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Visualisasi garis kontur elevasi Pulau Sulawesi dengan dukungan offline.</p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         <button
           v-if="hasPmtiles"
           @click="showOfflineModal = true"
@@ -20,11 +20,62 @@
         >
           {{ showContour ? 'Sembunyikan Kontur' : 'Tampilkan Kontur' }}
         </button>
+        <button
+          @click="toggleHillshade"
+          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
+        >
+          {{ showHillshade ? 'Sembunyikan Hillshade' : 'Tampilkan Hillshade' }}
+        </button>
       </div>
     </div>
 
     <div class="relative overflow-hidden rounded-2xl border-2 border-[#A7B92A]/40 bg-[#263D26] shadow-lg">
       <div ref="mapContainer" class="h-[70vh] w-full min-h-[400px]"></div>
+
+      <!-- Coordinate display on mouse hover -->
+      <div v-if="showCoordinates && mouseCoords" class="absolute bottom-4 left-4 z-20 rounded-lg bg-[#1a1a1a]/90 border border-[#6F9435]/30 px-3 py-1.5 text-xs font-mono text-[#EDD330] pointer-events-none">
+        Lon: {{ mouseCoords.lng.toFixed(6) }}° | Lat: {{ mouseCoords.lat.toFixed(6) }}°
+      </div>
+
+      <!-- GPS locate button -->
+      <button
+        v-if="hasGeolocation"
+        @click="locateUser"
+        :disabled="locating"
+        class="absolute bottom-4 right-4 z-20 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30 disabled:opacity-50"
+        title="Lokasi saya"
+      >
+        {{ locating ? '⟳' : '📍' }}
+      </button>
+
+      <!-- Basemap selector -->
+      <div class="absolute top-4 right-4 z-20" style="width: 180px;">
+        <select
+          v-model="basemap"
+          @change="changeBasemap"
+          class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
+        >
+          <option value="osm">🗺️ OpenStreetMap</option>
+          <option value="satellite">🛰️ Satelit</option>
+          <option value="terrain">🏔️ Terrain</option>
+          <option value="dark">🌙 Dark</option>
+        </select>
+      </div>
+
+      <!-- Print button -->
+      <button
+        @click="printMap"
+        class="absolute top-4 right-52 z-20 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
+        title="Cetak peta"
+      >
+        🖨️
+      </button>
+
+      <!-- Offline indicator -->
+      <div v-if="isOffline" class="absolute top-4 left-4 z-20 rounded-lg bg-[#f59e0b]/90 px-3 py-1.5 text-xs font-bold text-white animate-pulse">
+        📴 Mode Offline
+      </div>
+
       <div v-if="!hasPmtiles" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/90">
         <div class="text-center p-6">
           <p class="text-2xl font-bold text-[#EDD330]">Peta Belum Tersedia</p>
@@ -100,12 +151,31 @@ const map = ref(null);
 const loading = ref(true);
 const mapError = ref(null);
 const showContour = ref(true);
+const showHillshade = ref(false);
 const showOfflineModal = ref(false);
 const downloading = ref(false);
 const downloadStatus = ref('');
 const mapStatus = ref('');
 const offlineZoomMin = ref(8);
 const offlineZoomMax = ref(15);
+
+// Map controls state
+const showCoordinates = ref(true);
+const mouseCoords = ref(null);
+const hasGeolocation = ref(false);
+const locating = ref(false);
+
+// Basemap
+const basemap = ref('osm');
+const basemapSources = {
+  osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap' },
+  satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, attribution: '© Esri' },
+  terrain: { type: 'raster', tiles: ['https://tile.opentopomap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenTopoMap' },
+  dark: { type: 'raster', tiles: ['https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'], tileSize: 256, attribution: '© Stadia Maps' },
+};
+
+// Offline detection
+const isOffline = ref(!navigator.onLine);
 
 const hasPmtiles = computed(() => props.mapConfig?.hasPmtiles ?? false);
 const boundingBox = computed(() => props.mapConfig?.boundingBox ?? { west: 118.5, east: 125.5, south: -6.0, north: 2.0 });
@@ -136,6 +206,15 @@ function toggleLayer() {
   }
 }
 
+function toggleHillshade() {
+  showHillshade.value = !showHillshade.value;
+  if (!map.value) return;
+  const layerId = 'hillshade-layer';
+  if (map.value.getLayer(layerId)) {
+    map.value.setLayoutProperty(layerId, 'visibility', showHillshade.value ? 'visible' : 'none');
+  }
+}
+
 async function initMap() {
   if (!mapContainer.value || !hasPmtiles.value) return;
 
@@ -143,7 +222,7 @@ async function initMap() {
   loading.value = true;
 
   try {
-    const { Map, addProtocol, config } = await import('maplibre-gl');
+    const { Map, addProtocol, config, ScaleControl, NavigationControl, GeolocateControl } = await import('maplibre-gl');
     const { Protocol } = await import('pmtiles');
 
     config.WORKER_COUNT = 0;
@@ -168,6 +247,31 @@ async function initMap() {
             type: 'raster',
             tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
             tileSize: 256,
+            attribution: '© OpenStreetMap',
+          },
+          'satellite-tiles': {
+            type: 'raster',
+            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+            tileSize: 256,
+            attribution: '© Esri',
+          },
+          'terrain-tiles': {
+            type: 'raster',
+            tiles: ['https://tile.opentopomap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© OpenTopoMap',
+          },
+          'dark-tiles': {
+            type: 'raster',
+            tiles: ['https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'],
+            tileSize: 256,
+            attribution: '© Stadia Maps',
+          },
+          'hillshade-tiles': {
+            type: 'raster-dem',
+            tiles: ['https://tiles.opentopomap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            maxzoom: 14,
           },
         },
         layers: [
@@ -175,6 +279,39 @@ async function initMap() {
             id: 'osm-base',
             type: 'raster',
             source: 'osm-tiles',
+            layout: { visibility: 'visible' },
+          },
+          {
+            id: 'satellite-layer',
+            type: 'raster',
+            source: 'satellite-tiles',
+            layout: { visibility: 'none' },
+          },
+          {
+            id: 'terrain-layer',
+            type: 'raster',
+            source: 'terrain-tiles',
+            layout: { visibility: 'none' },
+          },
+          {
+            id: 'dark-layer',
+            type: 'raster',
+            source: 'dark-tiles',
+            layout: { visibility: 'none' },
+          },
+          {
+            id: 'hillshade-layer',
+            type: 'hillshade',
+            source: 'hillshade-tiles',
+            layout: { visibility: showHillshade.value ? 'visible' : 'none' },
+            paint: {
+              'hillshade-illumination-direction': 315,
+              'hillshade-illumination-anchor': 'map',
+              'hillshade-exaggeration': 0.5,
+              'hillshade-shadow-color': 'rgba(0, 0, 0, 0.5)',
+              'hillshade-highlight-color': 'rgba(255, 255, 255, 0.5)',
+              'hillshade-accent-color': 'rgba(140, 81, 10, 0.3)',
+            },
           },
           {
             id: 'garis-kontur',
@@ -184,6 +321,7 @@ async function initMap() {
             layout: {
               'line-join': 'round',
               'line-cap': 'round',
+              visibility: showContour.value ? 'visible' : 'none',
             },
             paint: {
               'line-color': '#8c510a',
@@ -193,6 +331,7 @@ async function initMap() {
                 1.8,
                 0.8,
               ],
+              'line-opacity': 0.8,
             },
           },
           {
@@ -211,6 +350,40 @@ async function initMap() {
       zoom: props.mapConfig.zoom ?? 10,
       maxZoom: 15,
     });
+
+    // Add scale bar
+    const scale = new ScaleControl({ maxWidth: 200, unit: 'metric' });
+    map.value.addControl(scale, 'bottom-left');
+
+    // Add north arrow
+    const nav = new NavigationControl({ showCompass: true, showZoom: false });
+    map.value.addControl(nav, 'top-right');
+
+    // Add geolocate control
+    if ('geolocation' in navigator) {
+      hasGeolocation.value = true;
+      const geolocate = new GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: true,
+        showAccuracyCircle: true,
+      });
+      map.value.addControl(geolocate, 'bottom-right');
+    }
+
+    // Mouse move - coordinate display
+    map.value.on('mousemove', (e) => {
+      if (showCoordinates.value) {
+        mouseCoords.value = { lng: e.lngLat.lng, lat: e.lngLat.lat };
+      }
+    });
+
+    map.value.on('mouseleave', () => {
+      mouseCoords.value = null;
+    });
+
+    // Offline/online detection
+    window.addEventListener('online', () => { isOffline.value = false; });
+    window.addEventListener('offline', () => { isOffline.value = true; });
 
     map.value.on('load', () => {
       loading.value = false;
@@ -231,6 +404,111 @@ async function initMap() {
     mapError.value = `Gagal memuat peta: ${error.message}`;
     console.error('Map initialization error:', error);
   }
+}
+
+function changeBasemap() {
+  if (!map.value) return;
+  const layers = ['osm-base', 'satellite-layer', 'terrain-layer', 'dark-layer'];
+  layers.forEach(layer => {
+    if (map.value.getLayer(layer)) {
+      map.value.setLayoutProperty(layer, 'visibility', layer === `${basemap.value}-layer` || (layer === 'osm-base' && basemap.value === 'osm') ? 'visible' : 'none');
+    }
+  });
+  mapStatus.value = `Basemap: ${basemap.value}`;
+}
+
+function locateUser() {
+  if (!map.value || !hasGeolocation.value) return;
+  locating.value = true;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { longitude, latitude } = pos.coords;
+      map.value.flyTo({ center: [longitude, latitude], zoom: 14, duration: 2000 });
+      new (await import('maplibre-gl')).Popup()
+        .setLngLat([longitude, latitude])
+        .setHTML('<div class="p-2 text-[#1f2937]">Lokasi Anda</div>')
+        .addTo(map.value);
+      locating.value = false;
+    },
+    (err) => {
+      locating.value = false;
+      mapStatus.value = `Gagal mendapatkan lokasi: ${err.message}`;
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+function printMap() {
+  if (!map.value) return;
+  const printWindow = window.open('', '_blank');
+  const center = map.value.getCenter();
+  const zoom = map.value.getZoom();
+  const bearing = map.value.getBearing();
+  const scale = Math.round(156543.03392 * Math.cos(center.lat * Math.PI / 180) / Math.pow(2, zoom));
+  const date = new Date().toLocaleString('id-ID');
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Peta Kontur Sulawesi - Cetak</title>
+<style>
+  @page { margin: 1cm; size: A4 landscape; }
+  body { margin: 0; font-family: Arial, sans-serif; }
+  .header { text-align: center; margin-bottom: 10px; }
+  .header h1 { margin: 0; font-size: 24px; color: #1f2937; }
+  .header p { margin: 5px 0; font-size: 12px; color: #6b7280; }
+  .map-container { position: relative; width: 100%; height: 70vh; border: 2px solid #6F9435; }
+  #print-map { width: 100%; height: 100%; }
+  .footer { display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; color: #6b7280; }
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-color { width: 20px; height: 3px; border-radius: 2px; }
+</style></head><body>
+<div class="header">
+  <h1>Peta Kontur Sulawesi</h1>
+  <p>Dicetak pada: ${date} | Koordinat tengah: ${center.lng.toFixed(6)}, ${center.lat.toFixed(6)} | Zoom: ${zoom.toFixed(1)} | Skala ~1:${scale.toLocaleString()}</p>
+</div>
+<div class="map-container" id="print-map"></div>
+<div class="footer">
+  <div>Sumber: OpenStreetMap, PMTiles Kontur Sulsel</div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-color" style="background:#8c510a"></span> Kontur</div>
+    <div class="legend-item"><span class="legend-color" style="background:#2563eb; border:1px dashed #2563eb"></span> Batas Kabupaten</div>
+  </div>
+</div>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<script src="https://unpkg.com/pmtiles@3.1.4/dist/pmtiles.js"></script>
+<script>
+  const protocol = new PMTiles.Protocol();
+  maplibregl.addProtocol('pmtiles', protocol.tile);
+  const map = new maplibregl.Map({
+    container: 'print-map',
+    style: {
+      version: 8,
+      sources: {
+        'kontur': { type: 'vector', url: 'pmtiles:///storage/maps/sulsel_kontur.pmtiles' },
+        'batas': { type: 'geojson', data: '/storage/maps/batas_kabupaten_sulsel.geojson' },
+        'osm': { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 }
+      },
+      layers: [
+        { id: 'osm', type: 'raster', source: 'osm' },
+        { id: 'kontur', type: 'line', source: 'kontur', 'source-layer': 'kontur',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#8c510a', 'line-width': ['case', ['==', ['%', ['get', 'ELEV'], 50], 0], 1.8, 0.8] }
+        },
+        { id: 'batas', type: 'line', source: 'batas', paint: { 'line-color': '#2563eb', 'line-width': 1.5, 'line-dasharray': [2, 2] } }
+      ]
+    },
+    center: [${center.lng}, ${center.lat}],
+    zoom: ${zoom},
+    bearing: ${bearing},
+    pitch: ${map.value?.getPitch() || 0},
+  });
+  map.once('load', () => { window.print(); });
+</script>
+</body></html>`;
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
 }
 
 async function downloadOffline() {

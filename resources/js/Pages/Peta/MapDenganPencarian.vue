@@ -994,6 +994,346 @@ async function initMap() {
   }
 }
 
+// Elevation legend
+function initElevationLegend() {
+  if (!legendContainer.value || !showElevationLegend.value) return;
+  const legend = document.createElement('div');
+  legend.className = 'rounded-lg bg-[#1a1a1a]/90 border border-[#6F9435]/30 p-3 text-xs text-[#d4dc9a] min-w-[150px]';
+  legend.innerHTML = `
+    <div class="font-bold text-[#EDD330] mb-2">Legenda Elevasi</div>
+    <div class="space-y-1">
+      <div class="flex items-center gap-2"><span class="w-6 h-1.5 rounded" style="background: #8c510a;"></span> Kontur 10m</div>
+      <div class="flex items-center gap-2"><span class="w-6 h-1.5 rounded" style="background: #a0522d;"></span> Kontur 50m (Index)</div>
+      <div class="flex items-center gap-2"><span class="w-6 h-1.5 rounded" style="background: #cd853f;"></span> Kontur 100m</div>
+      <div class="flex items-center gap-2"><span class="w-6 h-1.5 rounded" style="background: #8b4513;"></span> Kontur 500m+</div>
+      <div class="flex items-center gap-2 mt-2 pt-2 border-t border-[#6F9435]/30"><span class="w-6 h-1.5 rounded" style="background: #2563eb; border: 1px dashed #2563eb;"></span> Batas Kabupaten</div>
+    </div>
+  `;
+  legendContainer.value.appendChild(legend);
+}
+
+// Toggle hillshade
+function toggleHillshade() {
+  showHillshade.value = !showHillshade.value;
+  if (!map.value) return;
+  const layerId = 'hillshade-layer';
+  if (map.value.getLayer(layerId)) {
+    map.value.setLayoutProperty(layerId, 'visibility', showHillshade.value ? 'visible' : 'none');
+  }
+}
+
+// Toggle district labels
+function toggleDistrictLabels() {
+  showDistrictLabels.value = !showDistrictLabels.value;
+  if (!map.value) return;
+  const layerId = 'kabupaten-labels';
+  if (map.value.getLayer(layerId)) {
+    map.value.setLayoutProperty(layerId, 'visibility', showDistrictLabels.value ? 'visible' : 'none');
+  }
+}
+
+// Toggle contour labels
+function toggleContourLabels() {
+  showContourLabels.value = !showContourLabels.value;
+  if (!map.value) return;
+  const layerId = 'kontur-labels';
+  if (map.value.getLayer(layerId)) {
+    map.value.setLayoutProperty(layerId, 'visibility', showContourLabels.value ? 'visible' : 'none');
+  }
+}
+
+// Change basemap
+function changeBasemap() {
+  if (!map.value) return;
+  const layers = ['osm-layer', 'satellite-layer', 'terrain-layer', 'dark-layer'];
+  layers.forEach(layer => {
+    if (map.value.getLayer(layer)) {
+      map.value.setLayoutProperty(layer, 'visibility', layer === `${basemap.value}-layer` ? 'visible' : 'none');
+    }
+  });
+  mapStatus.value = `Basemap: ${basemap.value}`;
+}
+
+// Locate user
+function locateUser() {
+  if (!map.value || !hasGeolocation.value) return;
+  locating.value = true;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { longitude, latitude } = pos.coords;
+      map.value.flyTo({ center: [longitude, latitude], zoom: 14, duration: 2000 });
+      new (await import('maplibre-gl')).Popup()
+        .setLngLat([longitude, latitude])
+        .setHTML('<div class="p-2 text-[#1f2937]">Lokasi Anda</div>')
+        .addTo(map.value);
+      locating.value = false;
+    },
+    (err) => {
+      locating.value = false;
+      mapStatus.value = `Gagal mendapatkan lokasi: ${err.message}`;
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+// Search by place name (Nominatim)
+async function searchPlace() {
+  if (!searchQuery.value.trim()) return;
+  searchFocused.value = false;
+
+  // Check if query is coordinates
+  const coordMatch = searchQuery.value.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+  if (coordMatch) {
+    const lat = parseFloat(coordMatch[1]);
+    const lng = parseFloat(coordMatch[2]);
+    if (map.value) {
+      map.value.flyTo({ center: [lng, lat], zoom: 14, duration: 2000 });
+      new (await import('maplibre-gl')).Popup()
+        .setLngLat([lng, lat])
+        .setHTML(`<div class="p-2 text-[#1f2937]">Koordinat: ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>`)
+        .addTo(map.value);
+      searchQuery.value = '';
+      return;
+    }
+  }
+
+  // Search via Nominatim
+  try {
+    searchResults.value = [];
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery.value)}&limit=5&countrycodes=id&accept-language=id`);
+    const data = await response.json();
+    searchResults.value = data.map(item => ({
+      place_id: item.place_id,
+      display_name: item.display_name,
+      lat: parseFloat(item.lat),
+      lon: parseFloat(item.lon),
+    }));
+    if (searchResults.value.length === 0) {
+      mapStatus.value = 'Tidak ditemukan hasil untuk pencarian tersebut.';
+    }
+  } catch (error) {
+    console.error('Search error:', error);
+    mapStatus.value = 'Gagal mencari lokasi. Periksa koneksi internet.';
+  }
+}
+
+function selectSearchResult(result) {
+  if (!map.value) return;
+  map.value.flyTo({ center: [result.lon, result.lat], zoom: 14, duration: 2000 });
+  new (await import('maplibre-gl')).Popup()
+    .setLngLat([result.lon, result.lat])
+    .setHTML(`<div class="p-2 text-[#1f2937]">${result.display_name}</div>`)
+    .addTo(map.value);
+  searchQuery.value = '';
+  searchResults.value = [];
+  searchFocused.value = false;
+}
+
+// Measurement tools
+function startMeasurement(mode) {
+  if (!map.value) return;
+  measurementMode.value = mode;
+  measurementPoints.value = [];
+  measurementDistance.value = 0;
+  measurementArea.value = 0;
+
+  // Create measurement source if not exists
+  if (!map.value.getSource('measurement')) {
+    map.value.addSource('measurement', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  }
+  measurementSource.value = map.value.getSource('measurement');
+
+  // Add click handler
+  map.value.on('click', onMeasureClick);
+  map.value.getCanvas().style.cursor = 'crosshair';
+  mapStatus.value = mode === 'distance' ? 'Klik untuk menambah titik ukur jarak' : 'Klik untuk menambah titik ukur luas';
+}
+
+function onMeasureClick(e) {
+  if (measurementMode.value === 'none') return;
+  measurementPoints.value.push([e.lngLat.lng, e.lngLat.lat]);
+  updateMeasurement();
+}
+
+function updateMeasurement() {
+  if (!map.value || !measurementSource.value) return;
+  const coords = measurementPoints.value;
+  if (coords.length === 0) return;
+
+  // Update line
+  const lineFeature = {
+    type: 'Feature',
+    geometry: { type: 'LineString', coordinates: coords },
+    properties: {},
+  };
+  measurementSource.value.setData({
+    type: 'FeatureCollection',
+    features: [lineFeature],
+  });
+
+  if (measurementMode.value === 'distance' && coords.length >= 2) {
+    let total = 0;
+    for (let i = 1; i < coords.length; i++) {
+      total += calculateDistance(coords[i-1], coords[i]);
+    }
+    measurementDistance.value = total;
+  } else if (measurementMode.value === 'area' && coords.length >= 3) {
+    // Close polygon
+    const closedCoords = [...coords, coords[0]];
+    measurementArea.value = calculateArea(closedCoords);
+  }
+}
+
+function cancelMeasurement() {
+  if (!map.value) return;
+  measurementMode.value = 'none';
+  measurementPoints.value = [];
+  measurementDistance.value = 0;
+  measurementArea.value = 0;
+  if (measurementSource.value) {
+    measurementSource.value.setData({ type: 'FeatureCollection', features: [] });
+  }
+  map.value.off('click', onMeasureClick);
+  map.value.getCanvas().style.cursor = '';
+  mapStatus.value = 'Pengukuran dibatalkan';
+}
+
+function finishMeasurement() {
+  if (!map.value) return;
+  const mode = measurementMode.value;
+  const dist = measurementDistance.value;
+  const area = measurementArea.value;
+  measurementMode.value = 'none';
+  measurementPoints.value = [];
+  measurementDistance.value = 0;
+  measurementArea.value = 0;
+  if (measurementSource.value) {
+    measurementSource.value.setData({ type: 'FeatureCollection', features: [] });
+  }
+  map.value.off('click', onMeasureClick);
+  map.value.getCanvas().style.cursor = '';
+  mapStatus.value = mode === 'distance' 
+    ? `Jarak: ${formatDistance(dist)}` 
+    : `Luas: ${formatArea(area)}`;
+}
+
+// Bookmark functions
+function saveBookmark(name = null, coords = null) {
+  if (!map.value) return;
+  const center = coords || [map.value.getCenter().lng, map.value.getCenter().lat];
+  const zoom = map.value.getZoom();
+  const bearing = map.value.getBearing();
+  const pitch = map.value.getPitch();
+  const basemapCurrent = basemap.value;
+
+  const bookmarkName = name || `Bookmark ${bookmarks.value.length + 1} - ${new Date().toLocaleString('id-ID')}`;
+  const bookmark = { name: bookmarkName, center, zoom, bearing, pitch, basemap: basemapCurrent, timestamp: Date.now() };
+  bookmarks.value.unshift(bookmark);
+  if (bookmarks.value.length > 20) bookmarks.value.pop();
+  localStorage.setItem('mapBookmarks', JSON.stringify(bookmarks.value));
+  mapStatus.value = `Tampilan disimpan: ${bookmarkName}`;
+}
+
+function loadBookmarks() {
+  try {
+    const stored = localStorage.getItem('mapBookmarks');
+    if (stored) bookmarks.value = JSON.parse(stored);
+  } catch {}
+}
+
+function goToBookmark(bm) {
+  if (!map.value) return;
+  basemap.value = bm.basemap;
+  changeBasemap();
+  map.value.flyTo({ center: bm.center, zoom: bm.zoom, bearing: bm.bearing, pitch: bm.pitch, duration: 2000 });
+  mapStatus.value = `Berpindah ke: ${bm.name}`;
+}
+
+function deleteBookmark(index) {
+  bookmarks.value.splice(index, 1);
+  localStorage.setItem('mapBookmarks', JSON.stringify(bookmarks.value));
+}
+
+// Print layout
+function printMap() {
+  if (!map.value) return;
+  // Create a print-friendly version
+  const printWindow = window.open('', '_blank');
+  const center = map.value.getCenter();
+  const zoom = map.value.getZoom();
+  const bearing = map.value.getBearing();
+  const html = generatePrintHTML(center, zoom, bearing);
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
+function generatePrintHTML(center, zoom, bearing) {
+  const title = 'Peta Kontur Sulawesi Selatan';
+  const date = new Date().toLocaleString('id-ID');
+  const scale = Math.round(156543.03392 * Math.cos(center.lat * Math.PI / 180) / Math.pow(2, zoom));
+  return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>${title} - Cetak</title>
+<style>
+  @page { margin: 1cm; size: A4 landscape; }
+  body { margin: 0; font-family: Arial, sans-serif; }
+  .header { text-align: center; margin-bottom: 10px; }
+  .header h1 { margin: 0; font-size: 24px; color: #1f2937; }
+  .header p { margin: 5px 0; font-size: 12px; color: #6b7280; }
+  .map-container { position: relative; width: 100%; height: 70vh; border: 2px solid #6F9435; }
+  #print-map { width: 100%; height: 100%; }
+  .footer { display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; color: #6b7280; }
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-color { width: 20px; height: 3px; border-radius: 2px; }
+</style></head><body>
+<div class="header">
+  <h1>${title}</h1>
+  <p>Dicetak pada: ${date} | Koordinat tengah: ${center.lng.toFixed(6)}, ${center.lat.toFixed(6)} | Zoom: ${zoom.toFixed(1)} | Skala ~1:${scale.toLocaleString()}</p>
+</div>
+<div class="map-container" id="print-map"></div>
+<div class="footer">
+  <div>Sumber: OpenStreetMap, PMTiles Kontur Sulsel</div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-color" style="background:#8c510a"></span> Kontur</div>
+    <div class="legend-item"><span class="legend-color" style="background:#2563eb; border:1px dashed #2563eb"></span> Batas Kabupaten</div>
+  </div>
+</div>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<script src="https://unpkg.com/pmtiles@3.1.4/dist/pmtiles.js"></script>
+<script>
+  const protocol = new PMTiles.Protocol();
+  maplibregl.addProtocol('pmtiles', protocol.tile);
+  const map = new maplibregl.Map({
+    container: 'print-map',
+    style: {
+      version: 8,
+      sources: {
+        'kontur': { type: 'vector', url: 'pmtiles:///storage/maps/sulsel_kontur.pmtiles' },
+        'batas': { type: 'geojson', data: '/storage/maps/batas_kabupaten_sulsel.geojson' },
+        'osm': { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 }
+      },
+      layers: [
+        { id: 'osm', type: 'raster', source: 'osm' },
+        { id: 'kontur', type: 'line', source: 'kontur', 'source-layer': 'kontur',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#8c510a', 'line-width': ['case', ['==', ['%', ['get', 'ELEV'], 50], 0], 1.8, 0.8] }
+        },
+        { id: 'batas', type: 'line', source: 'batas', paint: { 'line-color': '#2563eb', 'line-width': 1.5, 'line-dasharray': [2, 2] } }
+      ]
+    },
+    center: [${center.lng}, ${center.lat}],
+    zoom: ${zoom},
+    bearing: ${bearing},
+    pitch: ${map.value?.getPitch() || 0},
+  });
+  map.once('load', () => { window.print(); });
+</script>
+</body></html>`;
+}
+
 async function downloadOffline() {
   if (!hasPmtiles.value) return;
 
