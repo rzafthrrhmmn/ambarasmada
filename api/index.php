@@ -101,7 +101,7 @@ try {
         ]);
     });
 
-    $app->instance(\Illuminate\Contracts\Debug\ExceptionHandler::class, new class extends \Illuminate\Foundation\Exceptions\Handler {
+    $app->instance(\Illuminate\Contracts\Debug\ExceptionHandler::class, new class($app) extends \Illuminate\Foundation\Exceptions\Handler {
         public function render($request, \Throwable $e)
         {
             http_response_code(500);
