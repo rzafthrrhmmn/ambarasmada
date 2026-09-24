@@ -4,8 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite",
-    "vercel-build": "composer install --no-interaction --prefer-dist && npm run build"
+    "dev": "vite"
   },
   "dependencies": {
     "@inertiajs/vue3": "^2.0",
