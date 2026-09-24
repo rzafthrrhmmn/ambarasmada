@@ -119,8 +119,6 @@ try {
         }
     });
 
-    $app->boot();
-
     $request = Request::capture();
 
     /** @var Kernel $kernel */
