@@ -104,9 +104,9 @@ try {
 
     $app->booted(function () use ($app) {
         error_log('[VERCEL-BOOT] Setting maintenance driver config');
-        $app['config']->set('maintenance.driver', 'file');
-        $app['config']->set('maintenance.store', 'file');
-        error_log('[VERCEL-BOOT] Maintenance driver: '.$app['config']->get('maintenance.driver'));
+        $app['config']->set('app.maintenance.driver', 'file');
+        $app['config']->set('app.maintenance.store', 'file');
+        error_log('[VERCEL-BOOT] Maintenance driver: '.$app['config']->get('app.maintenance.driver'));
     });
 
     $app->instance(\Illuminate\Contracts\Debug\ExceptionHandler::class, new class($app) extends \Illuminate\Foundation\Exceptions\Handler {
@@ -118,6 +118,8 @@ try {
             exit;
         }
     });
+
+    $app->boot();
 
     $request = Request::capture();
 
