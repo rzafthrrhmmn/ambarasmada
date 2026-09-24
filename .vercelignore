@@ -1,13 +1,24 @@
 # Exclude large map files from Vercel deployment
 file dokumen/komponen_peta/Peta_Sulsel.tif
 file dokumen/komponen_peta/Peta_Sulsel.tif.aux.xml
+file dokumen/komponen_komponen_peta/sulsel_kontur.geojson
 file dokumen/komponen_peta/sulsel_kontur.geojson
 file dokumen/komponen_peta/sulsel_kontur.gpkg
+public/storage/maps/*.pmtiles
 
 # Other common exclusions
 node_modules
 vendor
+.vercel
+.kilo
 .env
+.env.*
 *.log
 storage/*.log
+supabase
+tests
+coverage
+/.git
+
+# Bootstrap cache
 /bootstrap/cache/*.php
