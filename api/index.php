@@ -93,13 +93,20 @@ try {
     $app->useStoragePath($storagePath);
 
     $app->booting(function () use ($sessionDriver, $cacheStore, $dbConnection, $queueConnection) {
+        error_log('[VERCEL-BOOT] Setting config values');
         config([
             'session.driver' => $sessionDriver,
             'cache.default' => $cacheStore,
             'database.default' => $dbConnection,
             'queue.default' => $queueConnection,
-            'maintenance.driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         ]);
+    });
+
+    $app->booted(function () use ($app) {
+        error_log('[VERCEL-BOOT] Setting maintenance driver config');
+        $app['config']->set('maintenance.driver', 'file');
+        $app['config']->set('maintenance.store', 'file');
+        error_log('[VERCEL-BOOT] Maintenance driver: '.$app['config']->get('maintenance.driver'));
     });
 
     $app->instance(\Illuminate\Contracts\Debug\ExceptionHandler::class, new class($app) extends \Illuminate\Foundation\Exceptions\Handler {
