@@ -50,7 +50,7 @@ defineProps({
   imageUrl: String,
 });
 
-defineEmits(['close', 'crop']);
+const emit = defineEmits(['close', 'crop']);
 
 const cropperContainer = ref(null);
 const cropperImage = ref(null);
