@@ -1,0 +1,12 @@
+# Exclude large map files from Vercel deployment
+file dokumen/komponen_peta/Peta_Sulsel.tif
+file dokumen/komponen_peta/Peta_Sulsel.tif.aux.xml
+file dokumen/komponen_peta/sulsel_kontur.geojson
+file dokumen/komponen_peta/sulsel_kontur.gpkg
+
+# Other common exclusions
+node_modules
+vendor
+.env
+*.log
+storage/*.log

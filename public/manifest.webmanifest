@@ -1,0 +1,23 @@
+{
+    "name": "Ekosistem Digital Kepramukaan",
+    "short_name": "Pramuka SMAN 2",
+    "description": "Sistem Ekosistem Digital Kepramukaan Ambalan UPT SMAN 2 Maros",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#263D26",
+    "theme_color": "#263D26",
+    "icons": [
+        {
+            "src": "/images/Logo_Ambalan.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/images/Logo_Ambalan.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

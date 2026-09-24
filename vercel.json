@@ -1,0 +1,94 @@
+{
+    "outputDirectory": "public",
+    "functions": {
+        "api/index.php": {
+            "runtime": "vercel-php@0.8.0"
+        },
+        "api/status.php": {
+            "runtime": "vercel-php@0.8.0"
+        }
+    },
+    "headers": [
+        {
+            "source": "/build/assets/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/status.php",
+            "dest": "/api/status.php"
+        },
+        {
+            "src": "/manifest.webmanifest",
+            "dest": "/public/manifest.webmanifest"
+        },
+        {
+            "src": "/sw.js",
+            "dest": "/public/sw.js"
+        },
+        {
+            "src": "/offline.html",
+            "dest": "/public/offline.html"
+        },
+        {
+            "src": "/build/(.*)",
+            "dest": "/public/build/"
+        },
+        {
+            "src": "/css/(.*)",
+            "dest": "/public/css/"
+        },
+        {
+            "src": "/images/(.*)",
+            "dest": "/public/images/"
+        },
+        {
+            "src": "/js/(.*)",
+            "dest": "/public/js/"
+        },
+        {
+            "src": "/vendors/(.*)",
+            "dest": "/public/vendors/"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/api/index.php"
+        }
+    ],
+    "env": {
+        "APP_ENV": "production",
+        "APP_DEBUG": "false",
+        "APP_KEY": "base64:lrIAJGYPuiMxkpMgNptP180djlQVTNp8zkA9i8Vn2UA=",
+        "APP_URL": "https://ambarasmada.vercel.app",
+        "APP_NAME": "AMBARA-SISTEM DIGITAL",
+        "APP_MAINTENANCE_DRIVER": "file",
+        "APP_CONFIG_CACHE": "/tmp/config.php",
+        "APP_EVENTS_CACHE": "/tmp/events.php",
+        "APP_PACKAGES_CACHE": "/tmp/packages.php",
+        "APP_ROUTES_CACHE": "/tmp/routes.php",
+        "APP_SERVICES_CACHE": "/tmp/services.php",
+        "VIEW_COMPILED_PATH": "/tmp",
+        "CACHE_DRIVER": "array",
+        "LOG_CHANNEL": "stderr",
+        "LOG_PATH": "/tmp/laravel.log",
+        "LOG_LEVEL": "error",
+        "SESSION_DRIVER": "cookie",
+        "SESSION_LIFETIME": "120",
+        "SESSION_PATH": "/",
+        "SESSION_SECURE_COOKIE": "true",
+        "SESSION_SAME_SITE": "none",
+        "SESSION_PARTITIONED_COOKIE": "false",
+        "DB_CONNECTION": "pgsql",
+        "DB_HOST": "aws-0-ap-southeast-1.pooler.supabase.com",
+        "DB_PORT": "6543",
+        "DB_DATABASE": "postgres",
+        "DB_USERNAME": "postgres.ugbpqikqduptseeslfri",
+        "DB_PASSWORD": "RezaNeko26@"
+    }
+}
