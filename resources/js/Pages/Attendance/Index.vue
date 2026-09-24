@@ -5,7 +5,8 @@
       <section class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm border-[#6F9435] lg:col-span-2">
         <h2 class="mb-4 font-semibold text-[#f0ead8]">Riwayat sesi</h2>
         <div class="space-y-3">
-          <div v-for="session in sessions.data" :key="session.id" class="flex flex-col gap-3 rounded-xl border border-[#6F9435] bg-[#335233] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <SkeletonLoader v-if="!sessions || !sessions.data" variant="list" :lines="5" />
+        <div v-else v-for="session in sessions.data" :key="session.id" class="flex flex-col gap-3 rounded-xl border border-[#6F9435] bg-[#335233] p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <Link :href="`/attendance/${session.id}`" class="font-semibold text-[#EDD330] hover:underline">{{ session.nama }}</Link>
               <p class="mt-1 text-xs text-[#8fa06a]">{{ formatDate(session.tanggal) }} • {{ session.lokasi || '-' }} • {{ session.attendances_count }} presensi</p>
@@ -88,4 +89,5 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 </script>
+
 

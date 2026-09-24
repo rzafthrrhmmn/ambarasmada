@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Factory;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -411,17 +410,13 @@ class MemberController extends Controller
 
         if ($data['delete_foto'] ?? false) {
             if ($member->user && $member->user->foto) {
-                Storage::disk('public')->delete($member->user->foto);
                 $member->user->update(['foto' => null]);
             }
         } elseif ($request->hasFile('foto')) {
-            if ($member->user && $member->user->foto) {
-                Storage::disk('public')->delete($member->user->foto);
-            }
             $file = $request->file('foto');
             $this->validateFileContent($file);
-            $path = $file->store('profile-photos', 'public');
-            $member->user->update(['foto' => $path]);
+            $base64 = 'data:' . $file->getMimeType() . ';base64,' . base64_encode(file_get_contents($file->getRealPath()));
+            $member->user->update(['foto' => $base64]);
         }
 
         if ($member->user) {

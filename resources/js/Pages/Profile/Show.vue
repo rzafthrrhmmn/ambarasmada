@@ -9,7 +9,7 @@
     <section class="grid gap-5 xl:grid-cols-3">
       <div class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm border-[#6F9435] xl:col-span-2">
         <h2 class="font-semibold text-[#f0ead8]">Data Profil</h2>
-        <form @submit.prevent="form.patch('/profile', { onSuccess: () => { form.reset('foto'); } })" @change="form.clearErrors()" class="mt-4 grid gap-3 sm:grid-cols-2">
+        <form @submit.prevent="handleSubmit" @change="debouncedClearErrors" class="mt-4 grid gap-3 sm:grid-cols-2">
           <div class="sm:col-span-2">
             <label class="block"><span class="text-xs font-medium">Foto Profil</span></label>
             <div class="mt-1 flex items-center gap-4">
@@ -18,7 +18,7 @@
                 <span v-else class="text-xs text-[#8fa06a]">No foto</span>
               </div>
               <div>
-                <input type="file" @change="form.foto = $event.target.files[0]; form.delete_foto = false" accept="image/jpeg,image/png,image/webp" class="block w-full text-sm text-[#d4dc9a] file:mr-3 file:rounded-lg file:border-0 file:bg-[#6F9435] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white" />
+                <input type="file" @change="handleFileChange" accept="image/jpeg,image/png,image/webp" class="block w-full text-sm text-[#d4dc9a] file:mr-3 file:rounded-lg file:border-0 file:bg-[#6F9435] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white" />
                 <button v-if="member.user?.foto" type="button" @click="form.foto = null; form.delete_foto = true" class="mt-1 text-xs text-[#ef4419] hover:underline">Hapus foto</button>
                 <p v-if="form.errors.foto" class="text-xs text-[#ef4419] mt-1">{{ form.errors.foto }}</p>
               </div>
@@ -41,20 +41,26 @@
           
           <label class="block"><span class="text-xs font-medium">NTA</span><input :value="member.nta || '-'" disabled class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#8fa06a] border-[#6F9435]" /></label>
           
-          <label class="block"><span class="text-xs font-medium">Kelas</span><input v-model="form.kelas" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]" /></label>
+          <label class="block"><span class="text-xs font-medium">Kelas</span><input v-model="form.kelas" :disabled="!isPembina" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] disabled:bg-[#263D26] disabled:text-[#8fa06a]" /></label>
           <p v-if="form.errors.kelas" class="text-xs text-[#ef4419] mt-1">{{ form.errors.kelas }}</p>
           
-          <label class="block"><span class="text-xs font-medium">Tingkatan</span><select v-model="form.tingkatan" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"><option>Tamu</option><option>Calon</option><option>Bantara</option><option>Laksana</option><option>Alumni</option></select></label>
+          <label class="block"><span class="text-xs font-medium">Tingkatan</span><select v-model="form.tingkatan" :disabled="!isPembina" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] disabled:bg-[#263D26] disabled:text-[#8fa06a]"><option>Tamu</option><option>Calon</option><option>Bantara</option><option>Laksana</option><option>Alumni</option></select></label>
           <p v-if="form.errors.tingkatan" class="text-xs text-[#ef4419] mt-1">{{ form.errors.tingkatan }}</p>
           
           <label class="block"><span class="text-xs font-medium">Tahun Lulus</span><input v-model.number="form.tahun_lulus" type="number" min="2000" max="2100" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]" /></label>
           <p v-if="form.errors.tahun_lulus" class="text-xs text-[#ef4419] mt-1">{{ form.errors.tahun_lulus }}</p>
           
-          <label class="block"><span class="text-xs font-medium">Status Aktif</span><select v-model="form.status_aktif" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"><option>Aktif</option><option>Non-Aktif</option><option>Alumni</option></select></label>
+          <label class="block"><span class="text-xs font-medium">Status Aktif</span><select v-model="form.status_aktif" :disabled="!isPembina" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] disabled:bg-[#263D26] disabled:text-[#8fa06a]"><option>Aktif</option><option>Non-Aktif</option><option>Alumni</option></select></label>
           <p v-if="form.errors.status_aktif" class="text-xs text-[#ef4419] mt-1">{{ form.errors.status_aktif }}</p>
           <div class="sm:col-span-2 flex items-end gap-3">
-            <button type="submit" :disabled="form.processing" class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-6 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50">Perbarui Profil</button>
-            <button type="button" @click="printKTA" class="rounded-lg border-2 border-[#EDD330] px-4 py-2 text-sm font-semibold text-[#EDD330] transition hover:bg-[#EDD330]/10">Cetak KTA</button>
+            <button type="submit" :disabled="form.processing" class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-6 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50">
+              <span v-if="form.processing" class="flex items-center gap-2">
+                <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                Menyimpan...
+              </span>
+              <span v-else>Perbarui Profil</span>
+            </button>
+            <button type="button" @click="printKTA" :disabled="form.processing" class="rounded-lg border-2 border-[#EDD330] px-4 py-2 text-sm font-semibold text-[#EDD330] transition hover:bg-[#EDD330]/10 disabled:opacity-50">Cetak KTA</button>
             <button type="button" @click="toggleKtaPreview" class="rounded-lg border-2 border-[#A7B92A] px-4 py-2 text-sm font-semibold text-[#A7B92A] transition hover:bg-[#A7B92A]/10">{{ showKtaPreview ? 'Sembunyikan Preview' : 'Tampilkan Preview' }}</button>
           </div>
         </form>
@@ -104,6 +110,13 @@
         <p v-if="!member.attendances?.length" class="text-sm text-[#8fa06a]">Belum ada presensi.</p>
       </div>
     </section>
+
+    <CropModal
+      :show="showCropModal"
+      :image-url="cropImageUrl"
+      @close="closeCropModal"
+      @crop="handleCrop"
+    />
   </AppLayout>
 </template>
 <script setup>
@@ -112,6 +125,7 @@ import { useForm, usePage } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 import AppLayout from '@/Components/AppLayout.vue';
 import KtaCard from '@/Components/KtaCard.vue';
+import CropModal from '@/Components/CropModal.vue';
 
 const props = defineProps({ member: Object });
 const page = usePage();
@@ -123,6 +137,8 @@ const showKtaPreview = ref(false);
 const toast = useToast();
 const isPembina = computed(() => page.props.auth?.user?.role === 'pembina');
 const photoObjectUrl = ref(null);
+const showCropModal = ref(false);
+const cropImageUrl = ref(null);
 
 const form = useForm({
   nama_lengkap: props.member?.nama_lengkap || '',
@@ -198,7 +214,7 @@ const syncFormToMember = () => {
       user: {
         ...member.value.user,
         name: form.nama_lengkap,
-        foto: form.delete_foto ? null : (form.foto ? 'new' : member.value.user?.foto),
+        foto: form.delete_foto ? null : (photoObjectUrl.value || member.value.user?.foto),
       },
     });
   }
@@ -213,7 +229,12 @@ const photoUrl = computed(() => {
     return photoObjectUrl.value;
   }
   if (member.value?.user?.foto) {
-    return `/storage/${member.value.user.foto}`;
+    const foto = member.value.user.foto;
+    if (foto.startsWith('data:')) {
+      return foto;
+    }
+    // Old storage paths don't work on Vercel - show placeholder
+    return null;
   }
   return null;
 });
@@ -222,7 +243,49 @@ onUnmounted(() => {
   if (photoObjectUrl.value) {
     URL.revokeObjectURL(photoObjectUrl.value);
   }
+  if (debounceTimer.value) clearTimeout(debounceTimer.value);
 });
+
+const validateFile = (file) => {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  const maxSize = 2 * 1024 * 1024;
+  if (!allowedTypes.includes(file.type)) return 'Format file harus JPEG, PNG, atau WebP';
+  if (file.size > maxSize) return 'Ukuran file maksimal 2MB';
+  return null;
+};
+
+const handleFileChange = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    const error = validateFile(file);
+    if (error) {
+      form.errors.foto = error;
+      event.target.value = '';
+      return;
+    }
+    cropImageUrl.value = URL.createObjectURL(file);
+    showCropModal.value = true;
+    event.target.value = '';
+  }
+};
+
+const handleCrop = (croppedFile) => {
+  form.foto = croppedFile;
+  form.delete_foto = false;
+  form.errors.foto = null;
+  if (cropImageUrl.value) {
+    URL.revokeObjectURL(cropImageUrl.value);
+    cropImageUrl.value = null;
+  }
+};
+
+const closeCropModal = () => {
+  showCropModal.value = false;
+  if (cropImageUrl.value) {
+    URL.revokeObjectURL(cropImageUrl.value);
+    cropImageUrl.value = null;
+  }
+};
 
 function formatDate(value) { return value ? new Date(value).toLocaleDateString('id-ID') : '-'; }
 
