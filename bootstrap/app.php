@@ -3,7 +3,6 @@
 use App\Http\Middleware\EnsureApproved;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\HandleInertiaRequests;
-use App\Http\Middleware\CookieOverflowGuard;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,7 +19,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         error_log('[VERCEL-BOOT] Registering middleware');
         $middleware->web(prepend: [
-            CookieOverflowGuard::class,
             SecurityHeaders::class,
         ]);
         $middleware->web(append: [
