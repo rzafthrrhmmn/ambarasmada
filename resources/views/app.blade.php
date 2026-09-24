@@ -9,7 +9,6 @@
     <title inertia>{{ config('app.name') }}</title>
     @routes
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @fonts
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" href="/images/Logo_Ambalan.png" type="image/png" sizes="any">
     <link rel="apple-touch-icon" href="/images/Logo_Ambalan.png">
