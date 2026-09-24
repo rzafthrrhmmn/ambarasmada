@@ -138,6 +138,72 @@ const form = useForm({
   delete_foto: false,
 });
 
+const validationRules = {
+  nama_lengkap: (val) => val?.trim() ? null : 'Nama lengkap wajib diisi',
+  kelas: (val) => val?.trim() ? null : 'Kelas wajib diisi',
+  tingkatan: (val) => ['Tamu', 'Calon', 'Bantara', 'Laksana', 'Alumni'].includes(val) ? null : 'Tingkatan tidak valid',
+  status_aktif: (val) => ['Aktif', 'Non-Aktif', 'Alumni'].includes(val) ? null : 'Status aktif tidak valid',
+  tahun_lulus: (val) => val === null || (val >= 2000 && val <= 2100) ? null : 'Tahun lulus harus antara 2000-2100',
+  no_hp: (val) => !val || /^[0-9+\-\s]{10,15}$/.test(val) ? null : 'Format nomor HP tidak valid',
+  tanggal_lahir: (val) => !val || !isNaN(Date.parse(val)) ? null : 'Tanggal lahir tidak valid',
+  jenis_kelamin: (val) => !val || ['Laki-laki', 'Perempuan'].includes(val) ? null : 'Jenis kelamin tidak valid',
+};
+
+const validateForm = () => {
+  const errors = {};
+  let hasErrors = false;
+  for (const [field, rule] of Object.entries(validationRules)) {
+    const error = rule(form[field]);
+    if (error) {
+      errors[field] = error;
+      hasErrors = true;
+    }
+  }
+  form.errors = { ...form.errors, ...errors };
+  return !hasErrors;
+};
+
+const handleSubmit = () => {
+  if (!validateForm()) {
+    toast.error('Mohon perbaiki kesalahan pada form');
+    return;
+  }
+
+  form.patch('/profile', {
+    onSuccess: () => {
+      form.reset('foto');
+      syncFormToMember();
+      toast.success('Profil berhasil diperbarui');
+    },
+    onError: (errors) => {
+      if (errors) {
+        toast.error('Gagal memperbarui profil');
+      }
+    },
+  });
+};
+
+const syncFormToMember = () => {
+  if (member.value) {
+    Object.assign(member.value, {
+      nama_lengkap: form.nama_lengkap,
+      tempat_lahir: form.tempat_lahir,
+      tanggal_lahir: form.tanggal_lahir,
+      jenis_kelamin: form.jenis_kelamin,
+      kelas: form.kelas,
+      tingkatan: form.tingkatan,
+      tahun_lulus: form.tahun_lulus,
+      status_aktif: form.status_aktif,
+      no_hp: form.no_hp,
+      user: {
+        ...member.value.user,
+        name: form.nama_lengkap,
+        foto: form.delete_foto ? null : (form.foto ? 'new' : member.value.user?.foto),
+      },
+    });
+  }
+};
+
 const photoUrl = computed(() => {
   if (form.foto) {
     if (photoObjectUrl.value) {
@@ -161,23 +227,27 @@ onUnmounted(() => {
 function formatDate(value) { return value ? new Date(value).toLocaleDateString('id-ID') : '-'; }
 
 function printKTA() {
+  if (printState.value.pending) return;
+
   let card = ktaPreviewCard.value?.$el;
-  let shouldRestorePreview = false;
 
   if (!card) {
+    printState.value = { pending: true, shouldRestore: true };
     showKtaPreview.value = true;
-    shouldRestorePreview = true;
     nextTick(() => {
       card = ktaPreviewCard.value?.$el;
       doPrint(card);
-      if (shouldRestorePreview) {
+      if (printState.value.shouldRestore) {
         showKtaPreview.value = false;
       }
+      printState.value = { pending: false, shouldRestore: false };
     });
     return;
   }
 
+  printState.value = { pending: true, shouldRestore: false };
   doPrint(card);
+  printState.value = { pending: false, shouldRestore: false };
 }
 
 function doPrint(card) {
