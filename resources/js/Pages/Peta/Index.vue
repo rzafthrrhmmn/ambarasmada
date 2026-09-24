@@ -111,7 +111,11 @@ const hasPmtiles = computed(() => props.mapConfig?.hasPmtiles ?? false);
 const boundingBox = computed(() => props.mapConfig?.boundingBox ?? { west: 118.5, east: 125.5, south: -6.0, north: 2.0 });
 
 const geojsonUrl = computed(() => {
-  return props.mapConfig?.geojsonUrl ?? '/storage/maps/batas_kabupaten_sulsel.geojson';
+  const url = props.mapConfig?.geojsonUrl ?? '/storage/maps/batas_kabupaten_sulsel.geojson';
+  if (url.startsWith('http')) {
+    return url.replace(/^https?:\/\/[^\/]+/, '');
+  }
+  return url;
 });
 
 const pmtilesSourceUrl = computed(() => {
@@ -139,8 +143,10 @@ async function initMap() {
   loading.value = true;
 
   try {
-    const { Map, addProtocol } = await import('maplibre-gl');
+    const { Map, addProtocol, config } = await import('maplibre-gl');
     const { Protocol } = await import('pmtiles');
+
+    config.WORKER_COUNT = 0;
 
     const protocol = new Protocol();
     addProtocol('pmtiles', protocol.tile);
