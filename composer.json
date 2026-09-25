@@ -58,6 +58,14 @@
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
         ],
+        "vercel": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan config:clear --ansi --env=production",
+            "@php artisan route:clear --ansi --env=production",
+            "@php artisan view:clear --ansi --env=production",
+            "@php artisan migrate --force --ansi --env=production",
+            "@php artisan optimize:clear --ansi --env=production"
+        ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
         ],
