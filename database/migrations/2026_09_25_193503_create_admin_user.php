@@ -23,7 +23,7 @@ return new class extends Migration
             'username' => $username,
             'name' => 'Administrator',
             'email' => $email,
-            'password' => '$2y$12$1kjaSOgu/X168SomqYiVXuYzR/LLH7sxrr02mX1X/Tgv5Qme2H2C2',
+            'password' => '$2y$12$.DLeu50/7tBGheE2.Gm0numhvrV7H4cCc6ehBFES2ojAT3xV/RX3K',
             'role' => 'Admin',
             'is_active' => true,
             'status' => 'approved',
