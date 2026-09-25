@@ -1,0 +1,7 @@
+id,actor_id,action,entity_type,entity_id,metadata,ip_address,user_agent,created_at,updated_at
+7,88,sku.point.updated,App\Models\SkuPoint,82,"{""tingkatan"": ""Laksana"", ""nomor_poin"": 2}",127.0.0.1,,2026-09-16 12:23:13,2026-09-16 12:23:13
+8,88,sku.point.updated,App\Models\SkuPoint,81,"{""tingkatan"": ""Laksana"", ""nomor_poin"": 1}",127.0.0.1,,2026-09-16 12:28:49,2026-09-16 12:28:49
+9,88,sku.point.updated,App\Models\SkuPoint,102,"{""tingkatan"": ""Laksana"", ""nomor_poin"": 22}",127.0.0.1,,2026-09-16 12:30:25,2026-09-16 12:30:25
+10,88,ambalan.logo_updated,App\Models\Ambalan,26,,127.0.0.1,,2026-09-16 14:26:23,2026-09-16 14:26:23
+11,88,sku.point.updated,App\Models\SkuPoint,58,"{""tingkatan"": ""Bantara"", ""nomor_poin"": 1}",127.0.0.1,,2026-09-16 14:31:45,2026-09-16 14:31:45
+12,88,attendance_session.created,App\Models\AttendanceSession,1,,127.0.0.1,,2026-09-16 15:21:42,2026-09-16 15:21:42

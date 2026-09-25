@@ -33,7 +33,7 @@
           </div>
           <Link v-if="!isMember" href="/sku" class="text-xs font-bold text-[#A7B92B] hover:text-[#EDD330]">Lihat semua</Link>
         </div>
-        <div v-if="pendingSku.length" class="space-y-3">
+        <div v-if="pendingSku?.length" class="space-y-3">
           <div v-for="submission in pendingSku" :key="submission.id" class="flex items-center justify-between gap-3 rounded-xl border-2 border-[#6F9435]/40 bg-[#263D26] p-3">
             <div class="min-w-0">
               <p class="truncate text-sm font-bold text-[#f0ead8]">{{ submission.member?.nama_lengkap }}</p>
@@ -48,7 +48,7 @@
       <div class="rounded-2xl border-2 border-[#A7B92B]/40 bg-[#335233] p-5 shadow-lg">
         <h2 class="font-extrabold text-[#EDD330]">Pengumuman terbaru</h2>
         <div class="mt-4 space-y-4">
-          <article v-for="announcement in announcements" :key="announcement.id" class="border-b-2 border-[#6F9435]/30 pb-4 last:border-[#A7B92B] last:pb-0">
+          <article v-for="announcement in announcements || []" :key="announcement.id" class="border-b-2 border-[#6F9435]/30 pb-4 last:border-[#A7B92B] last:pb-0">
             <h3 class="text-sm font-bold text-[#f0ead8]">{{ announcement.judul }}</h3>
             <p class="mt-1 line-clamp-2 text-xs leading-5 font-medium text-[#8fa06a]">{{ announcement.isi }}</p>
             <time class="mt-2 block text-[11px] font-bold text-[#8fa06a]">{{ formatDate(announcement.published_at) }}</time>
@@ -60,7 +60,7 @@
     <section class="mt-6 grid gap-6 xl:grid-cols-2">
       <div class="rounded-2xl border-2 border-[#6F9435]/30 bg-[#335233] p-5 shadow-lg">
         <h2 class="mb-3 font-extrabold text-[#EDD330]">Kegiatan Mendatang</h2>
-        <div v-if="upcomingEvents.length" class="space-y-2">
+        <div v-if="upcomingEvents?.length" class="space-y-2">
           <div v-for="event in upcomingEvents" :key="event.id" class="rounded-lg border border-[#6F9435]/30 bg-[#263D26] p-3">
             <p class="text-sm font-bold text-[#f0ead8]">{{ event.nama }}</p>
             <p class="text-[10px] text-[#8fa06a]">{{ formatDate(event.tanggal) }} • {{ event.jenis }}</p>
@@ -71,7 +71,7 @@
 
       <div class="rounded-2xl border-2 border-[#6F9435]/30 bg-[#335233] p-5 shadow-lg">
         <h2 class="mb-3 font-extrabold text-[#EDD330]">Gugus Depan Aktif</h2>
-        <div v-if="teams.length" class="flex flex-wrap gap-2">
+        <div v-if="teams?.length" class="flex flex-wrap gap-2">
           <span v-for="team in teams" :key="team.id" class="rounded-full bg-[#6F9435]/20 border border-[#6F9435]/50 px-3 py-1 text-xs font-bold text-[#d4dc9a]">{{ team.nama }}</span>
         </div>
         <p v-else class="text-center text-sm text-[#8fa06a]">Belum ada gugus depan.</p>
@@ -85,10 +85,23 @@ import StatCard from '@/Components/StatCard.vue';
 import ActivityCalendar from '@/Components/ActivityCalendar.vue';
 import UpcomingActivities from '@/Components/UpcomingActivities.vue';
 import { computed } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 
-defineProps({ member: Object, stats: Object, pendingSku: Array, announcements: Array, upcomingSessions: Array, attendedSessionIds: Array, tkuData: Array, tkkPoints: Array, skuPointsByLevel: Object, upcomingEvents: Array, teams: Array, unreadCount: Number });
+defineProps({
+    member: { type: Object, default: () => ({}) },
+    stats: { type: Object, default: () => ({}) },
+    pendingSku: { type: Array, default: () => [] },
+    announcements: { type: Array, default: () => [] },
+    upcomingSessions: { type: Array, default: () => [] },
+    attendedSessionIds: { type: Array, default: () => [] },
+    tkuData: { type: Array, default: () => [] },
+    tkkPoints: { type: Array, default: () => [] },
+    skuPointsByLevel: { type: Object, default: () => ({}) },
+    upcomingEvents: { type: Array, default: () => [] },
+    teams: { type: Array, default: () => [] },
+    unreadCount: { type: Number, default: 0 },
+});
 const page = usePage();
 const role = computed(() => page.props?.auth?.user?.role);
 const isMember = computed(() => role.value === 'Anggota');

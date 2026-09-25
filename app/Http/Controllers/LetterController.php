@@ -15,7 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Factory;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -614,7 +614,7 @@ class LetterController extends Controller
 
         if (strpos($header, $expectedHeader) !== 0) {
             throw new ValidationException(
-                Factory::make()->make([], [], ['file' => 'Konten file tidak sesuai dengan tipe yang dideklarasikan.'])
+                Validator::make([], [], ['file' => 'Konten file tidak sesuai dengan tipe yang dideklarasikan.'])
             );
         }
     }

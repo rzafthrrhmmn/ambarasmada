@@ -68,3 +68,4 @@ window.installPwa = async () => {
         window.dispatchEvent(new CustomEvent('pwa-install-unavailable'));
     }
 };
+

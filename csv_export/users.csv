@@ -1,0 +1,4 @@
+id,username,name,email,email_verified_at,password,role,is_active,status,remember_token,foto,created_at,updated_at,deleted_at
+87,admin,Administrator,admin@ambalan.test,,$2y$12$mOx4zKXdv6SspG3d9GOS9.NzNkCDIiY/1o7CvEJCigoCJwlRJP5lO,Admin,1,approved,,,2026-09-16 10:38:06,2026-09-16 10:38:06,
+88,pembina,Pembina Ambalan,pembina@ambalan.test,,$2y$12$QdfXtII6WWvxbWTYp55JKuW/QNUrtSBuepOq/4GH1dxD5NJhmQgOe,Pembina,1,approved,,,2026-09-16 10:53:08,2026-09-16 10:53:08,
+89,31082008.018.001,Reza Fathurrahman,rezafathurrahman06@gmail.com,,$2y$12$5kIlqhEpdo1EWKnBEQOrAuHbjO./fUXyU/E4eF6pHsCpU5JEUJRTy,Anggota,1,approved,,,2026-09-16 14:28:49,2026-09-16 14:29:06,

@@ -1,0 +1,4 @@
+id,ambalan_id,user_id,nta,nama_lengkap,tempat_lahir,tanggal_lahir,jenis_kelamin,kelas,tingkatan,tahun_lulus,status_aktif,no_hp,created_at,updated_at,deleted_at,angkatan,nomor_urut,nta_username
+14,26,88,-,Pembina Ambalan,,,,-,Tamu,,Aktif,-,2026-09-16 14:15:24,2026-09-16 14:15:24,,-,0,-
+16,26,87,admin,Administrator,,,,-,Tamu,,Aktif,-,2026-09-16 14:25:59,2026-09-16 14:25:59,,001,999,admin
+17,26,89,31082008.018.001,Reza Fathurrahman,Camba,,,-,Tamu,,Aktif,-,2026-09-16 14:28:49,2026-09-16 15:15:03,,018,1,31082008.018.001

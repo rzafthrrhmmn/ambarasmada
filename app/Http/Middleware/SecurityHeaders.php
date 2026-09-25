@@ -27,7 +27,15 @@ class SecurityHeaders
         $isLocal = app()->environment('local');
 
         $viteSources = $isLocal
-            ? 'http://localhost:5173 http://localhost:5174'
+            ? 'http://localhost:5173 http://localhost:5174 http://127.0.0.1:5173 http://127.0.0.1:5174'
+            : '';
+
+        $viteWsSources = $isLocal
+            ? 'ws://localhost:5173 ws://localhost:5174 ws://127.0.0.1:5173 ws://127.0.0.1:5174'
+            : '';
+
+        $localSources = $isLocal
+            ? 'http://localhost:8000 http://127.0.0.1:8000'
             : '';
 
         $csp = [
@@ -35,8 +43,9 @@ class SecurityHeaders
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' {$viteSources} https://unpkg.com https://tile.openstreetmap.org",
             "style-src 'self' 'unsafe-inline' {$viteSources} https://unpkg.com https://fonts.googleapis.com",
             "font-src 'self' data: https://fonts.gstatic.com {$viteSources}",
-            "img-src 'self' data: https: blob:",
-            "connect-src 'self' {$viteSources} https://tile.openstreetmap.org https://unpkg.com",
+            "img-src 'self' data: https: blob: {$localSources}",
+            "connect-src 'self' {$viteSources} {$viteWsSources} {$localSources} https://tile.openstreetmap.org https://unpkg.com",
+            "worker-src 'self' blob: {$viteSources}",
             "frame-ancestors 'none'",
             "form-action 'self'",
             "base-uri 'self'",
