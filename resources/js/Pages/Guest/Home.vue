@@ -286,7 +286,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import StatCard from '@/Components/StatCard.vue';
 
