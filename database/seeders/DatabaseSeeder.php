@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->call(DemoUsersSeeder::class);
+        $this->call(CreateAdminUserSeeder::class);
         $this->call(LearningMaterialSeeder::class);
         $this->call(PengurusPositionSeeder::class);
         $this->call(SkuPenegakPointSeeder::class);
