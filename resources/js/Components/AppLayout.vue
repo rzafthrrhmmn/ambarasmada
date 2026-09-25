@@ -1,7 +1,7 @@
 ﻿<template>
   <div class="min-h-screen bg-[#263D26] text-[#f0ead8]">
     <header class="sticky top-0 z-30 border-b-2 border-[#EDD330]/50 bg-[#263D26]/95 backdrop-blur">
-      <div class="mx-auto flex max-w-[1500px] items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+      <div class="mx-auto flex w-full items-center justify-between px-4 py-3 sm:px-6 lg:px-[50px]">
         <div class="flex items-center gap-3">
           <button @click="mobileMenuOpen = !mobileMenuOpen" class="rounded-lg border-2 p-2 text-[#EDD330] transition lg:hidden" :class="mobileMenuOpen ? 'border-[#EDD330] bg-[#EDD330]/10' : 'border-[#6F9435] hover:bg-[#6F9435]/20'" aria-label="Toggle menu">
             <svg class="h-5 w-5 transition-transform duration-200" :class="mobileMenuOpen ? 'rotate-45' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
@@ -25,7 +25,7 @@
       </div>
     </header>
 
-    <div class="mx-auto grid min-h-[calc(100vh-4.25rem)] w-full max-w-[1500px] lg:grid-cols-[15rem_1fr]">
+    <div class="mx-auto grid min-h-[calc(100vh-4.25rem)] w-full lg:px-[50px] lg:grid-cols-[15rem_1fr]">
       <!-- Mobile Drawer -->
       <transition
         enter-active-class="transition ease-out duration-300"
