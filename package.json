@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "php artisan migrate --force && php artisan db:seed --force && vite build",
+    "build": "vite build",
     "dev": "vite"
   },
   "dependencies": {
