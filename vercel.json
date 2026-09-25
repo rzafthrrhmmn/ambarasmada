@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": null,
-  "buildCommand": "npm run build && composer run-script vercel",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
       "api/index.php": {
