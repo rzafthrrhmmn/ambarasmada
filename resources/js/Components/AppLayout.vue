@@ -219,6 +219,10 @@ const items = [
   { href: '/letters', label: 'Persuratan', icon: icons.letters, roles: ['Pembina', 'Pengurus'] },
   { href: '/materials', label: 'Materi', icon: icons.materials, roles: ['Admin', 'Pembina', 'Pengurus', 'Anggota'] },
   { href: '/reports', label: 'Laporan', icon: icons.reports, roles: ['Admin', 'Pembina', 'Pengurus'] },
+  { href: '/audit-logs', label: 'Log Aktivitas', icon: icons.reports, roles: ['Admin'] },
+  { href: '/permissions', label: 'Izin Pengguna', icon: icons.reports, roles: ['Admin'] },
+  { href: '/system/tools/backups', label: 'Tools Sistem', icon: icons.reports, roles: ['Admin'] },
+  { href: '/system/points', label: 'Poin Sistem', icon: icons.reports, roles: ['Admin', 'Pembina', 'Pengurus'] },
   { href: '/ambalan', label: 'Pengaturan', icon: icons.guides, roles: ['Admin', 'Pembina'] },
   { href: '/alumni/dashboard', label: 'Portal Alumni', icon: icons.alumni, roles: ['Alumni'] },
 ];

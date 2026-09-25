@@ -119,6 +119,18 @@ Route::middleware(['auth', 'approved'])->group(function () {
         Route::post('/finance/{finance}/post', [FinanceController::class, 'post'])->name('finance.post')->middleware('throttle:10,1');
         Route::post('/finance/{finance}/reverse', [FinanceController::class, 'reverse'])->name('finance.reverse')->middleware('throttle:10,1');
 
+        Route::get('/finance/categories', [FinanceController::class, 'categories'])->name('finance.categories.index');
+        Route::post('/finance/categories', [FinanceController::class, 'storeCategory'])->name('finance.categories.store')->middleware('throttle:10,1');
+        Route::patch('/finance/categories/{category}', [FinanceController::class, 'updateCategory'])->name('finance.categories.update')->middleware('throttle:20,1');
+        Route::patch('/finance/categories/{category}/toggle', [FinanceController::class, 'toggleCategory'])->name('finance.categories.toggle')->middleware('throttle:10,1');
+        Route::delete('/finance/categories/{category}', [FinanceController::class, 'destroyCategory'])->name('finance.categories.destroy')->middleware('throttle:10,1');
+
+        Route::get('/finance/periods', [FinanceController::class, 'periods'])->name('finance.periods.index');
+        Route::post('/finance/periods', [FinanceController::class, 'storePeriod'])->name('finance.periods.store')->middleware('throttle:10,1');
+        Route::patch('/finance/periods/{period}', [FinanceController::class, 'updatePeriod'])->name('finance.periods.update')->middleware('throttle:20,1');
+        Route::patch('/finance/periods/{period}/close', [FinanceController::class, 'closePeriod'])->name('finance.periods.close')->middleware('throttle:10,1');
+        Route::delete('/finance/periods/{period}', [FinanceController::class, 'destroyPeriod'])->name('finance.periods.destroy')->middleware('throttle:10,1');
+
         Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
         Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store')->middleware('throttle:10,1');
         Route::patch('/inventory/{inventory}', [InventoryController::class, 'update'])->name('inventory.update')->middleware('throttle:20,1');
@@ -256,6 +268,11 @@ Route::middleware(['auth', 'approved'])->group(function () {
         Route::post('/permissions', [UserPermissionController::class, 'store'])->name('permissions.store');
         Route::post('/permissions/sync', [UserPermissionController::class, 'sync'])->name('permissions.sync');
         Route::delete('/permissions/{permission}', [UserPermissionController::class, 'destroy'])->name('permissions.destroy');
+    });
+
+    // Audit Logs
+    Route::middleware(['role:Admin'])->group(function () {
+        Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     });
 
     // Trainings

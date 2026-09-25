@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ambalan;
 use App\Models\AuditLog;
 use App\Models\Finance;
 use App\Models\FinanceCategory;
@@ -233,5 +234,160 @@ class FinanceController extends Controller
         $finance->update(['status' => 'Reversed']);
 
         return redirect()->route('finance.index')->with('success', 'Transaksi berhasil dibalik dengan jurnal pembalik.');
+    }
+
+    public function categories(Request $request): Response
+    {
+        abort_unless($this->isFinanceManager($request->user()), 403);
+
+        $categories = FinanceCategory::query()
+            ->with('ambalan')
+            ->orderByDesc('id')
+            ->paginate(20)
+            ->withQueryString();
+
+        $ambalans = Ambalan::orderBy('nama')->get();
+
+        return Inertia::render('Finance/Categories', [
+            'categories' => $categories,
+            'ambalans' => $ambalans,
+            'filters' => $request->only(['search']),
+        ]);
+    }
+
+    public function storeCategory(Request $request): RedirectResponse
+    {
+        abort_unless($this->isFinanceManager($request->user()), 403);
+
+        $data = $request->validate([
+            'ambalan_id' => ['nullable', 'exists:ambalans,id'],
+            'nama' => ['required', 'string', 'max:255'],
+            'jenis' => ['required', 'in:Masuk,Keluar', 'max:30'],
+            'is_active' => ['boolean'],
+        ]);
+
+        FinanceCategory::create([
+            'ambalan_id' => $data['ambalan_id'] ?? $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
+            'nama' => $data['nama'],
+            'jenis' => $data['jenis'],
+            'is_active' => $data['is_active'] ?? true,
+        ]);
+
+        return redirect()->route('finance.categories.index')->with('success', 'Kategori berhasil ditambahkan.');
+    }
+
+    public function updateCategory(Request $request, FinanceCategory $category): RedirectResponse
+    {
+        abort_unless($this->isFinanceManager($request->user()), 403);
+
+        $data = $request->validate([
+            'nama' => ['required', 'string', 'max:255'],
+            'jenis' => ['required', 'in:Masuk,Keluar', 'max:30'],
+            'is_active' => ['boolean'],
+        ]);
+
+        $category->update($data);
+
+        return redirect()->route('finance.categories.index')->with('success', 'Kategori berhasil diperbarui.');
+    }
+
+    public function toggleCategory(Request $request, FinanceCategory $category): RedirectResponse
+    {
+        abort_unless($this->isFinanceManager($request->user()), 403);
+
+        $category->update(['is_active' => ! $category->is_active]);
+
+        return redirect()->route('finance.categories.index')->with('success', 'Status kategori berhasil diubah.');
+    }
+
+    public function destroyCategory(Request $request, FinanceCategory $category): RedirectResponse
+    {
+        abort_unless($this->isFinanceManager($request->user()), 403);
+        abort_if($category->finances()->exists(), 422, 'Kategori yang sudah digunakan tidak dapat dihapus.');
+
+        $category->delete();
+
+        return redirect()->route('finance.categories.index')->with('success', 'Kategori berhasil dihapus.');
+    }
+
+    public function periods(Request $request): Response
+    {
+        abort_unless($this->isFinanceManager($request->user()), 403);
+
+        $query = FinancePeriod::query()
+            ->with('ambalan')
+            ->orderByDesc('starts_at');
+
+        if ($request->filled('search')) {
+            $query->where('nama', 'like', '%'.$request->string('search').'%');
+        }
+
+        $periods = $query->paginate(20)->withQueryString();
+
+        $ambalans = Ambalan::orderBy('nama')->get();
+
+        return Inertia::render('Finance/Periods', [
+            'periods' => $periods,
+            'ambalans' => $ambalans,
+            'filters' => $request->only(['search']),
+        ]);
+    }
+
+    public function storePeriod(Request $request): RedirectResponse
+    {
+        abort_unless($this->isFinanceManager($request->user()), 403);
+
+        $data = $request->validate([
+            'ambalan_id' => ['nullable', 'exists:ambalans,id'],
+            'nama' => ['required', 'string', 'max:255'],
+            'starts_at' => ['required', 'date'],
+            'ends_at' => ['required', 'date', 'after:starts_at'],
+        ]);
+
+        FinancePeriod::create([
+            'ambalan_id' => $data['ambalan_id'] ?? $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
+            'nama' => $data['nama'],
+            'starts_at' => $data['starts_at'],
+            'ends_at' => $data['ends_at'],
+            'is_closed' => false,
+        ]);
+
+        return redirect()->route('finance.periods.index')->with('success', 'Periode keuangan berhasil ditambahkan.');
+    }
+
+    public function updatePeriod(Request $request, FinancePeriod $period): RedirectResponse
+    {
+        abort_unless($this->isFinanceManager($request->user()), 403);
+        abort_if($period->is_closed, 422, 'Periode yang sudah ditutup tidak dapat diubah.');
+
+        $data = $request->validate([
+            'nama' => ['required', 'string', 'max:255'],
+            'starts_at' => ['required', 'date'],
+            'ends_at' => ['required', 'date', 'after:starts_at'],
+        ]);
+
+        $period->update($data);
+
+        return redirect()->route('finance.periods.index')->with('success', 'Periode keuangan berhasil diperbarui.');
+    }
+
+    public function closePeriod(Request $request, FinancePeriod $period): RedirectResponse
+    {
+        abort_unless($this->isFinanceManager($request->user()), 403);
+        abort_if($period->is_closed, 422, 'Periode sudah ditutup.');
+
+        $period->update(['is_closed' => true]);
+
+        return redirect()->route('finance.periods.index')->with('success', 'Periode keuangan berhasil ditutup.');
+    }
+
+    public function destroyPeriod(Request $request, FinancePeriod $period): RedirectResponse
+    {
+        abort_unless($this->isFinanceManager($request->user()), 403);
+        abort_if($period->finances()->exists(), 422, 'Periode yang sudah memiliki transaksi tidak dapat dihapus.');
+
+        $period->delete();
+
+        return redirect()->route('finance.periods.index')->with('success', 'Periode keuangan berhasil dihapus.');
     }
 }
