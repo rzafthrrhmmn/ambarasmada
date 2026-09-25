@@ -17,7 +17,7 @@ class CookieOverflowGuard
         $sessionCookieName = config('session.cookie', 'ambara-sistem-digital-session');
 
         foreach ($cookies as $name => $value) {
-            $size = strlen($name) . strlen($value) + 4;
+            $size = strlen($name).strlen($value) + 4;
             $totalSize += $size;
             if ($size > 1500 && $name != $sessionCookieName) {
                 // Flag large cookies for potential cleanup
@@ -51,7 +51,7 @@ class CookieOverflowGuard
 
         $flashKeys = ['success', 'error', '_old_input', 'remember_token', '_intent'];
         foreach ($flashKeys as $key) {
-            $flashCookie = $sessionCookieName . '_' . $key;
+            $flashCookie = $sessionCookieName.'_'.$key;
             $response->headers->clearCookie($flashCookie, config('session.path', '/'), config('session.domain'));
         }
 

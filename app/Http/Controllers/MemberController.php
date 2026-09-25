@@ -415,7 +415,7 @@ class MemberController extends Controller
         } elseif ($request->hasFile('foto')) {
             $file = $request->file('foto');
             $this->validateFileContent($file);
-            $base64 = 'data:' . $file->getMimeType() . ';base64,' . base64_encode(file_get_contents($file->getRealPath()));
+            $base64 = 'data:'.$file->getMimeType().';base64,'.base64_encode(file_get_contents($file->getRealPath()));
             $member->user->update(['foto' => $base64]);
         }
 

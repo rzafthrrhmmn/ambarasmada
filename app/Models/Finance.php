@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['ambalan_id', 'member_id', 'category_id', 'period_id', 'jenis_transaksi', 'nominal', 'keterangan', 'status', 'receipt_no', 'created_by', 'tgl_transaksi'])]
 class Finance extends Model
 {
+    protected $fillable = ['ambalan_id', 'member_id', 'category_id', 'period_id', 'jenis_transaksi', 'nominal', 'keterangan', 'status', 'receipt_no', 'created_by', 'tgl_transaksi'];
+
     use SoftDeletes;
 
     protected function casts(): array

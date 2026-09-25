@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ambalan;
 use App\Models\Article;
-use App\Models\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -50,7 +51,7 @@ class ArticleController extends Controller
 
         Article::create([
             ...$data,
-            'ambalan_id' => $request->user()->member?->ambalan_id ?? \App\Models\Ambalan::first()?->id,
+            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
             'author_id' => $request->user()->id,
         ]);
 
@@ -72,7 +73,7 @@ class ArticleController extends Controller
 
         if ($request->hasFile('image')) {
             if ($article->image) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($article->image);
+                Storage::disk('public')->delete($article->image);
             }
             $data['image'] = $request->file('image')->store('articles/gallery', 'public');
         }
@@ -87,12 +88,14 @@ class ArticleController extends Controller
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina'], true), 403);
 
         $article->delete();
+
         return redirect()->route('articles.index')->with('success', 'Artikel dihapus.');
     }
 
     public function show(Article $article): Response
     {
         $article->load(['ambalan', 'author']);
+
         return Inertia::render('Articles/Show', ['article' => $article]);
     }
 }

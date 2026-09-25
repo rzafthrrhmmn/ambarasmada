@@ -6,6 +6,7 @@ use App\Models\Ambalan;
 use App\Models\Angkatan;
 use App\Models\Member;
 use App\Models\User;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -96,7 +97,7 @@ class AuthController extends Controller
         );
     }
 
-    public function showRegistrationForm(): Response
+    public function showRegistrationForm(): Response|RedirectResponse
     {
         if (Auth::check()) {
             return redirect()->route('dashboard');
@@ -237,8 +238,12 @@ class AuthController extends Controller
         ]);
     }
 
-    public function pendingApproval(): Response
+    public function pendingApproval(): RedirectResponse|Response
     {
+        if (Auth::check() && Auth::user()->status === 'approved') {
+            return redirect()->route('dashboard');
+        }
+
         return Inertia::render('Auth/PendingApproval');
     }
 
@@ -249,5 +254,48 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('home');
+    }
+
+    public function showVerificationNotice(): Response|RedirectResponse
+    {
+        if ($request = request()->user()?->hasVerifiedEmail()) {
+            return redirect()->route('dashboard');
+        }
+
+        return Inertia::render('Auth/VerifyEmail');
+    }
+
+    public function verifyEmail(Request $request): RedirectResponse
+    {
+        if (! $request->hasValidSignature()) {
+            throw ValidationException::withMessages([
+                'signature' => 'Link verifikasi tidak valid atau sudah kedaluwarsa.',
+            ]);
+        }
+
+        $user = User::findOrFail($request->route('id'));
+
+        if (! hash_equals((string) $request->route('hash'), sha1($user->getEmailForVerification()))) {
+            throw ValidationException::withMessages([
+                'hash' => 'Link verifikasi tidak valid.',
+            ]);
+        }
+
+        if ($user->markEmailAsVerified()) {
+            event(new Verified($user));
+        }
+
+        return redirect()->route('dashboard')->with('success', 'Email berhasil diverifikasi.');
+    }
+
+    public function sendVerificationEmail(Request $request): RedirectResponse
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return redirect()->route('dashboard');
+        }
+
+        $request->user()->sendEmailVerificationNotification();
+
+        return back()->with('success', 'Link verifikasi telah dikirim ke email Anda.');
     }
 }

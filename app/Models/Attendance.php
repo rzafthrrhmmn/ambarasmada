@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['attendance_session_id', 'member_id', 'keterangan', 'catatan', 'checked_at'])]
 class Attendance extends Model
 {
+    protected $fillable = ['attendance_session_id', 'member_id', 'keterangan', 'catatan', 'checked_at'];
+
     public function session(): BelongsTo
     {
         return $this->belongsTo(AttendanceSession::class, 'attendance_session_id');

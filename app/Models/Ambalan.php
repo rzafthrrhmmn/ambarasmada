@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 #[Fillable(['nama', 'kode', 'alamat', 'status', 'logo_path'])]
 class Ambalan extends Model
 {
+    protected $fillable = ['nama', 'kode', 'alamat', 'status', 'logo_path'];
+
     public function getLogoUrlAttribute(): ?string
     {
         if (! $this->logo_path) {

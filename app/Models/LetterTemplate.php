@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['name', 'file_path', 'description', 'created_by_user_id'])]
 class LetterTemplate extends Model
 {
+    protected $fillable = ['name', 'file_path', 'description', 'created_by_user_id'];
+
     use SoftDeletes;
 
     protected $guarded = ['id'];

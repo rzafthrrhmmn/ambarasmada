@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['member_id', 'tanggal', 'kegiatan', 'refleksi', 'bukti'])]
 class MemberLogbook extends Model
 {
+    protected $fillable = ['member_id', 'tanggal', 'kegiatan', 'refleksi', 'bukti'];
+
     protected function casts(): array
     {
         return [

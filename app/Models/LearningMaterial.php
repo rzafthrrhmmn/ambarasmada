@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['ambalan_id', 'nama', 'deskripsi', 'konten', 'file_path', 'created_by_user_id', 'is_restricted'])]
 class LearningMaterial extends Model
 {
+    protected $fillable = ['ambalan_id', 'nama', 'deskripsi', 'konten', 'file_path', 'created_by_user_id', 'is_restricted'];
+
     use SoftDeletes;
 
     protected $guarded = ['id'];

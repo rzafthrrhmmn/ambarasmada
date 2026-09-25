@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['ambalan_id', 'author_id', 'judul', 'konten', 'kategori', 'image', 'is_published'])]
 class Article extends Model
 {
+    protected $fillable = ['ambalan_id', 'author_id', 'judul', 'konten', 'kategori', 'image', 'is_published'];
+
     protected $casts = [
         'is_published' => 'boolean',
     ];

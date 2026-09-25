@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ambalan;
+use App\Models\AuditLog;
 use App\Models\Event;
 use App\Models\EventParticipant;
-use App\Models\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -54,7 +56,7 @@ class EventController extends Controller
 
         $event = Event::create([
             ...$data,
-            'ambalan_id' => $request->user()->member?->ambalan_id ?? \App\Models\Ambalan::first()?->id,
+            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
             'created_by' => $request->user()->id,
             'status' => 'Draft',
         ]);
@@ -88,7 +90,7 @@ class EventController extends Controller
 
         if ($request->hasFile('image')) {
             if ($event->image) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($event->image);
+                Storage::disk('public')->delete($event->image);
             }
             $data['image'] = $request->file('image')->store('events/gallery', 'public');
         }
@@ -103,6 +105,7 @@ class EventController extends Controller
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
 
         $event->delete();
+
         return redirect()->route('events.index')->with('success', 'Kegiatan dihapus.');
     }
 
@@ -136,6 +139,7 @@ class EventController extends Controller
     public function show(Event $event): Response
     {
         $event->load(['participants.member.user', 'ambalan']);
+
         return Inertia::render('Events/Show', ['event' => $event]);
     }
 }

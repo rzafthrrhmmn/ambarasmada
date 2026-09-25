@@ -19,7 +19,7 @@ class BlackboxWhiteboxTest extends TestCase
         parent::setUp();
         Ambalan::create(['kode' => 'TEST', 'nama' => 'Test Ambalan']);
         Angkatan::create([
-            'angkatan' => '018', 'nomor' => 18,
+            'angkatan' => '018', 'nomor' => '018',
             'nama' => 'Angkatan 18', 'is_active' => true, 'is_current' => true,
         ]);
     }
@@ -27,27 +27,29 @@ class BlackboxWhiteboxTest extends TestCase
     protected function createApprovedUser(string $role): User
     {
         $user = User::create([
-            'username' => strtolower($role) . '_user_' . uniqid(),
+            'username' => strtolower($role).'_user_'.uniqid(),
             'name' => ucfirst($role),
-            'email' => strtolower($role) . '@test.com',
+            'email' => strtolower($role).'@test.com',
             'password' => Hash::make('password123'),
             'role' => $role,
             'is_active' => true,
             'status' => 'approved',
+            'email_verified_at' => now(),
         ]);
         Member::create([
             'user_id' => $user->id,
             'ambalan_id' => 1,
-            'nta' => strtolower($role) . '_nta_' . uniqid(),
+            'nta' => strtolower($role).'_nta_'.uniqid(),
             'nama_lengkap' => ucfirst($role),
             'kelas' => '-',
             'tingkatan' => 'Bantara',
             'angkatan' => '018',
             'nomor_urut' => $user->id,
-            'nta_username' => strtolower($role) . '_user_' . uniqid(),
+            'nta_username' => strtolower($role).'_user_'.uniqid(),
             'no_hp' => '-',
             'status_aktif' => 'Aktif',
         ]);
+
         return $user;
     }
 
@@ -111,7 +113,7 @@ class BlackboxWhiteboxTest extends TestCase
     public function test_pending_user_redirects_to_pending_approval(): void
     {
         $user = User::create([
-            'username' => 'pending_u_' . uniqid(),
+            'username' => 'pending_u_'.uniqid(),
             'name' => 'Pending',
             'email' => 'pending@test.com',
             'password' => Hash::make('password123'),
@@ -130,7 +132,7 @@ class BlackboxWhiteboxTest extends TestCase
     public function test_rejected_user_login_fails(): void
     {
         $user = User::create([
-            'username' => 'rejected_u_' . uniqid(),
+            'username' => 'rejected_u_'.uniqid(),
             'name' => 'Rejected',
             'email' => 'rejected@test.com',
             'password' => Hash::make('password123'),
@@ -177,7 +179,7 @@ class BlackboxWhiteboxTest extends TestCase
     public function test_registration_rejects_duplicate_email(): void
     {
         User::create([
-            'username' => 'exists_u_' . uniqid(),
+            'username' => 'exists_u_'.uniqid(),
             'name' => 'Existing',
             'email' => 'existing@test.com',
             'password' => Hash::make('password123'),
@@ -242,7 +244,7 @@ class BlackboxWhiteboxTest extends TestCase
 
         $user = User::where('email', 'auto@test.com')->first();
         $prefix = (string) config('app.gudep_prefix', '31082008');
-        $this->assertStringStartsWith($prefix . '.018.', $user->username);
+        $this->assertStringStartsWith($prefix.'.018.', $user->username);
     }
 
     public function test_member_record_created_on_registration(): void
@@ -264,7 +266,7 @@ class BlackboxWhiteboxTest extends TestCase
     public function test_dashboard_denied_for_pending_user(): void
     {
         $user = User::create([
-            'username' => 'pending_d_' . uniqid(),
+            'username' => 'pending_d_'.uniqid(),
             'name' => 'Pending',
             'email' => 'pending2@test.com',
             'password' => Hash::make('password123'),
@@ -305,7 +307,7 @@ class BlackboxWhiteboxTest extends TestCase
     {
         $user = $this->createApprovedUser('Admin');
         $this->actingAs($user);
-        $this->post('/logout')->assertRedirect('home');
+        $this->post('/logout')->assertRedirect('/');
         $this->assertGuest();
     }
 
@@ -348,7 +350,7 @@ class BlackboxWhiteboxTest extends TestCase
     public function test_pending_approval_page_accessible_for_pending_users(): void
     {
         $user = User::create([
-            'username' => 'pend_page_' . uniqid(),
+            'username' => 'pend_page_'.uniqid(),
             'name' => 'Pending',
             'email' => 'pendpage@test.com',
             'password' => Hash::make('password123'),

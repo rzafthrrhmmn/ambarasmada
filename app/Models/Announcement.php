@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Storage;
 #[Fillable(['ambalan_id', 'judul', 'isi', 'image', 'published_at', 'created_by'])]
 class Announcement extends Model
 {
+    protected $fillable = ['ambalan_id', 'judul', 'isi', 'image', 'published_at', 'created_by'];
+
     use SoftDeletes;
 
     public function ambalan(): BelongsTo

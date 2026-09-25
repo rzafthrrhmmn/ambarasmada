@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 #[Fillable(['sku_submission_id', 'file_path', 'tipe', 'caption'])]
 class SkuSubmissionMedia extends Model
 {
+    protected $fillable = ['sku_submission_id', 'file_path', 'tipe', 'caption'];
+
     public function submission(): BelongsTo
     {
         return $this->belongsTo(SkuSubmission::class, 'sku_submission_id');

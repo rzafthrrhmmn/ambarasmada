@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ambalan;
 use App\Models\Assessment;
-use App\Models\AssessmentDetail;
 use App\Models\AuditLog;
+use App\Models\Member;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -25,7 +26,7 @@ class AssessmentController extends Controller
         }
 
         $assessments = $query->paginate(15)->withQueryString();
-        $members = \App\Models\Member::where('status_aktif', 'Aktif')->orderBy('nama_lengkap')->get();
+        $members = Member::where('status_aktif', 'Aktif')->orderBy('nama_lengkap')->get();
 
         return Inertia::render('Assessments/Index', [
             'assessments' => $assessments,
@@ -57,7 +58,7 @@ class AssessmentController extends Controller
 
         $assessment = Assessment::create([
             ...$data,
-            'ambalan_id' => $request->user()->member?->ambalan_id ?? \App\Models\Ambalan::first()?->id,
+            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
             'assessor_id' => $request->user()->id,
             'nilai_keseluruhan' => round($nilaiKeseluruhan, 2),
             'status' => 'Draft',
@@ -104,12 +105,14 @@ class AssessmentController extends Controller
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina'], true), 403);
 
         $assessment->delete();
+
         return back()->with('success', 'Penilaian dihapus.');
     }
 
     public function show(Assessment $assessment): Response
     {
         $assessment->load(['details', 'member.user', 'assessor', 'ambalan']);
+
         return Inertia::render('Assessments/Show', ['assessment' => $assessment]);
     }
 

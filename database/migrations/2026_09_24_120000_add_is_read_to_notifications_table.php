@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('notifications', function (Blueprint $table) {
-            if (!Schema::hasColumn('notifications', 'is_read')) {
+            if (! Schema::hasColumn('notifications', 'is_read')) {
                 $table->boolean('is_read')->default(false)->after('body');
             }
         });

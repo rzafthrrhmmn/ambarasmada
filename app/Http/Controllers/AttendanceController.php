@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 class AttendanceController extends Controller
 {
@@ -49,6 +50,10 @@ class AttendanceController extends Controller
             'nama' => ['required', 'string', 'max:255'],
             'tanggal' => ['required', 'date'],
             'lokasi' => ['nullable', 'string', 'max:255'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'radius' => ['nullable', 'integer', 'min:10', 'max:1000'],
+            'qr_dynamic' => ['sometimes', 'boolean'],
             'materi' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,mp4,webm,doc,docx'],
         ]);
 
@@ -61,6 +66,10 @@ class AttendanceController extends Controller
             'nama' => $data['nama'],
             'tanggal' => $data['tanggal'],
             'lokasi' => $data['lokasi'],
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
+            'radius' => $data['radius'] ?? null,
+            'qr_dynamic' => $request->boolean('qr_dynamic'),
             'materi_path' => $materiPath,
             'materi_nama' => $materiPath ? $request->file('materi')->getClientOriginalName() : null,
             'materi_mime_type' => $materiPath ? $request->file('materi')->getMimeType() : null,
@@ -87,6 +96,10 @@ class AttendanceController extends Controller
             'nama' => ['required', 'string', 'max:255'],
             'tanggal' => ['required', 'date'],
             'lokasi' => ['nullable', 'string', 'max:255'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'radius' => ['nullable', 'integer', 'min:10', 'max:1000'],
+            'qr_dynamic' => ['sometimes', 'boolean'],
             'materi' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,mp4,webm,doc,docx'],
             'remove_materi' => ['sometimes', 'boolean'],
         ]);
@@ -119,6 +132,10 @@ class AttendanceController extends Controller
             'nama' => $data['nama'],
             'tanggal' => $data['tanggal'],
             'lokasi' => $data['lokasi'],
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
+            'radius' => $data['radius'] ?? null,
+            'qr_dynamic' => $request->boolean('qr_dynamic'),
         ]);
 
         AuditLog::create([
@@ -175,18 +192,64 @@ class AttendanceController extends Controller
     public function checkIn(Request $request): RedirectResponse
     {
         abort_unless($request->user()->role === 'Anggota', 403);
+
         $data = $request->validate([
             'qr_token' => ['required', 'string', 'max:100'],
             'member_id' => ['required', 'exists:members,id'],
             'keterangan' => ['required', 'in:Hadir,Izin,Sakit,Alpa'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
+
         $session = AttendanceSession::where('qr_token', strtoupper($data['qr_token']))->firstOrFail();
+
+        // Check GPS radius if enabled
+        if ($session->radius && $session->latitude && $session->longitude && isset($data['latitude'], $data['longitude'])) {
+            $distance = $this->calculateDistance(
+                $session->latitude,
+                $session->longitude,
+                $data['latitude'],
+                $data['longitude']
+            );
+
+            if ($distance > $session->radius) {
+                return back()->withErrors([
+                    'location' => "Anda terlalu jauh dari lokasi presensi. Jarak: {$distance}m, Radius maksimal: {$session->radius}m",
+                ]);
+            }
+        }
+
         Attendance::updateOrCreate(
             ['attendance_session_id' => $session->id, 'member_id' => $data['member_id']],
-            ['keterangan' => $data['keterangan'], 'checked_at' => now(), 'catatan' => 'QR Code'],
+            [
+                'keterangan' => $data['keterangan'],
+                'checked_at' => now(),
+                'catatan' => 'QR Code'.(isset($data['latitude'], $data['longitude']) ? ' + GPS' : ''),
+            ]
         );
 
         return redirect()->route('attendance.index')->with('success', 'Presensi berhasil disimpan.');
+    }
+
+    public function refreshQrToken(Request $request, AttendanceSession $attendanceSession): JsonResponse
+    {
+        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        abort_unless($attendanceSession->qr_dynamic, 422, 'QR code dinamis tidak diaktifkan untuk sesi ini.');
+
+        $attendanceSession->refreshQrToken();
+
+        AuditLog::create([
+            'actor_id' => $request->user()->id,
+            'action' => 'attendance_session.qr_refreshed',
+            'entity_type' => AttendanceSession::class,
+            'entity_id' => $attendanceSession->id,
+            'ip_address' => $request->ip(),
+        ]);
+
+        return response()->json([
+            'qr_token' => $attendanceSession->qr_token,
+            'refreshed_at' => $attendanceSession->qr_refreshed_at?->toISOString(),
+        ]);
     }
 
     public function downloadMateri(AttendanceSession $attendanceSession): BinaryFileResponse
@@ -202,5 +265,23 @@ class AttendanceController extends Controller
         ]);
 
         return Storage::disk('public')->download($attendanceSession->materi_path, $attendanceSession->materi_nama);
+    }
+
+    private function calculateDistance(float $lat1, float $lon1, float $lat2, float $lon2): int
+    {
+        $earthRadius = 6371000; // meters
+
+        $lat1 = deg2rad($lat1);
+        $lon1 = deg2rad($lon1);
+        $lat2 = deg2rad($lat2);
+        $lon2 = deg2rad($lon2);
+
+        $dLat = $lat2 - $lat1;
+        $dLon = $lon2 - $lon1;
+
+        $a = sin($dLat / 2) ** 2 + cos($lat1) * cos($lat2) * sin($dLon / 2) ** 2;
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return (int) round($earthRadius * $c);
     }
 }

@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['ambalan_id', 'user_id', 'nta', 'angkatan', 'nomor_urut', 'nta_username', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'kelas', 'tingkatan', 'tahun_lulus', 'status_aktif', 'no_hp'])]
 class Member extends Model
 {
+    protected $fillable = ['ambalan_id', 'user_id', 'nta', 'angkatan', 'nomor_urut', 'nta_username', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'kelas', 'tingkatan', 'tahun_lulus', 'status_aktif', 'no_hp'];
+
     use SoftDeletes;
 
     protected $appends = ['position_label'];

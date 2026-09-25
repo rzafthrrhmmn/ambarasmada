@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SystemPoint;
 use App\Models\Ambalan;
+use App\Models\SystemPoint;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class SystemPointController extends Controller

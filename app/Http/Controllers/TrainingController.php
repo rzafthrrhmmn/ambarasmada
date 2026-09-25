@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ambalan;
 use App\Models\Training;
 use App\Models\TrainingProgress;
-use App\Models\Ambalan;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class TrainingController extends Controller
@@ -92,7 +91,7 @@ class TrainingController extends Controller
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
 
         $progress->update([
-            'completed' => !$progress->completed,
+            'completed' => ! $progress->completed,
             'catatan' => $progress->catatan,
         ]);
 

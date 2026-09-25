@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['ambalan_id', 'assessor_id', 'member_id', 'periode', 'nilai_kehadiran', 'nilai_disiplin', 'nilai_keterampilan', 'nilai_kepemimpinan', 'nilai_keseluruhan', 'catatan', 'status'])]
 class Assessment extends Model
 {
+    protected $fillable = ['ambalan_id', 'assessor_id', 'member_id', 'periode', 'nilai_kehadiran', 'nilai_disiplin', 'nilai_keterampilan', 'nilai_kepemimpinan', 'nilai_keseluruhan', 'catatan', 'status'];
+
     protected $casts = [
         'nilai_kehadiran' => 'decimal:2',
         'nilai_disiplin' => 'decimal:2',

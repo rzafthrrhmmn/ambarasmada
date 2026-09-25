@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['created_by', 'user_id', 'judul', 'deskripsi', 'jadwal', 'jenis', 'is_sent'])]
 class Reminder extends Model
 {
+    protected $fillable = ['created_by', 'user_id', 'judul', 'deskripsi', 'jadwal', 'jenis', 'is_sent'];
+
     protected $casts = [
         'jadwal' => 'datetime',
         'is_sent' => 'boolean',

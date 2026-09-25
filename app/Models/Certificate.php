@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['ambalan_id', 'member_id', 'issued_by', 'nomor_sertifikat', 'jenis', 'judul', 'deskripsi', 'tanggal_diterbitkan', 'file_path', 'status'])]
 class Certificate extends Model
 {
+    protected $fillable = ['ambalan_id', 'member_id', 'issued_by', 'nomor_sertifikat', 'jenis', 'judul', 'deskripsi', 'tanggal_diterbitkan', 'file_path', 'status'];
+
     protected $casts = [
         'tanggal_diterbitkan' => 'date',
     ];

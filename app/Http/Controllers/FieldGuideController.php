@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ambalan;
 use App\Models\FieldGuide;
-use App\Models\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -44,7 +44,7 @@ class FieldGuideController extends Controller
 
         FieldGuide::create([
             ...$data,
-            'ambalan_id' => $request->user()->member?->ambalan_id ?? \App\Models\Ambalan::first()?->id,
+            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
             'created_by' => $request->user()->id,
         ]);
 
@@ -72,6 +72,7 @@ class FieldGuideController extends Controller
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina'], true), 403);
 
         $guide->delete();
+
         return redirect()->route('field-guides.index')->with('success', 'Panduan dihapus.');
     }
 }

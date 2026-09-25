@@ -6,6 +6,7 @@ use App\Models\BackupLog;
 use App\Models\Webhook;
 use App\Models\WebhookLog;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 
@@ -29,19 +30,19 @@ class SystemToolController extends Controller
             'keterangan' => 'nullable|string|max:255',
         ]);
 
-        $backupPath = 'backups/' . now()->format('Y-m-d_H-i-s') . '.sql';
+        $backupPath = 'backups/'.now()->format('Y-m-d_H-i-s').'.sql';
 
         try {
             $output = [];
             $returnVar = 0;
             $dbPath = database_path('database.sqlite');
-            exec('sqlite3 ' . escapeshellarg($dbPath) . ' .dump > ' . escapeshellarg(storage_path('app/' . $backupPath)), $output, $returnVar);
+            exec('sqlite3 '.escapeshellarg($dbPath).' .dump > '.escapeshellarg(storage_path('app/'.$backupPath)), $output, $returnVar);
 
             if ($returnVar !== 0) {
                 throw new \Exception('Backup command failed');
             }
 
-            $size = file_exists(storage_path('app/' . $backupPath)) ? filesize(storage_path('app/' . $backupPath)) : 0;
+            $size = file_exists(storage_path('app/'.$backupPath)) ? filesize(storage_path('app/'.$backupPath)) : 0;
 
             BackupLog::create([
                 'created_by' => Auth::id(),
@@ -52,13 +53,13 @@ class SystemToolController extends Controller
 
             return redirect()->back()->with('success', 'Backup created successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Backup failed: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Backup failed: '.$e->getMessage());
         }
     }
 
     public function webhooks(Request $request)
     {
-        $webhooks = Webhook::query()->with(['logs' => fn($q) => $q->latest()->limit(5)])
+        $webhooks = Webhook::query()->with(['logs' => fn ($q) => $q->latest()->limit(5)])
             ->paginate(20);
 
         return inertia('SystemTools/Webhooks', [
@@ -105,7 +106,7 @@ class SystemToolController extends Controller
             'success' => $response->successful(),
         ]);
 
-        return redirect()->back()->with('success', 'Webhook triggered. Status: ' . $response->status());
+        return redirect()->back()->with('success', 'Webhook triggered. Status: '.$response->status());
     }
 
     public function deleteWebhook(Webhook $webhook)
@@ -113,5 +114,14 @@ class SystemToolController extends Controller
         $webhook->delete();
 
         return redirect()->back()->with('success', 'Webhook deleted successfully.');
+    }
+
+    public function downloadBackup(BackupLog $backupLog): HttpResponse
+    {
+        $filePath = storage_path('app/'.$backupLog->file_path);
+
+        abort_unless(file_exists($filePath), 404);
+
+        return response()->download($filePath, 'backup-'.$backupLog->id.'.sql');
     }
 }

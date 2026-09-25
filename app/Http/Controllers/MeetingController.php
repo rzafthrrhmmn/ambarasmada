@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ambalan;
+use App\Models\AuditLog;
 use App\Models\Meeting;
+use App\Models\MeetingAgenda;
 use App\Models\MeetingAttendee;
 use App\Models\MeetingMinute;
 use App\Models\MeetingVote;
-use App\Models\MeetingAgenda;
-use App\Models\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -52,7 +53,7 @@ class MeetingController extends Controller
 
         $meeting = Meeting::create([
             ...$data,
-            'ambalan_id' => $request->user()->member?->ambalan_id ?? \App\Models\Ambalan::first()?->id,
+            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
             'created_by' => $request->user()->id,
             'status' => 'Draft',
         ]);
@@ -114,12 +115,14 @@ class MeetingController extends Controller
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
 
         $meeting->delete();
+
         return redirect()->route('meetings.index')->with('success', 'Rapat dihapus.');
     }
 
     public function show(Meeting $meeting): Response
     {
         $meeting->load(['agendas.votes', 'attendees.member.user', 'minutes', 'ambalan']);
+
         return Inertia::render('Meetings/Show', ['meeting' => $meeting]);
     }
 

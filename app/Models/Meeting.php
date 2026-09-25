@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['ambalan_id', 'created_by', 'judul', 'agenda', 'tanggal', 'waktu_mulai', 'waktu_selesai', 'lokasi', 'jenis', 'status'])]
 class Meeting extends Model
 {
+    protected $fillable = ['ambalan_id', 'created_by', 'judul', 'agenda', 'tanggal', 'waktu_mulai', 'waktu_selesai', 'lokasi', 'jenis', 'status'];
+
     protected $casts = [
         'tanggal' => 'date',
         'waktu_mulai' => 'time',

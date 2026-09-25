@@ -17,7 +17,7 @@ class UserPermissionController extends Controller
             $query->where('user_id', $request->user_id);
         }
         if ($request->filled('permission')) {
-            $query->where('permission', 'like', '%' . $request->permission . '%');
+            $query->where('permission', 'like', '%'.$request->permission.'%');
         }
 
         $permissions = $query->with(['user'])->paginate(20);

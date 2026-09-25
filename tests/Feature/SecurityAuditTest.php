@@ -12,7 +12,6 @@ use App\Models\Letter;
 use App\Models\Meeting;
 use App\Models\Member;
 use App\Models\Reminder;
-use App\Models\ReportController;
 use App\Models\SkuPoint;
 use App\Models\SkuSubmission;
 use App\Models\Team;
@@ -27,8 +26,11 @@ class SecurityAuditTest extends TestCase
     use RefreshDatabase;
 
     protected ?User $admin = null;
+
     protected ?User $pembina = null;
+
     protected ?User $pengurus = null;
+
     protected ?User $anggota = null;
 
     protected function setUp(): void
@@ -40,33 +42,50 @@ class SecurityAuditTest extends TestCase
     protected function createUser(string $role): User
     {
         $user = User::create([
-            'username' => $role . '_user_' . uniqid(),
+            'username' => $role.'_user_'.uniqid(),
             'name' => ucfirst($role),
-            'email' => strtolower($role) . '@test.com',
+            'email' => strtolower($role).'@test.com',
             'password' => bcrypt('password'),
             'role' => $role,
             'is_active' => true,
             'status' => 'approved',
+            'email_verified_at' => now(),
         ]);
         Member::create([
             'user_id' => $user->id,
             'ambalan_id' => 1,
-            'nta' => $role . '_nta_' . uniqid(),
-            'nama_lengkap' => ucfirst($role) . ' User',
+            'nta' => $role.'_nta_'.uniqid(),
+            'nama_lengkap' => ucfirst($role).' User',
             'kelas' => 'X',
             'tingkatan' => 'Bantara',
             'angkatan' => '018',
             'nomor_urut' => $user->id,
-            'nta_username' => $role . '_user_' . uniqid(),
+            'nta_username' => $role.'_user_'.uniqid(),
             'status_aktif' => 'Aktif',
         ]);
+
         return $user;
     }
 
-    protected function getAdmin(): User { return $this->admin ??= $this->createUser('Admin'); }
-    protected function getPembina(): User { return $this->pembina ??= $this->createUser('Pembina'); }
-    protected function getPengurus(): User { return $this->pengurus ??= $this->createUser('Pengurus'); }
-    protected function getAnggota(): User { return $this->anggota ??= $this->createUser('Anggota'); }
+    protected function getAdmin(): User
+    {
+        return $this->admin ??= $this->createUser('Admin');
+    }
+
+    protected function getPembina(): User
+    {
+        return $this->pembina ??= $this->createUser('Pembina');
+    }
+
+    protected function getPengurus(): User
+    {
+        return $this->pengurus ??= $this->createUser('Pengurus');
+    }
+
+    protected function getAnggota(): User
+    {
+        return $this->anggota ??= $this->createUser('Anggota');
+    }
 
     public function test_admin_can_access_dashboard(): void
     {

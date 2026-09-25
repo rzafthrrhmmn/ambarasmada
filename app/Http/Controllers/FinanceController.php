@@ -69,10 +69,12 @@ class FinanceController extends Controller
         $chartIncome = [];
         $chartExpense = [];
         for ($i = 5; $i >= 0; $i--) {
-            $month = now()->subMonths($i)->format('Y-m');
-            $chartLabels[] = now()->subMonths($i)->format('MMM Y');
-            $in = (clone $cashFlowQuery)->whereRaw("DATE_FORMAT(tgl_transaksi, '%Y-%m') = ?", [$month])->where('jenis_transaksi', 'Masuk')->sum('nominal');
-            $out = (clone $cashFlowQuery)->whereRaw("DATE_FORMAT(tgl_transaksi, '%Y-%m') = ?", [$month])->where('jenis_transaksi', 'Keluar')->sum('nominal');
+            $date = now()->subMonths($i);
+            $month = (int) $date->format('m');
+            $year = (int) $date->format('Y');
+            $chartLabels[] = $date->format('MMM Y');
+            $in = (clone $cashFlowQuery)->whereMonth('tgl_transaksi', $month)->whereYear('tgl_transaksi', $year)->where('jenis_transaksi', 'Masuk')->sum('nominal');
+            $out = (clone $cashFlowQuery)->whereMonth('tgl_transaksi', $month)->whereYear('tgl_transaksi', $year)->where('jenis_transaksi', 'Keluar')->sum('nominal');
             $chartIncome[] = (float) $in;
             $chartExpense[] = (float) $out;
         }
@@ -123,7 +125,7 @@ class FinanceController extends Controller
                 'tgl_transaksi' => now()->toDateString(),
                 'created_by' => $user->id,
                 'status' => 'Posted',
-                'receipt_no' => 'KAS-'.now()->format('Ymd').'-'.str_pad((string) Finance::max('id') + 1, 5, '0', STR_PAD_LEFT),
+                'receipt_no' => 'KAS-'.now()->format('Ymd').'-'.str_pad((string) ((int) Finance::max('id') + 1), 5, '0', STR_PAD_LEFT),
             ]);
             AuditLog::create([
                 'actor_id' => $user->id,

@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['ambalan_id', 'nama', 'lirik', 'file_path', 'created_by_user_id'])]
 class AmbalanMedia extends Model
 {
+    protected $fillable = ['ambalan_id', 'nama', 'lirik', 'file_path', 'created_by_user_id'];
+
     use SoftDeletes;
 
     protected $table = 'ambalan_medias';

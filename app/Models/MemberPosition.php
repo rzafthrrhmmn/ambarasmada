@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['member_id', 'position_id', 'assigned_by_user_id'])]
 class MemberPosition extends Model
 {
+    protected $fillable = ['member_id', 'position_id', 'assigned_by_user_id'];
+
     protected $casts = [
         'assigned_at' => 'datetime',
     ];

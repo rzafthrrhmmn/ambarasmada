@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Middleware\EnsureApproved;
+use App\Http\Middleware\EnsureJuruUang;
+use App\Http\Middleware\EnsureNotAlumni;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
@@ -29,6 +31,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'approved' => EnsureApproved::class,
             'throttle' => ThrottleRequests::class,
             'pembina' => EnsureRole::class.':Pembina,Admin',
+            'not-alumni' => EnsureNotAlumni::class,
+            'juru-uang' => EnsureJuruUang::class,
         ]);
         $middleware->redirectTo(guests: fn () => route('login'));
         $middleware->trustProxies('*');
@@ -41,4 +45,3 @@ return Application::configure(basePath: dirname(__DIR__))
         );
         error_log('[VERCEL-BOOT] Exception handler configured');
     })->create();
-

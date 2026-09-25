@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['team_id', 'assigned_to', 'created_by', 'judul', 'deskripsi', 'tenggat', 'status'])]
 class TeamTask extends Model
 {
+    protected $fillable = ['team_id', 'assigned_to', 'created_by', 'judul', 'deskripsi', 'tenggat', 'status'];
+
     protected $casts = [
         'tenggat' => 'date',
     ];

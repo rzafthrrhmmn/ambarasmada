@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['event_id', 'member_id', 'status'])]
 class EventParticipant extends Model
 {
+    protected $fillable = ['event_id', 'member_id', 'status'];
+
     protected $casts = [
         'status' => 'string',
     ];

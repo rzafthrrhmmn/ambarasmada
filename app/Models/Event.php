@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['ambalan_id', 'created_by', 'nama', 'deskripsi', 'tanggal', 'waktu_mulai', 'waktu_selesai', 'lokasi', 'image', 'jenis', 'status'])]
 class Event extends Model
 {
+    protected $fillable = ['ambalan_id', 'created_by', 'nama', 'deskripsi', 'tanggal', 'waktu_mulai', 'waktu_selesai', 'lokasi', 'image', 'jenis', 'status'];
+
     protected $casts = [
         'tanggal' => 'date',
         'waktu_mulai' => 'time',

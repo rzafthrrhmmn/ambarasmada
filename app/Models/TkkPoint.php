@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['nama', 'slug', 'deskripsi', 'is_active'])]
 class TkkPoint extends Model
 {
+    protected $fillable = ['nama', 'slug', 'deskripsi', 'is_active'];
+
     protected function casts(): array
     {
         return [

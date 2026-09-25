@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['ambalan_id', 'kecamatan', 'nama', 'teks_susunan_upacara', 'checklist_perlengkapan', 'created_by_user_id'])]
 class ActivityGuide extends Model
 {
+    protected $fillable = ['ambalan_id', 'kecamatan', 'nama', 'teks_susunan_upacara', 'checklist_perlengkapan', 'created_by_user_id'];
+
     use SoftDeletes;
 
     protected $guarded = ['id'];

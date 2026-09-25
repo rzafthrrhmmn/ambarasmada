@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Certificate;
+use App\Models\Ambalan;
 use App\Models\AuditLog;
+use App\Models\Certificate;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -47,7 +50,7 @@ class CertificateController extends Controller
             'file' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png'],
         ]);
 
-        $nomor = 'SERT-' . now()->format('Ymd') . '-' . str_pad((string) Certificate::count() + 1, 5, '0', STR_PAD_LEFT);
+        $nomor = 'SERT-'.now()->format('Ymd').'-'.str_pad((string) Certificate::count() + 1, 5, '0', STR_PAD_LEFT);
 
         if ($request->hasFile('file')) {
             $data['file_path'] = $request->file('file')->store('certificates', 'public');
@@ -55,7 +58,7 @@ class CertificateController extends Controller
 
         Certificate::create([
             ...$data,
-            'ambalan_id' => $request->user()->member?->ambalan_id ?? \App\Models\Ambalan::first()?->id,
+            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
             'nomor_sertifikat' => $nomor,
             'issued_by' => $request->user()->id,
             'tanggal_diterbitkan' => $data['tanggal_diterbitkan'],
@@ -90,12 +93,44 @@ class CertificateController extends Controller
     public function download(Certificate $certificate): Response
     {
         abort_unless($certificate->file_path, 404);
-        return response()->download(storage_path('app/public/' . $certificate->file_path));
+
+        return response()->download(storage_path('app/public/'.$certificate->file_path));
     }
 
     public function show(Certificate $certificate): Response
     {
         $certificate->load(['member.user', 'issuedBy', 'ambalan']);
+
         return Inertia::render('Certificates/Show', ['certificate' => $certificate]);
+    }
+
+    public function generatePdf(Certificate $certificate): HttpResponse
+    {
+        $certificate->load(['member.user', 'issuedBy', 'ambalan']);
+
+        $pdf = Pdf::loadView('certificates.pdf', [
+            'certificate' => $certificate,
+        ])->setPaper('A4', 'portrait');
+
+        AuditLog::create([
+            'actor_id' => request()->user()->id,
+            'action' => 'certificate.pdf_generated',
+            'entity_type' => Certificate::class,
+            'entity_id' => $certificate->id,
+            'ip_address' => request()->ip(),
+        ]);
+
+        return $pdf->download('sertifikat-'.$certificate->nomor_sertifikat.'.pdf');
+    }
+
+    public function previewPdf(Certificate $certificate): HttpResponse
+    {
+        $certificate->load(['member.user', 'issuedBy', 'ambalan']);
+
+        $pdf = Pdf::loadView('certificates.pdf', [
+            'certificate' => $certificate,
+        ])->setPaper('A4', 'portrait');
+
+        return $pdf->stream('sertifikat-'.$certificate->nomor_sertifikat.'.pdf');
     }
 }

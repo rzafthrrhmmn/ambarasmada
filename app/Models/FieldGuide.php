@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['ambalan_id', 'created_by', 'judul', 'konten', 'kategori', 'tag', 'is_favorited'])]
 class FieldGuide extends Model
 {
+    protected $fillable = ['ambalan_id', 'created_by', 'judul', 'konten', 'kategori', 'tag', 'is_favorited'];
+
     protected $casts = [
         'is_favorited' => 'boolean',
     ];

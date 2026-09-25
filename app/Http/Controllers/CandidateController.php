@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Candidate;
 use App\Models\Ambalan;
+use App\Models\Candidate;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class CandidateController extends Controller
@@ -18,7 +17,7 @@ class CandidateController extends Controller
             $query->where('status', $request->status);
         }
         if ($request->filled('nama_lengkap')) {
-            $query->where('nama_lengkap', 'like', '%' . $request->nama_lengkap . '%');
+            $query->where('nama_lengkap', 'like', '%'.$request->nama_lengkap.'%');
         }
 
         $candidates = $query->paginate(20);

@@ -45,3 +45,21 @@ php artisan boost:install
 
 Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
 </laravel-boost-guidelines>
+
+## Lint & Test Commands
+
+Always run lint and tests before committing:
+
+- **PHP Lint**: `php -l <file>` for individual files; `vendor/bin/pint --test` for full PHP formatting check
+- **Build**: `npm run build` (Vite frontend build)
+- **Test**: `composer test` (runs php artisan test with phpunit.xml, SQLite in-memory database)
+- **Deploy**: `npx vercel --prod --force --yes`
+
+## Project Notes
+
+- Roles: `Admin`, `Pembina`, `Pengurus`, `Anggota`, `Alumni` (plus `Juru Uang` sub-role for finance access)
+- Authorization: `EnsureRole` middleware (`role:` alias) and `EnsureApproved` middleware
+- Frontend: Vue 3 + Inertia + Vite + Tailwind CSS
+- Deployment: Vercel with `vercel-php@0.9.0` runtime; excludes `vendor/`, `.kilo/`, large `.pmtiles` files
+- `.vercelignore` must exclude large files to stay under 100MB Hobby plan limit
+- Production deploy requires Vercel Functions Storage quota (10 GB limit)

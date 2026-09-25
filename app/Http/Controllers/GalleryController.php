@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ambalan;
 use App\Models\Gallery;
-use App\Models\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -46,7 +47,7 @@ class GalleryController extends Controller
 
         Gallery::create([
             ...$data,
-            'ambalan_id' => $request->user()->member?->ambalan_id ?? \App\Models\Ambalan::first()?->id,
+            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
             'uploaded_by' => $request->user()->id,
         ]);
 
@@ -58,9 +59,10 @@ class GalleryController extends Controller
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
 
         if ($gallery->image) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($gallery->image);
+            Storage::disk('public')->delete($gallery->image);
         }
         $gallery->delete();
+
         return redirect()->route('galleries.index')->with('success', 'Foto dihapus.');
     }
 }

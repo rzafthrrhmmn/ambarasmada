@@ -2,12 +2,12 @@
 
 use App\Http\Controllers\ActivityGuideController;
 use App\Http\Controllers\AlumniController;
-use App\Http\Controllers\AmbalanController;
 use App\Http\Controllers\AmbalanMediaController;
 use App\Http\Controllers\AnnouncementController;
-use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\CertificateController;
@@ -34,8 +34,8 @@ use App\Http\Controllers\SkuController;
 use App\Http\Controllers\SystemPointController;
 use App\Http\Controllers\SystemToolController;
 use App\Http\Controllers\TeamController;
-use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\TkkPointController;
+use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\UserPermissionController;
 use Illuminate\Support\Facades\Route;
 
@@ -43,6 +43,13 @@ Route::get('/', GuestController::class)->name('home');
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->middleware('throttle:5,1');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post')->middleware('throttle:5,1');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Email Verification Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/email/verify', [AuthController::class, 'showVerificationNotice'])->name('verification.notice');
+    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify')->middleware(['signed', 'throttle:6,1']);
+    Route::post('/email/verification-notification', [AuthController::class, 'sendVerificationEmail'])->name('verification.send')->middleware('throttle:6,1');
+});
 
 Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('register')->middleware('throttle:3,1');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:3,1');
@@ -62,7 +69,7 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-Route::middleware(['auth', 'approved'])->group(function () {
+Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     // Public materials (accessible to all authenticated users)
@@ -92,6 +99,7 @@ Route::middleware(['auth', 'approved'])->group(function () {
 
     // Finance: index viewable by all authenticated users (Anggota lihat iuran sendiri)
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
+    Route::post('/finance', [FinanceController::class, 'store'])->name('finance.store')->middleware('throttle:20,1');
 
     // QR Code scan page for Anggota
     Route::middleware(['role:Anggota'])->group(function () {
@@ -114,8 +122,28 @@ Route::middleware(['auth', 'approved'])->group(function () {
         Route::patch('/attendance/{attendanceSession}', [AttendanceController::class, 'update'])->name('attendance.update')->middleware('throttle:20,1');
         Route::delete('/attendance/{attendanceSession}', [AttendanceController::class, 'destroy'])->name('attendance.destroy')->middleware('throttle:10,1');
         Route::patch('/attendance-records/{attendance}', [AttendanceController::class, 'updateAttendance'])->name('attendance.records.update')->middleware('throttle:20,1');
+        Route::post('/attendance/{attendanceSession}/refresh-qr', [AttendanceController::class, 'refreshQrToken'])->name('attendance.refresh-qr')->middleware('throttle:10,1');
+
+        // Finance management - Admin, Pembina, Pengurus can update/delete own transactions
         Route::patch('/finance/{finance}', [FinanceController::class, 'update'])->name('finance.update')->middleware('throttle:20,1');
         Route::delete('/finance/{finance}', [FinanceController::class, 'destroy'])->name('finance.destroy')->middleware('throttle:10,1');
+
+        Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+        Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store')->middleware('throttle:10,1');
+        Route::patch('/inventory/{inventory}', [InventoryController::class, 'update'])->name('inventory.update')->middleware('throttle:20,1');
+        Route::delete('/inventory/{inventory}', [InventoryController::class, 'destroy'])->name('inventory.destroy')->middleware('throttle:10,1');
+        Route::post('/inventory-loans', [InventoryController::class, 'loan'])->name('inventory.loans.store')->middleware('throttle:10,1');
+        Route::patch('/inventory-loans/{inventoryLoan}/return', [InventoryController::class, 'returnLoan'])->name('inventory.loans.return')->middleware('throttle:10,1');
+        Route::post('/inventory-adjustments', [InventoryController::class, 'adjustment'])->name('inventory.adjustments.store')->middleware('throttle:10,1');
+        Route::get('/inventory/{inventory}/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
+
+        Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store')->middleware('throttle:10,1');
+        Route::patch('/announcements/{announcement}', [AnnouncementController::class, 'update'])->name('announcements.update')->middleware('throttle:20,1');
+        Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy')->middleware('throttle:10,1');
+    });
+
+    // Finance management - Admin, Pembina, Juru Uang only (categories, periods, post, reverse)
+    Route::middleware(['juru-uang'])->group(function () {
         Route::post('/finance/{finance}/post', [FinanceController::class, 'post'])->name('finance.post')->middleware('throttle:10,1');
         Route::post('/finance/{finance}/reverse', [FinanceController::class, 'reverse'])->name('finance.reverse')->middleware('throttle:10,1');
 
@@ -130,19 +158,6 @@ Route::middleware(['auth', 'approved'])->group(function () {
         Route::patch('/finance/periods/{period}', [FinanceController::class, 'updatePeriod'])->name('finance.periods.update')->middleware('throttle:20,1');
         Route::patch('/finance/periods/{period}/close', [FinanceController::class, 'closePeriod'])->name('finance.periods.close')->middleware('throttle:10,1');
         Route::delete('/finance/periods/{period}', [FinanceController::class, 'destroyPeriod'])->name('finance.periods.destroy')->middleware('throttle:10,1');
-
-        Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
-        Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store')->middleware('throttle:10,1');
-        Route::patch('/inventory/{inventory}', [InventoryController::class, 'update'])->name('inventory.update')->middleware('throttle:20,1');
-        Route::delete('/inventory/{inventory}', [InventoryController::class, 'destroy'])->name('inventory.destroy')->middleware('throttle:10,1');
-        Route::post('/inventory-loans', [InventoryController::class, 'loan'])->name('inventory.loans.store')->middleware('throttle:10,1');
-        Route::patch('/inventory-loans/{inventoryLoan}/return', [InventoryController::class, 'returnLoan'])->name('inventory.loans.return')->middleware('throttle:10,1');
-        Route::post('/inventory-adjustments', [InventoryController::class, 'adjustment'])->name('inventory.adjustments.store')->middleware('throttle:10,1');
-        Route::get('/inventory/{inventory}/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
-
-        Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store')->middleware('throttle:10,1');
-        Route::patch('/announcements/{announcement}', [AnnouncementController::class, 'update'])->name('announcements.update')->middleware('throttle:20,1');
-        Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy')->middleware('throttle:10,1');
     });
 
     Route::middleware(['role:Admin,Pembina,Pengurus'])->group(function () {
@@ -222,6 +237,8 @@ Route::middleware(['auth', 'approved'])->group(function () {
     Route::post('/certificates', [CertificateController::class, 'store'])->name('certificates.store')->middleware('throttle:10,1');
     Route::patch('/certificates/{certificate}', [CertificateController::class, 'update'])->name('certificates.update')->middleware('throttle:20,1');
     Route::get('/certificates/{certificate}/download', [CertificateController::class, 'download'])->name('certificates.download');
+    Route::get('/certificates/{certificate}/pdf', [CertificateController::class, 'generatePdf'])->name('certificates.pdf');
+    Route::get('/certificates/{certificate}/preview-pdf', [CertificateController::class, 'previewPdf'])->name('certificates.preview-pdf');
 
     // Field Guides/Buku Saku
     Route::get('/field-guides', [FieldGuideController::class, 'index'])->name('field-guides.index');
@@ -305,6 +322,7 @@ Route::middleware(['auth', 'approved'])->group(function () {
     Route::middleware(['role:Admin'])->group(function () {
         Route::get('/system/tools/backups', [SystemToolController::class, 'backups'])->name('system.backups.index');
         Route::post('/system/tools/backup', [SystemToolController::class, 'createBackup'])->name('system.backups.create');
+        Route::get('/system/tools/backups/{backupLog}/download', [SystemToolController::class, 'downloadBackup'])->name('system.backups.download');
         Route::get('/system/tools/webhooks', [SystemToolController::class, 'webhooks'])->name('system.webhooks.index');
         Route::post('/system/tools/webhooks', [SystemToolController::class, 'storeWebhook'])->name('system.webhooks.store');
         Route::post('/system/tools/webhooks/{webhook}/trigger', [SystemToolController::class, 'triggerWebhook'])->name('system.webhooks.trigger');
@@ -319,7 +337,7 @@ Route::middleware(['auth', 'approved'])->group(function () {
     });
 });
 
-Route::middleware(['auth', 'role:Alumni'])->prefix('alumni')->name('alumni.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:Alumni'])->prefix('alumni')->name('alumni.')->group(function () {
     Route::get('/dashboard', [AlumniController::class, 'dashboard'])->name('dashboard');
     Route::patch('/profile', [AlumniController::class, 'updateProfile'])->name('profile.update')->middleware('throttle:10,1');
     Route::post('/donations', [AlumniController::class, 'storeDonation'])->name('donations.store')->middleware('throttle:5,1');

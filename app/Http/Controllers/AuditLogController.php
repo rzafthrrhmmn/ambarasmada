@@ -25,16 +25,16 @@ class AuditLogController extends Controller
             $query->where('entity_type', 'like', '%'.$request->string('entity_type').'%');
         }
 
-        if ($request->filled('actor_id') && $request->string('actor_id')->isNumeric()) {
-            $query->where('actor_id', $request->string('actor_id'));
+        if ($request->filled('actor_id') && is_numeric($request->input('actor_id'))) {
+            $query->where('actor_id', $request->input('actor_id'));
         }
 
         if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->string('date_from'));
+            $query->whereDate('created_at', '>=', $request->input('date_from'));
         }
 
         if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->string('date_to'));
+            $query->whereDate('created_at', '<=', $request->input('date_to'));
         }
 
         $logs = $query->paginate(25)->withQueryString();

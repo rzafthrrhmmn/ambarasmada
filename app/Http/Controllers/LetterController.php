@@ -172,7 +172,7 @@ class LetterController extends Controller
     {
         abort_unless($letter->file_path, 404, 'Berkas surat tidak ditemukan.');
 
-        $filename = "surat-{$letter->perihal}" . ($letter->file_path ? '.' . pathinfo($letter->file_path, PATHINFO_EXTENSION) : '.pdf');
+        $filename = "surat-{$letter->perihal}".($letter->file_path ? '.'.pathinfo($letter->file_path, PATHINFO_EXTENSION) : '.pdf');
 
         return Storage::disk('public')->download($letter->file_path, $filename);
     }

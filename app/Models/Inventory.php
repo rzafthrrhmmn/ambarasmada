@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['ambalan_id', 'kode_barang', 'nama_barang', 'jenis', 'satuan', 'jumlah', 'kondisi', 'status_pinjam'])]
 class Inventory extends Model
 {
+    protected $fillable = ['ambalan_id', 'kode_barang', 'nama_barang', 'jenis', 'satuan', 'jumlah', 'kondisi', 'status_pinjam'];
+
     use SoftDeletes;
 
     protected function casts(): array

@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['assessment_id', 'kategori', 'deskripsi', 'nilai'])]
 class AssessmentDetail extends Model
 {
+    protected $fillable = ['assessment_id', 'kategori', 'deskripsi', 'nilai'];
+
     protected $casts = [
         'nilai' => 'decimal:2',
     ];

@@ -5,16 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Announcement;
 use App\Models\Attendance;
 use App\Models\AttendanceSession;
+use App\Models\Event;
 use App\Models\Finance;
 use App\Models\Member;
 use App\Models\MemberTku;
 use App\Models\Notification;
 use App\Models\SkuPoint;
 use App\Models\SkuSubmission;
+use App\Models\Team;
 use App\Models\TkkPoint;
 use App\Models\TkkSubmission;
-use App\Models\Event;
-use App\Models\Team;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -112,7 +112,7 @@ class DashboardController extends Controller
 
     private function tkkPoints($user): array
     {
-        if (!in_array($user->role, ['Admin', 'Pembina'], true)) {
+        if (! in_array($user->role, ['Admin', 'Pembina'], true)) {
             return [];
         }
 

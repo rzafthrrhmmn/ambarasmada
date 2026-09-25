@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['ambalan_id', 'uploaded_by', 'judul', 'deskripsi', 'image', 'kategori'])]
 class Gallery extends Model
 {
+    protected $fillable = ['ambalan_id', 'uploaded_by', 'judul', 'deskripsi', 'image', 'kategori'];
+
     protected $casts = [
         'kategori' => 'string',
     ];

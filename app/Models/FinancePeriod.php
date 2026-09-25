@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['ambalan_id', 'nama', 'starts_at', 'ends_at', 'is_closed'])]
 class FinancePeriod extends Model
 {
+    protected $fillable = ['ambalan_id', 'nama', 'starts_at', 'ends_at', 'is_closed'];
+
     protected function casts(): array
     {
         return [

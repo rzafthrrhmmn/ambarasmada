@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Reminder;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -60,6 +59,7 @@ class ReminderController extends Controller
         ]);
 
         $reminder->update($data);
+
         return back()->with('success', 'Pengingat diperbarui.');
     }
 
@@ -68,6 +68,7 @@ class ReminderController extends Controller
         abort_unless($reminder->created_by === $request->user()->id || in_array($request->user()->role, ['Admin', 'Pembina'], true), 403);
 
         $reminder->delete();
+
         return redirect()->route('reminders.index')->with('success', 'Pengingat dihapus.');
     }
 
@@ -75,6 +76,7 @@ class ReminderController extends Controller
     {
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina'], true), 403);
         $reminder->update(['is_sent' => true]);
+
         return back()->with('success', 'Pengingat ditandai sudah dikirim.');
     }
 }

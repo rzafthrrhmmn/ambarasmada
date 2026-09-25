@@ -90,6 +90,6 @@ class NotificationController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Notifikasi berhasil dikirim ke ' . $users->count() . ' pengguna.');
+        return back()->with('success', 'Notifikasi berhasil dikirim ke '.$users->count().' pengguna.');
     }
 }

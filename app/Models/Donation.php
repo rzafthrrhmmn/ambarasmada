@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['member_id', 'nominal', 'bukti_transfer', 'keterangan_alokasi', 'status_verifikasi', 'catatan'])]
 class Donation extends Model
 {
+    protected $fillable = ['member_id', 'nominal', 'bukti_transfer', 'keterangan_alokasi', 'status_verifikasi', 'catatan'];
+
     protected function casts(): array
     {
         return [

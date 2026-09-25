@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ambalan;
+use App\Models\AuditLog;
 use App\Models\Team;
 use App\Models\TeamMember;
 use App\Models\TeamTask;
-use App\Models\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -36,7 +37,7 @@ class TeamController extends Controller
 
         $team = Team::create([
             ...$data,
-            'ambalan_id' => $request->user()->member?->ambalan_id ?? \App\Models\Ambalan::first()?->id,
+            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
         ]);
 
         AuditLog::create([
@@ -61,6 +62,7 @@ class TeamController extends Controller
         ]);
 
         $team->update($data);
+
         return back()->with('success', 'Gugus depan diperbarui.');
     }
 
@@ -69,6 +71,7 @@ class TeamController extends Controller
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina'], true), 403);
 
         $team->delete();
+
         return redirect()->route('teams.index')->with('success', 'Gugus depan dihapus.');
     }
 
@@ -94,6 +97,7 @@ class TeamController extends Controller
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina'], true), 403);
 
         $teamMember->delete();
+
         return back()->with('success', 'Anggota dihapus dari gugus depan.');
     }
 
@@ -126,6 +130,7 @@ class TeamController extends Controller
         ]);
 
         $task->update($data);
+
         return back()->with('success', 'Status tugas diperbarui.');
     }
 }

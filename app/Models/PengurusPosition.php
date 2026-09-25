@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['name', 'code', 'description', 'is_putra'])]
 class PengurusPosition extends Model
 {
+    protected $fillable = ['name', 'code', 'description', 'is_putra'];
+
     protected $casts = [
         'is_putra' => 'boolean',
     ];

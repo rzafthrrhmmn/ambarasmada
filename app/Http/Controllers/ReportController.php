@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AttendanceSession;
 use App\Models\Finance;
 use App\Models\Member;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Response;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
-    public function financePdf(Request $request): BinaryFileResponse
+    public function financePdf(Request $request): Response
     {
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
 
@@ -27,26 +29,26 @@ class ReportController extends Controller
             'expense' => Finance::where('status', 'Posted')->where('jenis_transaksi', 'Keluar')->sum('nominal'),
         ])->render();
 
-        $pdf = \Barryvdh\DomPDF\Facade::Pdf::loadHTML($html);
+        $pdf = Pdf::loadHTML($html);
 
-        return $pdf->download('laporan-keuangan-' . now()->format('Y-m-d') . '.pdf');
+        return $pdf->download('laporan-keuangan-'.now()->format('Y-m-d').'.pdf');
     }
 
-    public function membersCsv(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function membersCsv(Request $request): StreamedResponse
     {
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
 
         $members = Member::with('user')->get();
 
-        $filename = 'data-anggota-' . now()->format('Y-m-d') . '.csv';
+        $filename = 'data-anggota-'.now()->format('Y-m-d').'.csv';
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment;filename=' . $filename,
+            'Content-Disposition' => 'attachment;filename='.$filename,
         ];
 
         $callback = function () use ($members) {
             $file = fopen('php://output', 'w');
-            fputs($file, "\xEF\xBB\xBF");
+            fwrite($file, "\xEF\xBB\xBF");
             fputcsv($file, ['No', 'Nama Lengkap', 'NIM/NIS', 'Angkatan', 'Kelas', 'Tingkatan', 'Status Aktif', 'No HP', 'Email', 'Role']);
 
             foreach ($members as $index => $member) {
@@ -69,30 +71,30 @@ class ReportController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
-    public function attendancePdf(Request $request): BinaryFileResponse
+    public function attendancePdf(Request $request): Response
     {
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
 
-        $sessions = \App\Models\AttendanceSession::with(['attendances.member.user', 'ambalan'])
+        $sessions = AttendanceSession::with(['attendances.member.user', 'ambalan'])
             ->whereHas('attendances')
             ->orderByDesc('tanggal')
             ->get();
 
         $html = view('reports.attendance', ['sessions' => $sessions])->render();
-        $pdf = \Barryvdh\DomPDF\Facade::Pdf::loadHTML($html);
+        $pdf = Pdf::loadHTML($html);
 
-        return $pdf->download('rekap-kehadiran-' . now()->format('Y-m-d') . '.pdf');
+        return $pdf->download('rekap-kehadiran-'.now()->format('Y-m-d').'.pdf');
     }
 
-    public function skuPdf(Request $request): BinaryFileResponse
+    public function skuPdf(Request $request): Response
     {
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina'], true), 403);
 
-        $members = \App\Models\Member::with(['skuSubmissions.skuPoint'])->get();
+        $members = Member::with(['skuSubmissions.skuPoint'])->get();
 
         $html = view('reports.sku', ['members' => $members])->render();
-        $pdf = \Barryvdh\DomPDF\Facade::Pdf::loadHTML($html);
+        $pdf = Pdf::loadHTML($html);
 
-        return $pdf->download('rekap-sku-' . now()->format('Y-m-d') . '.pdf');
+        return $pdf->download('rekap-sku-'.now()->format('Y-m-d').'.pdf');
     }
 }

@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['member_id', 'sku_point_id', 'bukti_kegiatan', 'status', 'catatan', 'verified_by', 'tgl_verifikasi'])]
 class SkuSubmission extends Model
 {
+    protected $fillable = ['member_id', 'sku_point_id', 'bukti_kegiatan', 'status', 'catatan', 'verified_by', 'tgl_verifikasi'];
+
     use SoftDeletes;
 
     public function member(): BelongsTo

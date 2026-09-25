@@ -16,9 +16,22 @@ class AlumniController extends Controller
 {
     public function dashboard(Request $request): Response
     {
-        $member = Member::where('user_id', $request->user()->id)
-            ->where('status_aktif', 'Alumni')
-            ->firstOrFail();
+        $member = Member::where('user_id', $request->user()->id)->first();
+
+        if (! $member || $member->status_aktif !== 'Alumni') {
+            return Inertia::render('Alumni/Dashboard', [
+                'member' => $member,
+                'profile' => $member?->alumniProfile,
+                'donations' => [],
+                'announcements' => Announcement::whereNotNull('published_at')
+                    ->orderByDesc('published_at')
+                    ->limit(6)
+                    ->get(),
+                'directory' => collect(),
+                'error' => 'Anda belum terdaftar sebagai Alumni.',
+            ]);
+        }
+
         $profile = $member->alumniProfile()->firstOrCreate([]);
         $donations = Donation::where('member_id', $member->id)
             ->orderByDesc('created_at')

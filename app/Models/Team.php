@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['ambalan_id', 'nama', 'kode', 'deskripsi'])]
 class Team extends Model
 {
+    protected $fillable = ['ambalan_id', 'nama', 'kode', 'deskripsi'];
+
     public function ambalan(): BelongsTo
     {
         return $this->belongsTo(Ambalan::class);

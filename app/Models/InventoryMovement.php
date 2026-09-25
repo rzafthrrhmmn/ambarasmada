@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['inventory_id', 'jenis', 'jumlah', 'referensi', 'actor_id', 'catatan'])]
 class InventoryMovement extends Model
 {
+    protected $fillable = ['inventory_id', 'jenis', 'jumlah', 'referensi', 'actor_id', 'catatan'];
+
     public function inventory(): BelongsTo
     {
         return $this->belongsTo(Inventory::class);

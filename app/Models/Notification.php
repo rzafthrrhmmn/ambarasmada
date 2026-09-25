@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['user_id', 'type', 'title', 'message', 'data', 'is_read', 'read_at'])]
 class Notification extends Model
 {
+    protected $fillable = ['user_id', 'type', 'title', 'message', 'data', 'is_read', 'read_at'];
+
     protected $casts = [
         'data' => 'array',
         'is_read' => 'boolean',
