@@ -48,11 +48,7 @@ $app = require_once __DIR__.'/../bootstrap/app.php';
 error_log('[VERCEL-DEBUG] App bootstrapped');
 $app->useStoragePath($storagePath);
 
-// Register filesystem provider manually (critical for eventsAreCached())
-$app->register(FilesystemServiceProvider::class, force: true);
-error_log('[VERCEL-DEBUG] Filesystem provider registered');
-
-// Remove cached events to prevent boot issues
+// Clear cached events to prevent boot issues
 $cachedEvents = $storagePath.'/../bootstrap/cache/events.php';
 if (file_exists($cachedEvents)) unlink($cachedEvents);
 
@@ -67,8 +63,6 @@ error_log('[VERCEL-DEBUG] Kernel created, class: '.get_class($kernel));
 try {
     $response = $kernel->handle($request);
     error_log('[VERCEL-DEBUG] Request handled, status: '.$response->getStatusCode());
-    error_log('[VERCEL-DEBUG] Response content: '.$response->getContent());
-    error_log('[VERCEL-DEBUG] Response headers: '.json_encode($response->headers->all()));
 } catch (\Throwable $e) {
     error_log('[VERCEL-EXCEPTION] Class: '.get_class($e));
     error_log('[VERCEL-EXCEPTION] Message: '.$e->getMessage());
