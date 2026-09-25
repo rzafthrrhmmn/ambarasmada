@@ -2,12 +2,12 @@
   <div ref="container" class="relative min-h-screen overflow-hidden bg-[#263D26]">
 
     <div class="pointer-events-none absolute inset-0">
-    <div
-      class="absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-gradient-to-br from-[#A7B92B]/15 via-[#A7B92B]/5 to-transparent blur-[120px]"
-      data-parallax-bg
-    ></div>
-    <div class="absolute -right-40 top-20 h-[400px] w-[400px] rounded-full bg-gradient-to-br from-[#EDD330]/15 via-[#EDD330]/5 to-transparent blur-[120px]"></div>
-    <div class="absolute -bottom-40 left-1/3 h-[350px] w-[350px] rounded-full bg-gradient-to-br from-[#6F9435]/20 to-transparent blur-[100px]"></div>
+      <div
+        class="absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-gradient-to-br from-[#A7B92B]/15 via-[#A7B92B]/5 to-transparent blur-[120px]"
+        data-parallax-bg
+      ></div>
+      <div class="absolute -right-40 top-20 h-[400px] w-[400px] rounded-full bg-gradient-to-br from-[#EDD330]/15 via-[#EDD330]/5 to-transparent blur-[120px]"></div>
+      <div class="absolute -bottom-40 left-1/3 h-[350px] w-[350px] rounded-full bg-gradient-to-br from-[#6F9435]/20 to-transparent blur-[100px]"></div>
     </div>
 
     <div class="absolute inset-0 pointer-events-none">
@@ -30,20 +30,26 @@
 
     <div class="relative mx-auto w-full px-4 py-10 sm:px-6 sm:py-14 lg:px-[50px] lg:py-20">
 
-      <header class="mb-12 text-center animate-fade-in-up" data-parallax-hero>
+      <header class="animate-fade-in-up" data-parallax-hero>
         <nav class="mb-8 flex justify-center">
           <div class="inline-flex items-center gap-6 rounded-2xl border border-[#6F9435]/30 bg-[#263D26]/50 px-6 py-3 backdrop-blur-sm">
             <a href="#fitur" class="text-sm font-medium text-[#d4dc9a] transition-colors hover:text-[#EDD330]">Fitur</a>
             <span class="h-4 w-px bg-[#6F9435]/30"></span>
+            <a href="#dokumentasi" class="text-sm font-medium text-[#d4dc9a] transition-colors hover:text-[#EDD330]">Dokumentasi</a>
+            <span class="h-4 w-px bg-[#6F9435]/30"></span>
             <a href="#pengumatan" class="text-sm font-medium text-[#d4dc9a] transition-colors hover:text-[#EDD330]">Pengumuman</a>
             <span class="h-4 w-px bg-[#6F9435]/30"></span>
-            <a href="/login" class="text-sm font-medium text-[#d4dc9a] transition-colors hover:text-[#EDD330]">Login</a>
+            <a href="/login" class="text-sm font-medium text-[#d4dc9a] transition-colors hover:text-[#EDD330]">Masuk</a>
           </div>
         </nav>
 
-        <div class="mb-10 flex justify-center">
+        <section v-if="combinedSlides.length > 0" class="mb-10 animate-fade-in-up delay-75">
+          <PhotoSlider :slides="combinedSlides" :interval="6000" />
+        </section>
+
+        <div class="mb-12 flex justify-center">
           <div
-            class="relative flex h-32 w-32 items-center justify-center rounded-3xl border-2 border-[#6F9435]/50 bg-[#263D26]/80 shadow-2xl shadow-[#A7B92B]/20 transition-transform duration-500 hover:rotate-[5deg] hover:scale-105"
+            class="group relative flex h-32 w-32 items-center justify-center rounded-3xl border-2 border-[#6F9435]/50 bg-[#263D26]/80 shadow-2xl shadow-[#A7B92B]/20 transition-transform duration-500 hover:rotate-[5deg] hover:scale-105"
           >
             <img
               v-if="$page.props.ambalan?.logo_url"
@@ -53,7 +59,7 @@
             />
             <img
               v-else
-              :src="'/images/Logo_Ambalan.png'"
+              :src="logoFallback"
               alt="Logo Ambalan"
               class="relative h-full w-full object-contain"
             />
@@ -111,7 +117,123 @@
         </div>
       </section>
 
-      <section id="fitur" class="mt-20 animate-fade-in-up delay-300">
+      <section
+        v-if="gallery && gallery.length > 0"
+        id="dokumentasi"
+        class="mt-16 animate-fade-in-up delay-200"
+        data-animate
+      >
+        <div class="mb-6 flex items-end justify-between">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-widest text-[#A7B92B]">Dokumentasi Kegiatan</span>
+            <h2 class="text-2xl font-extrabold text-transparent sm:text-3xl">
+              <span class="bg-gradient-to-r from-[#f0ead8] to-[#d4dc9a] bg-clip-text">Dokumentasi</span>
+              <span class="bg-gradient-to-r from-[#A7B92B] via-[#EDD330] to-[#A7B92B] bg-clip-text"> Kegiatan</span>
+            </h2>
+            <p class="mt-1 text-sm font-medium text-[#8fa06a]">Foto-foto dokumentasi dari kegiatan kepramukaan terbaru.</p>
+          </div>
+          <a
+            href="/galleries"
+            class="text-sm font-bold text-[#A7B92B] opacity-0 transition-opacity hover:text-[#EDD330] hover:opacity-100"
+          >Lihat semua &rarr;</a>
+        </div>
+        <div class="relative">
+          <div
+            class="hide-scrollbar relative flex gap-3 overflow-x-auto pb-2"
+            @scroll="onGalleryScroll"
+          >
+            <div
+              v-for="(item, idx) in gallery"
+              :key="idx"
+              class="group relative flex-shrink-0 overflow-hidden rounded-2xl border-2 border-[#A7B92B]/20 bg-[#335233]/60 shadow-lg transition-all duration-300 first:ml-0 hover:-translate-y-1 hover:border-[#A7B92B]/40 hover:shadow-2xl hover:shadow-[#A7B92B]/10"
+              :style="{ width: '280px' }"
+            >
+              <div class="relative h-48 overflow-hidden">
+                <img
+                  v-if="item.src"
+                  :src="item.src"
+                  :alt="item.title"
+                  class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  loading="lazy"
+                />
+                <div
+                  v-else
+                  class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#263D26] to-[#335233]"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="h-8 w-8 text-[#8fa06a]"
+                  ><path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M2.25 15.75l5.25-5.25a2.25 2.25 0 013 0l3.75 3.75M9.75 12.75l.75.75m0 0l.75.75m-.75-.75v-6.75m-.75 6.75h6"
+                  ></path></svg>
+                </div>
+                <div
+                  class="absolute inset-0 bg-gradient-to-t from-[#263D26]/95 via-[#263D26]/30 to-transparent"
+                ></div>
+              </div>
+              <div class="p-4">
+                <span
+                  class="mb-1 inline-block rounded-full bg-[#A7B92B]/15 px-2.5 py-0.5 text-xs font-bold text-[#EDD330]"
+                >{{ item.kategori || 'Dokumentasi' }}</span>
+                <h3
+                  class="text-sm font-extrabold text-[#f0ead8] transition-colors group-hover:text-[#EDD330]"
+                >{{ item.title || 'Tanpa judul' }}</h3>
+                <p
+                  v-if="item.description"
+                  class="mt-1 line-clamp-2 text-xs leading-relaxed font-medium text-[#d4dc9a]/70"
+                >{{ item.description }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-if="gallery.length > 1"
+            class="absolute right-0 top-1/2 hidden -translate-y-1/2 md:flex"
+          >
+            <button
+              @click="scrollGallery('right')"
+              class="rounded-full bg-[#263D26]/80 p-2.5 text-[#f0ead8 shadow-lg transition hover:bg-[#6F9435]/40 hover:text-[#EDD330]"
+              aria-label="Gulir kanan"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2.5"
+                stroke="currentColor"
+                class="h-5 w-5"
+              ><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"></path></svg>
+            </button>
+          </div>
+          <div
+            v-if="gallery.length > 1"
+            class="absolute left-0 top-1/2 hidden -translate-y-1/2 md:flex"
+          >
+            <button
+              @click="scrollGallery('left')"
+              class="rounded-full bg-[#263D26]/80 p-2.5 text-[#f0ead8 shadow-lg transition hover:bg-[#6F9435]/40 hover:text-[#EDD330]"
+              aria-label="Gulir kiri"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2.5"
+                stroke="currentColor"
+                class="h-5 w-5"
+              ><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"></path></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="fitur" class="mt-20 animate-fade-in-up delay-300" data-animate>
         <div class="mb-12 text-center">
           <div
             class="inline-flex items-center gap-2 rounded-full border border-[#EDD330]/30 bg-[#263D26]/50 px-4 py-1.5 text-xs font-bold text-[#EDD330] backdrop-blur-sm"
@@ -145,9 +267,7 @@
               <div>
                 <h3
                   class="text-xl font-extrabold text-[#f0ead8] transition-colors group-hover:text-[#EDD330]"
-                >
-                  {{ feature.title }}
-                </h3>
+                >{{ feature.title }}</h3>
                 <p class="mt-2 text-sm leading-relaxed font-medium text-[#d4dc9a]/80">
                   {{ feature.description }}
                 </p>
@@ -157,7 +277,7 @@
         </div>
       </section>
 
-      <section class="mt-20 animate-fade-in-up delay-400">
+      <section id="pengumatan" class="mt-20 animate-fade-in-up delay-400" data-animate>
         <div class="mb-12 text-center">
           <div
             class="inline-flex items-center gap-2 rounded-full border border-[#EDD330]/30 bg-[#263D26]/50 px-4 py-1.5 text-xs font-bold text-[#EDD330]"
@@ -194,9 +314,7 @@
             <div class="relative">
               <h3
                 class="text-lg font-extrabold text-[#f0ead8] transition-colors group-hover:text-[#EDD330]"
-              >
-                {{ item.judul }}
-              </h3>
+              >{{ item.judul }}</h3>
               <p class="mt-2 text-sm leading-relaxed font-medium text-[#d4dc9a]/70 line-clamp-3">
                 {{ item.isi }}
               </p>
@@ -224,7 +342,7 @@
         </div>
       </section>
 
-      <section class="mt-20 animate-fade-in-up delay-500">
+      <section class="mt-20 animate-fade-in-up delay-500" data-animate>
         <div
           class="relative isolate overflow-hidden rounded-3xl border border-[#EDD330]/40 bg-gradient-to-r from-[#A7B92B] via-[#6F9435] to-[#263D26] p-12 text-center shadow-2xl sm:p-16"
         >
@@ -255,7 +373,7 @@
         </div>
       </section>
 
-      <footer class="mt-20 animate-fade-in-up delay-600">
+      <footer class="mt-20 animate-fade-in-up delay-600" data-animate>
         <div class="flex flex-col items-center justify-center gap-5 border-t border-[#6F9435]/20 pt-10 pb-6">
           <div class="flex items-center gap-3">
             <div
@@ -288,12 +406,14 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Link } from '@inertiajs/vue3';
+import PhotoSlider from '@/Components/PhotoSlider.vue';
 import StatCard from '@/Components/StatCard.vue';
 
 const props = defineProps({
   announcements: Array,
   stats: { type: Object, default: () => ({ members: 0, alumni: 0 }) },
   sliderSlides: Array,
+  gallery: { type: Array, default: () => [] },
 });
 
 const animatedStats = ref({ members: 0, alumni: 0 });
@@ -301,6 +421,7 @@ const particles = ref([]);
 const container = ref(null);
 let animationFrameId;
 let scrollHandler;
+let revealObserver;
 
 const membersIcon =
   '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>';
@@ -310,49 +431,6 @@ const servicesIcon =
   '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>';
 const pwaIcon =
   '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" /></svg>';
-
-function generateParticles() {
-  const count = 40;
-  const colors = ['#A7B92B', '#EDD330', '#6F9435'];
-  particles.value = Array.from({ length: count }, (_, i) => ({
-    id: i,
-    x: Math.random() * (window.innerWidth || 1200),
-    y: Math.random() * (window.innerHeight || 800),
-    size: Math.random() * 3 + 1,
-    color: colors[Math.floor(Math.random() * colors.length)],
-    speed: Math.random() * 0.5 + 0.2,
-  }));
-}
-
-function animateStats(target, key) {
-  const duration = 2000;
-  const startTime = performance.now();
-  const start = 0;
-
-  const step = (timestamp) => {
-    const elapsed = timestamp - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    animatedStats.value[key] = Math.floor(start + (target - start) * progress);
-    if (progress < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-
-const revealObserver = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-visible');
-        if (entry.target.dataset.animate === 'stats') {
-          animateStats(props.stats.members || 0, 'members');
-          animateStats(props.stats.alumni || 0, 'alumni');
-        }
-        revealObserver.unobserve(entry.target);
-      }
-    });
-  },
-  { threshold: 0.1 },
-);
 
 const features = [
   {
@@ -387,14 +465,91 @@ const features = [
   },
 ];
 
-function formatDate(value) {
-  return value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+const fallbackSlides = [
+  { src: '/images/slider/slide-1.svg', title: 'Pramuka SMAN 2 Maros', description: 'Satya dan Darma dalam satu genggaman' },
+  { src: '/images/slider/slide-2.svg', title: 'Kegiatan Inti', description: 'Pengembangan bakat dan kepribadian anggota' },
+  { src: '/images/slider/slide-3.svg', title: 'Sistem Informasi', description: 'SKU, presensi, kas, inventaris — terintegrasi' },
+];
+
+const logoFallback = '/images/Logo_Ambalan.png';
+
+const combinedSlides = computed(() => {
+  if (props.sliderSlides && props.sliderSlides.length > 0) return props.sliderSlides;
+  return fallbackSlides;
+});
+
+function generateParticles() {
+  const count = 35;
+  const colors = ['#A7B92B', '#EDD330', '#6F9435'];
+  particles.value = Array.from({ length: count }, (_, i) => ({
+    id: i,
+    x: Math.random() * (window.innerWidth || 1200),
+    y: Math.random() * (window.innerHeight || 800),
+    size: Math.random() * 3 + 1,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    speed: Math.random() * 0.5 + 0.2,
+  }));
+}
+
+function animateStats(target, key) {
+  const duration = 1800;
+  const startTime = performance.now();
+  const step = (timestamp) => {
+    const elapsed = timestamp - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    animatedStats.value[key] = Math.floor((target) * progress);
+    if (progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+const galleryContainer = ref(null);
+
+function scrollGallery(direction) {
+  if (!galleryContainer.value) return;
+  const scrollAmount = 300;
+  const current = galleryContainer.value.scrollLeft;
+  galleryContainer.value.scrollTo({
+    left: direction === 'right' ? current + scrollAmount : current - scrollAmount,
+    behavior: 'smooth',
+  });
+}
+
+function onGalleryScroll() {
+  if (!container.value) return;
+  const gallery = container.value.querySelector('[data-animate="gallery-scroll"]');
+  if (gallery) {
+    const scrollLeft = gallery.scrollLeft;
+    const maxScroll = gallery.scrollWidth - gallery.clientWidth;
+    const progress = maxScroll > 0 ? scrollLeft / maxScroll : 0;
+    const nav = container.value.querySelector('[data-gallery-nav]');
+    if (nav) {
+      nav.style.opacity = progress > 0.05 ? '1' : '0.5';
+    }
+  }
 }
 
 onMounted(() => {
   generateParticles();
-  const el = container.value?.querySelector('[data-animate="stats"]');
-  if (el) revealObserver.observe(el);
+
+  revealObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          if (entry.target.dataset.animate === 'stats') {
+            animateStats(props.stats?.members || 0, 'members');
+            animateStats(props.stats?.alumni || 0, 'alumni');
+          }
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.1 },
+  );
+
+  const animatable = container.value?.querySelectorAll('[data-animate]');
+  animatable?.forEach((el) => revealObserver.observe(el));
 
   const animateParticles = () => {
     particles.value.forEach((p) => {
@@ -422,7 +577,12 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('scroll', scrollHandler);
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  revealObserver?.disconnect();
 });
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+}
 </script>
 
 <style scoped>
