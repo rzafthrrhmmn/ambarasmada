@@ -138,6 +138,7 @@ Route::middleware(['auth', 'approved'])->group(function () {
         Route::post('/inventory-loans', [InventoryController::class, 'loan'])->name('inventory.loans.store')->middleware('throttle:10,1');
         Route::patch('/inventory-loans/{inventoryLoan}/return', [InventoryController::class, 'returnLoan'])->name('inventory.loans.return')->middleware('throttle:10,1');
         Route::post('/inventory-adjustments', [InventoryController::class, 'adjustment'])->name('inventory.adjustments.store')->middleware('throttle:10,1');
+        Route::get('/inventory/{inventory}/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
 
         Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store')->middleware('throttle:10,1');
         Route::patch('/announcements/{announcement}', [AnnouncementController::class, 'update'])->name('announcements.update')->middleware('throttle:20,1');

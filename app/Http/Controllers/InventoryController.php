@@ -17,11 +17,27 @@ class InventoryController extends Controller
         $items = Inventory::query()
             ->withCount('loans')
             ->with(['ambalan', 'loans.member'])
+            ->withCount('movements')
             ->orderBy('nama_barang')
             ->paginate(20)
             ->withQueryString();
 
         return Inertia::render('Inventory/Index', ['items' => $items]);
+    }
+
+    public function movements(Request $request, Inventory $inventory): Response
+    {
+        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+
+        $movements = $inventory->movements()
+            ->with('actor')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return Inertia::render('Inventory/Movements', [
+            'inventory' => $inventory,
+            'movements' => $movements,
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
