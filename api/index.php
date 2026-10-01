@@ -27,7 +27,7 @@ try {
 
     $sessionDriver = trim((string) getenv('SESSION_DRIVER')) ?: 'file';
     $cacheStore = trim((string) (getenv('CACHE_STORE') ?: getenv('CACHE_DRIVER'))) ?: 'file';
-    $dbConnection = trim((string) getenv('DB_CONNECTION')) ?: 'mysql';
+    $dbConnection = trim((string) getenv('DB_CONNECTION')) ?: 'pgsql';
     $queueConnection = trim((string) getenv('QUEUE_CONNECTION')) ?: 'sync';
 
     putenv('APP_STORAGE='.$storagePath);

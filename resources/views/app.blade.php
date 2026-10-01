@@ -10,8 +10,11 @@
     @routes
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="manifest" href="/manifest.webmanifest">
-    <link rel="icon" href="/images/Logo_Ambalan.png" type="image/png" sizes="any">
-    <link rel="apple-touch-icon" href="/images/Logo_Ambalan.png">
+    <link rel="icon" href="/images/icons/favicon.ico" sizes="48x48">
+    <link rel="icon" href="/images/icons/favicon-32.png" type="image/png" sizes="32x32">
+    <link rel="icon" href="/images/icons/favicon-16.png" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" href="/images/icons/apple-touch-icon.png">
+    <link rel="mask-icon" href="/images/icons/favicon-32.png" color="#263D26">
 </head>
 <body class="antialiased">
     @inertia

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.3.0';
+const CACHE_VERSION = 'v1.4.0';
 const CACHE_NAME = 'jaya-jaya-jaya-' + CACHE_VERSION;
 const ASSETS_CACHE = 'jaya-jaya-jaya-assets-' + CACHE_VERSION;
 const TILES_CACHE = 'jaya-jaya-jaya-tiles-' + CACHE_VERSION;
@@ -6,8 +6,16 @@ const TILES_CACHE = 'jaya-jaya-jaya-tiles-' + CACHE_VERSION;
 const STATIC_ASSETS = [
     '/',
     '/manifest.webmanifest',
+    '/images/icons/favicon.ico',
+    '/images/icons/favicon-16.png',
+    '/images/icons/favicon-32.png',
+    '/images/icons/favicon-48.png',
+    '/images/icons/apple-touch-icon.png',
+    '/images/icons/icon-192.png',
+    '/images/icons/icon-512.png',
+    '/images/icons/maskable-192.png',
+    '/images/icons/maskable-512.png',
     '/images/Logo_Ambalan.png',
-    '/favicon.ico',
     '/robots.txt',
 ];
 
