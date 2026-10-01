@@ -233,7 +233,7 @@ class BlackboxWhiteboxTest extends TestCase
         $this->assertNotEquals('password123', $user->password);
     }
 
-    public function test_new_user_gets_auto_generated_username(): void
+    public function test_new_user_gets_email_as_username(): void
     {
         $this->post('/register', [
             'nama_lengkap' => 'Auto User',
@@ -243,8 +243,45 @@ class BlackboxWhiteboxTest extends TestCase
         ]);
 
         $user = User::where('email', 'auto@test.com')->first();
+        $this->assertSame('auto@test.com', $user->username);
+    }
+
+    public function test_registration_still_assigns_an_nta_on_member_record(): void
+    {
+        $this->post('/register', [
+            'nama_lengkap' => 'Member User',
+            'email' => 'nta@test.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $user = User::where('email', 'nta@test.com')->first();
+        $member = Member::where('user_id', $user->id)->first();
+
+        $this->assertNotNull($member);
         $prefix = (string) config('app.gudep_prefix', '31082008');
-        $this->assertStringStartsWith($prefix.'.018.', $user->username);
+        $this->assertMatchesRegularExpression(
+            '/^'.preg_quote($prefix, '/').'\.\d{3}\.\d{3}$/',
+            (string) $member->nta
+        );
+        $this->assertNotSame($user->username, $member->nta);
+    }
+
+    public function test_registration_assigns_unique_increasing_nta_sequence(): void
+    {
+        foreach (['a@seq.test', 'b@seq.test', 'c@seq.test'] as $index => $email) {
+            $this->post('/register', [
+                'nama_lengkap' => 'Seq User '.$index,
+                'email' => $email,
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+            ]);
+        }
+
+        $ntas = Member::orderBy('id')->pluck('nta')->all();
+
+        $this->assertCount(3, $ntas);
+        $this->assertSame($ntas, array_unique($ntas), 'NTA harus unik antar anggota.');
     }
 
     public function test_member_record_created_on_registration(): void

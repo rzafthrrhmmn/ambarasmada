@@ -6,6 +6,7 @@ use App\Models\Ambalan;
 use App\Models\Angkatan;
 use App\Models\Member;
 use App\Models\User;
+use App\Notifications\AccountActivationNotification;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -72,13 +73,6 @@ class AuthController extends Controller
             ]);
         }
 
-        if ($user->status === 'pending') {
-            $request->session()->regenerate();
-            Auth::login($user, $credentials['remember'] ?? false);
-
-            return redirect()->route('pending-approval');
-        }
-
         if ($user->status === 'rejected') {
             Auth::logout();
 
@@ -89,6 +83,27 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
         Auth::login($user, $credentials['remember'] ?? false);
+
+        $activationMessage = 'Email aktivasi Anda belum diverifikasi. Silakan tekan "Kirim Ulang Verifikasi" untuk menerima tautan baru, lalu buka tautan tersebut.';
+        $hasIntendedUrl = $request->session()->has('url.intended');
+
+        // Prioritas 1: pengguna baru saja membuka link verifikasi dari email
+        // tanpa login, sehingga middleware `auth` menyimpannya sebagai intended
+        // URL. Teruskan ke sana agar aktivasi selesai tanpa langkah manual.
+        if (! $user->hasVerifiedEmail() && $hasIntendedUrl) {
+            return redirect()->intended(route('verification.notice'))->with('success', $activationMessage);
+        }
+
+        // Prioritas 2: akun pending menunggu persetujuan Pembina. Halaman ini
+        // menyediakan tombol kirim ulang aktivasi bila email belum diverifikasi.
+        if ($user->status === 'pending') {
+            return redirect()->route('pending-approval');
+        }
+
+        // Prioritas 3: akun sudah disetujui tetapi email belum diverifikasi.
+        if (! $user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice')->with('success', $activationMessage);
+        }
 
         return redirect()->intended(
             Auth::user()->role === 'Alumni'
@@ -136,7 +151,13 @@ class AuthController extends Controller
         }
 
         $angkatanNomor = $latestAngkatan->nomor;
-        $nextUrut = (int) User::where('username', 'like', "{$prefix}.{$angkatanNomor}.%")->count() + 1;
+
+        // Username kini berisi email, sehingga penomoran NTA tidak lagi
+        // diturunkan dari users.username. Counter diambil dari tabel members,
+        // tempat constraint unik (nta) dan (angkatan, nomor_urut) berada.
+        $usedUrutan = Member::where('nta', 'like', "{$prefix}.{$angkatanNomor}.%")
+            ->max('nomor_urut');
+        $nextUrut = (int) $usedUrutan + 1;
 
         if ($nextUrut > 999) {
             throw ValidationException::withMessages([
@@ -145,10 +166,12 @@ class AuthController extends Controller
         }
 
         $formattedUrut = str_pad((string) $nextUrut, 3, '0', STR_PAD_LEFT);
-        $username = sprintf('%s.%s.%s', $prefix, $angkatanNomor, $formattedUrut);
+        $nta = sprintf('%s.%s.%s', $prefix, $angkatanNomor, $formattedUrut);
 
+        // Username memakai email yang didaftarkan pengguna. Email sudah
+        // dijamin unik oleh validasi di atas, jadi username juga unik.
         $user = User::create([
-            'username' => $username,
+            'username' => $data['email'],
             'name' => $data['nama_lengkap'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
@@ -162,10 +185,10 @@ class AuthController extends Controller
             Member::create([
                 'ambalan_id' => $ambalan->id,
                 'user_id' => $user->id,
-                'nta' => "{$prefix}.{$angkatanNomor}.{$formattedUrut}",
+                'nta' => $nta,
                 'angkatan' => $angkatanNomor,
                 'nomor_urut' => (int) $formattedUrut,
-                'nta_username' => "{$prefix}.{$angkatanNomor}.{$formattedUrut}",
+                'nta_username' => $nta,
                 'nama_lengkap' => $data['nama_lengkap'],
                 'kelas' => '-',
                 'tingkatan' => '-',
@@ -175,7 +198,14 @@ class AuthController extends Controller
             ]);
         }
 
-        session()->flash('success', "Akun dengan NTA {$username} berhasil dibuat. Menunggu persetujuan Pembina.");
+        $mailSent = $user->sendActivationEmail();
+
+        session()->flash(
+            'success',
+            $mailSent
+                ? "Pendaftaran berhasil dengan email {$data['email']} dan NTA {$nta}. Email aktivasi telah dikirim, silakan cek kotak masuk atau folder spam Anda."
+                : "Pendaftaran berhasil dengan email {$data['email']} dan NTA {$nta}, tetapi email aktivasi gagal dikirim. Silakan gunakan tombol \"Kirim Ulang Email Aktivasi\" di halaman masuk."
+        );
 
         return redirect()->route('login');
     }
@@ -196,11 +226,15 @@ class AuthController extends Controller
         );
 
         if ($status === Password::RESET_LINK_SENT) {
-            return back()->with('status', __($status));
+            return back()->with('success', 'Tautan reset password telah dikirim ke email Anda. Silakan cek kotak masuk atau spam.');
         }
 
         throw ValidationException::withMessages([
-            'email' => [__($status)],
+            'email' => [match ($status) {
+                Password::INVALID_USER => 'Email tersebut tidak terdaftar.',
+                Password::RESET_THROTTLED => 'Terlalu banyak percobaan. Silakan coba lagi dalam beberapa saat.',
+                default => 'Tautan reset password gagal dikirim. Silakan coba lagi.',
+            }],
         ]);
     }
 
@@ -209,6 +243,7 @@ class AuthController extends Controller
         return Inertia::render('Auth/ResetPassword', [
             'token' => $token,
             'email' => $request->query('email'),
+            'expiryMinutes' => (int) config('auth.passwords.users.expire', 60),
         ]);
     }
 
@@ -230,11 +265,16 @@ class AuthController extends Controller
         );
 
         if ($status === Password::PASSWORD_RESET) {
-            return redirect()->route('login')->with('status', __($status));
+            return redirect()->route('login')->with('success', 'Password berhasil diperbarui. Silakan masuk dengan password baru.');
         }
 
         throw ValidationException::withMessages([
-            'email' => [__($status)],
+            'email' => [match ($status) {
+                Password::INVALID_TOKEN => 'Tautan reset password tidak valid atau sudah kedaluwarsa. Silakan minta tautan baru.',
+                Password::INVALID_USER => 'Email tersebut tidak terdaftar.',
+                Password::RESET_THROTTLED => 'Terlalu banyak percobaan. Silakan coba lagi dalam beberapa saat.',
+                default => 'Password gagal diperbarui. Silakan coba lagi.',
+            }],
         ]);
     }
 
@@ -256,46 +296,107 @@ class AuthController extends Controller
         return redirect()->route('home');
     }
 
-    public function showVerificationNotice(): Response|RedirectResponse
+    public function showVerificationNotice(Request $request): Response|RedirectResponse
     {
-        if ($request = request()->user()?->hasVerifiedEmail()) {
-            return redirect()->route('dashboard');
+        if ($request->user()?->hasVerifiedEmail()) {
+            return redirect()->intended(route('dashboard'));
         }
 
-        return Inertia::render('Auth/VerifyEmail');
+        return Inertia::render('Auth/VerifyEmail', [
+            'email' => $request->user()?->email,
+            'nta' => $request->user()?->member?->nta,
+            'linkExpiryMinutes' => AccountActivationNotification::expiryMinutes(),
+        ]);
     }
 
     public function verifyEmail(Request $request): RedirectResponse
     {
-        if (! $request->hasValidSignature()) {
-            throw ValidationException::withMessages([
-                'signature' => 'Link verifikasi tidak valid atau sudah kedaluwarsa.',
-            ]);
+        $user = $request->user();
+
+        if ($user === null) {
+            return redirect()->route('login')->with('error', 'Silakan masuk terlebih dahulu untuk menyelesaikan aktivasi akun.');
         }
 
-        $user = User::findOrFail($request->route('id'));
+        // Pemeriksaan HMAC yang sama dengan middleware `signed`, namun
+        // ditangani dengan pesan yang bisa ditindaklanjuti pengguna.
+        if (! $request->hasValidSignature()) {
+            return redirect()->route('verification.notice')->with(
+                'error',
+                'Link verifikasi tidak valid atau sudah kedaluwarsa. Silakan tekan "Kirim Ulang Verifikasi" untuk meminta tautan baru.'
+            );
+        }
+
+        $targetId = (int) $request->route('id');
+
+        // Cegah pengguna memverifikasi email milik akun orang lain hanya dengan
+        // membuka tautan di browser miliknya sendiri.
+        if ($targetId !== (int) $user->getKey()) {
+            return redirect()->route('verification.notice')->with(
+                'error',
+                'Link verifikasi ini bukan milik akun yang sedang masuk. Silakan masuk menggunakan NTA Anda sendiri, lalu minta tautan baru.'
+            );
+        }
 
         if (! hash_equals((string) $request->route('hash'), sha1($user->getEmailForVerification()))) {
-            throw ValidationException::withMessages([
-                'hash' => 'Link verifikasi tidak valid.',
-            ]);
+            return redirect()->route('verification.notice')->with(
+                'error',
+                'Link verifikasi tidak cocok dengan email akun Anda. Silakan minta tautan baru.'
+            );
         }
 
         if ($user->markEmailAsVerified()) {
             event(new Verified($user));
         }
 
-        return redirect()->route('dashboard')->with('success', 'Email berhasil diverifikasi.');
+        return redirect()->intended(route('dashboard'))->with('success', 'Email berhasil diverifikasi. Akun Anda sudah aktif.');
     }
 
+    /**
+     * Kirim ulang tautan verifikasi bagi pengguna yang sudah login.
+     */
     public function sendVerificationEmail(Request $request): RedirectResponse
     {
-        if ($request->user()->hasVerifiedEmail()) {
-            return redirect()->route('dashboard');
+        $user = $request->user();
+
+        if ($user?->hasVerifiedEmail()) {
+            return redirect()->intended(route('dashboard'))->with('success', 'Email Anda sudah terverifikasi.');
         }
 
-        $request->user()->sendEmailVerificationNotification();
+        if ($user === null) {
+            return back()->with('error', 'Silakan masuk terlebih dahulu.');
+        }
 
-        return back()->with('success', 'Link verifikasi telah dikirim ke email Anda.');
+        $sent = $user->sendActivationEmail();
+
+        return back()->with(
+            $sent ? 'success' : 'error',
+            $sent
+                ? 'Email aktivasi telah dikirim ulang ke '.$user->email.'. Silakan cek kotak masuk dan folder spam Anda.'
+                : 'Gagal mengirim email aktivasi. Silakan coba lagi beberapa saat lagi atau hubungi Pembina.'
+        );
+    }
+
+    /**
+     * Kirim ulang tautan aktivasi tanpa harus login, cukup dengan knowing email.
+     *
+     * Selalu mengembalikan pesan yang sama agar tidak membocorkan apakah sebuah
+     * email terdaftar di sistem.
+     */
+    public function resendActivationLink(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+        ]);
+
+        $user = User::where('email', $data['email'])->first();
+
+        if ($user && ! $user->hasVerifiedEmail()) {
+            $user->sendActivationEmail();
+        }
+
+        return back()->with(
+            'success',
+            'Jika email tersebut terdaftar dan belum diverifikasi, tautan aktivasi baru telah dikirim. Silakan cek kotak masuk dan folder spam Anda.'
+        );
     }
 }

@@ -30,12 +30,15 @@ class CreateAdminUserSeeder extends Seeder
             ->first();
 
         $angkatanNomor = $latestAngkatan?->nomor ?? '001';
-        $nextUrut = (int) User::where('username', 'like', "{$prefix}.{$angkatanNomor}.%")->count() + 1;
+
+        // Username memakai email; NTA dihitung dari tabel members karena
+        // users.username tidak lagi berbentuk NTA.
+        $nextUrut = (int) (Member::where('nta', 'like', "{$prefix}.{$angkatanNomor}.%")->max('nomor_urut') ?: 0) + 1;
         $formattedUrut = str_pad((string) $nextUrut, 3, '0', STR_PAD_LEFT);
-        $username = sprintf('%s.%s.%s', $prefix, $angkatanNomor, $formattedUrut);
+        $nta = sprintf('%s.%s.%s', $prefix, $angkatanNomor, $formattedUrut);
 
         $user = User::create([
-            'username' => $username,
+            'username' => $email,
             'name' => 'Administrator',
             'email' => $email,
             'password' => Hash::make('password123'), // Default password, user should change
@@ -50,10 +53,10 @@ class CreateAdminUserSeeder extends Seeder
             Member::create([
                 'ambalan_id' => $ambalan->id,
                 'user_id' => $user->id,
-                'nta' => $username,
+                'nta' => $nta,
                 'angkatan' => $angkatanNomor,
                 'nomor_urut' => (int) $formattedUrut,
-                'nta_username' => $username,
+                'nta_username' => $nta,
                 'nama_lengkap' => 'Administrator',
                 'kelas' => '-',
                 'tingkatan' => 'Admin',
@@ -64,7 +67,7 @@ class CreateAdminUserSeeder extends Seeder
 
         $this->command->info("Admin user created successfully!");
         $this->command->info("Email: {$email}");
-        $this->command->info("Username: {$username}");
+        $this->command->info("NTA: {$nta}");
         $this->command->info("Password: password123 (please change after login)");
         $this->command->info("Role: Admin");
         $this->command->info("Status: approved (email verified)");

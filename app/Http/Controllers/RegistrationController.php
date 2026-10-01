@@ -14,7 +14,10 @@ class RegistrationController extends Controller
 {
     public function pendingUsers(): Response
     {
-        $pendingUsers = User::where('status', 'pending')->orderBy('created_at', 'desc')->paginate(20);
+        $pendingUsers = User::with('member')
+            ->where('status', 'pending')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
 
         return Inertia::render('Members/PendingUsers', [
             'pendingUsers' => $pendingUsers,
@@ -28,30 +31,38 @@ class RegistrationController extends Controller
         $user->update(['status' => 'approved']);
 
         $ambalan = Ambalan::first();
-        $angkatanParts = explode('.', $user->username);
-        $angkatanNomor = $angkatanParts[1] ?? '001';
-        $nomorUrut = (int) ($angkatanParts[2] ?? 1);
+
+        // Username kini berisi email, bukan NTA. Identitas anggota diambil dari
+        // record Member yang sudah dibuat saat pendaftaran.
+        $member = Member::where('user_id', $user->id)->first();
+        $nta = $member?->nta;
+
+        if (! $nta) {
+            $prefix = (string) config('app.gudep_prefix', '31082008');
+            $angkatan = $member?->angkatan ?? '001';
+            $nomorUrut = (int) ($member?->nomor_urut ?: (Member::where('angkatan', $angkatan)->max('nomor_urut') ?: 0) + 1);
+            $nta = sprintf('%s.%s.%03d', $prefix, $angkatan, $nomorUrut);
+        }
 
         $memberData = [
             'ambalan_id' => $ambalan?->id,
-            'nta' => $user->username,
-            'angkatan' => $angkatanNomor,
-            'nomor_urut' => $nomorUrut,
-            'nta_username' => $user->username,
+            'nta' => $nta,
+            'angkatan' => $member?->angkatan ?? '001',
+            'nomor_urut' => $member?->nomor_urut ?? 1,
+            'nta_username' => $nta,
             'nama_lengkap' => $user->name,
-            'kelas' => '-',
-            'tingkatan' => 'Tamu',
-            'status_aktif' => 'Aktif',
+            'kelas' => $member?->kelas ?? '-',
+            'tingkatan' => $member?->tingkatan ?? 'Tamu',
+            'status_aktif' => $member?->status_aktif ?? 'Aktif',
         ];
 
-        $member = Member::where('user_id', $user->id)->first();
         if ($member) {
             $member->update($memberData);
         } else {
             Member::create(['user_id' => $user->id, ...$memberData]);
         }
 
-        return redirect()->route('members.pending')->with('success', "Akun {$user->username} disetujui.");
+        return redirect()->route('members.pending')->with('success', "Akun {$user->email} disetujui dengan NTA {$nta}.");
     }
 
     public function reject(Request $request, User $user): RedirectResponse
@@ -60,6 +71,6 @@ class RegistrationController extends Controller
 
         $user->update(['status' => 'rejected']);
 
-        return redirect()->route('members.pending')->with('success', "Akun {$user->username} ditolak.");
+        return redirect()->route('members.pending')->with('success', "Akun {$user->email} ditolak.");
     }
 }

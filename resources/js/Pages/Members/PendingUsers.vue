@@ -20,7 +20,7 @@
         <tbody class="divide-y divide-[#6F9435]/30">
           <tr v-for="user in pendingUsers.data" :key="user.id" class="hover:bg-[#263D26]/60">
             <td class="px-4 py-3 text-sm font-medium text-[#f0ead8]">{{ user.name }}</td>
-            <td class="px-4 py-3 text-sm font-mono text-[#EDD330]">{{ user.username }}</td>
+            <td class="px-4 py-3 text-sm font-mono text-[#EDD330]">{{ user.member?.nta || user.member?.nta_username || '-' }}</td>
             <td class="px-4 py-3 text-sm text-[#d4dc9a]">{{ user.email }}</td>
             <td class="px-4 py-3 text-sm text-[#8fa06a]">{{ user.created_at }}</td>
             <td class="whitespace-nowrap px-4 py-3 text-right text-sm">

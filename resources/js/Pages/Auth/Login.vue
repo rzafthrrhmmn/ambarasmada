@@ -83,18 +83,20 @@
               </div>
               <div>
                 <label class="block">
-                  <span class="mb-1 block text-sm font-bold text-[#d4dc9a]">Email</span>
+                  <span class="mb-1 block text-sm font-bold text-[#d4dc9a]">Email (dipakai untuk masuk)</span>
                   <input v-model="regForm.email" type="email" required placeholder="contoh@email.com" class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-3 text-sm text-[#f0ead8] outline-none transition placeholder:text-[#8fa06a]/50 focus:border-[#EDD330] focus:ring-2 focus:ring-[#EDD330]/50" />
                 </label>
                 <span v-if="$page.props.errors.email" class="mt-1 block text-xs font-bold text-[#ef4419]">{{ $page.props.errors.email }}</span>
+                <p class="mt-1 block text-xs text-[#8fa06a]">
+                  Email ini sekaligus menjadi username akun Anda, dan akan dipakai untuk masuk serta menerima email aktivasi.
+                </p>
               </div>
-              <div>
-                <label class="block">
-                  <span class="mb-1 block text-sm font-bold text-[#d4dc9a]">NTA (otomatis)</span>
-                  <input :value="previewNta" disabled class="w-full rounded-lg border-2 border-[#6F9435]/50 bg-[#263D26]/50 px-4 py-3 text-sm font-mono text-[#EDD330] outline-none" />
-                </label>
-                <span v-if="latestAngkatan && latestAngkatanNomor" class="mt-1 block text-xs text-[#8fa06a]">{{ latestAngkatanCurrent ? 'Angkatan berjalan' : 'Angkatan aktif terbaru' }}: {{ latestAngkatanNomor }} / Tahun {{ latestAngkatan }}</span>
-                <span v-else class="mt-1 block text-xs text-[#ef4419]">Belum ada angkatan aktif. Hubungi Pembina.</span>
+              <div class="rounded-lg border border-[#A7B92A]/25 bg-[#263D26]/40 px-4 py-3">
+                <span class="block text-sm font-bold text-[#d4dc9a]">NTA (diberikan otomatis)</span>
+                <span class="mt-1 block text-xs text-[#8fa06a]">
+                  Nomor tanda anggota dibuat sistem setelah pendaftaran<span v-if="latestAngkatan && latestAngkatanNomor"> untuk angkatan {{ latestAngkatanNomor }} / Tahun {{ latestAngkatan }}<span v-if="latestAngkatanCurrent"> (angkatan berjalan)</span></span>. Nomornya tampil di halaman menunggu persetujuan.
+                </span>
+                <span v-if="!latestAngkatan || !latestAngkatanNomor" class="mt-1 block text-xs font-bold text-[#ef4419]">Belum ada angkatan aktif. Hubungi Pembina.</span>
               </div>
               <div>
                 <label class="block">
@@ -125,7 +127,11 @@
                   <span class="mb-1 block text-sm font-bold text-[#d4dc9a]">Password</span>
                   <input v-model="form.password" type="password" required autocomplete="current-password" placeholder="Masukkan password" class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-3 text-sm text-[#f0ead8] outline-none transition placeholder:text-[#8fa06a]/50 focus:border-[#EDD330] focus:ring-2 focus:ring-[#EDD330]/50" />
                 </label>
-                <span v-if="$page.props.errors.password" class="mt-1 block text-xs font-bold text-[#ef4419]">{{ $page.props.errors.password }}</span>
+                <div class="mt-1 flex items-center justify-between gap-2">
+                  <span v-if="$page.props.errors.password" class="text-xs font-bold text-[#ef4419]">{{ $page.props.errors.password }}</span>
+                  <span v-else></span>
+                  <Link href="/forgot-password" class="text-xs font-bold text-[#EDD330] hover:underline">Lupa Sandi?</Link>
+                </div>
                 <span v-if="$page.props.errors.identity" class="mt-1 block text-xs font-bold text-[#ef4419]">{{ $page.props.errors.identity }}</span>
               </div>
             </template>
@@ -167,6 +173,69 @@
             Kredensial tersimpan — klik <span class="font-bold">Masuk</span> untuk melanjutkan.
           </div>
 
+          <div v-if="!isRegistration" class="mt-5 rounded-xl border-2 border-[#6F9435]/30 bg-[#263D26]/40 p-4">
+            <button
+              type="button"
+              @click="showResendActivation = !showResendActivation"
+              :aria-expanded="showResendActivation"
+              class="flex w-full items-center justify-between gap-2 text-left text-sm font-bold text-[#EDD330]"
+            >
+              <span class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                </svg>
+                Tidak menerima email aktivasi?
+              </span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2.5"
+                stroke="currentColor"
+                class="h-4 w-4 shrink-0 transition-transform"
+                :class="showResendActivation ? 'rotate-180' : ''"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+              </svg>
+            </button>
+
+            <div v-if="showResendActivation" class="mt-3">
+              <p class="mb-3 text-xs leading-relaxed text-[#8fa06a]">
+                Masukkan email yang Anda gunakan saat mendaftar. Kami akan mengirim ulang tautan aktivasi.
+              </p>
+              <form @submit.prevent="submitResendActivation" class="space-y-3">
+                <div>
+                  <label class="block">
+                    <span class="mb-1 block text-sm font-bold text-[#d4dc9a]">Email terdaftar</span>
+                    <input
+                      v-model="activationForm.email"
+                      type="email"
+                      required
+                      autocomplete="email"
+                      placeholder="contoh@email.com"
+                      class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-3 text-sm text-[#f0ead8] outline-none transition placeholder:text-[#8fa06a]/50 focus:border-[#EDD330] focus:ring-2 focus:ring-[#EDD330]/50"
+                    />
+                  </label>
+                  <span v-if="$page.props.errors.email" class="mt-1 block text-xs font-bold text-[#ef4419]">{{ $page.props.errors.email }}</span>
+                </div>
+                <button
+                  type="submit"
+                  :disabled="activationForm.processing"
+                  :class="['w-full rounded-lg border-2 border-[#6F9435] bg-[#335233] px-4 py-2.5 text-sm font-extrabold text-[#EDD330] transition hover:-translate-y-0.5 hover:bg-[#6F9435]/20 disabled:cursor-wait disabled:opacity-60', activationForm.processing ? 'animate-pulse' : '']"
+                >
+                  <span v-if="activationForm.processing" class="inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-4 w-4 animate-spin">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" opacity="0.25"></circle>
+                      <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Mengirim...
+                  </span>
+                  <span v-else>Kirim Ulang Email Aktivasi</span>
+                </button>
+              </form>
+            </div>
+          </div>
+
           <div class="mt-5 border-t-2 border-[#6F9435]/20 pt-5 text-center">
             <Link href="/" class="group inline-flex items-center gap-2 rounded-lg border-2 border-[#6F9435] px-6 py-2.5 text-sm font-bold text-[#d4dc9a] transition hover:-translate-y-0.5 hover:bg-[#6F9435]/20 hover:text-[#EDD330] hover:shadow-lg hover:shadow-[#6F9435]/20">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4 transition group-hover:-translate-x-1"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
@@ -180,7 +249,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { router } from '@inertiajs/vue3';
 import { Link } from '@inertiajs/vue3';
@@ -197,18 +266,28 @@ const props = defineProps({
 
 const form = useForm({ identity: '', password: '', remember: false });
 const regForm = useForm({ nama_lengkap: '', email: '', password: '', password_confirmation: '' });
+const activationForm = useForm({ email: '' });
 const hasSavedCredentials = ref(false);
-
-const previewNta = computed(() => {
-  if (! props.latestAngkatanNomor) return '';
-  return `${props.gudepPrefix}.${props.latestAngkatanNomor}.001`;
-});
+const showResendActivation = ref(false);
 
 function toggleMode() {
   const url = props.isRegistration ? '/login' : '/register';
   router.get(url, {}, {
     preserveState: true,
     preserveScroll: true,
+  });
+}
+
+function submitResendActivation() {
+  activationForm.post('/email/resend-activation', {
+    preserveScroll: true,
+    onSuccess: () => {
+      activationForm.reset();
+      showResendActivation.value = false;
+    },
+    onError: () => {
+      activationForm.reset();
+    },
   });
 }
 

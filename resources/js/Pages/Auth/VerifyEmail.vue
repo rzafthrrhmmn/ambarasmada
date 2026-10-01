@@ -66,16 +66,34 @@
             {{ $page.props.flash.error }}
           </div>
 
-          <div class="mb-7 text-center">
+<div class="mb-7 text-center">
             <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#A7B92A]/20">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-8 w-8 text-[#EDD330]"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-8 w-8 text-[#EDD330]"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 011.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
             </div>
             <p class="text-3xl font-black text-[#f0ead8]" style="text-shadow: 2px 2px 0 rgba(0,0,0,0.3);">Verifikasi Email</p>
-            <p class="mt-2 text-sm font-medium text-[#8fa06a]">Kami telah mengirim tautan verifikasi ke email Anda. Silakan cek kotak masuk (dan folder spam).</p>
+            <p class="mt-2 text-sm font-medium text-[#8fa06a]">
+              Kami telah mengirim tautan aktivasi ke
+              <span v-if="email" class="font-bold text-[#EDD330]">{{ email }}</span>
+              <span v-else>alamat email Anda</span>.
+              Silakan cek kotak masuk (dan folder spam).
+            </p>
+          </div>
+
+          <div class="mb-5 space-y-2 rounded-xl border-2 border-[#A7B92A]/30 bg-[#263D26]/50 p-4 text-sm">
+            <p class="font-bold text-[#EDD330]">Cara mengaktifkan akun:</p>
+            <ol class="list-inside list-decimal space-y-1 text-[#d4dc9a]">
+              <li>Buka email yang kami kirim dan salin tautannya.</li>
+              <li>Pastikan Anda sudah masuk ke akun <span v-if="email" class="font-bold text-[#EDD330]">{{ email }}</span><span v-else>Anda</span> di browser ini.</li>
+              <li v-if="nta">Nomor tanda anggota Anda: <span class="font-mono font-bold text-[#EDD330]">{{ nta }}</span></li>
+              <li>Buka tautan tersebut &mdash; akun aktif seketika.</li>
+            </ol>
+            <p v-if="linkExpiryMinutes" class="pt-1 text-xs text-[#8fa06a]">
+              Tautan berlaku {{ linkExpiryMinutes }} menit. Belum masuk? Tekan tombol di bawah untuk meminta tautan baru.
+            </p>
           </div>
 
           <form @submit.prevent="resendVerification" class="space-y-4">
-            <button type="submit" :disabled="form.processing" :class="['group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#EDD330] px-4 py-3 font-extrabold text-[#263D26] shadow-lg shadow-[#EDD330]/30 transition hover:shadow-xl hover:shadow-[#EDD330]/40 hover:-translate-y-0.5 disabled:cursor-wait border-2 border-[#EDD330]', form.processing ? 'animate-pulse shadow-[#EDD330]/50' : '']">
+            <button type="submit" :disabled="form.processing || cooldown > 0" :class="['group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#EDD330] px-4 py-3 font-extrabold text-[#263D26] shadow-lg shadow-[#EDD330]/30 transition hover:shadow-xl hover:shadow-[#EDD330]/40 hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60 border-2 border-[#EDD330]', (form.processing || cooldown > 0) ? 'animate-pulse shadow-[#EDD330]/50' : '']">
               <span class="relative z-10 flex items-center justify-center gap-2">
                 <svg v-if="form.processing" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-5 w-5 animate-spin text-[#263D26]">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" opacity="0.25"></circle>
@@ -89,17 +107,18 @@
                     <span class="animate-bounce inline-block h-1.5 w-1.5 rounded-full bg-[#263D26]" style="animation-delay: 300ms;"></span>
                   </span>
                 </span>
+                <span v-else-if="cooldown > 0">Tunggu {{ cooldown }} detik...</span>
                 <span v-else>Kirim Ulang Verifikasi</span>
-                <svg v-if="!form.processing" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-4 w-4 transition group-hover:translate-x-1"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
+                <svg v-if="!form.processing && cooldown === 0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-4 w-4 transition group-hover:translate-x-1"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
               </span>
             </button>
           </form>
 
           <div class="mt-5 border-t-2 border-[#6F9435]/20 pt-5 text-center">
-            <Link href="/login" class="group inline-flex items-center gap-2 rounded-lg border-2 border-[#6F9435] px-6 py-2.5 text-sm font-bold text-[#d4dc9a] transition hover:-translate-y-0.5 hover:bg-[#6F9435]/20 hover:text-[#EDD330] hover:shadow-lg hover:shadow-[#6F9435]/20">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4 transition group-hover:-translate-x-1"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-              Kembali ke Login
-            </Link>
+            <button type="button" @click="logout" class="group inline-flex items-center gap-2 rounded-lg border-2 border-[#6F9435] px-6 py-2.5 text-sm font-bold text-[#d4dc9a] transition hover:-translate-y-0.5 hover:bg-[#6F9435]/20 hover:text-[#EDD330] hover:shadow-lg hover:shadow-[#6F9435]/20">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>
+              Ganti Akun
+            </button>
           </div>
         </div>
       </div>
@@ -108,20 +127,54 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
-import { Link } from '@inertiajs/vue3';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { router, useForm } from '@inertiajs/vue3';
+
+const props = defineProps({
+  email: { type: String, default: null },
+  nta: { type: String, default: null },
+  linkExpiryMinutes: { type: Number, default: null },
+});
+
+const COOLDOWN_SECONDS = 30;
 
 const form = useForm({});
+const cooldown = ref(0);
+let timer = null;
+
+function startCooldown() {
+  cooldown.value = COOLDOWN_SECONDS;
+  if (timer) clearInterval(timer);
+  timer = setInterval(() => {
+    cooldown.value -= 1;
+    if (cooldown.value <= 0 && timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+  }, 1000);
+}
 
 function resendVerification() {
+  if (cooldown.value > 0) return;
+
   form.post('/email/verification-notification', {
+    preserveScroll: true,
     onSuccess: () => {
       form.reset();
+      startCooldown();
     },
     onError: () => {
       form.reset();
     },
   });
 }
+
+function logout() {
+  router.post('/logout');
+}
+
+onMounted(() => startCooldown());
+onBeforeUnmount(() => {
+  if (timer) clearInterval(timer);
+});
 </script>

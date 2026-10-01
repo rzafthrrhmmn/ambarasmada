@@ -30,8 +30,12 @@ class HandleInertiaRequests extends Middleware
                     'id' => $request->user()->id,
                     'username' => $request->user()->username,
                     'name' => $request->user()->name,
+                    'email' => $request->user()->email,
+                    'email_verified_at' => optional($request->user()->email_verified_at)->toIso8601String(),
                     'role' => $request->user()->role,
+                    'status' => $request->user()->status,
                     'member_id' => $request->user()->member?->id,
+                    'nta' => $request->user()->member?->nta,
                     'is_juru_uang' => $request->user()->member?->memberPositions()
                         ->whereHas('position', fn ($q) => $q->whereIn('code', ['juru_uang_putra', 'juru_uang_putri']))
                         ->exists(),

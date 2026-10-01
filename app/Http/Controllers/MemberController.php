@@ -84,20 +84,33 @@ class MemberController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $member = DB::transaction(function () use ($data) {
+        // Form anggota tidak meminta email, sehingga username tidak bisa mengikuti
+        // email seperti pada pendaftaran mandiri. Digunakan NTA sebagai
+        // gantinya: nilainya unik, pendek, dan tetap bisa dipakai untuk login.
+        $prefix = (string) config('app.gudep_prefix', '31082008');
+        $nextUrutan = (int) (Member::where('angkatan', $data['angkatan'])->max('nomor_urut') ?: 0) + 1;
+        $nta = sprintf('%s.%s.%03d', $prefix, $data['angkatan'], $nextUrutan);
+
+        $member = DB::transaction(function () use ($data, $nta, $nextUrutan) {
             $user = User::create([
                 'name' => $data['nama_lengkap'],
                 'email' => null,
-                'username' => $data['nama_lengkap'],
+                'username' => $nta,
                 'password' => Hash::make($data['password']),
                 'role' => 'Anggota',
                 'is_active' => true,
                 'status' => 'approved',
+                // Tanpa email, akun tidak bisa melakukan verifikasi email dan
+                // akan terjebak di halaman verifikasi. Tandai sudah terverifikasi.
+                'email_verified_at' => now(),
             ]);
 
             $member = Member::create([
                 'ambalan_id' => $data['ambalan_id'],
                 'user_id' => $user->id,
+                'nta' => $nta,
+                'nta_username' => $nta,
+                'nomor_urut' => $nextUrutan,
                 'angkatan' => $data['angkatan'],
                 'nama_lengkap' => $data['nama_lengkap'],
                 'tempat_lahir' => $data['tempatlahir'] ?? null,

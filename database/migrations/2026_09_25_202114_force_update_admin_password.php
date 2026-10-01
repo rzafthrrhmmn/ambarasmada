@@ -10,7 +10,7 @@ return new class extends Migration
         DB::table('users')
             ->where('email', 'abcdwxyz06@gmail.com')
             ->update([
-                'password' => '$2y$12$Gd7xPA6sBDDyQSx.9.cZ5e.Jj9cGQwcbhu6D2ncN4ednq5PfgSrEW',
+                'password' => '$2y$12$aYhTWUH4tXEJWm.r.AssuurrPCZ0lwlQPUxIKYmzl3/Y.0ttYIwKm',
                 'status' => 'approved',
                 'email_verified_at' => now(),
                 'updated_at' => now(),

@@ -44,10 +44,21 @@ Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->m
 Route::post('/login', [AuthController::class, 'login'])->name('login.post')->middleware('throttle:5,1');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// Kirim ulang tautan aktivasi tanpa harus login (hanya Knowing email).
+Route::post('/email/resend-activation', [AuthController::class, 'resendActivationLink'])
+    ->name('verification.resend.guest')
+    ->middleware('throttle:5,5');
+
 // Email Verification Routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/email/verify', [AuthController::class, 'showVerificationNotice'])->name('verification.notice');
-    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify')->middleware(['signed', 'throttle:6,1']);
+
+    // Middleware `signed` sengaja tidak dipakai: tautan yang kedaluwarsa akan
+    // berakhir pada halaman 403 yang tidak offers jalan keluar. Validasi
+    // signature dilakukan di AuthController@verifyEmail dengan pemeriksaan
+    // HMAC yang sama, namun hasilnya ditangani ramah lewat flash message.
+    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify')->middleware('throttle:6,1');
+
     Route::post('/email/verification-notification', [AuthController::class, 'sendVerificationEmail'])->name('verification.send')->middleware('throttle:6,1');
 });
 
