@@ -28,3 +28,12 @@ Thumbs.db
 
 .vercel
 .env*
+
+# Skrip debug sekali pakai
+check_login.php
+test_hash.php
+test_hash2.php
+_probe*.php
+
+# Wireframe desain (prototype PHP, tidak ikut produksi)
+wireframe/

@@ -66,16 +66,9 @@ class User extends Authenticatable implements MustVerifyEmail
             return false;
         }
 
-        if (config('mail.default') === 'resend' && blank(config('services.resend.key'))) {
-            Log::error('[activation-email] RESEND_API_KEY belum diisi di environment, email tidak dapat dikirim.', [
-                'user_id' => $this->getKey(),
-                'email' => $this->email,
-            ]);
-
+        if (! $this->mailerIsConfigured()) {
             return false;
         }
-
-        $this->warnOnLinkDomainMismatch();
 
         try {
             $this->notify(new AccountActivationNotification);
@@ -98,6 +91,43 @@ class User extends Authenticatable implements MustVerifyEmail
 
             return false;
         }
+    }
+
+    /**
+     * Pastikan mailer yang aktif punya kredensial yang diperlukan, supaya
+     * kegagalan bisa di diagnosa dari log alih-alih melempar exception.
+     */
+    private function mailerIsConfigured(): bool
+    {
+        $mailer = (string) config('mail.default');
+
+        $missing = match ($mailer) {
+            'smtp' => array_values(array_filter(
+                ['MAIL_HOST' => config('mail.mailers.smtp.host'), 'MAIL_USERNAME' => config('mail.mailers.smtp.username'), 'MAIL_PASSWORD' => config('mail.mailers.smtp.password')],
+                fn ($value) => blank($value)
+            )),
+            'resend' => blank(config('services.resend.key')) ? ['RESEND_API_KEY' => true] : [],
+            default => [],
+        };
+
+        if ($missing !== []) {
+            Log::error('[activation-email] Mailer belum dikonfigurasi, email tidak dapat dikirim.', [
+                'user_id' => $this->getKey(),
+                'mailer' => $mailer,
+                'missing' => array_keys($missing),
+            ]);
+
+            return false;
+        }
+
+        // Pencocokan domain link hanya relevan bagi provider yang memiliki
+        // konsep domain pengirim (Resend). Gmail memakai gmail.com sehingga
+        // tidak akan pernah cocok dengan APP_URL.
+        if ($mailer === 'resend') {
+            $this->warnOnLinkDomainMismatch();
+        }
+
+        return true;
     }
 
     /**

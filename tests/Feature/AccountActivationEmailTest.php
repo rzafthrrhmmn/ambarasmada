@@ -289,6 +289,39 @@ class AccountActivationEmailTest extends TestCase
         Notification::assertNothingSent();
     }
 
+    public function test_send_is_skipped_when_mailer_credentials_missing(): void
+    {
+        config([
+            'mail.default' => 'smtp',
+            'mail.mailers.smtp.host' => 'smtp.gmail.com',
+            'mail.mailers.smtp.port' => 587,
+            'mail.mailers.smtp.username' => 'ambarasmada@gmail.com',
+            'mail.mailers.smtp.password' => null,
+        ]);
+
+        $user = $this->makeUser(['email' => 'tanpa-kredensial@example.test']);
+
+        $this->assertFalse(
+            $user->sendActivationEmail(),
+            'Pengiriman harus ditolak bila password mailer kosong.'
+        );
+    }
+
+    public function test_send_is_skipped_when_resend_api_key_missing(): void
+    {
+        config([
+            'mail.default' => 'resend',
+            'services.resend.key' => null,
+        ]);
+
+        $user = $this->makeUser(['email' => 'tanpa-apikey@example.test']);
+
+        $this->assertFalse(
+            $user->sendActivationEmail(),
+            'Pengiriman harus ditolak bila RESEND_API_KEY kosong.'
+        );
+    }
+
     public function test_real_send_produces_a_message_with_recipient_and_both_parts(): void
     {
         // Sengaja TIDAK memakai Notification::fake(): yang diuji adalah jalur
