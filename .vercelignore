@@ -22,3 +22,10 @@ coverage
 
 # Bootstrap cache
 /bootstrap/cache/*.php
+
+# Skrip debug sekali pakai dan wireframe desain
+check_login.php
+test_hash.php
+test_hash2.php
+_probe*.php
+wireframe
