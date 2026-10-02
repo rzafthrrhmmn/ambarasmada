@@ -10,14 +10,6 @@ class MapController extends Controller
 {
     public function index(Request $request): Response
     {
-        $pmtilesPath = 'storage/maps/sulsel_kontur.pmtiles';
-        $pmtilesUrl = asset($pmtilesPath);
-        $hasPmtiles = file_exists(public_path($pmtilesPath));
-
-        $geojsonPath = 'storage/maps/batas_kabupaten_sulsel.geojson';
-        $geojsonUrl = asset($geojsonPath);
-        $hasGeojson = file_exists(public_path($geojsonPath));
-
         $kabupatens = [
             ['id_kab' => '7301', 'nama_kab' => 'Kepulauan Selayar', 'bbox' => [120.30, -7.60, 121.30, -5.70]],
             ['id_kab' => '7302', 'nama_kab' => 'Bulukumba', 'bbox' => [120.00, -5.60, 120.50, -5.20]],
@@ -46,11 +38,7 @@ class MapController extends Controller
         ];
 
         return Inertia::render('Peta/MapDenganPencarian', [
-            'mapConfig' => [
-                'pmtilesUrl' => $pmtilesUrl,
-                'geojsonUrl' => $geojsonUrl,
-                'hasPmtiles' => $hasPmtiles,
-                'hasGeojson' => $hasGeojson,
+            'mapConfig' => array_merge($this->assetConfig(), [
                 'center' => [120.2, -3.3],
                 'zoom' => 10,
                 'boundingBox' => [
@@ -59,21 +47,13 @@ class MapController extends Controller
                     'south' => -7.7,
                     'north' => -1.8,
                 ],
-            ],
+            ]),
             'kabupatens' => $kabupatens,
         ]);
     }
 
     public function kontur(Request $request): Response
     {
-        $pmtilesPath = 'storage/maps/sulsel_kontur.pmtiles';
-        $pmtilesUrl = asset($pmtilesPath);
-        $hasPmtiles = file_exists(public_path($pmtilesPath));
-
-        $geojsonPath = 'storage/maps/batas_kabupaten_sulsel.geojson';
-        $geojsonUrl = asset($geojsonPath);
-        $hasGeojson = file_exists(public_path($geojsonPath));
-
         $kabupatens = [
             ['id_kab' => '7301', 'nama_kab' => 'Kepulauan Selayar', 'bbox' => [120.30, -7.60, 121.30, -5.70]],
             ['id_kab' => '7302', 'nama_kab' => 'Bulukumba', 'bbox' => [120.00, -5.60, 120.50, -5.20]],
@@ -102,11 +82,7 @@ class MapController extends Controller
         ];
 
         return Inertia::render('Peta/Index', [
-            'mapConfig' => [
-                'pmtilesUrl' => $pmtilesUrl,
-                'geojsonUrl' => $geojsonUrl,
-                'hasPmtiles' => $hasPmtiles,
-                'hasGeojson' => $hasGeojson,
+            'mapConfig' => array_merge($this->assetConfig(), [
                 'center' => [119.863, -0.900],
                 'zoom' => 10,
                 'boundingBox' => [
@@ -115,8 +91,30 @@ class MapController extends Controller
                     'south' => -6.0,
                     'north' => 2.0,
                 ],
-            ],
+            ]),
             'kabupatens' => $kabupatens,
         ]);
+    }
+
+    /**
+     * URL sumber peta untuk frontend.
+     *
+     * PMTiles di-host di Supabase Storage, jadi frontend memakai URL absolut
+     * dari PMTILES_URL. Berkas lokal hanya dipakai sebagai cadangan saat
+     * variabel itu kosong, misalnya di pengembangan.
+     */
+    private function assetConfig(): array
+    {
+        $remotePmtilesUrl = config('map.pmtiles_url');
+        $pmtilesPath = config('map.pmtiles_path');
+
+        $geojsonPath = config('map.geojson_path');
+
+        return [
+            'pmtilesUrl' => filled($remotePmtilesUrl) ? $remotePmtilesUrl : asset($pmtilesPath),
+            'geojsonUrl' => asset($geojsonPath),
+            'hasPmtiles' => filled($remotePmtilesUrl) || file_exists(public_path($pmtilesPath)),
+            'hasGeojson' => file_exists(public_path($geojsonPath)),
+        ];
     }
 }

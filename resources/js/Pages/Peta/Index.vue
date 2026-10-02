@@ -189,14 +189,10 @@ const geojsonUrl = computed(() => {
   return url;
 });
 
-const pmtilesSourceUrl = computed(() => {
-  const url = props.mapConfig?.pmtilesUrl ?? '';
-  if (url.startsWith('http')) {
-    const path = url.replace(/^https?:\/\/[^\/]+/, '');
-    return `pmtiles://${path}`;
-  }
-  return `pmtiles://${url}`;
-});
+// Arsip PMTiles di-host di Supabase Storage, jadi URL-nya harus tetap absolut.
+// Pustaka pmtiles membaca byte arsip langsung dari host tersebut lewat HTTP
+// Range; membuang host membuat permintaan Range mendarat di origin sendiri.
+const pmtilesSourceUrl = computed(() => `pmtiles://${props.mapConfig?.pmtilesUrl ?? ''}`);
 
 function toggleLayer() {
   if (!map.value) return;

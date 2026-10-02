@@ -192,11 +192,12 @@
         📴 Mode Offline
       </div>
 
-      <div v-if="!hasPmtiles" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/90">
-        <div class="text-center p-6">
-          <p class="text-2xl font-bold text-[#EDD330]">Peta Belum Tersedia</p>
-          <p class="mt-2 text-sm text-[#8fa06a]">File PMTiles belum diunggah ke server.</p>
-        </div>
+      <div
+        v-if="!hasPmtiles"
+        class="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-lg border border-[#EDD330]/50 bg-[#263D26]/95 px-4 py-2 text-center shadow-lg"
+      >
+        <p class="text-xs font-bold text-[#EDD330]">Garis kontur belum tersedia</p>
+        <p class="mt-0.5 text-[11px] text-[#8fa06a]">File PMTiles tidak ada di server. Peta dasar dan batas kabupaten tetap dapat dipakai.</p>
       </div>
       <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/70">
         <p class="text-lg font-bold text-[#EDD330]">Memuat peta...</p>
@@ -425,6 +426,18 @@ const selectedKabupaten = ref('');
 const miniMapLoading = ref(false);
 const miniMapError = ref('');
 
+// Mode unduh peta offline: 'full' untuk seluruh Sulawesi Selatan,
+// 'region' untuk satu kabupaten/kota.
+const downloadMode = ref('full');
+const selectedOfflineRegion = ref('');
+
+// Komponen yang ikut dibundel saat peta diunduh untuk offline.
+const includeScaleBar = ref(true);
+const includeNorthArrow = ref(true);
+const includeLegend = ref(true);
+const includeHistogram = ref(true);
+const includeGrid = ref(true);
+
 // Map controls state
 const showScaleBar = ref(true);
 const showNorthArrow = ref(true);
@@ -464,6 +477,7 @@ const bookmarks = ref([]);
 const isOffline = ref(!navigator.onLine);
 const boundingBox = computed(() => props.mapConfig?.boundingBox ?? { west: 118.9, east: 121.6, south: -5.8, north: -1.8 });
 const kabupatens = computed(() => props.kabupatens ?? []);
+const hasPmtiles = computed(() => props.mapConfig?.hasPmtiles ?? false);
 
 const geojsonUrl = computed(() => {
   const url = props.mapConfig?.geojsonUrl ?? '/storage/maps/batas_kabupaten_sulsel.geojson';
@@ -480,6 +494,10 @@ const selectedKabData = computed(() => {
 const selectedOfflineRegionData = computed(() => {
   return kabupatens.value.find((k) => k.id_kab === selectedOfflineRegion.value) ?? null;
 });
+
+// Peta mini hanya tampil setelah mode "satu daerah" aktif dan kabupaten/kota
+// sudah dipilih, sehingga watch(showMiniMap) bisa membuat dan membuang peta.
+const showMiniMap = computed(() => downloadMode.value === 'region' && selectedOfflineRegion.value !== '');
 
 const currentBBox = computed(() => {
   if (downloadMode.value === 'region' && selectedOfflineRegionData.value?.bbox) {
@@ -513,14 +531,10 @@ const estimatedSize = computed(() => {
   return `${(mb / 1024).toFixed(2)} GB`;
 });
 
-const pmtilesSourceUrl = computed(() => {
-  const url = props.mapConfig?.pmtilesUrl ?? '';
-  if (url.startsWith('http')) {
-    const path = url.replace(/^https?:\/\/[^\/]+/, '');
-    return `pmtiles://${path}`;
-  }
-  return `pmtiles://${url}`;
-});
+// Arsip PMTiles di-host di Supabase Storage, jadi URL-nya harus tetap absolut.
+// Pustaka pmtiles membaca byte arsip langsung dari host tersebut lewat HTTP
+// Range; membuang host membuat permintaan_RANGE mendarat di origin sendiri.
+const pmtilesSourceUrl = computed(() => `pmtiles://${props.mapConfig?.pmtilesUrl ?? ''}`);
 
 // Utility functions
 function formatDistance(meters) {
@@ -691,102 +705,23 @@ function initMiniMap() {
 }
 
 async function initMap() {
-  if (!mapContainer.value || !hasPmtiles.value) return;
+  if (!mapContainer.value) return;
 
   try {
     const { Map, addProtocol, Popup, ScaleControl, NavigationControl, GeolocateControl } = await import('../../maplibre');
-    const { Protocol } = await import('pmtiles');
 
-    const protocol = new Protocol();
-    addProtocol('pmtiles', protocol.tile);
+    // Source kontur hanya boleh dibuat bila file PMTiles benar-benar ada.
+    // Kalau tidak, basemap dan batas kabupaten tetap bisa digambar.
+    let konturSource = null;
+    if (hasPmtiles.value) {
+      const { Protocol } = await import('pmtiles');
+      const protocol = new Protocol();
+      addProtocol('pmtiles', protocol.tile);
+      konturSource = { type: 'vector', url: pmtilesSourceUrl.value };
+    }
 
-    // Create map with multiple basemap sources
-    map.value = new Map({
-      container: mapContainer.value,
-      style: {
-        version: 8,
-        sources: {
-          'kontur-sulsel': {
-            type: 'vector',
-            url: pmtilesSourceUrl.value,
-          },
-          'batas-kabupaten': {
-            type: 'geojson',
-            data: geojsonUrl.value,
-          },
-          'osm-tiles': {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '© OpenStreetMap',
-          },
-          'satellite-tiles': {
-            type: 'raster',
-            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-            tileSize: 256,
-            attribution: '© Esri',
-          },
-          'terrain-tiles': {
-            type: 'raster',
-            tiles: ['https://tile.opentopomap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '© OpenTopoMap',
-          },
-          'dark-tiles': {
-            type: 'raster',
-            tiles: ['https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'],
-            tileSize: 256,
-            attribution: '© Stadia Maps',
-          },
-          'hillshade-tiles': {
-            type: 'raster-dem',
-            tiles: ['https://tiles.opentopomap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            maxzoom: 14,
-          },
-        },
-        layers: [
-          // Base layers (only one visible at a time)
-          {
-            id: 'osm-layer',
-            type: 'raster',
-            source: 'osm-tiles',
-            layout: { visibility: 'visible' },
-          },
-          {
-            id: 'satellite-layer',
-            type: 'raster',
-            source: 'satellite-tiles',
-            layout: { visibility: 'none' },
-          },
-          {
-            id: 'terrain-layer',
-            type: 'raster',
-            source: 'terrain-tiles',
-            layout: { visibility: 'none' },
-          },
-          {
-            id: 'dark-layer',
-            type: 'raster',
-            source: 'dark-tiles',
-            layout: { visibility: 'none' },
-          },
-          // Hillshade layer (optional)
-          {
-            id: 'hillshade-layer',
-            type: 'hillshade',
-            source: 'hillshade-tiles',
-            layout: { visibility: showHillshade.value ? 'visible' : 'none' },
-            paint: {
-              'hillshade-illumination-direction': 315,
-              'hillshade-illumination-anchor': 'map',
-              'hillshade-exaggeration': 0.5,
-              'hillshade-shadow-color': 'rgba(0, 0, 0, 0.5)',
-              'hillshade-highlight-color': 'rgba(255, 255, 255, 0.5)',
-              'hillshade-accent-color': 'rgba(140, 81, 10, 0.3)',
-            },
-          },
-          // Contour lines
+    const konturLayers = konturSource
+      ? [
           {
             id: 'garis-kontur',
             type: 'line',
@@ -808,7 +743,6 @@ async function initMap() {
               'line-opacity': 0.8,
             },
           },
-          // Contour labels (index contours every 50m)
           {
             id: 'kontur-labels',
             type: 'symbol',
@@ -828,54 +762,140 @@ async function initMap() {
             },
             paint: {},
           },
-          // District borders
-          {
-            id: 'kabupaten-border',
-            type: 'line',
-            source: 'batas-kabupaten',
-            paint: {
-              'line-color': '#2563eb',
-              'line-width': 1.5,
-              'line-dasharray': [2, 2],
-            },
-          },
-          // District highlight
-          {
-            id: 'kabupaten-highlight',
-            type: 'fill',
-            source: 'batas-kabupaten',
-            filter: ['==', ['get', 'id_kab'], ''],
-            paint: {
-              'fill-color': '#3b82f6',
-              'fill-opacity': 0.15,
-            },
-          },
-          // District name labels
-          {
-            id: 'kabupaten-labels',
-            type: 'symbol',
-            source: 'batas-kabupaten',
-            filter: ['==', ['get', 'id_kab'], ['get', 'id_kab']],
-            layout: {
-              visibility: showDistrictLabels.value ? 'visible' : 'none',
-              'text-field': ['get', 'nama_kab'],
-              'text-font': ['Open Sans Bold', 'Open Sans Regular'],
-              'text-size': [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                8, 10,
-                12, 14,
-              ],
-              'text-fill': '#1f2937',
-              'text-halo-color': '#fff',
-              'text-halo-width': 2,
-              'text-halo-blur': 1,
-              'text-anchor': 'center',
-              'text-allow-overlap': true,
-            },
-          },
-        ],
+        ]
+      : [];
+
+    const sources = {
+      ...(konturSource ? { 'kontur-sulsel': konturSource } : {}),
+      'batas-kabupaten': {
+        type: 'geojson',
+        data: geojsonUrl.value,
+      },
+      'osm-tiles': {
+        type: 'raster',
+        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+        tileSize: 256,
+        attribution: '© OpenStreetMap',
+      },
+      'satellite-tiles': {
+        type: 'raster',
+        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+        tileSize: 256,
+        attribution: '© Esri',
+      },
+      'terrain-tiles': {
+        type: 'raster',
+        tiles: ['https://tile.opentopomap.org/{z}/{x}/{y}.png'],
+        tileSize: 256,
+        attribution: '© OpenTopoMap',
+      },
+      'dark-tiles': {
+        type: 'raster',
+        tiles: ['https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'],
+        tileSize: 256,
+        attribution: '© Stadia Maps',
+      },
+      'hillshade-tiles': {
+        type: 'raster-dem',
+        tiles: ['https://tiles.opentopomap.org/{z}/{x}/{y}.png'],
+        tileSize: 256,
+        maxzoom: 14,
+      },
+    };
+
+    const layers = [
+      {
+        id: 'osm-layer',
+        type: 'raster',
+        source: 'osm-tiles',
+        layout: { visibility: 'visible' },
+      },
+      {
+        id: 'satellite-layer',
+        type: 'raster',
+        source: 'satellite-tiles',
+        layout: { visibility: 'none' },
+      },
+      {
+        id: 'terrain-layer',
+        type: 'raster',
+        source: 'terrain-tiles',
+        layout: { visibility: 'none' },
+      },
+      {
+        id: 'dark-layer',
+        type: 'raster',
+        source: 'dark-tiles',
+        layout: { visibility: 'none' },
+      },
+      {
+        id: 'hillshade-layer',
+        type: 'hillshade',
+        source: 'hillshade-tiles',
+        layout: { visibility: showHillshade.value ? 'visible' : 'none' },
+        paint: {
+          'hillshade-illumination-direction': 315,
+          'hillshade-illumination-anchor': 'map',
+          'hillshade-exaggeration': 0.5,
+          'hillshade-shadow-color': 'rgba(0, 0, 0, 0.5)',
+          'hillshade-highlight-color': 'rgba(255, 255, 255, 0.5)',
+          'hillshade-accent-color': 'rgba(140, 81, 10, 0.3)',
+        },
+      },
+      ...konturLayers,
+      {
+        id: 'kabupaten-border',
+        type: 'line',
+        source: 'batas-kabupaten',
+        paint: {
+          'line-color': '#2563eb',
+          'line-width': 1.5,
+          'line-dasharray': [2, 2],
+        },
+      },
+      {
+        id: 'kabupaten-highlight',
+        type: 'fill',
+        source: 'batas-kabupaten',
+        filter: ['==', ['get', 'id_kab'], ''],
+        paint: {
+          'fill-color': '#3b82f6',
+          'fill-opacity': 0.15,
+        },
+      },
+      {
+        id: 'kabupaten-labels',
+        type: 'symbol',
+        source: 'batas-kabupaten',
+        filter: ['==', ['get', 'id_kab'], ['get', 'id_kab']],
+        layout: {
+          visibility: showDistrictLabels.value ? 'visible' : 'none',
+          'text-field': ['get', 'nama_kab'],
+          'text-font': ['Open Sans Bold', 'Open Sans Regular'],
+          'text-size': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            8, 10,
+            12, 14,
+          ],
+          'text-fill': '#1f2937',
+          'text-halo-color': '#fff',
+          'text-halo-width': 2,
+          'text-halo-blur': 1,
+          'text-anchor': 'center',
+          'text-allow-overlap': true,
+        },
+      },
+    ];
+
+    // Create map with multiple basemap sources
+    map.value = new Map({
+      container: mapContainer.value,
+      style: {
+        version: 8,
+        sources,
+        layers,
       },
       center: [120.2, -3.3],
       zoom: 10,
@@ -967,7 +987,9 @@ async function initMap() {
     map.value.on('load', () => {
       loading.value = false;
       mapError.value = null;
-      mapStatus.value = 'Peta kontur Sulawesi Selatan dimuat. GeoJSON batas kabupaten aktif.';
+      mapStatus.value = hasPmtiles.value
+        ? 'Peta kontur Sulawesi Selatan dimuat. Garis kontur setiap 10 meter elevasi.'
+        : 'Peta dasar dan batas kabupaten dimuat. Garis kontur belum tersedia karena file PMTiles tidak ada di server.';
 
       // Initialize elevation legend
       initElevationLegend();
@@ -1353,8 +1375,10 @@ async function downloadOffline() {
     const bbox = currentBBox.value;
     const minZoom = offlineZoomMin.value;
     const maxZoom = offlineZoomMax.value;
-    // Use relative path for Service Worker to avoid CORS issues
-    const pmtilesUrl = props.mapConfig.pmtilesUrl.replace(/^https?:\/\/[^\/]+/, '');
+    // PMTiles di-host di Supabase Storage, jadi service worker harus memakai
+    // URL absolut agar HTTP Range langsung dibaca dari host arsip. GeoJSON
+    // masih dilayani dari origin sendiri sehingga boleh dibuat relatif.
+    const pmtilesUrl = props.mapConfig.pmtilesUrl;
     const geojsonUrlRelative = geojsonUrl.value.replace(/^https?:\/\/[^\/]+/, '');
 
     const layoutOptions = {
@@ -1397,10 +1421,6 @@ async function downloadOffline() {
 }
 
 onMounted(() => {
-  if (!hasPmtiles.value) {
-    loading.value = false;
-    return;
-  }
   initMap();
 });
 

@@ -1,5 +1,6 @@
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { config } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 /**
  * Satu-satunya titik masuk untuk MapLibre GL.
@@ -14,6 +15,11 @@ import { config } from 'maplibre-gl';
  * dependensinya) dan memberi URL-nya, jadi worker selalu ada di folder build.
  * URL tersebut same-origin, sehingga MapLibre instantiate worker secara langsung
  * tanpa blob URL.
+ *
+ * Stylesheet MapLibre ikut diimpor di sini karena tanpa itu kontainer peta dan
+ * seluruh kontrolnya (zoom, kompas, legenda, atribusi) tidak bergaya dan peta
+ * tampak sebagai kotak kosong. Halaman Peta mengimpor modul ini secara dinamis,
+ * sehingga mengimpor CSS di sini menutup kedua halaman peta sekaligus.
  */
 config.WORKER_URL = maplibreWorkerUrl;
 

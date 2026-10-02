@@ -262,16 +262,19 @@ async function updateCache(request) {
 async function handlePMTilesRequest(request) {
     const url = new URL(request.url);
     
-    // Parse the pmtiles URL format: pmtiles:///path/to/file.pmtiles/{z}/{x}/{y}.pbf
-    // or pmtiles:///path/to/file.pmtiles/{z}/{x}/{y}.mvt
+    // Parse the pmtiles URL format: pmtiles://<arsip>/{z}/{x}/{y}.pbf
+    // or pmtiles://<arsip>/{z}/{x}/{y}.mvt
+    // Arsip boleh berhost di luar origin (Supabase Storage). URL seperti itu
+    // membuat pathname bersegmen banyak dan host ikut terbawa, jadi pola
+    // tidak boleh membatasi nama berkas pada satu segmen saja.
     const pathname = url.pathname;
-    const match = pathname.match(/^\/([^\/]+\.pmtiles)\/(\d+)\/(\d+)\/(\d+)\.(pbf|mvt)$/);
+    const match = pathname.match(/^\/(.*\.pmtiles)\/(\d+)\/(\d+)\/(\d+)\.(pbf|mvt)$/);
     
     if (!match) {
         return new Response(null, { status: 404, statusText: 'Invalid PMTiles URL format' });
     }
     
-    const [, pmtilesPath, z, x, y] = match;
+    const [, , z, x, y] = match;
     const zoom = parseInt(z, 10);
     const tileX = parseInt(x, 10);
     const tileY = parseInt(y, 10);

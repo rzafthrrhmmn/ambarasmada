@@ -37,6 +37,11 @@ class SecurityHeaders
             ? 'http://localhost:5173 http://localhost:5174 http://[::1]:5173 http://[::1]:5174'
             : '';
 
+        // Arsip PMTiles dibaca browser lewat HTTP Range ke host tempat file
+        // disimpan. Host itu harus diizinkan connect-src, kalau tidak
+        // permintaan Range diblokir dan layer kontur tidak pernah dimuat.
+        $pmtilesSource = $this->originOf((string) config('map.pmtiles_url'));
+
         $csp = [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' {$viteSources} https://unpkg.com https://tile.openstreetmap.org",
@@ -45,8 +50,13 @@ class SecurityHeaders
             "img-src 'self' data: https: blob:",
             // Nominatim dipakai pencarian lokasi pada LocationPicker; tanpa ini
             // fetch-nya diblokir CSP dan muncul sebagai "Failed to fetch".
+            // OpenTopoMap (basemap Terrain + hillshade) dan Stadia (basemap Dark)
+            // juga wajib ada, kalau tidak memilih basemap itu menghasilkan kanvas kosong.
             // MapLibre membuat worker dari URL same-origin, jadi 'self' cukup.
-            "connect-src 'self' {$viteSources} https://tile.openstreetmap.org https://nominatim.openstreetmap.org https://server.arcgisonline.com https://unpkg.com",
+            // https://*.supabase.co menutupi endpoint Storage mana pun untuk
+            // bucket publik, sehingga PMTILES_URL tidak harus ditulis ulang
+            // di sini setiap kali project Supabase diganti.
+            "connect-src 'self' {$viteSources} https://tile.openstreetmap.org https://nominatim.openstreetmap.org https://server.arcgisonline.com https://tile.opentopomap.org https://tiles.opentopomap.org https://tiles.stadiamaps.com https://unpkg.com https://*.supabase.co {$pmtilesSource}",
             "worker-src 'self' blob:",
             "frame-ancestors 'none'",
             "form-action 'self'",
@@ -59,5 +69,24 @@ class SecurityHeaders
         error_log('[VERCEL-MIDDLEWARE] SecurityHeaders: headers set, returning response');
 
         return $response;
+    }
+
+    /**
+     * Ambil "scheme://host" dari sebuah URL absolut, atau string kosong
+     * bila URL-nya tidak bisa dipakai sebagai sumber CSP.
+     */
+    private function originOf(string $url): string
+    {
+        if ($url === '') {
+            return '';
+        }
+
+        $parts = parse_url($url);
+
+        if (! isset($parts['scheme'], $parts['host'])) {
+            return '';
+        }
+
+        return $parts['scheme'].'://'.$parts['host'];
     }
 }
