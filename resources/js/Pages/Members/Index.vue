@@ -134,11 +134,6 @@
             </tr>
 </thead>
           <tbody v-if="members && members.data" class="divide-y divide-[#6F9435]/30">
-          </tbody>
-          <tbody v-else-if="loading" class="divide-y divide-[#6F9435]/30">
-            <SkeletonLoader variant="table" />
-          </tbody>
-          <tbody v-else class="divide-y divide-[#6F9435]/30">
             <tr v-for="member in members.data" :key="member.id" class="hover:bg-[#263D26]/60">
               <td class="whitespace-nowrap px-4 py-3 text-sm font-medium">{{ member.nama_lengkap }}</td>
               <td class="px-4 py-3 text-sm text-[#d4dc9a]">
@@ -163,7 +158,12 @@
               </td>
             </tr>
             <tr v-if="!members.data.length">
-              <td colspan="7" class="px-4 py-8 text-center text-sm text-[#8fa06a]">Data anggota belum tersedia.</td>
+              <td colspan="8" class="px-4 py-8 text-center text-sm text-[#8fa06a]">Data anggota belum tersedia.</td>
+            </tr>
+          </tbody>
+          <tbody v-else class="divide-y divide-[#6F9435]/30">
+            <tr>
+              <td colspan="8" class="px-4 py-8 text-center text-sm text-[#8fa06a]">Memuat data anggota...</td>
             </tr>
           </tbody>
         </table>
@@ -372,7 +372,6 @@ import { router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
-import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 
 const props = defineProps({
   members: Object,
