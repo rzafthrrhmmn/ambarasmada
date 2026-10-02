@@ -225,7 +225,9 @@ class AttendanceController extends Controller
         $clientSentCoords = isset($data['latitude'], $data['longitude']);
 
         if ($hasGeofence && ! $clientSentCoords) {
-            $message = 'Lokasi perangkat tidak terkirim, sehingga jarak ke titik presensi tidak dapat diverifikasi.';
+            $message = 'Lokasi perangkat tidak terkirim, sehingga jarak ke titik presensi tidak dapat '
+                .'diverifikasi. Aktifkan izin lokasi untuk situs ini di pengaturan browser, lalu tekan '
+                .'"Catat Kehadiran" lagi.';
 
             if ($wantsJson) {
                 return response()->json([
@@ -247,18 +249,17 @@ class AttendanceController extends Controller
             );
 
             if ($distance > $session->radius) {
+                $message = "Anda terlalu jauh dari lokasi presensi. Jarak Anda: {$distance} m, "
+                    ."radius yang diizinkan: {$session->radius} m. Dekati lokasi sesi lalu coba lagi.";
+
                 if ($wantsJson) {
                     return response()->json([
-                        'message' => "Anda terlalu jauh dari lokasi presensi. Jarak: {$distance}m, Radius maksimal: {$session->radius}m",
-                        'errors' => [
-                            'location' => "Anda terlalu jauh dari lokasi presensi. Jarak: {$distance}m, Radius maksimal: {$session->radius}m",
-                        ],
+                        'message' => $message,
+                        'errors' => ['location' => $message],
                     ], 422);
                 }
 
-                return back()->withErrors([
-                    'location' => "Anda terlalu jauh dari lokasi presensi. Jarak: {$distance}m, Radius maksimal: {$session->radius}m",
-                ]);
+                return back()->withErrors(['location' => $message]);
             }
         }
 

@@ -7,8 +7,32 @@
     </div>
 
     <div v-if="scanResult" class="mb-6 rounded-2xl border border-[#A7B92B]/40 bg-[#263D26] p-5">
-      <p class="text-sm font-semibold text-[#A7B92B]">Scan berhasil!</p>
+      <p class="text-sm font-semibold text-[#A7B92B]">QR berhasil discan!</p>
       <p class="mt-1 text-xs text-[#8fa06a]">Token: {{ scanResult }}</p>
+    </div>
+
+    <div
+      v-if="checkInSaved"
+      class="mb-6 rounded-2xl border border-[#6F9435] bg-[#263D26] p-5"
+      role="status"
+    >
+      <p class="text-sm font-semibold text-[#A7B92B]">Presensi tercatat</p>
+      <p class="mt-1 text-xs text-[#8fa06a]">
+        Kehadiran Anda sudah tersimpan di sistem. Anda dapat kembali ke daftar sesi.
+      </p>
+    </div>
+
+    <div
+      v-if="checkInError"
+      class="mb-6 rounded-2xl border border-[#ef4419]/60 bg-[#263D26] p-5"
+      role="alert"
+    >
+      <p class="text-sm font-semibold text-[#ef4419]">Presensi BELUM tercatat</p>
+      <p class="mt-1 text-xs leading-5 text-[#d4dc9a]">{{ checkInError }}</p>
+      <p class="mt-2 text-xs text-[#8fa06a]">
+        Perbaiki penyebabnya lalu tekan "Catat Kehadiran" lagi. Kode QR tidak perlu
+        dipindai ulang.
+      </p>
     </div>
 
     <div class="mb-6">
@@ -105,6 +129,8 @@ const scanning = ref(false);
 const cameraLoading = ref(false);
 const cameraError = ref('');
 const scanResult = ref('');
+const checkInError = ref('');
+const checkInSaved = ref(false);
 const videoRef = ref(null);
 const canvasRef = ref(null);
 const scannerRef = ref(null);
@@ -257,7 +283,8 @@ async function startScan() {
       (decoded) => {
         scanResult.value = decoded;
         form.qr_token = decoded;
-        toast.success('QR berhasil discan!');
+        checkInError.value = '';
+        checkInSaved.value = false;
         stopScan();
         autoSubmit();
       },
@@ -293,11 +320,17 @@ function stopScan() {
  * yang sama, jadi pengiriman ulang tidak menghasilkan presensi ganda.
  */
 async function queueOrSubmit({ stayOnPage }) {
+  checkInError.value = '';
+  checkInSaved.value = false;
+
   // Koordinat hanya diminta bila sesi punya geofence, sehingga sesi biasa tidak
   // memicu dialog izin lokasi tanpa alasan.
   const position = sessionHasGeofence.value ? await requestCoordinates() : { ok: false };
 
   if (sessionHasGeofence.value && !position.ok) {
+    // QR sudah terbaca, jadi token tetap disimpan agar anggota bisa mencoba
+    // lagi tanpa memindai ulang setelah lokasi berhasil dibaca.
+    checkInError.value = `${position.reason} Presensi belum tercatat.`;
     toast.error(position.reason);
     refreshPermissionStates();
     return;
@@ -320,7 +353,10 @@ async function queueOrSubmit({ stayOnPage }) {
 
   form.post('/attendance/check-in', {
     onSuccess: () => {
+      checkInSaved.value = true;
+      checkInError.value = '';
       toast.success('Presensi berhasil disimpan!');
+
       if (stayOnPage) {
         resetForNextScan();
       } else {
@@ -329,16 +365,52 @@ async function queueOrSubmit({ stayOnPage }) {
     },
     onError: (errors) => {
       // Jaringan bisa hilang di tengah pengiriman meski navigator.onLine.
-      const message = errors?.message || 'Coba lagi.';
+      const message = pickErrorMessage(errors);
+
       if (!hasFieldErrors(errors)) {
         enqueue(payload, { url: '/attendance/check-in' });
         toast.warning('Gagal terkirim, disimpan di perangkat. ' + message);
         resetForNextScan();
         return;
       }
-      toast.error('Gagal menyimpan presensi. ' + message);
+
+      // Penyebab sebenarnya (geofence, sesi, validasi) harus terlihat. Sebelumnya
+      // hanya 'Coba lagi.' yang tampil, sehingga anggota mengira QR-nya gagal discan
+      // padahal server menolak karena jarak atau lokasi tidak terkirim.
+      checkInError.value = message;
+      toast.error(message);
     },
   });
+}
+
+/**
+ * Ambil pesan paling informatif dari error Inertia.
+ *
+ * Server menaruh sebab sebenarnya di errors.location (geofence) atau
+ * errors.message. Pesan yang paling spesifik didahulukan supaya anggota tahu
+ * harus mendekatkan diri, mengaktifkan lokasi, atau memeriksa kembali kode QR.
+ */
+function pickErrorMessage(errors) {
+  if (!errors || typeof errors !== 'object') return 'Presensi gagal disimpan.';
+
+  const location = errors.location;
+  const message = errors.message;
+
+  if (typeof location === 'string' && location) return location;
+  if (Array.isArray(location) && location.length) return location[0];
+  if (typeof message === 'string' && message) return message;
+  if (Array.isArray(message) && message.length) return message[0];
+
+  const firstField = Object.entries(errors).find(
+    ([key, value]) => key !== 'message' && (typeof value === 'string' || Array.isArray(value))
+  );
+
+  if (firstField) {
+    const [, value] = firstField;
+    return Array.isArray(value) ? value[0] : value;
+  }
+
+  return 'Presensi gagal disimpan.';
 }
 
 function hasFieldErrors(errors) {
@@ -351,7 +423,6 @@ function resetForNextScan() {
   form.keterangan = 'Hadir';
   scanResult.value = '';
 }
-
 function autoSubmit() {
   if (!form.qr_token || !form.member_id) {
     toast.warning('Token QR atau ID anggota tidak ditemukan.');
