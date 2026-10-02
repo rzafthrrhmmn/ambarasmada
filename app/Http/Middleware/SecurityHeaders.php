@@ -18,7 +18,14 @@ class SecurityHeaders
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('X-XSS-Protection', '1; mode=block');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->headers->set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+        // Kamera dipakai pemindai QR dan geolokasi dipakai verifikasi geofence
+        // presensi. Nilai kosong berarti fitur diblokir total di browser, jadi
+        // keduanya harus '(self)': boleh untuk origin aplikasi ini saja, tetap
+        // tertutup untuk origin pihak ketiga yang di-embed.
+        $response->headers->set(
+            'Permissions-Policy',
+            'camera=(self), geolocation=(self), microphone=(), payment=(), usb=(), interest-cohort=()'
+        );
 
         if ($request->isSecure() || $request->header('X-Forwarded-Proto') === 'https') {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');

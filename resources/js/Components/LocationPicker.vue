@@ -108,6 +108,7 @@ import {
   GeolocateControl,
 } from '../maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { describeGeolocationError } from '../Composables/useDevicePermissions.js';
 
 /**
  * Pemilih lokasi untuk sesi presensi.
@@ -347,19 +348,28 @@ function drawRadius() {
 }
 
 function useMyLocation() {
-  if (!navigator.geolocation) return;
+  if (!navigator.geolocation) {
+    searchError.value = 'Browser Anda tidak mendukung pembacaan lokasi.';
+    return;
+  }
+
+  if (!window.isSecureContext) {
+    searchError.value = 'Lokasi hanya dapat dibaca pada koneksi HTTPS.';
+    return;
+  }
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
+      searchError.value = '';
       pick({
         latitude: round8(position.coords.latitude),
         longitude: round8(position.coords.longitude),
       });
     },
-    () => {
-      searchError.value = 'Lokasi perangkat tidak dapat diakses.';
+    (error) => {
+      searchError.value = describeGeolocationError(error);
     },
-    { enableHighAccuracy: true, timeout: 10000 }
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
   );
 }
 

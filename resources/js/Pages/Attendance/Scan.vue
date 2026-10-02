@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <AppLayout>
     <div class="mb-6">
       <p class="text-sm font-medium text-[#EDD330]">Latihan Rutin</p>
@@ -30,6 +30,26 @@
       </div>
     </div>
 
+    <div class="mb-6 rounded-2xl border border-[#6F9435] bg-[#335233] p-5">
+      <h2 class="text-sm font-semibold text-[#f0ead8]">Izin perangkat yang dibutuhkan</h2>
+      <ul class="mt-3 grid gap-2 sm:grid-cols-2">
+        <li
+          v-for="izin in permissionList"
+          :key="izin.key"
+          class="flex items-start gap-2 rounded-lg border border-[#6F9435]/60 bg-[#263D26] px-3 py-2"
+        >
+          <span class="mt-0.5 text-xs" :class="izinClass(izin.state)">{{ izinIcon(izin.state) }}</span>
+          <span class="text-xs">
+            <span class="block font-medium text-[#d4dc9a]">{{ izin.label }}</span>
+            <span class="block text-[#8fa06a]">{{ izinNote(izin.state) }}</span>
+          </span>
+        </li>
+      </ul>
+      <p v-if="!windowIsSecure" class="mt-3 text-xs text-[#ef4419]">
+        Situs ini belum dibuka lewat HTTPS. Kamera dan lokasi hanya dapat diakses pada koneksi aman.
+      </p>
+    </div>
+
     <div class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5">
       <h2 class="mb-3 font-semibold text-[#f0ead8]">Cetak Kehadiran</h2>
       <form @submit.prevent="submitCheckIn" class="grid gap-3">
@@ -58,21 +78,29 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onBeforeUnmount, inject } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useForm, usePage, router } from '@inertiajs/vue3';
+import { useToast } from 'vue-toastification';
 
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import { Html5Qrcode } from 'html5-qrcode';
 import { enqueue } from '@/OfflineQueue.js';
 import { useNetworkStatus } from '@/Composables/useNetworkStatus.js';
+import {
+  describeMediaError,
+  hasCameraSupport,
+  permissionState,
+  preflightCamera,
+  requestCoordinates,
+} from '@/Composables/useDevicePermissions.js';
 
 const props = defineProps({
   session: Object,
   member: Object,
 });
 const page = usePage();
-$toast = inject('toast');
+const toast = useToast();
 const scanning = ref(false);
 const cameraLoading = ref(false);
 const cameraError = ref('');
@@ -83,6 +111,95 @@ const scannerRef = ref(null);
 const html5QrCode = ref(null);
 
 const { isOnline, flushQueue } = useNetworkStatus();
+
+// Status izin dipantau supaya pengguna melihat Features perangkat yang masih
+// ditolak browser sebelum menekan tombol kamera.
+const cameraPermission = ref('unknown');
+const geolocationPermission = ref('unknown');
+const windowIsSecure = ref(true);
+
+const permissionList = computed(() => [
+  {
+    key: 'camera',
+    label: 'Kamera',
+    state: cameraPermission.value,
+    needed: 'Memindai QR Code sesi',
+  },
+  {
+    key: 'geolocation',
+    label: 'Lokasi',
+    state: geolocationPermission.value,
+    needed: sessionHasGeofence.value ? 'Verifikasi jarak presensi' : 'Tidak dipakai pada sesi ini',
+  },
+]);
+
+const PERMISSION_NOTES = {
+  granted: 'Sudah diizinkan.',
+  prompt: 'Akan diminta saat fitur digunakan.',
+  denied: 'Ditolak. Aktifkan di pengaturan situs pada browser.',
+  unknown: 'Status tidak dapat dibaca browser ini.',
+};
+
+function izinNote(state) {
+  if (state === 'denied') return PERMISSION_NOTES.denied;
+  if (state === 'granted') return PERMISSION_NOTES.granted;
+  if (state === 'prompt') return PERMISSION_NOTES.prompt;
+  return PERMISSION_NOTES.unknown;
+}
+
+function izinIcon(state) {
+  if (state === 'granted') return '✓';
+  if (state === 'denied') return '✕';
+  if (state === 'prompt') return '•';
+  return '?';
+}
+
+function izinClass(state) {
+  if (state === 'granted') return 'text-[#A7B92A]';
+  if (state === 'denied') return 'text-[#ef4419]';
+  return 'text-[#EDD330]';
+}
+
+async function refreshPermissionStates() {
+  windowIsSecure.value = window.isSecureContext;
+
+  if (!hasCameraSupport()) {
+    cameraPermission.value = 'denied';
+  } else {
+    cameraPermission.value = await permissionState('camera');
+  }
+
+  geolocationPermission.value =
+    typeof navigator !== 'undefined' && navigator.geolocation
+      ? await permissionState('geolocation')
+      : 'denied';
+}
+
+const permissionWatchers = [];
+
+function watchPermission(name, target) {
+  if (typeof navigator === 'undefined' || !navigator.permissions?.query) return;
+
+  try {
+    const result = navigator.permissions.query({ name });
+    if (typeof result?.then !== 'function') return;
+
+    result
+      .then((status) => {
+        target.value = status.state;
+
+        const onChange = () => {
+          target.value = status.state;
+        };
+
+        status.addEventListener?.('change', onChange);
+        permissionWatchers.push(status, onChange);
+      })
+      .catch(() => {});
+  } catch {
+    // Prompt permission tidak didukung untuk tipe ini; biarkan 'unknown'.
+  }
+}
 
 const form = useForm({
   qr_token: '',
@@ -111,9 +228,23 @@ function formatDate(value) {
 async function startScan() {
   cameraLoading.value = true;
   cameraError.value = '';
-  scanning.value = true;
   form.qr_token = props.session.qr_token;
 
+  // Minta izin kamera lebih dulu agar kegagalanPermissions-Policy (camera=())
+  // bisa dibedakan dari penolakan pengguna, dan pesan yang muncul bisa
+  // menyebutkan tindakan yang benar.
+  const preflight = await preflightCamera();
+
+  if (!preflight.ok) {
+    cameraLoading.value = false;
+    scanning.value = false;
+    cameraError.value = preflight.message;
+    toast.error(preflight.message);
+    refreshPermissionStates();
+    return;
+  }
+
+  scanning.value = true;
   html5QrCode.value = new Html5Qrcode('scannerRef');
 
   try {
@@ -126,7 +257,7 @@ async function startScan() {
       (decoded) => {
         scanResult.value = decoded;
         form.qr_token = decoded;
-        $toast.success('QR berhasil discan!');
+        toast.success('QR berhasil discan!');
         stopScan();
         autoSubmit();
       },
@@ -137,22 +268,12 @@ async function startScan() {
       }
     );
     cameraLoading.value = false;
+    refreshPermissionStates();
   } catch (err) {
     cameraLoading.value = false;
     scanning.value = false;
-    if (err.name === 'NotAllowedError' || err.name === 'NotAllowedError' || (err.message && err.message.includes('permission'))) {
-      cameraError.value = 'Akses kamera ditolak. Silakan izinkan akses kamera di pengaturan browser.';
-      $toast.error('Izin kamera ditolak. Aktifkan izin di pengaturan browser Anda.');
-    } else if (err.name === 'NotFoundError') {
-      cameraError.value = 'Tidak ditemukan kamera di perangkat ini. Gunakan upload foto sebagai alternatif.';
-      $toast.error('Kamera tidak ditemukan pada perangkat ini.');
-    } else if (err.name === 'NotReadableError' || err.name === 'BusyError') {
-      cameraError.value = 'Kamera sedang digunakan aplikasi lain. Tutup aplikasi yang menggunakan kamera.';
-      $toast.warn('Kamera sedang digunakan aplikasi lain.');
-    } else {
-      cameraError.value = 'Gagal mengakses kamera: ' + (err.message || err);
-      $toast.error('Gagal mengakses kamera. Coba muat ulang halaman.');
-    }
+    cameraError.value = describeMediaError(err);
+    toast.error(cameraError.value);
     html5QrCode.value = null;
   }
 }
@@ -167,46 +288,18 @@ function stopScan() {
 }
 
 /**
- * Ambil koordinat perangkat. Wajib bila sesi punya geofence, karena server
- * menolak presensi yang tidak bisa diverifikasi jaraknya.
- */
-function requestPosition() {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve({ ok: false, reason: 'Browser Anda tidak mendukung pembacaan lokasi.' });
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) =>
-        resolve({
-          ok: true,
-          latitude: Number(position.coords.latitude.toFixed(8)),
-          longitude: Number(position.coords.longitude.toFixed(8)),
-        }),
-      (error) =>
-        resolve({
-          ok: false,
-          reason:
-            error.code === error.PERMISSION_DENIED
-              ? 'Izin lokasi ditolak. Aktifkan lokasi untuk智能手机 ini agar presensi dapat diverifikasi.'
-              : 'Lokasi tidak dapat dibaca. Coba pindah ke area dengan sinyal GPS.',
-        }),
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
-    );
-  });
-}
-
-/**
  * Simpan presensi. Saat sinyal hilang, payload diantrekan di perangkat dan
  * dikirim otomatis setelah koneksi kembali. Endpoint checkIn mengulang baris
  * yang sama, jadi pengiriman ulang tidak menghasilkan presensi ganda.
  */
 async function queueOrSubmit({ stayOnPage }) {
-  const position = await requestPosition();
+  // Koordinat hanya diminta bila sesi punya geofence, sehingga sesi biasa tidak
+  // memicu dialog izin lokasi tanpa alasan.
+  const position = sessionHasGeofence.value ? await requestCoordinates() : { ok: false };
 
   if (sessionHasGeofence.value && !position.ok) {
-    $toast.error(position.reason);
+    toast.error(position.reason);
+    refreshPermissionStates();
     return;
   }
 
@@ -220,14 +313,14 @@ async function queueOrSubmit({ stayOnPage }) {
 
   if (!isOnline.value) {
     enqueue(payload, { url: '/attendance/check-in' });
-    $toast.warning('Tidak ada sinyal. Presensi disimpan di perangkat dan dikirim otomatis nanti.');
+    toast.warning('Tidak ada sinyal. Presensi disimpan di perangkat dan dikirim otomatis nanti.');
     resetForNextScan();
     return;
   }
 
   form.post('/attendance/check-in', {
     onSuccess: () => {
-      $toast.success('Presensi berhasil disimpan!');
+      toast.success('Presensi berhasil disimpan!');
       if (stayOnPage) {
         resetForNextScan();
       } else {
@@ -239,11 +332,11 @@ async function queueOrSubmit({ stayOnPage }) {
       const message = errors?.message || 'Coba lagi.';
       if (!hasFieldErrors(errors)) {
         enqueue(payload, { url: '/attendance/check-in' });
-        $toast.warning('Gagal terkirim, disimpan di perangkat. ' + message);
+        toast.warning('Gagal terkirim, disimpan di perangkat. ' + message);
         resetForNextScan();
         return;
       }
-      $toast.error('Gagal menyimpan presensi. ' + message);
+      toast.error('Gagal menyimpan presensi. ' + message);
     },
   });
 }
@@ -261,7 +354,7 @@ function resetForNextScan() {
 
 function autoSubmit() {
   if (!form.qr_token || !form.member_id) {
-    $toast.warning('Token QR atau ID anggota tidak ditemukan.');
+    toast.warning('Token QR atau ID anggota tidak ditemukan.');
     return;
   }
   queueOrSubmit({ stayOnPage: false });
@@ -269,14 +362,25 @@ function autoSubmit() {
 
 function submitCheckIn() {
   if (!form.qr_token) {
-    $toast.warning('Scan QR terlebih dahulu atau masukkan token secara manual.');
+    toast.warning('Scan QR terlebih dahulu atau masukkan token secara manual.');
     return;
   }
   queueOrSubmit({ stayOnPage: true });
 }
 
+onMounted(() => {
+  refreshPermissionStates();
+  watchPermission('camera', cameraPermission);
+  watchPermission('geolocation', geolocationPermission);
+});
+
 onBeforeUnmount(() => {
   stopScan();
+
+  // Listener izin dilepas agar halaman yang sudah ditutup tidak tetap
+  // menerima perubahan status Permissions-Policy.
+  permissionWatchers.forEach((item) => item?.removeEventListener?.('change', item));
+  permissionWatchers.length = 0;
 });
 </script>
 
