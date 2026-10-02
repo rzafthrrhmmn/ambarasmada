@@ -40,7 +40,12 @@ router.on('navigate', (event) => {
 // break HMR. Use `sw.js` being absent (or unregister) when testing locally.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        // updateViaCache: 'none' membuat browser memeriksa sw.js di jaringan
+        // setiap kali halaman dimuat. Tanpa itu, salinan sw.js yang tersimpan
+        // di HTTP cache bisa dipakai lagi sehingga service worker baru tidak
+        // pernah terpasang sampai cache itu kedaluwarsa.
+        navigator.serviceWorker
+            .register('/sw.js', { scope: '/', updateViaCache: 'none' })
             .then((registration) => {
                 // Pick up a newly deployed sw.js without forcing a reload;
                 // the update activates on its own via skipWaiting/claim.

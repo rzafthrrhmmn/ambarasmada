@@ -151,7 +151,7 @@ import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
-import { getActiveServiceWorker } from '@/ServiceWorker.js';
+import { getActiveServiceWorker, SW_PROTOCOL } from '@/ServiceWorker.js';
 import { useMapPngExport } from '@/Composables/useMapPngExport.js';
 
 const props = defineProps({
@@ -633,6 +633,20 @@ async function downloadOffline() {
     const channel = new MessageChannel();
     channel.port1.onmessage = (event) => {
       const data = event.data;
+
+      // Service worker yang aktif bisa saja versi lama: browser memakai
+      // salinan yang sedang berjalan sampai install dan activate selesai, dan
+      // itu bisa memakan waktu setelah deploy. Balasan versi lama tidak
+      // membawa zoomMin/zoomMax sehingga unduhan yang gagal tampil sebagai
+      // "0 tile (zoom undefined-undefined)". Tolak lebih dulu, lalu suruh
+      // pengguna memuat ulang.
+      if (data.protocol !== SW_PROTOCOL) {
+        downloadStatus.value =
+          'Service Worker di perangkat ini masih versi lama. Muat ulang halaman (Ctrl+Shift+R), lalu ulangi unduhan.';
+        downloading.value = false;
+        return;
+      }
+
       if (data.type === 'DOWNLOAD_PROGRESS') {
         downloadStatus.value = `${data.status} (${data.downloaded}/${data.total} tile)`;
       }
@@ -662,6 +676,7 @@ async function downloadOffline() {
         zoomMax: maxZoom,
         pmtilesUrl,
         geojsonUrl: geojsonUrlRelative,
+        protocol: SW_PROTOCOL,
       },
       [channel.port2]
     );

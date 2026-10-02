@@ -10,6 +10,15 @@
 
 export const SW_UNAVAILABLE = 'Service Worker belum aktif. Muat ulang halaman setelah deploy terbaru.';
 
+/**
+ * Nomor protokol pesan halaman <-> service worker.
+ *
+ * Harus sama dengan SW_PROTOCOL di public/sw.js. Nilai ini dinaikkan setiap kali
+ * format pesan berubah, supaya halaman dapat menolak balasan service worker versi
+ * lama alih-alih memakainya dan menampilkan angka yang menyesatkan.
+ */
+export const SW_PROTOCOL = 2;
+
 export async function getActiveServiceWorker() {
     if (!('serviceWorker' in navigator)) {
         throw new Error('Browser Anda tidak mendukung Service Worker.');
@@ -19,6 +28,16 @@ export async function getActiveServiceWorker() {
 
     if (!registration) {
         throw new Error(SW_UNAVAILABLE);
+    }
+
+    // Minta pemeriksaan sw.js terbaru saat tombol unduhan ditekan, bukan hanya
+    // saat halaman dimuat. Setelah deploy, salinan baru hanya terpasang kalau
+    // browser memeriksanya; tanpa pemanggilan ini, pengguna bisa menekan Unduh
+    // berkali-kali dan selalu dilayani worker versi lama.
+    try {
+        await registration.update();
+    } catch {
+        // Offline atau gagal jaringan: pakai worker yang sudah ada.
     }
 
     const worker = registration.active || navigator.serviceWorker.controller;

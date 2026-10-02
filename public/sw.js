@@ -1,7 +1,24 @@
-﻿const CACHE_VERSION = 'v1.4.3';
+﻿// Naikkan setiap kali format respons yang disimpan berubah. Tile kini disimpan
+// tanpa header Content-Encoding dan halaman peta offline punya cache sendiri, jadi
+// cache versi sebelumnya tidak boleh dipakai ulang.
+const CACHE_VERSION = 'v1.5.0';
 const CACHE_NAME = 'jaya-jaya-jaya-' + CACHE_VERSION;
 const ASSETS_CACHE = 'jaya-jaya-jaya-assets-' + CACHE_VERSION;
 const TILES_CACHE = 'jaya-jaya-jaya-tiles-' + CACHE_VERSION;
+
+/**
+ * Nomor protokol pesan halaman <-> service worker.
+ *
+ * Service worker yang sudah terpasang tidak bisa diganti seketika setelah deploy:
+ * browser memakai salinan yang sedang aktif sampai install dan activate selesai.
+ * Ketika protokol halaman dan worker tidak sama, halaman akan salah membaca
+ * balasannya. Gejalanya persis seperti yang pernah terjadi: worker versi lama
+ * mengirim DOWNLOAD_COMPLETE tanpa zoomMin/zoomMax sehingga halaman menampilkan
+ * "0 tile berhasil (zoom undefined-undefined)" untuk unduhan yang gagal diam-diam.
+ * Karena itu setiap pesan membawa nomor ini dan halaman menolak membacanya kalau
+ * nomornya tidak cocok, lalu menyuruh pengguna memuat ulang.
+ */
+const SW_PROTOCOL = 2;
 
 const STATIC_ASSETS = [
     '/',
@@ -414,15 +431,32 @@ self.addEventListener('message', (event) => {
     }
 
     if (event.data?.type === 'DOWNLOAD_OFFLINE_TILES') {
-        const { bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName } = event.data;
+        const { bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName, protocol } = event.data;
         const port = event.ports[0];
+
+        // Halaman yang lebih baru talking ke worker lama (atau sebaliknya) tidak
+        // boleh dijawab dengan format yang salah. Bilas dengan pesan yang jelas
+        // supaya pengguna tahu perlu memuat ulang, bukan melihat angka 0 tile.
+        if (protocol !== undefined && protocol !== SW_PROTOCOL) {
+            port?.postMessage({
+                type: 'DOWNLOAD_ERROR',
+                protocol: SW_PROTOCOL,
+                error: `Halaman dan service worker memakai protokol berbeda (${protocol}/${SW_PROTOCOL}). Muat ulang halaman lalu ulangi unduhan.`,
+            });
+            return;
+        }
+
         event.waitUntil(handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName));
     }
 });
 
 async function handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName) {
+    function send(message) {
+        port.postMessage({ protocol: SW_PROTOCOL, ...message });
+    }
+
     function sendProgress(status, downloaded, total) {
-        port.postMessage({ type: 'DOWNLOAD_PROGRESS', status, downloaded, total });
+        send({ type: 'DOWNLOAD_PROGRESS', status, downloaded, total });
     }
 
     sendProgress('Menyiapkan arsip peta...', 0, 0);
@@ -439,7 +473,7 @@ async function handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, g
         const effMax = Math.min(zoomMax, reader.maxZoom);
 
         if (effMin > effMax) {
-            port.postMessage({
+            send({
                 type: 'DOWNLOAD_ERROR',
                 error: `Arsip peta hanya memuat level zoom ${reader.minZoom}-${reader.maxZoom}.`,
             });
@@ -452,7 +486,7 @@ async function handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, g
 
         const tileQueue = buildTileQueue(bbox, effMin, effMax);
         if (tileQueue.length === 0) {
-            port.postMessage({
+            send({
                 type: 'DOWNLOAD_ERROR',
                 error: 'Wilayah terpilih tidak menghasilkan satu pun tile.',
             });
@@ -488,7 +522,7 @@ async function handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, g
         // Dulu setiap kegagalan ditelan dan halaman tetap melaporkan "Selesai!
         // 0 tile", sehingga penyebabnya tidak pernah terlihat oleh pengguna.
         if (downloadedTiles === 0) {
-            port.postMessage({
+            send({
                 type: 'DOWNLOAD_ERROR',
                 error: `Tidak ada tile yang bisa diunduh dari ${tileQueue.length} tile yang diminta. Periksa koneksi dan alamat arsip peta.`,
             });
@@ -501,7 +535,7 @@ async function handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, g
         }
 
         sendProgress('Selesai', downloadedTiles, tileQueue.length);
-        port.postMessage({
+        send({
             type: 'DOWNLOAD_COMPLETE',
             downloaded: downloadedTiles,
             total: tileQueue.length,
@@ -512,7 +546,7 @@ async function handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, g
     } catch (error) {
         // Tanpa jalur ini, kegagalan di dalam service worker tidak pernah sampai
         // ke halaman dan tombol unduh menggantung selamanya.
-        port.postMessage({
+        send({
             type: 'DOWNLOAD_ERROR',
             error: `Gagal mengunduh peta: ${error.message}`,
         });

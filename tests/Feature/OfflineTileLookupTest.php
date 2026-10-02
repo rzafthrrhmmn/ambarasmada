@@ -225,4 +225,98 @@ class OfflineTileLookupTest extends TestCase
             );
         }
     }
+
+    public function test_service_worker_and_pages_agree_on_the_message_protocol(): void
+    {
+        $sw = $this->sw();
+
+        $this->assertStringContainsString(
+            'const SW_PROTOCOL = ',
+            $sw,
+            'Service worker harus menandai format pesannya dengan nomor protokol.'
+        );
+
+        // Nomor yang sama harus ditulis di kedua sisi. Kalau tidak, halaman
+        // akan menolak balasan worker yang sebenarnya sudah benar.
+        $this->assertSame(
+            1,
+            preg_match('/const SW_PROTOCOL = (\d+);/', $sw, $swMatch),
+            'Nomor protokol service worker harus terbaca.'
+        );
+
+        $module = file_get_contents(base_path('resources/js/ServiceWorker.js'));
+        $this->assertIsString($module, 'Tidak bisa membaca resources/js/ServiceWorker.js.');
+        $this->assertSame(
+            1,
+            preg_match('/export const SW_PROTOCOL = (\d+);/', $module, $moduleMatch),
+            'Nomor protokol harus diekspor dari satu modul supaya halaman tidak menyalin sendiri.'
+        );
+
+        $this->assertSame(
+            $swMatch[1],
+            $moduleMatch[1],
+            'Nomor protokol service worker dan halaman harus sama, kalau tidak setiap unduhan ditolak sebagai versi lama.'
+        );
+
+        foreach ($this->petaPages() as $name => $source) {
+            $this->assertStringContainsString(
+                'if (data.protocol !== SW_PROTOCOL) {',
+                $source,
+                "Halaman {$name} harus menolak balasan service worker versi lama."
+            );
+
+            $this->assertStringContainsString(
+                'protocol: SW_PROTOCOL,',
+                $source,
+                "Halaman {$name} harus menyertakan nomor protokol pada permintaan."
+            );
+        }
+    }
+
+    public function test_a_stale_service_worker_reports_a_reload_instead_of_zero_tiles(): void
+    {
+        $sw = $this->sw();
+
+        // Gejala yang pernah dilihat pengguna: "Selesai! 0 tile berhasil diunduh
+        // (zoom undefined-undefined)". Worker lama mengirim DOWNLOAD_COMPLETE
+        // tanpa zoomMin/zoomMax dan menelan galatnya sendiri, sehingga halaman
+        // menampilkan angka nol seolah-olah unduhan berhasil.
+        $this->assertStringContainsString(
+            'function send(message) {',
+            $sw,
+            'Semua pesan dari service worker harus melewati satu helper yang menempelkan nomor protokol.'
+        );
+
+        $this->assertStringContainsString(
+            'port.postMessage({ protocol: SW_PROTOCOL, ...message });',
+            $sw
+        );
+
+        $this->assertStringContainsString(
+            'Muat ulang halaman lalu ulangi unduhan.',
+            $sw,
+            'Protokol yang berbeda harus dijelaskan sebagai kebutuhan muat ulang, bukan sebagai kegagalan unduhan biasa.'
+        );
+    }
+
+    public function test_service_worker_update_is_checked_before_downloading(): void
+    {
+        $module = file_get_contents(base_path('resources/js/ServiceWorker.js'));
+        $this->assertIsString($module);
+
+        $this->assertStringContainsString(
+            'await registration.update();',
+            $module,
+            'Tombol unduh harus memicu pemeriksaan sw.js terbaru; kalau tidak, worker lama melayani permintaan setelah deploy.'
+        );
+
+        $app = file_get_contents(base_path('resources/js/app.js'));
+        $this->assertIsString($app);
+
+        $this->assertStringContainsString(
+            "updateViaCache: 'none'",
+            $app,
+            'sw.js tidak boleh dilayani dari HTTP cache, kalau tidak salinan lama tidak pernah tergantikan.'
+        );
+    }
 }
