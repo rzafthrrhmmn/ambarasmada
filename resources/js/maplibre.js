@@ -23,4 +23,18 @@ import 'maplibre-gl/dist/maplibre-gl.css';
  */
 config.WORKER_URL = maplibreWorkerUrl;
 
+/**
+ * Server glyph untuk layer symbol (label kontur dan label kabupaten).
+ *
+ * Style yang punya layer `symbol` dengan `text-field` wajib mendeklarasikan
+ * `glyphs`. Tanpa itu MapLibre tidak bisa menyusun shader teks: error-nya
+ *uncaught, render loop berhenti, dan kanvas tetap abu-abu meski peta,
+ * kontur, dan batas kabupaten sudah termuat.
+ *
+ * Host ini melayani tepat nama fontstack yang dipakai kedua halaman peta,
+ * yaitu "Open Sans Regular" dan "Open Sans Bold". Host demo MapLibre sendiri
+ * (demotiles.maplibre.org) tidak punya kedua fontstack itu dan menjawab 404.
+ */
+export const GLYPHS_URL = 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf';
+
 export * from 'maplibre-gl';

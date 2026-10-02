@@ -219,7 +219,7 @@ async function initMap() {
   loading.value = true;
 
   try {
-    const { Map, addProtocol, ScaleControl, NavigationControl, GeolocateControl } = await import('../../maplibre');
+    const { Map, addProtocol, ScaleControl, NavigationControl, GeolocateControl, GLYPHS_URL } = await import('../../maplibre');
     const { Protocol } = await import('pmtiles');
 
     const protocol = new Protocol();
@@ -229,6 +229,10 @@ async function initMap() {
       container: mapContainer.value,
       style: {
         version: 8,
+        // Layer symbol memakai text-field, jadi style wajib punya glyphs.
+        // Tanpa itu MapLibre gagal menyusun shader teks: error-nya uncaught
+        // dan render loop berhenti sehingga kanvas tetap abu-abu.
+        glyphs: GLYPHS_URL,
         sources: {
           'kontur-sulawesi': {
             type: 'vector',
@@ -264,7 +268,12 @@ async function initMap() {
           },
           'hillshade-tiles': {
             type: 'raster-dem',
-            tiles: ['https://tiles.opentopomap.org/{z}/{x}/{y}.png'],
+            // Host jamak (tiles.opentopomap.org) menyajikan sertifikat TLS yang
+            // tidak cocok dengan nama hostnya, sehingga browser menolak
+            // koneksi dan layer hillshade tidak pernah punya data. Terrarium
+            // di S3 menyajikan DEM yang sama dengan sertifikat yang sah.
+            tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+            encoding: 'terrarium',
             tileSize: 256,
             maxzoom: 14,
           },

@@ -100,7 +100,8 @@ class PetaPageBindingsTest extends TestCase
             'tile.openstreetmap.org',
             'server.arcgisonline.com',
             'tile.opentopomap.org',
-            'tiles.opentopomap.org',
+            'fonts.openmaptiles.org',
+            's3.amazonaws.com',
             'tiles.stadiamaps.com',
             'nominatim.openstreetmap.org',
         ] as $host) {
@@ -110,6 +111,86 @@ class PetaPageBindingsTest extends TestCase
                 "Host tile {$host} tidak ada di CSP, sehingga tile-nya diblokir browser dan peta tampil kosong."
             );
         }
+    }
+
+    public function test_csp_does_not_list_the_broken_opentopomap_host(): void
+    {
+        $csp = file_get_contents(base_path('app/Http/Middleware/SecurityHeaders.php'));
+
+        $this->assertStringNotContainsString(
+            'https://tiles.opentopomap.org',
+            $csp,
+            'Host jamak tiles.opentopomap.org menyajikan sertifikat TLS yang tidak cocok dengan nama hostnya sehingga browser menolak koneksi. Host tunggal tile.opentopomap.org-lah yang sah.'
+        );
+    }
+
+    /**
+     * Style yang punya layer symbol dengan text-field wajib mendeklarasikan
+     * glyphs. Tanpa itu MapLibre gagal menyusun shader teks; error-nya uncaught
+     * dan render loop berhenti, sehingga kanvas tetap abu-abu walaupun peta,
+     * kontur, dan batas kabupaten sudah termuat.
+     */
+    public function test_style_declares_glyphs_when_symbol_layers_present(): void
+    {
+        $checked = 0;
+
+        foreach (self::PAGES as $page) {
+            $source = file_get_contents($this->path($page));
+
+            if (! preg_match("/type:\s*'symbol'/", $source)) {
+                continue;
+            }
+
+            $checked++;
+
+            $this->assertStringContainsString(
+                "'text-field'",
+                $source,
+                "{$page}: layer symbol ada, jadi test ini tidak bermakna tanpa text-field."
+            );
+
+            $this->assertStringContainsString(
+                'glyphs: GLYPHS_URL',
+                $source,
+                "{$page}: ada layer symbol dengan text-field, jadi style wajib mendeklarasikan glyphs. Tanpa itu shader teks gagal disusun dan kanvas tetap abu-abu."
+            );
+        }
+
+        $this->assertGreaterThan(
+            0,
+            $checked,
+            'Tidak ada halaman peta yang punya layer symbol, jadi test ini tidak menguji apa pun.'
+        );
+    }
+
+    public function test_dem_source_uses_a_host_with_a_valid_certificate(): void
+    {
+        $checked = 0;
+
+        foreach (self::PAGES as $page) {
+            $source = file_get_contents($this->path($page));
+
+            // Hanya array tiles: yang diperiksa, bukan komentar.
+            preg_match_all('/tiles:\s*\[([^\]]*)\]/', $source, $matches);
+
+            foreach ($matches[1] as $urlList) {
+                $checked++;
+
+                $this->assertStringNotContainsString(
+                    'tiles.opentopomap.org',
+                    $urlList,
+                    "{$page}: sumber memakai tiles.opentopomap.org yang sertifikat TLS-nya tidak cocok dengan nama host, sehingga browser menolak koneksi dan hillshade tidak pernah punya data."
+                );
+            }
+
+            $this->assertStringContainsString(
+                "'terrarium'",
+                $source,
+                "{$page}: DEM Terrarium wajib disertai deklarasi encoding agar MapLibre tahu cara membacanya."
+            );
+        }
+
+        $this->assertGreaterThan(0, $checked, 'Tidak ada sumber tiles: yang diperiksa, jadi test ini tidak menguji apa pun.');
     }
 
     public function test_map_is_not_gated_entirely_on_pmtiles(): void

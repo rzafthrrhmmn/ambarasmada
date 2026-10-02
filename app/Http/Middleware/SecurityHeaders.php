@@ -56,7 +56,10 @@ class SecurityHeaders
             // https://*.supabase.co menutupi endpoint Storage mana pun untuk
             // bucket publik, sehingga PMTILES_URL tidak harus ditulis ulang
             // di sini setiap kali project Supabase diganti.
-            "connect-src 'self' {$viteSources} https://tile.openstreetmap.org https://nominatim.openstreetmap.org https://server.arcgisonline.com https://tile.opentopomap.org https://tiles.opentopomap.org https://tiles.stadiamaps.com https://unpkg.com https://*.supabase.co {$pmtilesSource}",
+            // fonts.openmaptiles.org melayani glyph untuk layer symbol dan
+            // s3.amazonaws.com melayani DEM terrarium untuk hillshade; tanpa
+            // keduanya di sini, label dan hillshade gagal dimuat.
+            "connect-src 'self' {$viteSources} https://tile.openstreetmap.org https://nominatim.openstreetmap.org https://server.arcgisonline.com https://tile.opentopomap.org https://tiles.stadiamaps.com https://unpkg.com https://fonts.openmaptiles.org https://s3.amazonaws.com https://*.supabase.co {$pmtilesSource}",
             "worker-src 'self' blob:",
             "frame-ancestors 'none'",
             "form-action 'self'",

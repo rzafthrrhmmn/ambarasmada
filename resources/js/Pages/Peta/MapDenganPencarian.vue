@@ -708,7 +708,7 @@ async function initMap() {
   if (!mapContainer.value) return;
 
   try {
-    const { Map, addProtocol, Popup, ScaleControl, NavigationControl, GeolocateControl } = await import('../../maplibre');
+    const { Map, addProtocol, Popup, ScaleControl, NavigationControl, GeolocateControl, GLYPHS_URL } = await import('../../maplibre');
 
     // Source kontur hanya boleh dibuat bila file PMTiles benar-benar ada.
     // Kalau tidak, basemap dan batas kabupaten tetap bisa digambar.
@@ -797,7 +797,12 @@ async function initMap() {
       },
       'hillshade-tiles': {
         type: 'raster-dem',
-        tiles: ['https://tiles.opentopomap.org/{z}/{x}/{y}.png'],
+        // Host jamak (tiles.opentopomap.org) menyajikan sertifikat TLS yang
+        // tidak cocok dengan nama hostnya, sehingga browser menolak koneksi
+        // dan layer hillshade tidak pernah punya data. Terrarium di S3
+        // menyajikan DEM yang sama dengan sertifikat yang sah.
+        tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+        encoding: 'terrarium',
         tileSize: 256,
         maxzoom: 14,
       },
@@ -894,6 +899,11 @@ async function initMap() {
       container: mapContainer.value,
       style: {
         version: 8,
+        // Layer symbol (kontur-labels, kabupaten-labels) memakai text-field,
+        // jadi style wajib punya glyphs. Tanpa itu MapLibre gagal menyusun
+        // shader teks: error-nyauncaught dan render loop berhenti, sehingga
+        // kanvas tetap abu-abu walau peta dan konturnya sudah termuat.
+        glyphs: GLYPHS_URL,
         sources,
         layers,
       },

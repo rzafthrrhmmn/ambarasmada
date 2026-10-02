@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.4.0';
+﻿const CACHE_VERSION = 'v1.4.1';
 const CACHE_NAME = 'jaya-jaya-jaya-' + CACHE_VERSION;
 const ASSETS_CACHE = 'jaya-jaya-jaya-assets-' + CACHE_VERSION;
 const TILES_CACHE = 'jaya-jaya-jaya-tiles-' + CACHE_VERSION;
@@ -33,10 +33,51 @@ const MAP_LIBRARIES = [
 const EXTERNAL_LIBS = [
     'https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js',
     'https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css',
-    'https://unpkg.com/pmtiles@2.11.0/dist/pmtiles.js',
+    // Entri pmtiles dari CDN dihapus. Semua versi pmtiles yang pernah disematkan
+    // di sini dan di offline.html menjawab 404 di unpkg
+    // (https://unpkg.com/pmtiles@2.11.0/dist/pmtiles.js -> 404), sehingga
+    // precache hanya menambah error CORS di console: browser melaporkan 404
+    // lintas origin tanpa header Access-Control-Allow-Origin sebagai kegagalan
+    // CORS. Aplikasi sendiri tidak pernah memakai URL tersebut; pmtiles ikut
+    // ter-bundle dari npm bersama MapLibre.
 ];
 
 const OFFLINE_FALLBACK = '/offline.html';
+
+/**
+ * Simpan daftar URL ke cache tanpa membiarkan satu kegagalan membatalkan
+ * seluruhnya.
+ *
+ * Cache.addAll bersifat atomik: begitu satu URL gagal, promise-nya menolak dan
+ * karena pemanggilnya ada di dalam event.waitUntil(), instalasi service worker
+ * ikut gagal. Efeknya service worker versi baru tidak pernah aktif, versi lama
+ * terus mengendalikan halaman, dan tidak ada pembaruan yang bisa sampai ke
+ * pengguna.
+ *
+ * Kasus yang pernah terjadi: /robots.txt tidak dipetakan di routes vercel.json
+ * sehingga jatuh ke catch-all Laravel dan menjawab 404, dan satu ikon yang
+ * hilang ikut menggagalkan seluruh precache.
+ *
+ * Karena itu tiap URL dicoba sendiri-sendiri lewat fetch, dan aset yang gagal
+ * diambil hanya dilewati.
+ */
+async function precache(cache, urls) {
+    await Promise.all(
+        urls.map(async (url) => {
+            try {
+                // cache: 'reload' agar salinan yang disimpan benar-benar baru,
+                // bukan versi basi dari HTTP cache browser.
+                const response = await fetch(url, { cache: 'reload' });
+                if (response.ok) {
+                    await cache.put(url, response.clone());
+                }
+            } catch (error) {
+                // Aset opsional yang gagal diambil tidak boleh menggagalkan
+                // instalasi service worker.
+            }
+        })
+    );
+}
 
 // Shell aplikasi: halaman dasar yang selalu dicache saat instalasi agar
 // aplikasi tetap punya entry point ketika jaringan mati total.
@@ -44,13 +85,13 @@ const APP_SHELL = '/';
 
 // Cache khusus respons halaman Inertia. Dihapus saat logout (lihat
 // purgeUserScopedCaches) karena props Inertia memuat data per-pengguna.
-const INERTIA_CACHE = 'jaya-jaya-jaya-inertia-v1.4.0';
+const INERTIA_CACHE = 'jaya-jaya-jaya-inertia-' + CACHE_VERSION;
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
         Promise.all([
-            caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)),
-            caches.open(ASSETS_CACHE).then((cache) => cache.addAll(STATIC_ASSETS)),
+            caches.open(CACHE_NAME).then((cache) => precache(cache, STATIC_ASSETS)),
+            caches.open(ASSETS_CACHE).then((cache) => precache(cache, STATIC_ASSETS)),
             caches.open(CACHE_NAME).then((cache) =>
                 Promise.all(
                     GEOJSON_ASSETS.map((url) =>
@@ -705,7 +746,7 @@ function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, b
 
     const gridHtml = layoutOptions.grid ? `
         <div id="grid-coords" class="map-control grid-coords" style="bottom: 60px; left: 20px; font-size: 11px; background: rgba(0,0,0,0.7); color: #fff; padding: 5px 10px; border-radius: 4px; font-family: monospace;">
-            Lon: <span id="grid-lon">${centerLon.toFixed(4)}</span>° | Lat: <span id="grid-lat">${centerLat.toFixed(4)}</span>°
+            Lon: <span id="grid-lon">${centerLon.toFixed(4)}</span>Â° | Lat: <span id="grid-lat">${centerLat.toFixed(4)}</span>Â°
         </div>
     ` : '';
 
@@ -745,7 +786,7 @@ function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, b
     </style>
 </head>
 <body>
-    <div class="offline-badge">📱 Mode Offline</div>
+    <div class="offline-badge">ðŸ“± Mode Offline</div>
     <div id="map"></div>
 
     ${scaleBarHtml}
@@ -757,8 +798,8 @@ function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, b
     <div class="info-panel">
         <div class="info-row"><span class="info-label">Area:</span> <span class="info-value">${areaName}</span></div>
         <div class="info-row"><span class="info-label">Tile:</span> <span class="info-value">${tileCount.toLocaleString()}</span></div>
-        <div class="info-row"><span class="info-label">Zoom:</span> <span class="info-value">${zoomMin}–${zoomMax}</span></div>
-        <div class="info-row"><span class="info-label">Elevasi:</span> <span class="info-value">${elevStats ? Math.round(elevStats.min)+'–'+Math.round(elevStats.max)+'m' : 'N/A'}</span></div>
+        <div class="info-row"><span class="info-label">Zoom:</span> <span class="info-value">${zoomMin}â€“${zoomMax}</span></div>
+        <div class="info-row"><span class="info-label">Elevasi:</span> <span class="info-value">${elevStats ? Math.round(elevStats.min)+'â€“'+Math.round(elevStats.max)+'m' : 'N/A'}</span></div>
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
