@@ -755,12 +755,17 @@ async function initMap() {
               'text-field': ['concat', ['get', 'ELEV'], ' m'],
               'text-font': ['Open Sans Regular'],
               'text-size': 10,
-              'text-fill': '#8c510a',
+            },
+            // Properti warna dan halo adalah paint, bukan layout. MapLibre menolak
+            // seluruh style kalau satu properti diletakkan di blok yang salah,
+            // lalu peta tidak menggambar apa pun. Nama warnanya text-color;
+            // tidak ada properti text-fill di spesifikasi MapLibre.
+            paint: {
+              'text-color': '#8c510a',
               'text-halo-color': '#fff',
               'text-halo-width': 1.5,
               'text-halo-blur': 1,
             },
-            paint: {},
           },
         ]
       : [];
@@ -884,12 +889,14 @@ async function initMap() {
             8, 10,
             12, 14,
           ],
-          'text-fill': '#1f2937',
+          'text-anchor': 'center',
+          'text-allow-overlap': true,
+        },
+        paint: {
+          'text-color': '#1f2937',
           'text-halo-color': '#fff',
           'text-halo-width': 2,
           'text-halo-blur': 1,
-          'text-anchor': 'center',
-          'text-allow-overlap': true,
         },
       },
     ];
@@ -1012,6 +1019,10 @@ async function initMap() {
       loading.value = false;
       const errorMsg = e.error?.message || 'Kesalahan peta';
       mapStatus.value = `Peringatan: ${errorMsg}`;
+      // Error peta harus tetap terlihat di console. Kalau hanya ditulis ke
+      // refs, masalah seperti style ditolak MapLibre (peta kosong tanpa satu
+      // pun request tile) tidak punya jejak sama sekali saat debugging.
+      console.error('Map error:', e.error || errorMsg);
       if (errorMsg.includes('source') || errorMsg.includes('tile') || errorMsg.includes('network') || errorMsg.includes('404') || errorMsg.includes('500')) {
         mapError.value = `Gagal memuat data peta: ${errorMsg}. Periksa koneksi dan coba lagi.`;
       }

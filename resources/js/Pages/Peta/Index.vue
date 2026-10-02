@@ -399,6 +399,10 @@ async function initMap() {
       loading.value = false;
       const errorMsg = e.error?.message || 'Kesalahan peta';
       mapStatus.value = `Peringatan: ${errorMsg}`;
+      // Error peta harus tetap terlihat di console. Kalau hanya ditulis ke
+      // refs, masalah seperti style ditolak MapLibre (peta kosong tanpa satu
+      // pun request tile) tidak punya jejak sama sekali saat debugging.
+      console.error('Map error:', e.error || errorMsg);
       if (errorMsg.includes('source') || errorMsg.includes('tile') || errorMsg.includes('network') || errorMsg.includes('404') || errorMsg.includes('500')) {
         mapError.value = `Gagal memuat data peta: ${errorMsg}. Periksa koneksi dan coba lagi.`;
       }
