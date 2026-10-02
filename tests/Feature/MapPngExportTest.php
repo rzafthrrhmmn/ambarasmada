@@ -30,6 +30,25 @@ class MapPngExportTest extends TestCase
     }
 
     /**
+     * Kedua halaman peta harus bisa mencetak PNG.
+     *
+     * Peta dengan Pencarian adalah halaman yang punya tombol Unduh Peta Offline
+     * dengan mode per-daerah, jadi unduhan tile selalu dimulai dari sana. Dulu
+     * hanya Peta/Index yang punya ekspor PNG, sehingga satu klik "Unduh Peta
+     * Offline" dari halaman yang paling banyak dipakai menghasilkan paket tile
+     * tanpa PNG sama sekali.
+     *
+     * @return array<string, string>
+     */
+    private function petaPages(): array
+    {
+        return [
+            'Peta/Index' => file_get_contents(base_path('resources/js/Pages/Peta/Index.vue')),
+            'Peta/MapDenganPencarian' => file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue')),
+        ];
+    }
+
+    /**
      * Komponen utama peta kontur beserta penjelasannya.
      *
      * Dipisah dari kelengkapan umum karena keduanya punya daftar berbeda;
@@ -131,30 +150,38 @@ class MapPngExportTest extends TestCase
     {
         // Tanpa ini kanvas WebGL bisa dibaca kosong, jadi PNG peta selalu
         // berisi teks bahan ajar tanpa gambar peta.
-        $this->assertStringContainsString(
-            'preserveDrawingBuffer: true',
-            $this->petaIndex(),
-            'MapLibre harus memakai preserveDrawingBuffer agar kanvasnya bisa diekspor.'
-        );
+        foreach ($this->petaPages() as $name => $source) {
+            $this->assertStringContainsString(
+                'preserveDrawingBuffer: true',
+                $source,
+                "Halaman {$name} harus memakai preserveDrawingBuffer agar kanvasnya bisa diekspor."
+            );
+        }
     }
 
     public function test_png_diunduh_otomatis_setelah_unduh_peta_offline(): void
     {
-        $peta = $this->petaIndex();
+        foreach ($this->petaPages() as $name => $source) {
+            $this->assertStringContainsString(
+                'Cetak Peta PNG',
+                $source,
+                "Halaman {$name} harus punya tombol cetak PNG."
+            );
 
-        $this->assertStringContainsString(
-            'Cetak Peta PNG',
-            $peta,
-            'Halaman peta harus punya tombol cetak PNG.'
-        );
+            $this->assertStringContainsString(
+                'useMapPngExport',
+                $source,
+                "Halaman {$name} harus memakai modul ekspor PNG yang sama."
+            );
 
-        // Pemicu otomatis harus menempel pada penyelesaian unduhan tile,
-        // bukan pada pembuatan modal, supaya PNG benar-benar keluar saat
-        // pengguna menekan "Unduh Peta Offline".
-        $this->assertMatchesRegularExpression(
-            "/DOWNLOAD_COMPLETE'[\s\S]{0,600}?printMapPng\(/",
-            $peta,
-            'PNG harus dicetak otomatis setelah unduhan tile selesai.'
-        );
+            // Pemicu otomatis harus menempel pada penyelesaian unduhan tile,
+            // bukan pada pembuatan modal, supaya PNG benar-benar keluar saat
+            // pengguna menekan "Unduh Peta Offline".
+            $this->assertMatchesRegularExpression(
+                "/DOWNLOAD_COMPLETE'[\s\S]{0,600}?printMapPng\(/",
+                $source,
+                "PNG harus dicetak otomatis setelah unduhan tile selesai di halaman {$name}."
+            );
+        }
     }
 }

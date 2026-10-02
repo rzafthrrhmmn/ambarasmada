@@ -15,6 +15,13 @@
           Unduh Peta Offline
         </button>
         <button
+          @click="printMapPng"
+          :disabled="isExporting || loading"
+          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {{ isExporting ? 'Menyiapkan PNG...' : 'Cetak Peta PNG' }}
+        </button>
+        <button
           @click="toggleLayer"
           class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
         >
@@ -399,6 +406,7 @@ import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import { getActiveServiceWorker, SW_PROTOCOL } from '@/ServiceWorker.js';
+import { useMapPngExport } from '@/Composables/useMapPngExport.js';
 
 const props = defineProps({
   mapConfig: Object,
@@ -413,6 +421,8 @@ const northArrowContainer = ref(null);
 const legendContainer = ref(null);
 const map = ref(null);
 const miniMap = ref(null);
+
+const { isExporting, exportError, exportMapPng } = useMapPngExport();
 const loading = ref(true);
 const mapError = ref(null);
 const showContour = ref(true);
@@ -944,6 +954,12 @@ async function initMap() {
     // Create map with multiple basemap sources
     map.value = new Map({
       container: mapContainer.value,
+      // Wajib agar kanvas peta bisa dibaca sebagai gambar saat diekspor jadi
+      // PNG. Tanpa ini browser boleh membuang buffer WebGL tepat setelah frame
+      // selesai digambar, sehingga toDataURL() mengembalikan kanvas kosong.
+      // Preview daerah di bawah tidak perlu, jadi hanya peta utama yang
+      // mengaktifkannya.
+      preserveDrawingBuffer: true,
       style: {
         version: 8,
         // Layer symbol (kontur-labels, kabupaten-labels) memakai text-field,
@@ -1336,6 +1352,40 @@ function deleteBookmark(index) {
   localStorage.setItem('mapBookmarks', JSON.stringify(bookmarks.value));
 }
 
+/**
+ * Cetak peta yang sedang tampil sebagai PNG.
+ *
+ * Hasilnya bukan screenshot polos: peta, kompas, dan skala digambar di atas
+ * kanvas yang sama dengan uraian komponen peta kontur, supaya berkas tunggal
+ * itu bisa langsung dipakai sebagai bahan ajar.
+ */
+async function printMapPng({ silent = false } = {}) {
+  if (!map.value) return { ok: false };
+
+  const selected = selectedKabData.value;
+  const result = await exportMapPng(map.value, {
+    title: selected ? `Peta Kontur - ${selected.nama_kab}` : 'Peta Kontur Sulawesi Selatan',
+    subtitle: selected ? `Kabupaten ${selected.nama_kab}` : 'Provinsi Sulawesi Selatan',
+  });
+
+  if (result.ok) {
+    mapStatus.value = result.blocked
+      ? 'PNG tersimpan, tetapi area peta tidak ikut karena browser memblokir pembacaan tile.'
+      : 'PNG peta tersimpan otomatis.';
+
+    if (!silent && result.blocked) {
+      console.warn(
+        '[peta] Area peta tidak masuk PNG. Tile dari luar biasanya perlu header CORS;'
+          + ' kalau ini terjadi, ganti basemap atau pakai tombol Cetak Peta.',
+      );
+    }
+  } else {
+    mapStatus.value = exportError.value ?? 'Gagal membuat PNG peta.';
+  }
+
+  return result;
+}
+
 // Print layout
 function printMap() {
   if (!map.value) return;
@@ -1480,6 +1530,12 @@ async function downloadOffline() {
         downloadStatus.value =
           `Selesai! ${data.downloaded} tile berhasil diunduh untuk offline (zoom ${data.zoomMin}-${data.zoomMax}${skipped}).`;
         downloading.value = false;
+
+        // Cetak peta dikirim tepat setelah tile selesai, supaya satu klik
+        // "Unduh Peta Offline" menghasilkan dua berkas: paket tile untuk dipakai
+        // tanpa sinyal, dan satu PNG peta siap dicetak. Tidak di-await supaya
+        // handler pesan ini tetap sinkron.
+        printMapPng({ silent: true });
       }
       if (data.type === 'DOWNLOAD_ERROR') {
         downloadStatus.value = data.error;
