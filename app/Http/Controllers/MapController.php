@@ -83,7 +83,11 @@ class MapController extends Controller
 
         return Inertia::render('Peta/Index', [
             'mapConfig' => array_merge($this->assetConfig(), [
-                'center' => [119.863, -0.900],
+                // Titik tengah arsip kontur. Nilai lama [119.863, -0.900]
+                // berlatang -0.9, itu di utara Sulawesi dan di luar jangkauan
+                // arsip yang hanya membentang sampai -2.25. Peta karena itu
+                // terbuka di laut kosong tanpa satu pun garis kontur.
+                'center' => [119.586, -3.305],
                 'zoom' => 10,
                 'boundingBox' => [
                     'west' => 118.5,

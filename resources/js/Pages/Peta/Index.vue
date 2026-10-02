@@ -482,10 +482,10 @@ function printMap() {
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
 &lt;script src="https://unpkg.com/pmtiles/dist/pmtiles.js"&gt;&lt;/script&gt;
 &lt;script&gt;
-  // Versi pmtiles di unpkg tidak pernah dipublikasikan: pmtiles@2.11.0 dan
-  // pmtiles@3.1.4 sama-sama 404, sehingga PMTiles undefined dan seluruh script
-  // ini berhenti. URL tanpa versi tetap tersedia.
-  const protocol = new PMTiles.Protocol();
+  // Build pmtiles dari unpkg hanya tersedia tanpa nomor versi, dan itu IIFE
+  // yang mengekspos global 'pmtiles' huruf kecil. new PMTiles.Protocol() akan
+  // ReferenceError karena PMTiles tidak terdefinisi.
+  const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
   const map = new maplibregl.Map({
     container: 'print-map',

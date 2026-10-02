@@ -262,6 +262,107 @@ class OfflineMapTileSourceTest extends TestCase
     }
 
     /**
+     * Build pmtiles dari unpkg adalah IIFE yang mengekspos global bernama
+     * 'pmtiles' huruf kecil, bukan 'PMTiles'.
+     */
+    public function test_print_export_templates_use_the_lowercase_pmtiles_global(): void
+    {
+        foreach ($this->printTemplates() as $page) {
+            $code = $this->withoutComments($page);
+
+            $this->assertStringContainsString(
+                'new pmtiles.Protocol()',
+                $code,
+                $page.': global yang diekspos build pmtiles adalah pmtiles huruf kecil.'
+            );
+
+            $this->assertStringNotContainsString(
+                'new PMTiles.Protocol()',
+                $code,
+                $page.': PMTiles tidak terdefinisi sehingga ReferenceError menghentikan seluruh script inline dan peta cetak kosong.'
+            );
+
+            $this->assertStringContainsString(
+                "maplibregl.addProtocol('pmtiles', protocol.tile)",
+                $code,
+                $page.': protocol harus didaftarkan ke MapLibre.'
+            );
+        }
+    }
+
+    /** Buang baris komentar supaya penjelasan tidak ikut terperiksa. */
+    private function withoutComments(string $source): string
+    {
+        $lines = preg_split('/\R/', $source) ?: [];
+
+        $kept = array_filter(
+            $lines,
+            static fn (string $line): bool => ! str_starts_with(ltrim($line), '//')
+        );
+
+        return implode("\n", $kept);
+    }
+
+    /**
+     * Halaman /peta/kontur pernah membuka peta di luar jangkauan arsip.
+     *
+     * Arsip hanya membentang dari -7.49 sampai -2.25 lintang, sedangkan nilai
+     * lama berlatang -0.9. Peta terbuka di laut kosong tanpa garis kontur,
+     * dan tidak ada satu pun tile yang diminta.
+     */
+    public function test_default_map_centers_fall_inside_the_archive(): void
+    {
+        // Batas dari TileJSON arsip sulsel_kontur_z8_12.pmtiles:
+        //   bounds: [118.899861, -7.4938495, 121.749861, -2.249861]
+        // Kalau arsip di-subset ulang, nilai di sini harus ikut diperbarui.
+        $west = 118.899861;
+        $east = 121.749861;
+        $south = -7.4938495;
+        $north = -2.249861;
+
+        foreach ($this->archiveCenters() as $route => [$lon, $lat]) {
+            $this->assertTrue(
+                $lat >= $south && $lat <= $north,
+                "{$route}: lintang {$lat} di luar jangkauan arsip kontur "
+                    ."({$south} sampai {$north}). Peta akan terbuka di laut kosong."
+            );
+
+            $this->assertTrue(
+                $lon >= $west && $lon <= $east,
+                "{$route}: bujur {$lon} di luar jangkauan arsip kontur "
+                    ."({$west} sampai {$east}). Peta akan terbuka di laut kosong."
+            );
+        }
+    }
+
+    /**
+     * Titik tengah tiap halaman peta, dibaca dari controller.
+     *
+     * @return array<string, array{0: float, 1: float}>
+     */
+    private function archiveCenters(): array
+    {
+        $source = file_get_contents(base_path('app/Http/Controllers/MapController.php'));
+
+        preg_match_all(
+            "/Inertia::render\('Peta\/(\w+)'[\s\S]*?'center' => \[([-\d.]+), ([-\d.]+)\]/",
+            $source,
+            $matches,
+            PREG_SET_ORDER
+        );
+
+        $centers = [];
+
+        foreach ($matches as $m) {
+            $centers['Peta/'.$m[1]] = [(float) $m[2], (float) $m[3]];
+        }
+
+        $this->assertNotEmpty($centers, 'Tidak ada center peta yang terbaca dari MapController.');
+
+        return $centers;
+    }
+
+    /**
      * URL CDN yang benar-benar dimuat template.
      *
      * Hanya atribut src dan href, supaya keterangan versi di komentar tidak
