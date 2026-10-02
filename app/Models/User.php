@@ -57,7 +57,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendActivationEmail(): bool
     {
         if ($this->email === null || $this->email === '') {
-            Log::warning('[activation-email] Gagal kirim: pengguna tanpa email.', ['user_id' => $this->getKey()]);
+            $this->logSafely('warning', '[activation-email] Gagal kirim: pengguna tanpa email.', ['user_id' => $this->getKey()]);
 
             return false;
         }
@@ -73,7 +73,7 @@ class User extends Authenticatable implements MustVerifyEmail
         try {
             $this->notify(new AccountActivationNotification);
 
-            Log::info('[activation-email] Email aktivasi berhasil dikirim.', [
+            $this->logSafely('info', '[activation-email] Email aktivasi berhasil dikirim.', [
                 'user_id' => $this->getKey(),
                 'username' => $this->username,
                 'email' => $this->email,
@@ -82,7 +82,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
             return true;
         } catch (Throwable $e) {
-            Log::error('[activation-email] Email aktivasi gagal dikirim: '.$e->getMessage(), [
+            $this->logSafely('error', '[activation-email] Email aktivasi gagal dikirim: '.$e->getMessage(), [
                 'user_id' => $this->getKey(),
                 'email' => $this->email,
                 'mailer' => config('mail.default'),
@@ -111,7 +111,7 @@ class User extends Authenticatable implements MustVerifyEmail
         };
 
         if ($missing !== []) {
-            Log::error('[activation-email] Mailer belum dikonfigurasi, email tidak dapat dikirim.', [
+            $this->logSafely('error', '[activation-email] Mailer belum dikonfigurasi, email tidak dapat dikirim.', [
                 'user_id' => $this->getKey(),
                 'mailer' => $mailer,
                 'missing' => array_keys($missing),
@@ -142,6 +142,24 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Menulis pesan diagnostik tanpa pernah melempar exception.
+     *
+     * Kanal log bawaan menulis ke storage/logs/. Pada Vercel (serverless)
+     * filesystem hanya-baca sehingga penulisan itu melempar error, dan karena
+     * `ignore_exceptions` bernilai false error tersebut terus naik sampai
+     * merusak permintaan. Kegagalan menulis log tidak boleh mengubah alur
+     * aplikasi, jadi ada fallback ke error_log() native yang selalu tersedia.
+     */
+    private function logSafely(string $level, string $message, array $context = []): void
+    {
+        try {
+            Log::log($level, $message, $context);
+        } catch (Throwable $e) {
+            error_log('[activation-email] '.$message.' '.json_encode($context));
+        }
+    }
+
+    /**
      * Peringatan bila link verifikasi/logo di dalam email tidak berasal dari
      * domain yang sama dengan MAIL_FROM_ADDRESS. Kondisi ini menurunkan
      * deliverability dan ditandai Resend sebagai "needs attention".
@@ -154,7 +172,7 @@ class User extends Authenticatable implements MustVerifyEmail
             return;
         }
 
-        Log::warning('[activation-email] Host link di email tidak sama dengan domain pengirim.', [
+        $this->logSafely('warning', '[activation-email] Host link di email tidak sama dengan domain pengirim.', [
             'app_url_host' => $status['app_host'],
             'mail_from_host' => $status['sending_host'],
             'hint' => 'Samakan APP_URL dengan domain MAIL_FROM_ADDRESS agar link dan logo email memakai domain pengirim.',
