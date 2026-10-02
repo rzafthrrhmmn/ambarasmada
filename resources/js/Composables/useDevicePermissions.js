@@ -17,7 +17,7 @@ const MESSAGES = {
   SecurityError:
     'Akses kamera diblokir oleh kebijakan keamanan situs. Periksa bahwa aplikasi dibuka langsung dari domain resmi, bukan lewat pratinjau di dalam editor.',
   NotFoundError:
-    'Tidak ditemukan kamera pada perangkat ini. Gunakan devices kamera depan, atau catat kehadiran secara manual.',
+    'Tidak ditemukan kamera pada perangkat ini. Gunakan kamera depan, atau tekan "Catat tanpa memindai QR" di bawah untuk mencatat kehadiran tanpa kamera.',
   NotReadableError:
     'Kamera sedang dipakai aplikasi lain. Tutup aplikasi kamera, WhatsApp video, atau tab lain yang memakai kamera, lalu coba lagi.',
   OverconstrainedError:
@@ -66,7 +66,7 @@ export async function preflightCamera() {
       ok: false,
       code: 'unsupported',
       message:
-        'Browser Anda tidak mendukung akses kamera. Gunakan Chrome atau Safari versi terbaru, atau catat kehadiran secara manual.',
+        'Browser Anda tidak mendukung akses kamera. Gunakan Chrome atau Safari versi terbaru, atau tekan "Catat tanpa memindai QR" di bawah untuk mencatat kehadiran tanpa kamera.',
     };
   }
 

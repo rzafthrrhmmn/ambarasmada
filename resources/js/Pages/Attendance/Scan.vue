@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <AppLayout>
     <div class="mb-6">
       <p class="text-sm font-medium text-[#EDD330]">Latihan Rutin</p>
@@ -41,9 +41,8 @@
           <SkeletonLoader variant="card" :lines="1" class="h-6 w-40" />
         </div>
         <p v-if="!scanning && !cameraError" class="text-center text-xs text-[#8fa06a]">Klik untuk aktifkan kamera</p>
-        <p v-if="cameraError" class="text-center text-xs text-[#ef4419]">{{ cameraError }}</p>
-        <video v-if="scanning" ref="videoRef" class="mx-auto max-h-[300px] w-full rounded-lg"></video>
-        <canvas v-if="scanning" ref="canvasRef" class="hidden"></canvas>
+        <p v-if="cameraError" class="text-center text-xs leading-5 text-[#ef4419]">{{ cameraError }}</p>
+        <p v-if="scanning" class="mt-2 text-center text-xs text-[#8fa06a]">Arahkan kamera ke QR Code sesi</p>
       </div>
       <div class="mt-3 flex justify-center gap-2">
         <button v-if="!scanning" @click="startScan" :disabled="cameraLoading" type="button" class="rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
@@ -66,6 +65,7 @@
           <span class="text-xs">
             <span class="block font-medium text-[#d4dc9a]">{{ izin.label }}</span>
             <span class="block text-[#8fa06a]">{{ izinNote(izin.state) }}</span>
+            <span v-if="izin.state !== 'not-needed'" class="mt-0.5 block text-[#8fa06a]/80">{{ izin.needed }}</span>
           </span>
         </li>
       </ul>
@@ -92,18 +92,32 @@
           </select>
         </label>
         <input v-model="form.member_id" type="hidden" />
-        <button type="submit" :disabled="form.processing || !form.qr_token" class="rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">
-          <span v-if="form.processing">Menyimpan...</span>
-          <span v-else>Batalkan Kehadiran</span>
+        <button type="submit" :disabled="isSubmitting || !form.qr_token" class="rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+          <span v-if="isSubmitting">Menyimpan...</span>
+          <span v-else>Catat Kehadiran</span>
         </button>
+        <p v-if="!form.qr_token" class="text-xs text-[#8fa06a]">
+          Tombol aktif setelah QR Code sesi berhasil dipindai.
+        </p>
       </form>
+
+      <div v-if="cameraError" class="mt-4 border-t border-[#6F9435]/60 pt-4">
+        <p class="text-xs leading-5 text-[#8fa06a]">
+          Kamera tidak dapat dipakai. Untuk sementara Anda bisa mencatat kehadiran tanpa
+          memindai QR Code, tetapi verifier jarak lokasi tetap diperiksa server bila sesi ini
+          punya titik lokasi.
+        </p>
+        <button type="button" @click="useManualToken" class="mt-2 w-full rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a]">
+          Catat tanpa memindai QR
+        </button>
+      </div>
     </div>
   </AppLayout>
 </template>
 
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
-import { useForm, usePage, router } from '@inertiajs/vue3';
+import { useForm, router } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 
 import AppLayout from '@/Components/AppLayout.vue';
@@ -123,7 +137,6 @@ const props = defineProps({
   session: Object,
   member: Object,
 });
-const page = usePage();
 const toast = useToast();
 const scanning = ref(false);
 const cameraLoading = ref(false);
@@ -131,12 +144,32 @@ const cameraError = ref('');
 const scanResult = ref('');
 const checkInError = ref('');
 const checkInSaved = ref(false);
-const videoRef = ref(null);
-const canvasRef = ref(null);
 const scannerRef = ref(null);
 const html5QrCode = ref(null);
 
-const { isOnline, flushQueue } = useNetworkStatus();
+// Satu pengiriman pada satu waktu. Pemindai QR.decode bisa memanggil callback
+// beberapa kali untuk frame beruntun sebelum stream berhenti, dan tanpa penjaga
+// itu setiap frame memicu POST beserta navigasinya sendiri.
+const isSubmitting = ref(false);
+
+// Halaman bisa ditutup selagi startScan masih menunggu izin kamera. Tanpa
+// penanda ini, lanjutan async-nya tetap berjalan pada halaman yang sudah
+// ditinggalkan dan memunculkan pesan kamera palsu setelah pengguna pindah halaman.
+let disposed = false;
+
+const { isOnline } = useNetworkStatus();
+
+// Sesi dengan titik lokasi mewajibkan anggota berada di dalam radiusnya, jadi
+// koordinat perangkat wajib dikumpulkan sebelum presensi dikirim.
+//
+// Syaratnya harus sama persis dengan $hasGeofence di AttendanceController, yang
+// memakai latitude + longitude + radius. Kalau klien hanya mengecek latitude +
+// radius, sesi tanpa longitude tetap memicu dialog izin lokasi dan menunggu GPS
+// sampai timeout, padahal server tidak memverifikasi jarak sama sekali.
+const sessionHasGeofence = computed(() => {
+  const s = props.session;
+  return s?.latitude != null && s?.longitude != null && s?.radius != null;
+});
 
 // Status izin dipantau supaya pengguna melihat perangkat yang masih ditolak
 // browser sebelum menekan tombol kamera.
@@ -154,7 +187,7 @@ const permissionList = computed(() => [
   {
     key: 'geolocation',
     label: 'Lokasi',
-    state: geolocationPermission.value,
+    state: sessionHasGeofence.value ? geolocationPermission.value : 'not-needed',
     needed: sessionHasGeofence.value ? 'Verifikasi jarak presensi' : 'Tidak dipakai pada sesi ini',
   },
 ]);
@@ -167,12 +200,14 @@ const PERMISSION_NOTES = {
   // geolokasi lewat Permissions API. Itu bukan berarti izin ditolak, jadi
   // pesannya harus mengarahkan ke langkah berikutnya, bukan membuat buntu.
   unknown: 'Browser tidak melaporkan status izin. Izin tetap diminta saat fitur dipakai.',
+  'not-needed': 'Tidak diperlukan pada sesi ini.',
 };
 
 function izinNote(state) {
   if (state === 'denied') return PERMISSION_NOTES.denied;
   if (state === 'granted') return PERMISSION_NOTES.granted;
   if (state === 'prompt') return PERMISSION_NOTES.prompt;
+  if (state === 'not-needed') return PERMISSION_NOTES['not-needed'];
   return PERMISSION_NOTES.unknown;
 }
 
@@ -180,12 +215,14 @@ function izinIcon(state) {
   if (state === 'granted') return '✓';
   if (state === 'denied') return '✕';
   if (state === 'prompt') return '•';
+  if (state === 'not-needed') return '–';
   return '?';
 }
 
 function izinClass(state) {
   if (state === 'granted') return 'text-[#A7B92A]';
   if (state === 'denied') return 'text-[#ef4419]';
+  if (state === 'not-needed') return 'text-[#8fa06a]';
   return 'text-[#EDD330]';
 }
 
@@ -240,17 +277,6 @@ const form = useForm({
   longitude: null,
 });
 
-// Sesi dengan titik lokasi mewajibkan anggota berada di dalam radiusnya,
-// jadi koordinat perangkat wajib dikumpulkan sebelum presensi dikirim.
-const sessionHasGeofence = computed(
-  () =>
-    props.session?.latitude !== null &&
-    props.session?.latitude !== undefined &&
-    props.session?.radius !== null &&
-    props.session?.radius !== undefined
-);
-
-
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '-';
 }
@@ -258,12 +284,18 @@ function formatDate(value) {
 async function startScan() {
   cameraLoading.value = true;
   cameraError.value = '';
-  form.qr_token = props.session.qr_token;
+
+  // Token TIDAK diisi di sini. Mengisinya sebelum kamera berhasil membuat tombol
+  // "Catat Kehadiran" aktif begitu kamera gagal dinyalakan, jadi anggota bisa
+  // mencatat kehadiran tanpa pernah memindai QR sama sekali. Token baru diisi
+  // setelah kode benar-benar terbaca, atau lewat fallback manual yang eksplisit.
 
   // Minta izin kamera lebih dulu agar kegagalanPermissions-Policy (camera=())
   // bisa dibedakan dari penolakan pengguna, dan pesan yang muncul bisa
   // menyebutkan tindakan yang benar.
   const preflight = await preflightCamera();
+
+  if (disposed) return;
 
   if (!preflight.ok) {
     cameraLoading.value = false;
@@ -280,16 +312,22 @@ async function startScan() {
   }
 
   scanning.value = true;
-  html5QrCode.value = new Html5Qrcode('scannerRef');
+  const scanner = new Html5Qrcode('scannerRef');
+  html5QrCode.value = scanner;
 
   try {
-    await html5QrCode.value.start(
+    await scanner.start(
       { facingMode: 'environment' },
       {
         width: 640,
         height: 480,
       },
       (decoded) => {
+        // Callback decode bisa berulang untuk beberapa frame beruntun sebelum
+        // stream benar-benar berhenti. Penjaga isSubmitting memastikan hanya
+        // satu pengiriman yang terjadi.
+        if (isSubmitting.value) return;
+
         scanResult.value = decoded;
         form.qr_token = decoded;
         checkInError.value = '';
@@ -297,21 +335,39 @@ async function startScan() {
         stopScan();
         autoSubmit();
       },
-      (error) => {
-        if (error && error.message && !error.message.includes('NotFoundException')) {
-          // Silent continuous scanning error - not displayed to user
-        }
-      }
+      () => {}
     );
+
+    // Halaman ditutup selagi start() masih menunggu; scanner yang baru dibuat
+    // tidak boleh lanjut menyalakan kamera pada elemen yang sudah dilepas.
+    if (disposed) {
+      await scanner.clear().catch(() => {});
+      html5QrCode.value = null;
+      return;
+    }
+
     cameraLoading.value = false;
     refreshPermissionStates();
   } catch (err) {
+    if (disposed) return;
     cameraLoading.value = false;
     scanning.value = false;
     cameraError.value = describeMediaError(err);
     toast.error(cameraError.value);
     html5QrCode.value = null;
   }
+}
+
+/**
+ * Fallback untuk perangkat yang kamera-/browser-nya tidak bisa memindai.
+ * Sengaja harus ditekan anggota sendiri supaya "tanpa QR" tidak pernah terjadi
+ * diam-diam hanya karena kamera gagal dinyalakan. Verifikasi jarak lokasi tetap
+ * dijalankan server untuk sesi bergeofence.
+ */
+function useManualToken() {
+  form.qr_token = props.session?.qr_token ?? '';
+  scanResult.value = ' dicatat manual (QR tidak dipindai)';
+  toast.warning('Presensi dicatat tanpa pemindaian QR. Minta konfirmasi pembina.');
 }
 
 function stopScan() {
@@ -329,9 +385,22 @@ function stopScan() {
  * yang sama, jadi pengiriman ulang tidak menghasilkan presensi ganda.
  */
 async function queueOrSubmit({ stayOnPage }) {
+  // Satu presensi pada satu waktu. Tanpa ini, dua callback decode atau tombol
+  // yang ditekan dua kali bisa mengirim permintaan bersamaan.
+  if (isSubmitting.value) return;
+
+  isSubmitting.value = true;
   checkInError.value = '';
   checkInSaved.value = false;
 
+  try {
+    await runCheckIn({ stayOnPage });
+  } finally {
+    isSubmitting.value = false;
+  }
+}
+
+async function runCheckIn({ stayOnPage }) {
   // Koordinat hanya diminta bila sesi punya geofence, sehingga sesi biasa tidak
   // memicu dialog izin lokasi tanpa alasan.
   const position = sessionHasGeofence.value ? await requestCoordinates() : { ok: false };
@@ -363,7 +432,7 @@ async function queueOrSubmit({ stayOnPage }) {
     return;
   }
 
-  form.post('/attendance/check-in', {
+  await form.post('/attendance/check-in', {
     onSuccess: () => {
       checkInSaved.value = true;
       checkInError.value = '';
@@ -445,7 +514,7 @@ function autoSubmit() {
 
 function submitCheckIn() {
   if (!form.qr_token) {
-    toast.warning('Scan QR terlebih dahulu atau masukkan token secara manual.');
+    toast.warning('Pindai QR Code sesi terlebih dahulu.');
     return;
   }
   queueOrSubmit({ stayOnPage: true });
@@ -458,6 +527,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  disposed = true;
   stopScan();
 
   // Listener izin dilepas agar halaman yang sudah ditutup tidak tetap
