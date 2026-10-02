@@ -27,20 +27,21 @@ const MESSAGES = {
 };
 
 /**
- * Ringkasan status izin untuk ditampilkan di UI.
+ * Status izin sebagai string: 'granted', 'denied', 'prompt', atau 'unknown'.
  *
- * Status 'prompt' berarti belum ada keputusan pengguna; 'denied' berarti
- * pengguna atau kebijakan memblokir; 'granted' berarti siap dipakai.
+ * navigator.permissions.query() mengembalikan objek PermissionStatus yang punya
+ * properti .state, dan bentuknya berbeda antar browser. Nilai .state yang
+ * dipakai di sini; bila browser tidak mendukung nama izin tersebut, hasilnya
+ * 'unknown' karena exception dilempar secara sinkron.
  */
-export function permissionState(name) {
+export async function permissionState(name) {
   if (typeof navigator === 'undefined' || !navigator.permissions?.query) return 'unknown';
 
-  // Prompt permission hanya tersedia untuk sebagian tipe data. Bila tidak
-  // didukung, melaporkan 'unknown' lebih jujur daripada mengarang 'prompt'.
   try {
-    const result = navigator.permissions.query({ name });
-    return typeof result?.then === 'function' ? result : 'unknown';
+    const status = await navigator.permissions.query({ name });
+    return status?.state ?? 'unknown';
   } catch {
+    // Firefox melempar TypeError untuk nama izin yang tidak diketahuinya.
     return 'unknown';
   }
 }
@@ -130,7 +131,15 @@ export function requestCoordinates({ timeout = 12000, maximumAge = 30000 } = {})
           longitude: Number(position.coords.longitude.toFixed(8)),
           accuracy: position.coords.accuracy,
         }),
-      (error) => resolve({ ok: false, reason: describeGeolocationError(error) }),
+      (error) =>
+        resolve({
+          ok: false,
+          // Hanya 'denied' yang berarti izin benar-benar ditolak. Timeout dan
+          // POSITION_UNAVAILABLE hanya gangguan sesaat, jadi status izin tidak
+          // boleh ditandai 'denied' berdasarkan itu.
+          denied: error?.code === error?.PERMISSION_DENIED,
+          reason: describeGeolocationError(error),
+        }),
       { enableHighAccuracy: true, timeout, maximumAge }
     );
   });

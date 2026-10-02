@@ -138,8 +138,8 @@ const html5QrCode = ref(null);
 
 const { isOnline, flushQueue } = useNetworkStatus();
 
-// Status izin dipantau supaya pengguna melihat Features perangkat yang masih
-// ditolak browser sebelum menekan tombol kamera.
+// Status izin dipantau supaya pengguna melihat perangkat yang masih ditolak
+// browser sebelum menekan tombol kamera.
 const cameraPermission = ref('unknown');
 const geolocationPermission = ref('unknown');
 const windowIsSecure = ref(true);
@@ -163,7 +163,10 @@ const PERMISSION_NOTES = {
   granted: 'Sudah diizinkan.',
   prompt: 'Akan diminta saat fitur digunakan.',
   denied: 'Ditolak. Aktifkan di pengaturan situs pada browser.',
-  unknown: 'Status tidak dapat dibaca browser ini.',
+  // Beberapa browser (Firefox, Safari) tidak melaporkan status izin
+  // geolokasi lewat Permissions API. Itu bukan berarti izin ditolak, jadi
+  // pesannya harus mengarahkan ke langkah berikutnya, bukan membuat buntu.
+  unknown: 'Browser tidak melaporkan status izin. Izin tetap diminta saat fitur dipakai.',
 };
 
 function izinNote(state) {
@@ -186,19 +189,20 @@ function izinClass(state) {
   return 'text-[#EDD330]';
 }
 
-async function refreshPermissionStates() {
+async function refreshPermissionStates(known = {}) {
   windowIsSecure.value = window.isSecureContext;
 
   if (!hasCameraSupport()) {
     cameraPermission.value = 'denied';
   } else {
-    cameraPermission.value = await permissionState('camera');
+    cameraPermission.value = known.camera ?? (await permissionState('camera'));
   }
 
   geolocationPermission.value =
-    typeof navigator !== 'undefined' && navigator.geolocation
+    known.geolocation ??
+    (typeof navigator !== 'undefined' && navigator.geolocation
       ? await permissionState('geolocation')
-      : 'denied';
+      : 'denied');
 }
 
 const permissionWatchers = [];
@@ -266,7 +270,12 @@ async function startScan() {
     scanning.value = false;
     cameraError.value = preflight.message;
     toast.error(preflight.message);
-    refreshPermissionStates();
+
+    // Kegagalan nyata lebih informatif daripada status yang tidak bisa dibaca.
+    const blocked = ['NotAllowedError', 'SecurityError', 'insecure', 'unsupported'];
+    refreshPermissionStates({
+      camera: blocked.includes(preflight.code) ? 'denied' : undefined,
+    });
     return;
   }
 
@@ -332,7 +341,10 @@ async function queueOrSubmit({ stayOnPage }) {
     // lagi tanpa memindai ulang setelah lokasi berhasil dibaca.
     checkInError.value = `${position.reason} Presensi belum tercatat.`;
     toast.error(position.reason);
-    refreshPermissionStates();
+
+    // Timeout bukan penolakan izin, jadi hanya 'denied' yang mengubah status.
+    if (position.denied) geolocationPermission.value = 'denied';
+    else refreshPermissionStates();
     return;
   }
 
