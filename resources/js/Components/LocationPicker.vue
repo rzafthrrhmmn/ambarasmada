@@ -1,13 +1,22 @@
 <template>
   <div class="rounded-xl border border-[#6F9435] bg-[#263D26] p-3">
-    <div class="mb-3 flex flex-col gap-2">
+    <div class="relative mb-3 flex flex-col gap-2">
       <div class="flex gap-2">
         <input
           v-model="query"
           type="search"
           placeholder="Cari nama lokasi, mis. Balai Ambalan"
+          autocomplete="off"
+          role="combobox"
+          aria-autocomplete="list"
+          :aria-expanded="results.length > 0"
+          aria-controls="lokasi-saran"
           class="flex-1 rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] placeholder:text-[#8fa06a]/60 focus:border-[#EDD330] focus:outline-none"
           @keydown.enter.prevent="search"
+          @keydown.down.prevent="pindahPilihan(1)"
+          @keydown.up.prevent="pindahPilihan(-1)"
+          @keydown.esc="tutupSaran"
+          @blur="tutupSaran"
         />
         <button
           type="button"
@@ -19,12 +28,21 @@
         </button>
       </div>
 
-      <ul v-if="results.length" class="max-h-40 overflow-y-auto rounded-lg border border-[#6F9435] bg-[#335233]">
-        <li v-for="(item, index) in results" :key="item.place_id">
+      <ul
+        v-if="results.length"
+        id="lokasi-saran"
+        role="listbox"
+        class="max-h-40 overflow-y-auto rounded-lg border border-[#6F9435] bg-[#335233]"
+      >
+        <li v-for="(item, index) in results" :key="item.place_id" role="presentation">
           <button
             type="button"
-            class="w-full px-3 py-2 text-left text-xs text-[#d4dc9a] transition hover:bg-[#6F9435]/20 hover:text-[#EDD330]"
-            @click="selectResult(item)"
+            role="option"
+            :aria-selected="index === pilihanAktif"
+            class="w-full px-3 py-2 text-left text-xs transition"
+            :class="index === pilihanAktif ? 'bg-[#6F9435]/30 text-[#EDD330]' : 'text-[#d4dc9a] hover:bg-[#6F9435]/20 hover:text-[#EDD330]'"
+            @mousedown.prevent="selectResult(item)"
+            @mouseenter="pilihanAktif = index"
           >
             {{ item.display_name }}
           </button>
@@ -109,7 +127,8 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue']);
 
-const DEFAULT_CENTER = [-5.1487, 119.4324];
+// Maros, Sulawesi Selatan. MapLibre memakai urutan [lng, lat], bukan [lat, lng].
+const DEFAULT_CENTER = [119.4324, -5.1487];
 const DEFAULT_ZOOM = 13;
 
 const mapContainer = ref(null);
@@ -117,10 +136,20 @@ const query = ref('');
 const results = ref([]);
 const searching = ref(false);
 const searchError = ref('');
+const pilihanAktif = ref(-1);
+
+// Panjang minimum query sebelum pencarian dikirim. Di bawah ini Nominatim
+// overwhelmed oleh kata umum dan hasilnya tidak relevan.
+const MIN_QUERY = 3;
+const DEBOUNCE_MS = 350;
 
 let map = null;
 let marker = null;
 let lastSearchAt = 0;
+let debounceTimer = null;
+let abortController = null;
+let requestSeq = 0;
+let menahanQuery = false;
 
 const lat = computed(() => props.modelValue?.latitude ?? null);
 const lng = computed(() => props.modelValue?.longitude ?? null);
@@ -172,6 +201,9 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  if (abortController) abortController.abort();
+
   if (map) {
     map.remove();
     map = null;
@@ -184,6 +216,31 @@ watch(
 );
 
 watch(radius, () => drawRadius());
+
+// Pencarian langsung: pengguna tidak harus menekan Enter atau tombol "Cari".
+watch(query, (value) => {
+  // Setelah lokasi dipilih, query diisi label hasil tanpa memicu pencarian baru.
+  if (menahanQuery) {
+    menahanQuery = false;
+    return;
+  }
+
+  if (debounceTimer) clearTimeout(debounceTimer);
+
+  const term = value.trim();
+  if (term.length < MIN_QUERY) {
+    batalkanPencarian();
+    results.value = [];
+    searchError.value = '';
+    searching.value = false;
+    return;
+  }
+
+  searching.value = true;
+  debounceTimer = setTimeout(() => {
+    search({ skipDebounce: true });
+  }, DEBOUNCE_MS);
+});
 
 function round8(value) {
   return Number(Number(value).toFixed(8));
@@ -306,33 +363,72 @@ function useMyLocation() {
   );
 }
 
-async function search() {
-  const term = query.value.trim();
-  if (term.length < 3) return;
+function batalkanPencarian() {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+  if (abortController) {
+    abortController.abort();
+    abortController = null;
+  }
+}
 
-  // Nominatim membatasi 1 permintaan per detik.
-  const since = Date.now() - lastSearchAt;
-  if (since < 1000) await new Promise((resolve) => setTimeout(resolve, 1000 - since));
-  lastSearchAt = Date.now();
+async function search({ skipDebounce = false } = {}) {
+  const term = query.value.trim();
+  if (term.length < MIN_QUERY) {
+    batalkanPencarian();
+    results.value = [];
+    searching.value = false;
+    return;
+  }
+
+  if (!skipDebounce && debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
 
   searching.value = true;
   searchError.value = '';
 
+  // Request sebelumnya dibatalkan agar respons lam tidak menimpa hasil baru
+  // ketika pengguna masih mengetik.
+  if (abortController) abortController.abort();
+  abortController = new AbortController();
+  const seq = ++requestSeq;
+
   try {
+    // Nominatim membatasi 1 permintaan per detik.
+    const since = Date.now() - lastSearchAt;
+    if (since < 1000) await new Promise((resolve) => setTimeout(resolve, 1000 - since));
+    lastSearchAt = Date.now();
+
+    if (seq !== requestSeq) return;
+
+    // Catatan: Nominatim hanya memuat sedikit hasil untuk kueri sangat umum
+    // seperti "SMA". Viewbox + bounded=1 diuji dan justru mengembalikan nol
+    // hasil untuk kueri umum, jadi tidak dipakai.
     const url =
-      `https://nominatim.openstreetmap.org/search?format=json&limit=5` +
+      `https://nominatim.openstreetmap.org/search?format=json&limit=8` +
       `&countrycodes=id&accept-language=id&q=${encodeURIComponent(term)}`;
 
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: abortController.signal });
     if (!response.ok) throw new Error('Pencarian lokasi gagal.');
 
     const data = await response.json();
+    if (seq !== requestSeq) return;
+
     results.value = Array.isArray(data) ? data : [];
+    pilihanAktif.value = results.value.length ? 0 : -1;
 
     if (results.value.length === 0) {
       searchError.value = 'Lokasi tidak ditemukan.';
     }
-  } catch {
+  } catch (error) {
+    // Request yang kita batalkan sendiri bukan kegagalan yang perlu dilaporkan.
+    if (error.name === 'AbortError') return;
+
+    if (seq !== requestSeq) return;
     results.value = [];
 
     // Browser hanya melaporkan "Failed to fetch" untuk kegagalan jaringan maupun
@@ -342,14 +438,40 @@ async function search() {
         ? 'Anda sedang offline. Sambungkan internet untuk mencari lokasi.'
         : 'Pencarian lokasi gagal. Periksa koneksi internet Anda.';
   } finally {
-    searching.value = false;
+    if (seq === requestSeq) {
+      searching.value = false;
+      abortController = null;
+    }
   }
 }
 
+function pindahPilihan(delta) {
+  if (results.value.length === 0) return;
+
+  pilihanAktif.value =
+    (pilihanAktif.value + delta + results.value.length) % results.value.length;
+}
+
+function tutupSaran() {
+  // Ditunda agar click pada pilihan tidak hilang sebelum terbaca.
+  setTimeout(() => {
+    results.value = [];
+    pilihanAktif.value = -1;
+  }, 120);
+}
+
 function selectResult(item) {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  if (abortController) abortController.abort();
+  requestSeq += 1;
+
   results.value = [];
+  pilihanAktif.value = -1;
+  searching.value = false;
 
   const label = item.display_name.split(',')[0].trim();
+
+  menahanQuery = true;
   query.value = label;
 
   pick({
