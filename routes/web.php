@@ -130,9 +130,13 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::delete('/angkatan/{angkatan}', [MemberController::class, 'angkatanDestroy'])->name('angkatan.destroy')->middleware('throttle:5,1');
 
         Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store')->middleware('throttle:20,1');
+        Route::post('/attendance/bulk-destroy', [AttendanceController::class, 'bulkDestroySessions'])->name('attendance.bulk.destroy')->middleware('throttle:10,1');
         Route::patch('/attendance/{attendanceSession}', [AttendanceController::class, 'update'])->name('attendance.update')->middleware('throttle:20,1');
         Route::delete('/attendance/{attendanceSession}', [AttendanceController::class, 'destroy'])->name('attendance.destroy')->middleware('throttle:10,1');
+        Route::post('/attendance/{attendanceSession}/records', [AttendanceController::class, 'storeAttendance'])->name('attendance.records.store')->middleware('throttle:20,1');
         Route::patch('/attendance-records/{attendance}', [AttendanceController::class, 'updateAttendance'])->name('attendance.records.update')->middleware('throttle:20,1');
+        Route::delete('/attendance-records/{attendance}', [AttendanceController::class, 'destroyAttendance'])->name('attendance.records.destroy')->middleware('throttle:10,1');
+        Route::post('/attendance-records/bulk', [AttendanceController::class, 'bulkAttendance'])->name('attendance.records.bulk')->middleware('throttle:10,1');
         Route::post('/attendance/{attendanceSession}/refresh-qr', [AttendanceController::class, 'refreshQrToken'])->name('attendance.refresh-qr')->middleware('throttle:10,1');
 
         // Finance management - Admin, Pembina, Pengurus can update/delete own transactions
