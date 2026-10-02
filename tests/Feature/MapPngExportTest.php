@@ -307,11 +307,47 @@ class MapPngExportTest extends TestCase
             'Harus ada default komponen supaya halaman tanpa dialog tetap bisa mencetak PNG.'
         );
 
-        // Histogram harus refuses menggambar angka karangan.
+        // Histogram harus menolak menggambar angka karangan.
         $this->assertStringNotContainsString(
             'Math.random()',
             $module,
             'Modul tidak boleh membuat angka elevasi acak: angka karangan tercetak sebagai data elevasi sungguhan.'
+        );
+    }
+
+    public function test_peta_offline_lama_dibuang_karena_isinya_sudah_usang(): void
+    {
+        $sw = file_get_contents(base_path('public/sw.js'));
+        $this->assertIsString($sw);
+
+        // Cache OFFLINE_HTML_CACHE sengaja tidak ikut CACHE_VERSION supaya peta
+        // offline milik pengguna tidak hilang tiap pembaruan. Kalau tidak ada
+        // pengecualian, peta yang sudah diunduh akan tetap menampilkan angka
+        // elevasi karangan selamanya, karena tidak ada yang pernah memperbaruinya.
+        $this->assertStringContainsString(
+            'dropStaleOfflineMap()',
+            $sw,
+            'Activate harus memeriksa peta offline hasil unduhan versi lama.'
+        );
+
+        $this->assertStringContainsString(
+            '<meta name="offline-map-generator" content="${OFFLINE_MAP_GENERATOR}">',
+            $sw,
+            'Halaman peta offline harus mencatat versi generatornya.'
+        );
+
+        $this->assertStringContainsString(
+            'await cache.delete(OFFLINE_MAP_HTML);',
+            $sw,
+            'Peta yang dibuat generator lama harus dihapus dari cache.'
+        );
+
+        // Tile di IndexedDB tidak ikut terhapus: peta bisa dibuat ulang tanpa
+        // mengunduh ulang data.
+        $this->assertStringNotContainsString(
+            'caches.delete(TILES_CACHE)',
+            $sw,
+            'Membuang peta lama tidak boleh ikut membuang tile yang sudah diunduh.'
         );
     }
 

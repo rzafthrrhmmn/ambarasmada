@@ -116,6 +116,11 @@ const OFFLINE_HTML_CACHE = 'jaya-jaya-jaya-offline-html';
 // Path tempat halaman peta offline hasil unduhan disimpan.
 const OFFLINE_MAP_HTML = '/offline-map.html';
 
+// Versi generator halaman peta offline. Dinaikkan setiap kali isi halaman
+// berubah, supaya activate bisa membuang peta lama yang isinya sudah usang.
+// v2: histogram tidak lagi memakai angka elevasi karangan.
+const OFFLINE_MAP_GENERATOR = 'v2';
+
 self.addEventListener('install', (event) => {
     event.waitUntil(
         Promise.all([
@@ -153,25 +158,59 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((name) => {
-                    const keep = [
-                        CACHE_NAME,
-                        ASSETS_CACHE,
-                        TILES_CACHE,
-                        INERTIA_CACHE,
-                        OFFLINE_HTML_CACHE,
-                    ];
-                    if (!keep.includes(name)) {
-                        return caches.delete(name);
-                    }
-                })
-            );
-        })
+        Promise.all([
+            caches.keys().then((cacheNames) => {
+                return Promise.all(
+                    cacheNames.map((name) => {
+                        const keep = [
+                            CACHE_NAME,
+                            ASSETS_CACHE,
+                            TILES_CACHE,
+                            INERTIA_CACHE,
+                            OFFLINE_HTML_CACHE,
+                        ];
+                        if (!keep.includes(name)) {
+                            return caches.delete(name);
+                        }
+                    })
+                );
+            }),
+            dropStaleOfflineMap(),
+        ])
     );
     self.clients.claim();
 });
+
+/**
+ * Buang halaman peta offline yang dibuat generator versi lama.
+ *
+ * Cache OFFLINE_HTML_CACHE sengaja tidak ikut CACHE_VERSION supaya peta offline
+ * milik pengguna tidak hilang setiap kali ada pembaruan. Konsekuensinya, peta
+ * yang sudah diunduh tidak pernah diperbarui sendiri, dan peta versi lama
+ * masih memuat angka elevasi yang dulu dikarang di service worker. Meteran ini
+ * memungkinkan peta itu dibuang tanpa ikut membuang cache paved yang lain.
+ *
+ * Yang dibuang hanya HTML-nya. Tile di IndexedDB tetap ada, jadi pengguna bisa
+ * membuat ulang petanya tanpa mengunduh ulang data.
+ */
+async function dropStaleOfflineMap() {
+    const cache = await caches.open(OFFLINE_HTML_CACHE);
+    const stored = await cache.match(OFFLINE_MAP_HTML);
+    if (!stored) return;
+
+    let html;
+    try {
+        html = await stored.text();
+    } catch {
+        return;
+    }
+
+    if (html.includes(`<meta name="offline-map-generator" content="${OFFLINE_MAP_GENERATOR}">`)) {
+        return;
+    }
+
+    await cache.delete(OFFLINE_MAP_HTML);
+}
 
 self.addEventListener('fetch', (event) => {
     const { request } = event;
@@ -1017,6 +1056,7 @@ const histogramHtml = !layoutOptions.histogram ? '' : (elevStats ? `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="offline-map-generator" content="${OFFLINE_MAP_GENERATOR}">
     <title>Peta Offline - ${areaName}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
