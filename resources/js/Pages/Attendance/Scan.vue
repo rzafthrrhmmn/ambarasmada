@@ -41,9 +41,10 @@
           Wadah scanner ini sengaja dibiarkan tanpa elemen anak.
           Html5Qrcode.start() memanggil clearElement() yang mengosongkan
           innerHTML elemen ini. Kalau ada elemen milik Vue di dalamnya, Vue
-          masih memegang node itu lalu_patch_ gagal ("Cannot read properties of
-          null"), cameraLoading tidak pernah kembali false dan QR tidak pernah
-          terbaca. Semua indikator dipindahkan ke sibling di atas/kanan.
+          masih memegang simpul itu sehingga patching gagal ("Cannot read
+          properties of null"), cameraLoading tidak pernah kembali false dan
+          QR tidak pernah terbaca. Semua indikator dipindahkan ke sibling
+          di luar wadah ini.
         -->
         <div
           id="scannerRef"
@@ -300,6 +301,34 @@ function formatDate(value) {
   return value ? new Date(value).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '-';
 }
 
+/**
+ * Ambil token sesi dari apa pun yang keluar dari pemindai.
+ *
+ * QR Code yang ditampilkan di halaman sesi memuat URL lengkap
+ * (`https://situs/attendance/scan/TOKEN`), bukan token polos, jadi hasil
+ * decode tidak bisa langsung dipakai sebagai qr_token. Kalau tidak
+ * dinormalkan, server mencari qr_token berisi URL dan membalas 404.
+ */
+function normaliseToken(decoded) {
+  const raw = String(decoded ?? '').trim();
+  if (!raw) return '';
+
+  let candidate = raw;
+
+  if (/^https?:\/\//i.test(raw) || raw.startsWith('/')) {
+    try {
+      // Pathname tidak memuat query string maupun fragment.
+      const url = new URL(raw, window.location.origin);
+      const segments = url.pathname.split('/').filter(Boolean);
+      candidate = segments.at(-1) ?? '';
+    } catch {
+      candidate = raw;
+    }
+  }
+
+  return candidate.trim().toUpperCase();
+}
+
 async function startScan() {
   cameraLoading.value = true;
   cameraError.value = '';
@@ -347,8 +376,17 @@ async function startScan() {
         // satu pengiriman yang terjadi.
         if (isSubmitting.value) return;
 
-        scanResult.value = decoded;
-        form.qr_token = decoded;
+        // QR memuat URL halaman scan, bukan token polos.
+        const token = normaliseToken(decoded);
+
+        if (!token) {
+          cameraError.value = 'Kode QR tidak terbaca. Pastikan seluruh kode ada di dalam bingkai, lalu pindai ulang.';
+          toast.error(cameraError.value);
+          return;
+        }
+
+        scanResult.value = token;
+        form.qr_token = token;
         checkInError.value = '';
         checkInSaved.value = false;
         stopScan();
@@ -449,13 +487,20 @@ async function runCheckIn({ stayOnPage }) {
     return;
   }
 
-  const payload = {
-    qr_token: form.qr_token,
-    member_id: form.member_id,
-    keterangan: form.keterangan,
-    latitude: position.ok ? position.latitude : null,
-    longitude: position.ok ? position.longitude : null,
-  };
+// Koordinat harus ditulis ke form, bukan hanya ke payload antrean. form.post()
+// mengirim seluruh isi form, jadi kalau hanya payload yang diisi, permintaan
+// online tetap mengirim latitude dan longitude null dan server menolak dengan
+// "Lokasi perangkat tidak terkirim".
+form.latitude = position.ok ? position.latitude : null;
+form.longitude = position.ok ? position.longitude : null;
+
+const payload = {
+  qr_token: form.qr_token,
+  member_id: form.member_id,
+  keterangan: form.keterangan,
+  latitude: form.latitude,
+  longitude: form.longitude,
+};
 
   if (!isOnline.value) {
     enqueue(payload, { url: '/attendance/check-in' });
