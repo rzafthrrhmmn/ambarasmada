@@ -82,12 +82,13 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 // maplibre-gl v6 tidak mengekspor default, jadi harus named import.
+// Impor lewat wrapper supaya WORKER_URL worker-nya sudah diatur.
 import {
   Map as MaplibreMap,
   Marker,
   NavigationControl,
   GeolocateControl,
-} from 'maplibre-gl';
+} from '../maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 /**
@@ -331,9 +332,15 @@ async function search() {
     if (results.value.length === 0) {
       searchError.value = 'Lokasi tidak ditemukan.';
     }
-  } catch (error) {
-    searchError.value = error.message || 'Pencarian lokasi gagal.';
+  } catch {
     results.value = [];
+
+    // Browser hanya melaporkan "Failed to fetch" untuk kegagalan jaringan maupun
+    // penolakan CSP, jadi pesan teknisnya tidak berguna bagi pengguna.
+    searchError.value =
+      navigator.onLine === false
+        ? 'Anda sedang offline. Sambungkan internet untuk mencari lokasi.'
+        : 'Pencarian lokasi gagal. Periksa koneksi internet Anda.';
   } finally {
     searching.value = false;
   }

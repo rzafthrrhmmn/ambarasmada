@@ -223,10 +223,8 @@ async function initMap() {
   loading.value = true;
 
   try {
-    const { Map, addProtocol, config, ScaleControl, NavigationControl, GeolocateControl } = await import('maplibre-gl');
+    const { Map, addProtocol, ScaleControl, NavigationControl, GeolocateControl } = await import('../../maplibre');
     const { Protocol } = await import('pmtiles');
-
-    config.WORKER_COUNT = 0;
 
     const protocol = new Protocol();
     addProtocol('pmtiles', protocol.tile);
@@ -425,7 +423,7 @@ function locateUser() {
     async (pos) => {
       const { longitude, latitude } = pos.coords;
       map.value.flyTo({ center: [longitude, latitude], zoom: 14, duration: 2000 });
-      const { Popup } = await import('maplibre-gl');
+      const { Popup } = await import('../../maplibre');
       new Popup()
         .setLngLat([longitude, latitude])
         .setHTML('<div class="p-2 text-[#1f2937]">Lokasi Anda</div>')

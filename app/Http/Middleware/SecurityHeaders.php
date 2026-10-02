@@ -36,7 +36,11 @@ class SecurityHeaders
             "style-src 'self' 'unsafe-inline' {$viteSources} https://unpkg.com https://fonts.googleapis.com",
             "font-src 'self' data: https://fonts.gstatic.com {$viteSources}",
             "img-src 'self' data: https: blob:",
-            "connect-src 'self' {$viteSources} https://tile.openstreetmap.org https://unpkg.com",
+            // Nominatim dipakai pencarian lokasi pada LocationPicker; tanpa ini
+            // fetch-nya diblokir CSP dan muncul sebagai "Failed to fetch".
+            // MapLibre membuat worker dari URL same-origin, jadi 'self' cukup.
+            "connect-src 'self' {$viteSources} https://tile.openstreetmap.org https://nominatim.openstreetmap.org https://server.arcgisonline.com https://unpkg.com",
+            "worker-src 'self' blob:",
             "frame-ancestors 'none'",
             "form-action 'self'",
             "base-uri 'self'",

@@ -638,8 +638,7 @@ function initMiniMap() {
   miniMapLoading.value = true;
   miniMapError.value = '';
 
-  import('maplibre-gl').then(({ Map, addProtocol, config }) => {
-    config.WORKER_COUNT = 0;
+  import('../../maplibre').then(({ Map, addProtocol }) => {
     import('pmtiles').then(({ Protocol }) => {
       const protocol = new Protocol();
       addProtocol('pmtiles', protocol.tile);
@@ -695,11 +694,8 @@ async function initMap() {
   if (!mapContainer.value || !hasPmtiles.value) return;
 
   try {
-    const { Map, addProtocol, config, Popup, ScaleControl, NavigationControl, GeolocateControl } = await import('maplibre-gl');
+    const { Map, addProtocol, Popup, ScaleControl, NavigationControl, GeolocateControl } = await import('../../maplibre');
     const { Protocol } = await import('pmtiles');
-
-    // Disable workers to avoid worker loading issues on Vercel
-    config.WORKER_COUNT = 0;
 
     const protocol = new Protocol();
     addProtocol('pmtiles', protocol.tile);
@@ -1063,7 +1059,7 @@ function locateUser() {
     async (pos) => {
       const { longitude, latitude } = pos.coords;
       map.value.flyTo({ center: [longitude, latitude], zoom: 14, duration: 2000 });
-      const { Popup } = await import('maplibre-gl');
+      const { Popup } = await import('../../maplibre');
       new Popup()
         .setLngLat([longitude, latitude])
         .setHTML('<div class="p-2 text-[#1f2937]">Lokasi Anda</div>')
@@ -1090,7 +1086,7 @@ async function searchPlace() {
     const lng = parseFloat(coordMatch[2]);
     if (map.value) {
       map.value.flyTo({ center: [lng, lat], zoom: 14, duration: 2000 });
-      new (await import('maplibre-gl')).Popup()
+      new (await import('../../maplibre')).Popup()
         .setLngLat([lng, lat])
         .setHTML(`<div class="p-2 text-[#1f2937]">Koordinat: ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>`)
         .addTo(map.value);
@@ -1122,7 +1118,7 @@ async function searchPlace() {
 async function selectSearchResult(result) {
   if (!map.value) return;
   map.value.flyTo({ center: [result.lon, result.lat], zoom: 14, duration: 2000 });
-  const { Popup } = await import('maplibre-gl');
+  const { Popup } = await import('../../maplibre');
   new Popup()
     .setLngLat([result.lon, result.lat])
     .setHTML(`<div class="p-2 text-[#1f2937]">${result.display_name}</div>`)
