@@ -1,4 +1,4 @@
-﻿const CACHE_VERSION = 'v1.4.1';
+﻿const CACHE_VERSION = 'v1.4.2';
 const CACHE_NAME = 'jaya-jaya-jaya-' + CACHE_VERSION;
 const ASSETS_CACHE = 'jaya-jaya-jaya-assets-' + CACHE_VERSION;
 const TILES_CACHE = 'jaya-jaya-jaya-tiles-' + CACHE_VERSION;
@@ -43,6 +43,10 @@ const EXTERNAL_LIBS = [
 ];
 
 const OFFLINE_FALLBACK = '/offline.html';
+
+// Pola URL tile peta offline yang dilayani dari IndexedDB. Dipakai juga oleh
+// handleOfflineTileRequest(), jadi keduanya tidak boleh berbeda.
+const OFFLINE_TILE_PATTERN = /^\/offline-tiles\/(\d+)\/(\d+)\/(\d+)\.pbf$/;
 
 /**
  * Simpan daftar URL ke cache tanpa membiarkan satu kegagalan membatalkan
@@ -157,12 +161,6 @@ self.addEventListener('fetch', (event) => {
 
     const url = new URL(request.url);
 
-    // Handle pmtiles:// protocol requests for offline map tiles
-    if (url.protocol === 'pmtiles:') {
-        event.respondWith(handlePMTilesRequest(request));
-        return;
-    }
-
     // Handle external map library requests (unpkg.com) for offline use
     if (url.origin === 'https://unpkg.com' && EXTERNAL_LIBS.includes(request.url)) {
         event.respondWith(cacheFirstThenNetwork(request));
@@ -170,6 +168,17 @@ self.addEventListener('fetch', (event) => {
     }
 
     if (request.method !== 'GET' || url.origin !== location.origin) {
+        return;
+    }
+
+    // Tile peta yang sudah diunduh ke IndexedDB.
+    //
+    // Tile dilayani lewat path HTTP biasa, bukan skema kustom pmtiles://.
+    // Service worker hanya bisa diandalkan untuk mencegat request same-origin
+    // HTTP, dan TileJSON juga tidak bisa dilayani: pmtiles://<arsip> tidak
+    // punya{z}/{x}/{y} sehingga tidak cocok dengan pola di bawah.
+    if (OFFLINE_TILE_PATTERN.test(url.pathname)) {
+        event.respondWith(handleOfflineTileRequest(request));
         return;
     }
 
@@ -300,22 +309,15 @@ async function updateCache(request) {
 }
 
 // Handle pmtiles:// protocol requests for offline map tiles
-async function handlePMTilesRequest(request) {
+async function handleOfflineTileRequest(request) {
     const url = new URL(request.url);
-    
-    // Parse the pmtiles URL format: pmtiles://<arsip>/{z}/{x}/{y}.pbf
-    // or pmtiles://<arsip>/{z}/{x}/{y}.mvt
-    // Arsip boleh berhost di luar origin (Supabase Storage). URL seperti itu
-    // membuat pathname bersegmen banyak dan host ikut terbawa, jadi pola
-    // tidak boleh membatasi nama berkas pada satu segmen saja.
-    const pathname = url.pathname;
-    const match = pathname.match(/^\/(.*\.pmtiles)\/(\d+)\/(\d+)\/(\d+)\.(pbf|mvt)$/);
-    
+    const match = url.pathname.match(OFFLINE_TILE_PATTERN);
+
     if (!match) {
-        return new Response(null, { status: 404, statusText: 'Invalid PMTiles URL format' });
+        return new Response(null, { status: 404, statusText: 'Invalid offline tile URL format' });
     }
-    
-    const [, , z, x, y] = match;
+
+    const [, z, x, y] = match;
     const zoom = parseInt(z, 10);
     const tileX = parseInt(x, 10);
     const tileY = parseInt(y, 10);
@@ -746,7 +748,7 @@ function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, b
 
     const gridHtml = layoutOptions.grid ? `
         <div id="grid-coords" class="map-control grid-coords" style="bottom: 60px; left: 20px; font-size: 11px; background: rgba(0,0,0,0.7); color: #fff; padding: 5px 10px; border-radius: 4px; font-family: monospace;">
-            Lon: <span id="grid-lon">${centerLon.toFixed(4)}</span>Â° | Lat: <span id="grid-lat">${centerLat.toFixed(4)}</span>Â°
+            Lon: <span id="grid-lon">${centerLon.toFixed(4)}</span>&deg; | Lat: <span id="grid-lat">${centerLat.toFixed(4)}</span>&deg;
         </div>
     ` : '';
 
@@ -786,7 +788,7 @@ function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, b
     </style>
 </head>
 <body>
-    <div class="offline-badge">ðŸ“± Mode Offline</div>
+    <div class="offline-badge">Mode Offline</div>
     <div id="map"></div>
 
     ${scaleBarHtml}
@@ -798,18 +800,23 @@ function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, b
     <div class="info-panel">
         <div class="info-row"><span class="info-label">Area:</span> <span class="info-value">${areaName}</span></div>
         <div class="info-row"><span class="info-label">Tile:</span> <span class="info-value">${tileCount.toLocaleString()}</span></div>
-        <div class="info-row"><span class="info-label">Zoom:</span> <span class="info-value">${zoomMin}â€“${zoomMax}</span></div>
-        <div class="info-row"><span class="info-label">Elevasi:</span> <span class="info-value">${elevStats ? Math.round(elevStats.min)+'â€“'+Math.round(elevStats.max)+'m' : 'N/A'}</span></div>
+        <div class="info-row"><span class="info-label">Zoom:</span> <span class="info-value">${zoomMin}-${zoomMax}</span></div>
+        <div class="info-row"><span class="info-label">Elevasi:</span> <span class="info-value">${elevStats ? Math.round(elevStats.min)+'-'+Math.round(elevStats.max)+'m' : 'N/A'}</span></div>
     </div>
 
-    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-    <script src="https://unpkg.com/pmtiles@3.1.4/dist/pmtiles.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <script>
-        // Initialize offline map with MapLibre GL
-        const protocol = new PMTiles.Protocol();
-        maplibregl.addProtocol('pmtiles', protocol.tile);
-
+        // Peta ini berdiri sendiri di luar bundle aplikasi, jadi MapLibre diambil
+        // dari CDN. Versinya harus sama dengan entri EXTERNAL_LIBS, kalau tidak
+        // build ini tidak ada di cache dan peta gagal dimuat saat benar-benar offline.
+        //
+        // Pustaka pmtiles sengaja tidak dipakai. Versi yang pernah disematkan di
+        // sini (3.1.4) tidak ada di unpkg sehingga PMTiles undefined dan seluruh
+        // script ini berhenti. Yang lebih penting, Protocol pmtiles membaca arsip
+        // lewat HTTP Range ke URL arsip, sedangkan tile offline disimpan di
+        // IndexedDB. Sumber tile memakai tiles: dengan template URL, jadi MapLibre
+        // tidak perlu TileJSON dan tidak perlu pustaka tambahan apa pun.
         const map = new maplibregl.Map({
             container: 'map',
             style: {
@@ -817,7 +824,10 @@ function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, b
                 sources: {
                     'kontur': {
                         type: 'vector',
-                        url: 'pmtiles:///storage/maps/sulsel_kontur.pmtiles',
+                        tiles: ['/offline-tiles/{z}/{x}/{y}.pbf'],
+                        minzoom: ${zoomMin},
+                        maxzoom: ${zoomMax},
+                        bounds: ${JSON.stringify(bbox)},
                     },
                     'batas': {
                         type: 'geojson',

@@ -480,8 +480,11 @@ function printMap() {
 </div>
 &lt;script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"&gt;&lt;/script&gt;
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-&lt;script src="https://unpkg.com/pmtiles@3.1.4/dist/pmtiles.js"&gt;&lt;/script&gt;
+&lt;script src="https://unpkg.com/pmtiles/dist/pmtiles.js"&gt;&lt;/script&gt;
 &lt;script&gt;
+  // Versi pmtiles di unpkg tidak pernah dipublikasikan: pmtiles@2.11.0 dan
+  // pmtiles@3.1.4 sama-sama 404, sehingga PMTiles undefined dan seluruh script
+  // ini berhenti. URL tanpa versi tetap tersedia.
   const protocol = new PMTiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
   const map = new maplibregl.Map({
@@ -489,8 +492,8 @@ function printMap() {
     style: {
       version: 8,
       sources: {
-        'kontur': { type: 'vector', url: 'pmtiles:///storage/maps/sulsel_kontur.pmtiles' },
-        'batas': { type: 'geojson', data: '/storage/maps/batas_kabupaten_sulsel.geojson' },
+        'kontur': { type: 'vector', url: '${pmtilesSourceUrl.value}' },
+        'batas': { type: 'geojson', data: '${url}' },
         'osm': { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 }
       },
       layers: [

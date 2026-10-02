@@ -145,14 +145,23 @@ class PetaPagePmtilesSourceTest extends TestCase
         );
     }
 
-    public function test_service_worker_accepts_multi_segment_pmtiles_path(): void
+    public function test_service_worker_does_not_intercept_pmtiles_scheme(): void
     {
         $sw = file_get_contents(base_path('public/sw.js'));
 
-        $this->assertStringContainsString(
-            '/^\/(.*\.pmtiles)\/(\d+)\/(\d+)\/(\d+)\.(pbf|mvt)$/',
+        // Peta utama mendaftarkan addProtocol('pmtiles', protocol.tile), jadi
+        // library pmtiles yang melayani URL tersebut di halaman lewat HTTP Range
+        // ke arsip. Service worker tidak pernah melihat request itu, dan
+        // path Supabase yang bersegmen banyak sudah ditangani library tersebut.
+        //
+        // Percobaan sebelumnya serving pmtiles:// dari service worker tidak
+        // pernah bekerja: TileJSON tidak punya {z}/{x}/{y} sehingga ditolak
+        // polanya, dan Protocol pmtiles membaca arsip lewat HTTP Range, bukan
+        // dari IndexedDB tempat tile offline disimpan.
+        $this->assertStringNotContainsString(
+            "url.protocol === 'pmtiles:'",
             $sw,
-            'Pola pmtiles:// di service worker harus menerima path bersegmen banyak. Path Supabase (/storage/v1/object/public/maps/...) ditolak pola satu segmen.'
+            'Service worker tidak boleh mengklaim skema pmtiles:. Pustaka pmtiles di halaman yang menanganinya, dan tile offline dilayani lewat /offline-tiles/.'
         );
     }
 
