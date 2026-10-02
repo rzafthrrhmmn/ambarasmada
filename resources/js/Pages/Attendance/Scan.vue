@@ -58,12 +58,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, inject } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount, inject } from 'vue';
 import { useForm, usePage, router } from '@inertiajs/vue3';
 
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import { Html5Qrcode } from 'html5-qrcode';
+import { enqueue } from '@/OfflineQueue.js';
+import { useNetworkStatus } from '@/Composables/useNetworkStatus.js';
 
 const props = defineProps({
   session: Object,
@@ -80,12 +82,27 @@ const canvasRef = ref(null);
 const scannerRef = ref(null);
 const html5QrCode = ref(null);
 
+const { isOnline, flushQueue } = useNetworkStatus();
+
 const form = useForm({
   qr_token: '',
   member_id: props.member?.id ?? '',
   keterangan: 'Hadir',
   nama: props.session?.nama ?? '',
+  latitude: null,
+  longitude: null,
 });
+
+// Sesi dengan titik lokasi mewajibkan anggota berada di dalam radiusnya,
+// jadi koordinat perangkat wajib dikumpulkan sebelum presensi dikirim.
+const sessionHasGeofence = computed(
+  () =>
+    props.session?.latitude !== null &&
+    props.session?.latitude !== undefined &&
+    props.session?.radius !== null &&
+    props.session?.radius !== undefined
+);
+
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '-';
@@ -149,20 +166,105 @@ function stopScan() {
   cameraLoading.value = false;
 }
 
+/**
+ * Ambil koordinat perangkat. Wajib bila sesi punya geofence, karena server
+ * menolak presensi yang tidak bisa diverifikasi jaraknya.
+ */
+function requestPosition() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve({ ok: false, reason: 'Browser Anda tidak mendukung pembacaan lokasi.' });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) =>
+        resolve({
+          ok: true,
+          latitude: Number(position.coords.latitude.toFixed(8)),
+          longitude: Number(position.coords.longitude.toFixed(8)),
+        }),
+      (error) =>
+        resolve({
+          ok: false,
+          reason:
+            error.code === error.PERMISSION_DENIED
+              ? 'Izin lokasi ditolak. Aktifkan lokasi untuk智能手机 ini agar presensi dapat diverifikasi.'
+              : 'Lokasi tidak dapat dibaca. Coba pindah ke area dengan sinyal GPS.',
+        }),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
+    );
+  });
+}
+
+/**
+ * Simpan presensi. Saat sinyal hilang, payload diantrekan di perangkat dan
+ * dikirim otomatis setelah koneksi kembali. Endpoint checkIn mengulang baris
+ * yang sama, jadi pengiriman ulang tidak menghasilkan presensi ganda.
+ */
+async function queueOrSubmit({ stayOnPage }) {
+  const position = await requestPosition();
+
+  if (sessionHasGeofence.value && !position.ok) {
+    $toast.error(position.reason);
+    return;
+  }
+
+  const payload = {
+    qr_token: form.qr_token,
+    member_id: form.member_id,
+    keterangan: form.keterangan,
+    latitude: position.ok ? position.latitude : null,
+    longitude: position.ok ? position.longitude : null,
+  };
+
+  if (!isOnline.value) {
+    enqueue(payload, { url: '/attendance/check-in' });
+    $toast.warning('Tidak ada sinyal. Presensi disimpan di perangkat dan dikirim otomatis nanti.');
+    resetForNextScan();
+    return;
+  }
+
+  form.post('/attendance/check-in', {
+    onSuccess: () => {
+      $toast.success('Presensi berhasil disimpan!');
+      if (stayOnPage) {
+        resetForNextScan();
+      } else {
+        router.visit(route('attendance.index'));
+      }
+    },
+    onError: (errors) => {
+      // Jaringan bisa hilang di tengah pengiriman meski navigator.onLine.
+      const message = errors?.message || 'Coba lagi.';
+      if (!hasFieldErrors(errors)) {
+        enqueue(payload, { url: '/attendance/check-in' });
+        $toast.warning('Gagal terkirim, disimpan di perangkat. ' + message);
+        resetForNextScan();
+        return;
+      }
+      $toast.error('Gagal menyimpan presensi. ' + message);
+    },
+  });
+}
+
+function hasFieldErrors(errors) {
+  if (!errors || typeof errors !== 'object') return false;
+  return Object.keys(errors).some((key) => key !== 'message');
+}
+
+function resetForNextScan() {
+  form.qr_token = '';
+  form.keterangan = 'Hadir';
+  scanResult.value = '';
+}
+
 function autoSubmit() {
   if (!form.qr_token || !form.member_id) {
     $toast.warning('Token QR atau ID anggota tidak ditemukan.');
     return;
   }
-  form.post('/attendance/check-in', {
-    onSuccess: () => {
-      $toast.success('Presensi berhasil disimpan!');
-      router.visit(route('attendance.index'));
-    },
-    onError: (errors) => {
-      $toast.error('Gagal menyimpan presensi. ' + (errors?.message || 'Coba lagi.'));
-    },
-  });
+  queueOrSubmit({ stayOnPage: false });
 }
 
 function submitCheckIn() {
@@ -170,15 +272,7 @@ function submitCheckIn() {
     $toast.warning('Scan QR terlebih dahulu atau masukkan token secara manual.');
     return;
   }
-  form.post('/attendance/check-in', {
-    onSuccess: () => {
-      $toast.success('Presensi berhasil disimpan!');
-      router.visit(route('attendance.index'));
-    },
-    onError: (errors) => {
-      $toast.error('Gagal menyimpan presensi. ' + (errors?.message || 'Coba lagi.'));
-    },
-  });
+  queueOrSubmit({ stayOnPage: true });
 }
 
 onBeforeUnmount(() => {

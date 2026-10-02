@@ -189,9 +189,14 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function checkIn(Request $request): RedirectResponse
+    public function checkIn(Request $request): RedirectResponse|JsonResponse
     {
         abort_unless($request->user()->role === 'Anggota', 403);
+
+        // Permintaan dari antrean offline mengirim Accept: application/json agar
+        // kegagalan (sesi kedaluwarsa, di luar radius) terbaca sebagai status
+        // HTTP yang bisa ditangani klien, bukan redirect yang selalu 200.
+        $wantsJson = $request->expectsJson();
 
         $data = $request->validate([
             'qr_token' => ['required', 'string', 'max:100'],
@@ -201,10 +206,39 @@ class AttendanceController extends Controller
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
 
-        $session = AttendanceSession::where('qr_token', strtoupper($data['qr_token']))->firstOrFail();
+        $session = AttendanceSession::where('qr_token', strtoupper($data['qr_token']))->first();
+
+        if (! $session) {
+            if ($wantsJson) {
+                return response()->json([
+                    'message' => 'Sesi presensi tidak ditemukan. Kode QR mungkin sudah tidak berlaku.',
+                ], 404);
+            }
+
+            abort(404);
+        }
+
+        // Sesi yang punya titik lokasi WAJIB memverifikasi jarak anggota.
+        // Sebelumnya pemeriksaan ini dilewati diam-diam bila klien tidak
+        // mengirim koordinat, sehingga geofence bisa dilewati total.
+        $hasGeofence = $session->radius !== null && $session->latitude !== null && $session->longitude !== null;
+        $clientSentCoords = isset($data['latitude'], $data['longitude']);
+
+        if ($hasGeofence && ! $clientSentCoords) {
+            $message = 'Lokasi perangkat tidak terkirim, sehingga jarak ke titik presensi tidak dapat diverifikasi.';
+
+            if ($wantsJson) {
+                return response()->json([
+                    'message' => $message,
+                    'errors' => ['location' => $message],
+                ], 422);
+            }
+
+            return back()->withErrors(['location' => $message]);
+        }
 
         // Check GPS radius if enabled
-        if ($session->radius && $session->latitude && $session->longitude && isset($data['latitude'], $data['longitude'])) {
+        if ($hasGeofence && $clientSentCoords) {
             $distance = $this->calculateDistance(
                 $session->latitude,
                 $session->longitude,
@@ -213,20 +247,35 @@ class AttendanceController extends Controller
             );
 
             if ($distance > $session->radius) {
+                if ($wantsJson) {
+                    return response()->json([
+                        'message' => "Anda terlalu jauh dari lokasi presensi. Jarak: {$distance}m, Radius maksimal: {$session->radius}m",
+                        'errors' => [
+                            'location' => "Anda terlalu jauh dari lokasi presensi. Jarak: {$distance}m, Radius maksimal: {$session->radius}m",
+                        ],
+                    ], 422);
+                }
+
                 return back()->withErrors([
                     'location' => "Anda terlalu jauh dari lokasi presensi. Jarak: {$distance}m, Radius maksimal: {$session->radius}m",
                 ]);
             }
         }
 
+        // updateOrCreate membuat endpoint ini idempoten: pengiriman ulang dari
+        // antrean offline memperbarui baris yang sama, bukan membuat duplikat.
         Attendance::updateOrCreate(
             ['attendance_session_id' => $session->id, 'member_id' => $data['member_id']],
             [
                 'keterangan' => $data['keterangan'],
                 'checked_at' => now(),
-                'catatan' => 'QR Code'.(isset($data['latitude'], $data['longitude']) ? ' + GPS' : ''),
+                'catatan' => 'QR Code'.($clientSentCoords ? ' + GPS' : ''),
             ]
         );
+
+        if ($wantsJson) {
+            return response()->json(['message' => 'Presensi berhasil disimpan.']);
+        }
 
         return redirect()->route('attendance.index')->with('success', 'Presensi berhasil disimpan.');
     }

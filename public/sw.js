@@ -38,6 +38,14 @@ const EXTERNAL_LIBS = [
 
 const OFFLINE_FALLBACK = '/offline.html';
 
+// Shell aplikasi: halaman dasar yang selalu dicache saat instalasi agar
+// aplikasi tetap punya entry point ketika jaringan mati total.
+const APP_SHELL = '/';
+
+// Cache khusus respons halaman Inertia. Dihapus saat logout (lihat
+// purgeUserScopedCaches) karena props Inertia memuat data per-pengguna.
+const INERTIA_CACHE = 'jaya-jaya-jaya-inertia-v1.4.0';
+
 self.addEventListener('install', (event) => {
     event.waitUntil(
         Promise.all([
@@ -62,6 +70,12 @@ self.addEventListener('install', (event) => {
                     )
                 )
             ),
+            // Shell aplikasi sebagai entry point saat offline.
+            caches.open(CACHE_NAME).then((cache) =>
+                fetch(APP_SHELL).then((response) => {
+                    if (response.ok) return cache.put(APP_SHELL, response.clone());
+                }).catch(() => {})
+            ),
         ])
     );
     self.skipWaiting();
@@ -72,7 +86,7 @@ self.addEventListener('activate', (event) => {
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((name) => {
-                    if (name !== CACHE_NAME && name !== ASSETS_CACHE && name !== TILES_CACHE) {
+                    if (name !== CACHE_NAME && name !== ASSETS_CACHE && name !== TILES_CACHE && name !== INERTIA_CACHE) {
                         return caches.delete(name);
                     }
                 })
@@ -85,7 +99,18 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const { request } = event;
 
-    if (request.mode === 'navigate' || request.headers.get('X-Inertia') === 'true') {
+    // Navigasi: coba jaringan dulu, lalu shell yang dicache, lalu halaman offline.
+    if (request.mode === 'navigate') {
+        event.respondWith(handleNavigate(request));
+        return;
+    }
+
+    // Halaman Inertia (XHR): stale-while-revalidate supaya halaman tetap
+    // tampil dari cache saat sinyal hilang, lalu diperbarui di latar belakang.
+    // Hanya GET: request Inertia non-GET adalah submit form, dan cache
+    // responsnya akan mengembalikan halaman basi alih-alih hasil terbaru.
+    if (request.headers.get('X-Inertia') === 'true' && request.method === 'GET') {
+        event.respondWith(handleInertia(request));
         return;
     }
 
@@ -133,6 +158,62 @@ self.addEventListener('fetch', (event) => {
         })
     );
 });
+
+/**
+ * Navigasi: jaringan dulu, lalu shell yang dicache, lalu /offline.html.
+ *
+ * Shell yang dicache adalah halaman tamu, jadi bukan pengganti halaman
+ *enggota. Gunanya hanya memberi entry point agar aplikasi tidak menampilkan
+ * error browser; OfflineBanner memberi tahu pengguna sedang offline.
+ */
+async function handleNavigate(request) {
+    try {
+        return await fetch(request);
+    } catch {
+        const cache = await caches.open(CACHE_NAME);
+        const shell = await cache.match(APP_SHELL);
+
+        if (shell) return shell;
+
+        const fallback = await cache.match(OFFLINE_FALLBACK);
+        if (fallback) return fallback;
+
+        return new Response(
+            '<!doctype html><meta charset="utf-8"><title>Offline</title>' +
+                '<body style="background:#263D26;color:#f0ead8;font-family:sans-serif;padding:2rem">' +
+                '<h1 style="color:#EDD330">Anda Sedang Offline</h1>' +
+                '<p>Koneksi internet tidak tersedia.</p></body>',
+            { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        );
+    }
+}
+
+/**
+ * Respons halaman Inertia: sajikan cache bila ada, perbarui di latar belakang.
+ *
+ * Hanya request GET yang dicache, dan hanya yang sukses. Cache ini dihapus
+ * saat logout agar props milik pengguna sebelumnya tidak tampil lagi di
+ * perangkat yang sama.
+ */
+async function handleInertia(request) {
+    const cache = await caches.open(INERTIA_CACHE);
+
+    try {
+        const networkResponse = await fetch(request);
+        if (networkResponse && networkResponse.status === 200) {
+            cache.put(request, networkResponse.clone()).catch(() => {});
+        }
+        return networkResponse;
+    } catch {
+        const cached = await cache.match(request);
+        if (cached) return cached;
+
+        return new Response(
+            JSON.stringify({ error: 'offline' }),
+            { status: 503, headers: { 'Content-Type': 'application/json' } }
+        );
+    }
+}
 
 async function cacheFirstThenNetwork(request) {
     const cache = await caches.open(CACHE_NAME);

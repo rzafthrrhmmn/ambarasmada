@@ -141,6 +141,7 @@ import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
+import { getActiveServiceWorker } from '@/ServiceWorker.js';
 
 const props = defineProps({
   mapConfig: Object,
@@ -518,13 +519,13 @@ async function downloadOffline() {
   downloadStatus.value = 'Memulai pengunduhan tile untuk area Sulawesi...';
 
   if (!('serviceWorker' in navigator)) {
-    downloadStatus.value = 'Service Worker tidak didukung.';
+    downloadStatus.value = 'Service Worker tidak didukung browser ini.';
     downloading.value = false;
     return;
   }
 
   try {
-    const registration = await navigator.serviceWorker.ready;
+    const worker = await getActiveServiceWorker();
 
     const west = boundingBox.value.west;
     const east = boundingBox.value.east;
@@ -548,7 +549,7 @@ async function downloadOffline() {
       }
     };
 
-    registration.active?.postMessage(
+    worker.postMessage(
       {
         type: 'DOWNLOAD_OFFLINE_TILES',
         bbox: { west, east, south, north },

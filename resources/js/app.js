@@ -30,6 +30,37 @@ router.on('navigate', (event) => {
     // Allow immediate page switch without waiting
 });
 
+// Service Worker registration for PWA offline support.
+//
+// sw.js handles asset caching, the pmtiles:// protocol for offline map tiles,
+// and serves /offline.html when the network is unreachable. Without this
+// registration none of that code ever runs.
+//
+// Production only: in dev the SW would cache Vite's dev-server bundles and
+// break HMR. Use `sw.js` being absent (or unregister) when testing locally.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then((registration) => {
+                // Pick up a newly deployed sw.js without forcing a reload;
+                // the update activates on its own via skipWaiting/claim.
+                registration.addEventListener('updatefound', () => {
+                    const installing = registration.installing;
+                    if (!installing) return;
+
+                    installing.addEventListener('statechange', () => {
+                        if (installing.state === 'activated' && navigator.serviceWorker.controller) {
+                            console.info('[SW] Versi baru aktif. Muat ulang untuk memakai aset terbaru.');
+                        }
+                    });
+                });
+            })
+            .catch((error) => {
+                console.error('[SW] Gagal mendaftarkan service worker:', error);
+            });
+    });
+}
+
  
 // Cookie overflow protection for PWA
 // Monitors cookie size and clears old non-essential cookies to prevent 500 errors

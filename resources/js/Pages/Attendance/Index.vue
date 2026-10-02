@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p class="text-sm font-medium text-[#EDD330]">Latihan Rutin</p><h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Presensi Anggota</h1><p class="mt-1 text-sm text-[#8fa06a]">Buat sesi latihan, gunakan QR Code, dan lihat rekap kehadiran.</p></div><button v-if="canManage" @click="showCreate = true" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Sesi latihan</button></div>
+    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p class="text-sm font-medium text-[#EDD330]">Latihan Rutin</p><h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Presensi Anggota</h1><p class="mt-1 text-sm text-[#8fa06a]">Buat sesi latihan, gunakan QR Code, dan lihat rekap kehadiran.</p></div><button v-if="canManage" @click="openCreate" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Sesi latihan</button></div>
     <div class="grid gap-5 lg:grid-cols-3">
       <section class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm border-[#6F9435] lg:col-span-2">
         <h2 class="mb-4 font-semibold text-[#f0ead8]">Riwayat sesi</h2>
@@ -36,8 +36,8 @@
       </aside>
     </div>
 
-    <Modal v-if="showCreate && canManage" title="Buat sesi latihan" @close="showCreate = false">
-      <form @submit.prevent="form.post('/attendance', { onSuccess: () => showCreate = false })" class="grid gap-3">
+    <Modal v-if="showCreate && canManage" title="Buat sesi latihan" @close="closeCreate">
+      <form @submit.prevent="submitCreate" class="grid gap-3">
         <label class="block"><span class="text-xs font-medium">Nama sesi</span><input v-model="form.nama" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label>
         <div class="grid gap-3 sm:grid-cols-2">
           <label class="block"><span class="text-xs font-medium">Tanggal</span><input v-model="form.tanggal" type="date" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label>
@@ -45,6 +45,19 @@
         </div>
         <label class="block"><span class="text-xs font-medium">Materi latihan (opsional)</span><input @change="onMateriChange" type="file" class="mt-1 text-sm" accept=".pdf,.jpg,.jpeg,.png,.mp4,.webm,.doc,.docx" /></label>
         <p v-if="form.errors.materi" class="text-xs text-[#ef4419]">{{ form.errors.materi }}</p>
+
+        <div class="mt-1">
+          <span class="text-xs font-medium">Titik lokasi &amp; radius presensi</span>
+          <p class="mb-2 mt-1 text-xs text-[#8fa06a]">Presensi hanya diterima jika anggota berada dalam radius dari titik ini.</p>
+          <LocationPicker v-if="showMapPicker" v-model="location" />
+          <button v-else type="button" class="w-full rounded-lg border border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/20 hover:text-[#EDD330]" @click="showMapPicker = true">
+            Tentukan lokasi di peta
+          </button>
+          <p v-if="form.errors.latitude || form.errors.longitude || form.errors.radius" class="mt-1 text-xs text-[#ef4419]">
+            {{ form.errors.latitude || form.errors.longitude || form.errors.radius }}
+          </p>
+        </div>
+
         <button class="rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Buat sesi</button>
       </form>
     </Modal>
@@ -58,6 +71,7 @@ import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
+import LocationPicker from '@/Components/LocationPicker.vue';
 
 defineProps({ sessions: Object, members: Array });
 const page = usePage();
@@ -67,8 +81,39 @@ const canManage = computed(() => {
 });
 
 const showCreate = ref(false);
+const showMapPicker = ref(false);
+const location = ref({ latitude: null, longitude: null, radius: 100 });
 const selectedQr = ref(null);
-const form = useForm({ nama: '', tanggal: new Date().toISOString().slice(0, 10), lokasi: '', materi: null });
+const form = useForm({ nama: '', tanggal: new Date().toISOString().slice(0, 10), lokasi: '', materi: null, latitude: null, longitude: null, radius: null });
+
+function submitCreate() {
+  form.latitude = location.value.latitude;
+  form.longitude = location.value.longitude;
+  // Radius hanya bermakna bila ada titik acuan.
+  form.radius = location.value.latitude === null ? null : location.value.radius;
+
+  form.post('/attendance', {
+    onSuccess: () => {
+      showCreate.value = false;
+      showMapPicker.value = false;
+      location.value = { latitude: null, longitude: null, radius: 100 };
+      form.reset();
+    },
+  });
+}
+
+function closeCreate() {
+  showCreate.value = false;
+  showMapPicker.value = false;
+}
+
+function openCreate() {
+  form.reset();
+  form.tanggal = new Date().toISOString().slice(0, 10);
+  location.value = { latitude: null, longitude: null, radius: 100 };
+  showMapPicker.value = false;
+  showCreate.value = true;
+}
 
 function onMateriChange(event) {
   form.materi = event.target.files[0] ?? null;

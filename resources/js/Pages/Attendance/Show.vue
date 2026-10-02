@@ -20,14 +20,26 @@
 
     <section class="overflow-hidden rounded-2xl border border-[#6F9435] bg-[#335233] shadow-sm border-[#6F9435]"><table class="min-w-full divide-y divide-[#6F9435]/30"><thead class="bg-[#263D26]"><tr><th class="px-4 py-3 text-left text-xs font-semibold text-[#8fa06a]">Anggota</th><th class="px-4 py-3 text-left text-xs font-semibold text-[#8fa06a]">Keterangan</th><th class="px-4 py-3 text-left text-xs font-semibold text-[#8fa06a]">Catatan</th><th class="px-4 py-3 text-right text-xs font-semibold text-[#8fa06a]">Aksi</th></tr></thead><tbody class="divide-y divide-[#6F9435]/30"><tr v-for="item in session.attendances" :key="item.id"><td class="px-4 py-3 text-sm font-medium">{{ item.member?.nama_lengkap }}</td><td class="px-4 py-3 text-sm"><span class="rounded-full bg-[#335233] px-2.5 py-1 text-xs text-[#EDD330]">{{ item.keterangan }}</span></td><td class="px-4 py-3 text-sm text-[#8fa06a]">{{ item.catatan || '-' }}</td><td class="px-4 py-3 text-right text-sm">    <button v-if="canManage" @click="openEdit(item)" class="text-[#EDD330] hover:underline">Edit</button></td></tr></tbody></table></section>
 
-    <Modal v-if="showSessionEdit" title="Edit sesi latihan" @close="showSessionEdit = false">
-      <form @submit.prevent="sessionForm.patch(`/attendance/${session.id}`, { onSuccess: () => showSessionEdit = false })" class="grid gap-3">
+    <Modal v-if="showSessionEdit" title="Edit sesi latihan" @close="closeSessionEdit">
+      <form @submit.prevent="submitSessionEdit" class="grid gap-3">
         <label class="block"><span class="text-xs font-medium">Nama sesi</span><input v-model="sessionForm.nama" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8]" /></label>
         <div class="grid gap-3 sm:grid-cols-2"><label class="block"><span class="text-xs font-medium">Tanggal</span><input v-model="sessionForm.tanggal" type="date" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8]" /></label><label class="block"><span class="text-xs font-medium">Lokasi</span><input v-model="sessionForm.lokasi" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8]" /></label></div>
         <label class="block"><span class="text-xs font-medium">Materi latihan (ganti, opsional)</span><input @change="onSessionMateriChange" type="file" class="mt-1 text-sm" accept=".pdf,.jpg,.jpeg,.png,.mp4,.webm,.doc,.docx" /></label>
         <p v-if="sessionForm.errors.materi" class="text-xs text-[#ef4419]">{{ sessionForm.errors.materi }}</p>
         <div v-if="session.materi_nama" class="flex items-center gap-2 rounded-lg border border-[#6F9435]/30 bg-[#263D26] px-3 py-2">
           <label class="flex items-center gap-2"><input v-model="sessionForm.remove_materi" type="checkbox" class="h-4 w-4 rounded border-[#6F9435] bg-[#335233] text-[#ef4419]" /><span class="text-xs text-[#8fa06a]">Hapus materi saat ini</span></label>
+        </div>
+
+        <div>
+          <span class="text-xs font-medium">Titik lokasi &amp; radius presensi</span>
+          <p class="mb-2 mt-1 text-xs text-[#8fa06a]">Presensi hanya diterima jika anggota berada dalam radius dari titik ini.</p>
+          <LocationPicker v-if="showMapPicker" v-model="sessionLocation" />
+          <button v-else type="button" class="w-full rounded-lg border border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/20 hover:text-[#EDD330]" @click="showMapPicker = true">
+            {{ sessionLocation.latitude === null ? 'Tentukan lokasi di peta' : 'Ubah titik lokasi' }}
+          </button>
+          <p v-if="sessionForm.errors.latitude || sessionForm.errors.longitude || sessionForm.errors.radius" class="mt-1 text-xs text-[#ef4419]">
+            {{ sessionForm.errors.latitude || sessionForm.errors.longitude || sessionForm.errors.radius }}
+          </p>
         </div>
         <div class="flex justify-end gap-2">
           <button type="button" @click="showSessionEdit = false" class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a]">Batal</button>
@@ -50,6 +62,7 @@ import { computed, ref } from 'vue';
 import { Link, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
+import LocationPicker from '@/Components/LocationPicker.vue';
 const props = defineProps({ session: Object });
 const page = usePage();
 const canManage = computed(() => {
@@ -60,7 +73,28 @@ const showEdit = ref(false);
 const editItem = ref(null);
 const showSessionEdit = ref(false);
 const form = useForm({ keterangan: 'Hadir', catatan: '' });
-const sessionForm = useForm({ nama: '', tanggal: '', lokasi: '', materi: null, remove_materi: false });
+const sessionForm = useForm({ nama: '', tanggal: '', lokasi: '', materi: null, remove_materi: false, latitude: null, longitude: null, radius: null });
+const showMapPicker = ref(false);
+const sessionLocation = ref({ latitude: null, longitude: null, radius: 100 });
+
+function submitSessionEdit() {
+  sessionForm.latitude = sessionLocation.value.latitude;
+  sessionForm.longitude = sessionLocation.value.longitude;
+  sessionForm.radius = sessionLocation.value.latitude === null ? null : sessionLocation.value.radius;
+
+  sessionForm.patch(`/attendance/${props.session.id}`, {
+    onSuccess: () => {
+      showSessionEdit.value = false;
+      showMapPicker.value = false;
+    },
+  });
+}
+
+function closeSessionEdit() {
+  showSessionEdit.value = false;
+  showMapPicker.value = false;
+}
+
 function openEdit(item) {
   editItem.value = item;
   form.keterangan = item.keterangan;
@@ -74,6 +108,12 @@ function openSessionEdit() {
   sessionForm.lokasi = props.session.lokasi || '';
   sessionForm.materi = null;
   sessionForm.remove_materi = false;
+  sessionLocation.value = {
+    latitude: props.session.latitude === null ? null : Number(props.session.latitude),
+    longitude: props.session.longitude === null ? null : Number(props.session.longitude),
+    radius: props.session.radius ? Number(props.session.radius) : 100,
+  };
+  showMapPicker.value = false;
   sessionForm.clearErrors();
 }
 function onSessionMateriChange(event) {

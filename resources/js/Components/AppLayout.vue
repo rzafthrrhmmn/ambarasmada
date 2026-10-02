@@ -107,6 +107,7 @@
       </aside>
 
       <main class="min-w-0 px-4 pb-20 pt-6 sm:px-6 sm:pb-6 lg:pb-6 lg:px-8">
+        <OfflineBanner />
         <FlashMessage />
         <slot />
       </main>
@@ -135,6 +136,9 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import FlashMessage from '@/Components/FlashMessage.vue';
+import OfflineBanner from '@/Components/OfflineBanner.vue';
+import { clear as clearQueue } from '@/OfflineQueue.js';
+import { purgeUserScopedCaches } from '@/ServiceWorker.js';
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user || null);
@@ -277,7 +281,12 @@ function bottomNavClass(href) {
       : 'text-[#d4dc9a]'
   }`;
 }
-function logout() {
+async function logout() {
+  // Antrean presensi milik pengguna ini tidak boleh terkirim sebagai akun lain,
+  // dan cache halaman berisi data pribadi harus hilang dari perangkat.
+  clearQueue();
+  await purgeUserScopedCaches();
+
   router.post('/logout');
 }
 </script>

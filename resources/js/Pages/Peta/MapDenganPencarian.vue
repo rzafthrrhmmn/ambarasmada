@@ -394,6 +394,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
+import { getActiveServiceWorker } from '@/ServiceWorker.js';
 
 const props = defineProps({
   mapConfig: Object,
@@ -1345,13 +1346,13 @@ async function downloadOffline() {
   downloadStatus.value = `Memulai pengunduhan tile untuk ${areaName}...`;
 
   if (!('serviceWorker' in navigator)) {
-    downloadStatus.value = 'Service Worker tidak didukung.';
+    downloadStatus.value = 'Service Worker tidak didukung browser ini.';
     downloading.value = false;
     return;
   }
 
   try {
-    const registration = await navigator.serviceWorker.ready;
+    const worker = await getActiveServiceWorker();
 
     const bbox = currentBBox.value;
     const minZoom = offlineZoomMin.value;
@@ -1380,7 +1381,7 @@ async function downloadOffline() {
       }
     };
 
-    registration.active?.postMessage(
+    worker.postMessage(
       {
         type: 'DOWNLOAD_OFFLINE_TILES',
         bbox: { west: bbox.west, east: bbox.east, south: bbox.south, north: bbox.north },
