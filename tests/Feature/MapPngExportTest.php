@@ -159,28 +159,19 @@ class MapPngExportTest extends TestCase
         }
     }
 
-    public function test_png_diunduh_otomatis_setelah_unduh_peta_offline(): void
+    public function test_cetak_png_tergabung_di_tombol_unduh_peta_offline(): void
     {
         foreach ($this->petaPages() as $name => $source) {
-            $this->assertStringContainsString(
-                'Cetak Peta PNG',
+            $this->assertStringNotContainsString(
+                '>Cetak Peta PNG<',
                 $source,
-                "Halaman {$name} harus punya tombol cetak PNG."
+                "Halaman {$name} tidak lagi punya tombol cetak PNG terpisah; sudah menyatu dengan Unduh Peta Offline."
             );
 
             $this->assertStringContainsString(
                 'useMapPngExport',
                 $source,
                 "Halaman {$name} harus memakai modul ekspor PNG yang sama."
-            );
-
-            // Pemicu otomatis harus menempel pada penyelesaian unduhan tile,
-            // bukan pada pembuatan modal, supaya PNG benar-benar keluar saat
-            // pengguna menekan "Unduh Peta Offline".
-            $this->assertMatchesRegularExpression(
-                "/DOWNLOAD_COMPLETE'[\s\S]{0,600}?printMapPng\(/",
-                $source,
-                "PNG harus dicetak otomatis setelah unduhan tile selesai di halaman {$name}."
             );
         }
     }
@@ -212,29 +203,139 @@ class MapPngExportTest extends TestCase
         );
     }
 
-    public function test_overlay_memuat_peta_tidak_bisa_menggantung(): void
+    public function test_overlay_memuat_peta_tidak_menggantung_dan_tidak_jadi_terlalu_awal(): void
     {
         foreach ($this->petaPages() as $name => $source) {
-            // Event load belum selalu sampai: glyph, DEM, atau tile luar yang
-            // lambat menahannya, dan gejalanya kanvas tetap bertuliskan
-            // "Memuat peta..." sampai jendela dikecilkan.
-            $this->assertStringContainsString(
+            // Melepas overlay dari `styledata` keliru: event itu fire paling awal,
+            // hanya setelah JSON style terurai. Overlay hilang seketika lalu garis
+            // kontur terlihat macet selama tile-nya masih turun.
+            $this->assertStringNotContainsString(
                 "map.value.on('styledata', clearLoading);",
                 $source,
-                "Halaman {$name} harus melepas overlay saat style selesai dimuat."
+                "Halaman {$name} tidak boleh melepas penanda loading dari styledata; overlay lalu hilang sebelum kontur masuk."
             );
 
             $this->assertStringContainsString(
                 "map.value.on('idle', clearLoading);",
                 $source,
-                "Halaman {$name} harus melepas overlay saat peta idle."
+                "Halaman {$name} harus melepas penanda loading setelah peta selesai menggambar."
             );
 
             $this->assertMatchesRegularExpression(
                 '/setTimeout\(\(\) => \{\s*if \(loading\.value\)/',
                 $source,
-                "Halaman {$name} perlu batas waktu supaya overlay tidak menggantung selamanya."
+                "Halaman {$name} perlu batas waktu supaya penanda loading tidak menggantung selamanya."
             );
         }
+    }
+
+    public function test_cetak_png_gabung_dengan_unduhan_peta_offline(): void
+    {
+        foreach ($this->petaPages() as $name => $source) {
+            // Tidak ada lagi tombol cetak terpisah: cetak PNG adalah hasil akhir
+            // dari unduhan peta offline, bukan fitur lain yang berdiri sendiri.
+            $this->assertStringNotContainsString(
+                '>Cetak Peta PNG<',
+                $source,
+                "Halaman {$name} tidak perlu tombol cetak PNG terpisah; sudah menyatu dengan Unduh Peta Offline."
+            );
+
+            $this->assertStringContainsString(
+                'useMapPngExport',
+                $source,
+                "Halaman {$name} harus memakai modul ekspor PNG yang sama."
+            );
+        }
+
+        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+
+        // Urutan menentukan isi berkas: snapshot PNG diambil dari kanvas peta
+        // yang sedang tampil, jadi cetaknya harus sebelum paket tile diminta ke
+        // service worker. Kalau tidak, berkas berisi viewport terakhir.
+        $printAt = strpos($pencarian, 'const png = await printMapPng({');
+        $requestAt = strpos($pencarian, "type: 'DOWNLOAD_OFFLINE_TILES'");
+
+        $this->assertIsInt($printAt, 'Halaman pencarian harus mencetak PNG dari downloadOffline.');
+        $this->assertIsInt($requestAt, 'Halaman pencarian harus meminta paket tile ke service worker.');
+        $this->assertLessThan(
+            $requestAt,
+            $printAt,
+            'PNG harus dicetak sebelum paket tile diminta; kalau dibalik, berkas berisi viewport terakhir.'
+        );
+
+        $this->assertMatchesRegularExpression(
+            "/jumpTo\(\{[\s\S]{0,400}?whenMapIdle\(\)[\s\S]{0,400}?printMapPng\(\{/",
+            $pencarian,
+            'Peta harus digeser ke wilayah yang dipilih sebelum PNG dicetak.'
+        );
+
+        $this->assertStringContainsString(
+            'components,',
+            $pencarian,
+            'Pilihan "Komponen Peta Offline" harus diteruskan ke PNG supaya kedua berkas sama.'
+        );
+    }
+
+    public function test_komponen_peta_yang_dicentang_benar_benar_digambar(): void
+    {
+        $module = $this->module();
+
+        foreach (
+            [
+                'picked.grid' => 'drawGraticule(ctx,',
+                'picked.legend' => 'drawLegend(ctx,',
+                'picked.histogram' => 'drawHistogram(ctx,',
+                'picked.northArrow' => 'drawCompass(ctx,',
+                'picked.scaleBar' => 'drawScaleBar(ctx,',
+            ] as $gate => $call
+        ) {
+            $this->assertStringContainsString(
+                $gate,
+                $module,
+                "Komponen {$gate} tidak lagi dikendalikan pilihan pengguna."
+            );
+            $this->assertStringContainsString(
+                $call,
+                $module,
+                "Fungsi gambar untuk {$gate} tidak ada di modul."
+            );
+        }
+
+        $this->assertStringContainsString(
+            'export const DEFAULT_COMPONENTS = {',
+            $module,
+            'Harus ada default komponen supaya halaman tanpa dialog tetap bisa mencetak PNG.'
+        );
+
+        // Histogram harus refuses menggambar angka karangan.
+        $this->assertStringNotContainsString(
+            'Math.random()',
+            $module,
+            'Modul tidak boleh membuat angka elevasi acak: angka karangan tercetak sebagai data elevasi sungguhan.'
+        );
+    }
+
+    public function test_service_worker_tidak_membuat_angka_elevasi_palsu(): void
+    {
+        $sw = file_get_contents(base_path('public/sw.js'));
+        $this->assertIsString($sw);
+
+        $this->assertStringNotContainsString(
+            'function sampleElevations()',
+            $sw,
+            'Service worker tidak boleh mensintesis nilai elevasi; panel histogram akan menampilkan angka yang tidak berasal dari data.'
+        );
+
+        $this->assertStringContainsString(
+            'resolve(null);',
+            $sw,
+            'Tanpa data elevasi yang bisa dibaca, statistik harus null supaya panel menampilkan N/A.'
+        );
+
+        $this->assertStringContainsString(
+            '!layoutOptions.histogram ?',
+            $sw,
+            'Centang histogram harus tetap menghasilkan panel berisi keterangan, bukan panel yang hilang diam-diam.'
+        );
     }
 }

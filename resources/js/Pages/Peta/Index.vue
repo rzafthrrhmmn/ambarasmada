@@ -15,13 +15,6 @@
           Unduh Peta Offline
         </button>
         <button
-          @click="printMapPng"
-          :disabled="isExporting || loading"
-          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {{ isExporting ? 'Menyiapkan PNG...' : 'Cetak Peta PNG' }}
-        </button>
-        <button
           @click="toggleLayer"
           class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
         >
@@ -469,24 +462,24 @@ async function initMap() {
     window.addEventListener('online', () => { isOffline.value = false; });
     window.addEventListener('offline', () => { isOffline.value = true; });
 
-    // Overlay "Memuat peta..." tidak boleh menggantung selamanya. Event `load`
-    // belum sampai kalau ada glyph, DEM, atau tile luar yang masih menggantung,
-    // dan gejalanya kanvas tetap bertuliskan "Memuat peta..." sampai jendela
-    // dikecilkan. Overlay karena itu dilepas oleh style selesai, peta idle, atau
-    // lewat batas waktu; galat sebenarnya tetap dilaporkan lewat mapError.
+    // Overlay "Memuat peta..." tidak boleh menggantung selamanya, tapi juga tidak
+    // boleh hilang sebelum kontennya benar-benar ada. Melepasnya dari
+    // `styledata` keliru karena event itu fire paling awal: overlay hilang
+    // seketika lalu garis kontur terlihat macet selama tile-nya masih turun.
+    // Penanda loading kini dilepas setelah peta selesai (load atau idle), atau
+    // lewat batas waktu kalau ada satu sumber yang menggantung.
     const clearLoading = () => {
       loading.value = false;
     };
 
-    map.value.on('styledata', clearLoading);
     map.value.on('idle', clearLoading);
 
     setTimeout(() => {
       if (loading.value) {
         clearLoading();
-        mapStatus.value = 'Peta dimuat sebagian: sebagian layer belum selesai masuk. Peta tetap bisa dipakai.';
+        mapStatus.value = 'Peta dimuat sebagian: sebagian layer belum selesai masuk dan masih dimuat di latar belakang.';
       }
-    }, 8000);
+    }, 12000);
 
     map.value.on('load', () => {
       clearLoading();
@@ -625,10 +618,16 @@ async function downloadOffline() {
   if (!hasPmtiles.value) return;
 
   downloading.value = true;
-  downloadStatus.value = 'Memulai pengunduhan tile untuk area Sulawesi...';
+  downloadStatus.value = 'Menyiapkan PNG peta...';
+
+  // PNG dicetak lebih dulu, sebelum paket tile diambil. Urutan ini menentukan
+  // isi berkasnya: snapshot PNG diambil dari kanvas peta yang sedang tampil, jadi
+  // kalau PNG ditunggu sampai tile selesai, yang masuk ke berkas adalah viewport
+  // terakhir, bukan area Sulawesi yang diunduh.
+  const png = await printMapPng({ silent: true });
 
   if (!('serviceWorker' in navigator)) {
-    downloadStatus.value = 'Service Worker tidak didukung browser ini.';
+    downloadStatus.value = 'Service Worker tidak didukung browser ini, jadi paket tile offline tidak bisa dibuat.';
     downloading.value = false;
     return;
   }
@@ -648,6 +647,10 @@ async function downloadOffline() {
     // masih dilayani dari origin sendiri sehingga boleh dibuat relatif.
     const pmtilesUrl = props.mapConfig.pmtilesUrl;
     const geojsonUrlRelative = geojsonUrl.value.replace(/^https?:\/\/[^\/]+/, '');
+
+    downloadStatus.value = png.ok
+      ? 'PNG peta tersimpan. Mengunduh paket tile untuk offline...'
+      : 'PNG gagal dibuat. Mengunduh paket tile untuk offline...';
 
     const channel = new MessageChannel();
     channel.port1.onmessage = (event) => {
@@ -672,14 +675,9 @@ async function downloadOffline() {
       if (data.type === 'DOWNLOAD_COMPLETE') {
         const skipped = data.skipped ? `, ${data.skipped} tile tidak tersedia di arsip` : '';
         downloadStatus.value =
-          `Selesai! ${data.downloaded} tile berhasil diunduh untuk offline (zoom ${data.zoomMin}-${data.zoomMax}${skipped}).`;
+          `Selesai! ${data.downloaded} tile berhasil diunduh untuk offline (zoom ${data.zoomMin}-${data.zoomMax}${skipped}).`
+          + (png.ok ? ' PNG peta tersimpan.' : ' PNG peta gagal dibuat.');
         downloading.value = false;
-
-        // Cetak peta dikirim tepat setelah tile selesai, supaya satu klik
-        // "Unduh Peta Offline" menghasilkan dua berkas: paket tile untuk
-        // dipakai tanpa sinyal, dan satu PNG peta siap dicetak yang sudah
-        // berisi kompas, skala, serta uraian komponen peta kontur.
-        printMapPng({ silent: true });
       }
       if (data.type === 'DOWNLOAD_ERROR') {
         downloadStatus.value = data.error;

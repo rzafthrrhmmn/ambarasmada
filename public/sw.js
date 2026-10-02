@@ -878,42 +878,52 @@ async function generateOfflineMapHTML(db, bbox, zoomMin, zoomMax, geojsonUrl, la
     await htmlCache.put(OFFLINE_MAP_HTML, response);
 }
 
+/**
+ * Statistik elevasi dari tile yang tersimpan.
+ *
+ * Tile disimpan sebagai MVT mentah, jadi nilai ELEV di dalamnya tidak bisa
+ * dibaca tanpa pustaka decoder vektor. Versi lama memakai angka acak supaya
+ * panel histogram selalu terisi, dan angka acak itu muncul sebagai
+ * "Elevasi: 1234-3012m" di halaman peta offline: angka yang terlihat sahih
+ * padahal tidak pernah berasal dari data mana pun.
+ *
+ * Sekarang dikembalikan null kalau data nyata tidak bisa dibaca, dan panel
+ * menampilkan "N/A". Angka yang tidak ada lebih jujur daripada angka palsu.
+ */
 async function getElevationStats(db) {
     return new Promise((resolve) => {
         const tx = db.transaction('tiles', 'readonly');
         const store = tx.objectStore('tiles');
         const request = store.getAll();
+
         request.onsuccess = () => {
             const elevations = [];
+
             for (const tile of request.result) {
-                try {
-                    // Parse MVT tile to extract elevations (simplified)
-                    // In real implementation, would decode PBF
-                    elevations.push(...sampleElevations());
-                } catch {}
-            }
-            if (elevations.length === 0) {
-                // Fallback sample data
-                for (let i = 0; i < 1000; i++) {
-                    elevations.push(Math.random() * 3400);
+                if (typeof tile?.data?.byteLength !== 'number' || tile.data.byteLength === 0) {
+                    continue;
                 }
+                // Nilai ELEV hanya bisa diambil setelah MVT diurai, dan service
+                // worker tidak punya decoder vektor. Lewati tile sepenuhnya.
             }
-            const sorted = elevations.sort((a, b) => a - b);
+
+            if (elevations.length === 0) {
+                resolve(null);
+                return;
+            }
+
+            elevations.sort((a, b) => a - b);
             resolve({
-                min: sorted[0],
-                max: sorted[sorted.length - 1],
-                mean: sorted.reduce((a, b) => a + b, 0) / sorted.length,
-                median: sorted[Math.floor(sorted.length / 2)],
-                histogram: generateHistogramData(sorted, 20),
+                min: elevations[0],
+                max: elevations[elevations.length - 1],
+                mean: elevations.reduce((a, b) => a + b, 0) / elevations.length,
+                median: elevations[Math.floor(elevations.length / 2)],
+                histogram: generateHistogramData(elevations, 20),
             });
         };
-    });
-}
 
-function sampleElevations() {
-    // Sample elevation values matching Sulsel contour data
-    const baseElevs = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000, 3100, 3200, 3300, 3400];
-    return baseElevs.map(e => e + (Math.random() - 0.5) * 10);
+        request.onerror = () => resolve(null);
+    });
 }
 
 function generateHistogramData(values, bins) {
@@ -975,7 +985,10 @@ function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, b
         </div>
     ` : '';
 
-    const histogramHtml = layoutOptions.histogram && elevStats ? `
+    // Panel histogram tetap muncul ketika dicentang, walau datanya tidak ada.
+// Diam-diam membuangnya membuat centang terlihat tidak berpengaruh; menulis
+// keterangan apa adanya jauh lebih jujur daripada menampilkan angka karangan.
+const histogramHtml = !layoutOptions.histogram ? '' : (elevStats ? `
         <div id="histogram" class="map-control histogram" style="top: 80px; right: 20px; width: 220px; max-height: 300px;">
             <div class="histogram-header">Histogram Elevasi (${areaName})</div>
             <div class="histogram-stats">
@@ -983,7 +996,15 @@ function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, b
             </div>
             <canvas id="histogram-canvas" width="220" height="180"></canvas>
         </div>
-    ` : '';
+    ` : `
+        <div id="histogram" class="map-control histogram" style="top: 80px; right: 20px; width: 220px;">
+            <div class="histogram-header">Histogram Elevasi (${areaName})</div>
+            <div class="histogram-stats">
+                Data elevasi tidak ikut dalam paket ini. Histogram baru bisa dihitung
+                dari peta yang sudah diunduh, bukan dari daftar tile.
+            </div>
+        </div>
+    `);
 
     const gridHtml = layoutOptions.grid ? `
         <div id="grid-coords" class="map-control grid-coords" style="bottom: 60px; left: 20px; font-size: 11px; background: rgba(0,0,0,0.7); color: #fff; padding: 5px 10px; border-radius: 4px; font-family: monospace;">

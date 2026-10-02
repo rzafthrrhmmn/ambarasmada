@@ -262,6 +262,209 @@ function formatDistance(meters) {
   return distanceLabel(meters);
 }
 
+/**
+ * Komponen cetak yang bisa dipilih pengguna.
+ *
+ * Defaults-nya dipakai oleh Peta/Index yang tidak punya dialog komponen.
+ * Peta/MapDenganPencarian meneruskan pilihan dari daftar "Komponen Peta Offline"
+ * supaya berkas PNG sama persis dengan paket unduhan offline.
+ */
+export const DEFAULT_COMPONENTS = {
+  scaleBar: true,
+  northArrow: true,
+  legend: true,
+  histogram: false,
+  grid: false,
+};
+
+/** Langkah grid "bulat" dalam derajat, dari yang paling rapat ke paling jarang. */
+const GRID_STEPS = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2];
+
+/**
+ * Pilih langkah grid yang jarak antar garisnya sekitar `targetPx` piksel.
+ *
+ * @param {number} degreesPerPx  besar derajat yang dipetakan satu piksel
+ * @param {number} targetPx
+ */
+function niceGridStep(degreesPerPx, targetPx) {
+  const wanted = degreesPerPx * targetPx;
+
+  for (const step of GRID_STEPS) {
+    if (step >= wanted) return step;
+  }
+
+  return GRID_STEPS[GRID_STEPS.length - 1];
+}
+
+/**
+ * Garis koordinat (grid) di atas area peta, lengkap dengan labelnya.
+ *
+ * Posisi garis diturunkan dari batas geografis yang benar-benar terlihat, yang
+ * diambil dari map.getBounds(). Cara itu penting karena snapshot peta dipotong
+ * di tengah supaya memenuhi kotak cetak: kotak cetak tidak pernah sama dengan
+ * seluruh viewport, dan menghitung dari pusat/zoom sendiri akan menghasilkan
+ * label yang tidak cocok dengan garisnya.
+ *
+ * @param {{x:number,y:number,w:number,h:number}} box
+ * @param {{west:number,east:number,south:number,north:number}} bounds
+ */
+function drawGraticule(ctx, box, bounds) {
+  const spanLon = bounds.east - bounds.west;
+  const spanLat = bounds.north - bounds.south;
+
+  if (!(spanLon > 0) || !(spanLat > 0)) return;
+
+  const stepLon = niceGridStep(spanLon / box.w, 110);
+  const stepLat = niceGridStep(spanLat / box.h, 110);
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(31, 41, 55, 0.35)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 3]);
+  ctx.font = `11px ${FONT}`;
+  ctx.fillStyle = 'rgba(31, 41, 55, 0.85)';
+
+  for (let lon = Math.ceil(bounds.west / stepLon) * stepLon; lon <= bounds.east; lon += stepLon) {
+    const x = box.x + ((lon - bounds.west) / spanLon) * box.w;
+
+    ctx.beginPath();
+    ctx.moveTo(x, box.y);
+    ctx.lineTo(x, box.y + box.h);
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(formatDegrees(lon, 'lon'), x, box.y + box.h - 4);
+  }
+
+  for (let lat = Math.ceil(bounds.south / stepLat) * stepLat; lat <= bounds.north; lat += stepLat) {
+    const y = box.y + ((bounds.north - lat) / spanLat) * box.h;
+
+    ctx.beginPath();
+    ctx.moveTo(box.x, y);
+    ctx.lineTo(box.x + box.w, y);
+    ctx.stroke();
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(formatDegrees(lat, 'lat'), box.x + 6, y + 4);
+  }
+
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function formatDegrees(value, axis) {
+  const text = Math.abs(value) < 1e-9 ? '0' : value.toFixed(3).replace(/\.?0+$/, '');
+  return axis === 'lon' ? `${text}°BT` : `${text}°LS`;
+}
+
+/**
+ * Legenda peta di pojok kiri atas area peta.
+ *
+ * Isinya mengulang simbol yang benar-benar ada di style: garis kontur tebal
+ * (kontur indeks), garis kontur biasa, dan batas kabupaten. Legenda yang tidak
+ * cocok dengan yang digambar membuat pembaca salah menafsirkan peta.
+ */
+function drawLegend(ctx, x, y) {
+  const items = [
+    { color: '#8c510a', dash: [], width: 2.4, label: 'Kontur indeks (tebal)' },
+    { color: '#8c510a', dash: [], width: 1, label: 'Garis kontur' },
+    { color: '#2563eb', dash: [5, 3], width: 1.5, label: 'Batas kabupaten' },
+  ];
+
+  ctx.save();
+  setFont(ctx, 12, '700');
+  const width = 176;
+  const height = 24 + items.length * 17;
+  const radius = 8;
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.strokeStyle = INK.rule;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(x, y, width, height, radius);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = INK.title;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('Legenda', x + 12, y + 8);
+
+  setFont(ctx, 11, '400');
+  items.forEach((item, index) => {
+    const rowY = y + 28 + index * 17;
+
+    ctx.strokeStyle = item.color;
+    ctx.lineWidth = item.width;
+    ctx.setLineDash(item.dash);
+    ctx.beginPath();
+    ctx.moveTo(x + 12, rowY + 5);
+    ctx.lineTo(x + 40, rowY + 5);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = INK.body;
+    ctx.fillText(item.label, x + 48, rowY);
+  });
+
+  ctx.restore();
+}
+
+/**
+ * Histogram elevasi.
+ *
+ * Data elevasi harus datang dari luar. Dulu modul ini membuat angka acak
+ * supaya kotak histogram selalu terisi, dan angka acak itu ikut tercetak ke
+ * bahan ajar seolah-olah data elevasi sungguhan. Sekarang tanpa data asli,
+ * kotaknya diisi keterangan apa adanya, bukan grafik palsu.
+ *
+ * @param {{min:number,max:number,counts:number[],binSize:number}|null} stats
+ */
+function drawHistogram(ctx, x, y, w, h, stats) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+  ctx.strokeStyle = INK.rule;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 8);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = INK.title;
+  setFont(ctx, 12, '700');
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('Histogram Elevasi', x + 12, y + 8);
+
+  if (!stats || !stats.counts?.length) {
+    setFont(ctx, 11, '400');
+    ctx.fillStyle = INK.muted;
+    ctx.fillText('Data elevasi tidak tersedia pada paket ini.', x + 12, y + 30);
+    ctx.restore();
+    return;
+  }
+
+  const max = Math.max(...stats.counts);
+  const plotH = h - 46;
+  const barW = (w - 24) / stats.counts.length;
+
+  ctx.fillStyle = INK.accent;
+  stats.counts.forEach((count, index) => {
+    const barH = max > 0 ? (count / max) * plotH : 0;
+    ctx.fillRect(x + 12 + index * barW, y + 26 + plotH - barH, barW - 1, barH);
+  });
+
+  setFont(ctx, 10, '400');
+  ctx.fillStyle = INK.muted;
+  ctx.fillText(`${Math.round(stats.min)} m`, x + 12, y + h - 16);
+  ctx.textAlign = 'right';
+  ctx.fillText(`${Math.round(stats.max)} m`, x + w - 12, y + h - 16);
+
+  ctx.restore();
+}
+
 function drawScaleBar(ctx, x, y, metersPerPx, maxWidthPx) {
   const meters = niceDistance(Infinity, maxWidthPx, metersPerPx);
   const widthPx = meters / metersPerPx;
@@ -389,28 +592,42 @@ function drawSection(ctx, heading, items, x, y, contentWidth) {
  *
  * @param {object} options
  * @param {HTMLCanvasElement|null} options.mapCanvas  Snapshot peta. Null berarti
- *  _area peta tidak bisa dibaca (lihat_BLOCKED_ di bawah) dan hanya bahan ajar
+ *  area peta tidak bisa dibaca (lihat captureMapCanvas di bawah) dan hanya bahan ajar
  *   yang dicetak.
  * @param {number} options.latitude
+ * @param {number} options.longitude
  * @param {number} options.zoom
  * @param {number} options.bearing
  * @param {string} options.title
  * @param {string} options.subtitle
  * @param {boolean} options.areaBlocked  True bila snapshot peta terhalang
  *   kebijakan CORS browser.
+ * @param {object} options.components  Pilihan komponen dari dialog "Komponen
+ *   Peta Offline". Key yang tidak disebut memakai DEFAULT_COMPONENTS.
+ * @param {object|null} options.elevation  Statistik elevasi nyata untuk
+ *   histogram: { min, max, counts }. Null berarti kotak histogram hanya
+ *   menampilkan keterangan bahwa data tidak tersedia.
+ * @param {{west:number,east:number,south:number,north:number}|null} options.bounds
+ *   Batas geografis yang persis tertangkap di kotak peta. Tanpa ini grid
+ *   koordinat dilewati karena posisinya tidak bisa ditentukan secara jujur.
  * @returns {Promise<Blob>}
  */
 export async function buildMapPng({
   mapCanvas = null,
   latitude = 0,
+  longitude = 0,
   zoom = 10,
   bearing = 0,
   title = 'Peta Kontur Sulawesi',
   subtitle = '',
   areaBlocked = false,
+  components = {},
+  elevation = null,
+  bounds = null,
 } = {}) {
   const width = 1240;
   const scale = 2;
+  const picked = { ...DEFAULT_COMPONENTS, ...components };
 
   const probe = document.createElement('canvas').getContext('2d');
   setFont(probe, 15, '400');
@@ -494,11 +711,29 @@ export async function buildMapPng({
     );
   }
 
+  // Grid koordinat digambar paling awal di atas peta: garisnya yang jadi latar,
+  // sementara legenda, histogram, kompas, dan skala menumpuk di atasnya.
+  if (picked.grid && bounds) {
+    drawGraticule(ctx, { x: mapX, y: mapY, w: mapWidth, h: mapHeight }, bounds);
+  }
+
+  if (picked.legend) {
+    drawLegend(ctx, mapX + 16, mapY + 16);
+  }
+
+  if (picked.histogram) {
+    drawHistogram(ctx, mapX + mapWidth - 236, mapY + 16, 220, 150, elevation);
+  }
+
   // Kompas di pojok kanan atas area peta
-  drawCompass(ctx, width - MARGIN - 56, mapY + 56, 34, bearing);
+  if (picked.northArrow) {
+    drawCompass(ctx, width - MARGIN - 56, mapY + 56, 34, bearing);
+  }
 
   // Skala di pojok kiri bawah area peta
-  drawScaleBar(ctx, mapX + 24, mapY + mapHeight - 44, metersPerPixel(latitude, zoom), 220);
+  if (picked.scaleBar) {
+    drawScaleBar(ctx, mapX + 24, mapY + mapHeight - 44, metersPerPixel(latitude, zoom), 220);
+  }
 
   ctx.restore();
 
@@ -665,25 +900,47 @@ export function useMapPngExport() {
     isExporting.value = true;
     exportError.value = null;
 
+    // `filename` bukan opsi gambar, jadi dipisah sebelum diteruskan.
+    const { filename, ...pngOptions } = overrides;
+
     try {
       const center = map?.getCenter?.() ?? { lat: 0, lng: 0 };
       const zoom = map?.getZoom?.() ?? 10;
       const { canvas, blocked } = await captureMapCanvas(map);
 
+      // Batas yang benar-benar tertangkap diambil dari peta, bukan dihitung ulang
+      // dari pusat dan zoom: snapshot dipotong di tengah supaya memenuhi kotak
+      // cetak, jadi hanya peta yang tahu wilayah yang benar-benar terlihat.
+      let bounds = null;
+
+      try {
+        const raw = map?.getBounds?.();
+        if (raw) {
+          const [west, south, east, north] = raw.toArray
+            ? raw.toArray()
+            : [raw.getWest(), raw.getSouth(), raw.getEast(), raw.getNorth()];
+          bounds = { west, south, east, north };
+        }
+      } catch {
+        bounds = null;
+      }
+
       const blob = await buildMapPng({
         mapCanvas: canvas,
         latitude: center.lat,
+        longitude: center.lng,
         zoom,
         bearing: map?.getBearing?.() ?? 0,
         subtitle:
           `Koordinat tengah ${center.lng.toFixed(4)}, ${center.lat.toFixed(4)} | Zoom ${zoom.toFixed(1)}`
           + ` | Skala 1:${scaleDenominator(center.lat, zoom).toLocaleString('id-ID')}`,
         areaBlocked: blocked,
-        ...overrides,
+        bounds,
+        ...pngOptions,
       });
 
       const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
-      triggerPngDownload(blob, `peta-kontur-${stamp}.png`);
+      triggerPngDownload(blob, filename ?? `peta-kontur-${stamp}.png`);
 
       return { ok: true, blocked };
     } catch (error) {
