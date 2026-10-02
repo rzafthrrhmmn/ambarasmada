@@ -6,6 +6,31 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Palet "hutan" resmi ekosistem digital ambalan. Semua komponen, terutama
+       sidebar, memakai token ini supaya warna tidak lagi ditulis ulang sebagai
+       hex mentah di setiap template. */
+    --color-hutan-950: #16241a;
+    --color-hutan-900: #1e2e1e;
+    --color-hutan-800: #263d26;
+    --color-hutan-700: #2d4a2d;
+    --color-hutan-600: #335233;
+
+    --color-daun-600: #578029;
+    --color-daun-500: #6f9435;
+    --color-daun-400: #a7b92b;
+
+    --color-emas-500: #d9bd18;
+    --color-emas-400: #edd330;
+
+    --color-krem-100: #f0ead8;
+    --color-krem-300: #d4dc9a;
+
+    --color-lumut-500: #6f8055;
+    --color-lumut-400: #8fa06a;
+
+    --radius-nav: 0.875rem;
+    --shadow-nav: 0 18px 44px -28px rgb(0 0 0 / 0.75);
 }
 
 @keyframes fadeInUp {
@@ -64,10 +89,216 @@
     50% { transform: translateY(-4px); }
 }
 
+@keyframes navBadgePop {
+    from { opacity: 0; transform: scale(0.6); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes sidebarRailIn {
+    from { opacity: 0; transform: translateX(-12px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
 .animate-spin {
     animation: spin 0.8s linear infinite;
 }
 
 .animate-bounce {
     animation: bounce 1.4s ease-in-out infinite;
+}
+
+.animate-nav-badge {
+    animation: navBadgePop 0.25s ease-out both;
+}
+
+.animate-sidebar-rail {
+    animation: sidebarRailIn 0.3s ease-out both;
+}
+
+/*
+| Sidebar
+|--------------------------------------------------------------------------
+| Sidebar desktop, drawer mobile, dan bottom nav berbagi kelas yang sama.
+| active state memakai modifier `.is-active` supaya penanda warna, ikon, dan
+| badge всегда berubah bersamaan, bukan dihitung ulang per template.
+*/
+@layer components {
+    .sidebar-shell {
+        @apply flex min-h-0 flex-1 flex-col gap-4;
+    }
+
+    .sidebar-scroll {
+        @apply min-h-0 flex-1 overflow-y-auto overscroll-contain;
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in oklab, var(--color-daun-500) 60%, transparent) transparent;
+    }
+
+    .sidebar-scroll::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .sidebar-scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .sidebar-scroll::-webkit-scrollbar-thumb {
+        border-radius: 9999px;
+        background-color: color-mix(in oklab, var(--color-daun-500) 45%, transparent);
+    }
+
+    .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+        background-color: var(--color-daun-500);
+    }
+
+    .sidebar-profile {
+        @apply flex items-center gap-3 rounded-nav border border-daun-500/40 bg-hutan-900 p-3;
+    }
+
+    .sidebar-avatar {
+        @apply flex shrink-0 items-center justify-center rounded-full border-2 border-daun-400 bg-hutan-700 font-bold text-emas-400;
+    }
+
+    .sidebar-search {
+        @apply flex items-center gap-2 rounded-nav border border-daun-500/30 bg-hutan-900/70 px-3 py-2 text-lumut-400 transition-colors duration-150 focus-within:border-daun-400/70 focus-within:bg-hutan-950/60 focus-within:text-daun-400;
+    }
+
+    .sidebar-search-input {
+        @apply w-full min-w-0 bg-transparent p-0 text-sm font-semibold text-krem-100 placeholder:font-medium placeholder:text-lumut-400/90 focus:outline-none;
+    }
+
+    /* Tombol hapus bawaan browser disembunyikan karena sudah ada tombol sendiri. */
+    .sidebar-search-input::-webkit-search-cancel-button {
+        appearance: none;
+    }
+
+    .nav-section {
+        @apply mb-1 last:mb-0;
+    }
+
+    .nav-section-label {
+        @apply px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-lumut-400/75;
+    }
+
+    .nav-item {
+        @apply relative flex items-center gap-3 rounded-nav px-3 py-2.5 text-sm font-semibold text-krem-300 transition-colors duration-150 hover:bg-hutan-600/70 hover:text-krem-100;
+    }
+
+    .nav-item.is-active {
+        @apply bg-gradient-to-r from-daun-500/50 via-daun-500/20 to-transparent text-emas-400 hover:bg-gradient-to-r hover:from-daun-500/50 hover:via-daun-500/20 hover:to-transparent hover:text-emas-400;
+    }
+
+    .nav-rail {
+        @apply pointer-events-none absolute inset-y-2 left-0 w-1 rounded-full bg-transparent transition-colors duration-150;
+    }
+
+    .nav-item:hover .nav-rail {
+        @apply bg-daun-500/70;
+    }
+
+    .nav-item.is-active .nav-rail {
+        @apply bg-emas-400;
+    }
+
+    .nav-icon {
+        @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-transparent bg-hutan-600/60 text-lumut-400 transition-colors duration-150;
+    }
+
+    .nav-item:hover .nav-icon {
+        @apply border-daun-500/40 text-daun-400;
+    }
+
+    .nav-item.is-active .nav-icon {
+        @apply border-emas-400/40 bg-hutan-800/70 text-emas-400;
+    }
+
+    .nav-label {
+        @apply min-w-0 flex-1 truncate;
+    }
+
+    .nav-badge {
+        @apply ml-auto inline-flex min-w-[1.5rem] shrink-0 items-center justify-center rounded-full bg-emas-400 px-1.5 py-0.5 text-[10px] font-bold leading-none text-hutan-800;
+    }
+
+    .nav-rail-item {
+        @apply relative flex items-center justify-center rounded-lg py-2.5 text-lumut-400 transition-colors duration-150 hover:bg-hutan-600/70 hover:text-daun-400;
+    }
+
+    .nav-rail-item.is-active {
+        @apply bg-daun-500/25 text-emas-400 hover:bg-daun-500/25 hover:text-emas-400;
+    }
+
+    .nav-rail-separator {
+        @apply mx-auto my-2 h-px w-6 bg-krem-100/10;
+    }
+
+    .nav-rail-dot {
+        @apply absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-emas-400;
+    }
+
+    .nav-rail-badge {
+        @apply absolute right-0.5 top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-emas-400 px-1 text-[9px] font-bold leading-none text-hutan-800;
+    }
+
+    .nav-clear {
+        @apply shrink-0 rounded p-0.5 text-lumut-400 transition hover:text-emas-400;
+    }
+
+    .nav-kbd {
+        @apply hidden shrink-0 rounded border border-daun-500/30 px-1.5 py-0.5 text-[10px] font-bold leading-none text-lumut-400 sm:inline-block;
+    }
+
+    .nav-count {
+        @apply mt-1.5 px-3 text-[10px] font-semibold text-lumut-400/80;
+    }
+
+    .nav-empty {
+        @apply rounded-nav border border-dashed border-daun-500/30 px-3 py-4 text-center text-xs font-medium text-lumut-400;
+    }
+
+    .sidebar-footer-card {
+        @apply rounded-nav border border-daun-400/30 bg-gradient-to-br from-hutan-600 to-hutan-700 p-4 text-xs leading-5 text-krem-300;
+    }
+
+    .sidebar-footer-card--warning {
+        @apply border-emas-400/45 bg-gradient-to-br from-emas-500/20 to-hutan-700;
+    }
+
+    .sidebar-footer-cta {
+        @apply mt-3 inline-flex items-center gap-1.5 rounded-lg bg-emas-400 px-3 py-1.5 text-[11px] font-bold text-hutan-800 transition hover:bg-emas-500;
+    }
+
+    .sidebar-footer-cta--round {
+        @apply mx-auto mt-0 h-9 w-9 justify-center rounded-full p-0;
+    }
+
+    .sidebar-toggle {
+        @apply flex w-full items-center justify-center gap-2 rounded-nav border border-daun-500/30 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-lumut-400 transition hover:border-daun-400/60 hover:text-daun-400;
+    }
+
+    .bottom-nav-item {
+        @apply relative flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-bold text-lumut-400 transition-colors duration-150 hover:text-krem-300;
+    }
+
+    .bottom-nav-item.is-active {
+        @apply text-emas-400;
+    }
+
+    .bottom-nav-indicator {
+        @apply absolute inset-x-3 top-0 h-0.5 rounded-full bg-transparent transition-colors duration-150;
+    }
+
+    .bottom-nav-item.is-active .bottom-nav-indicator {
+        @apply bg-emas-400;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
