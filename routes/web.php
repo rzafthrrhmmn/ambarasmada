@@ -295,6 +295,7 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
     Route::post('/reminders/{reminder}/sent', [ReminderController::class, 'markAsSent'])->name('reminders.sent')->middleware('throttle:10,1');
 
     // Reports
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/finance/pdf', [ReportController::class, 'financePdf'])->name('reports.finance.pdf');
     Route::get('/reports/members/csv', [ReportController::class, 'membersCsv'])->name('reports.members.csv');
     Route::get('/reports/attendance/pdf', [ReportController::class, 'attendancePdf'])->name('reports.attendance.pdf');
@@ -326,6 +327,7 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::get('/health/safety/records', [HealthSafetyController::class, 'healthRecords'])->name('health.records.index');
         Route::post('/health/safety/records', [HealthSafetyController::class, 'storeHealthRecord'])->name('health.records.store');
         Route::patch('/health/safety/records/{record}', [HealthSafetyController::class, 'updateHealthRecord'])->name('health.records.update');
+        Route::delete('/health/safety/records/{record}', [HealthSafetyController::class, 'destroyHealthRecord'])->name('health.records.destroy')->middleware('throttle:10,1');
         Route::get('/health/safety/checks', [HealthSafetyController::class, 'safetyChecks'])->name('health.checks.index');
         Route::post('/health/safety/checks', [HealthSafetyController::class, 'storeSafetyCheck'])->name('health.checks.store');
     });

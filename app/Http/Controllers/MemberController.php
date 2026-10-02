@@ -228,7 +228,12 @@ class MemberController extends Controller
     public function angkatanIndex(Request $request): Response
     {
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
-        $angkatan = Angkatan::orderBy('angkatan')->paginate(20);
+
+        // withCount wajib ada karena resources/js/Pages/Members/AngkatanIndex.vue
+        // menampilkan item.members_count. Tanpa itu nilainya undefined dan
+        // setiap baris tampil "Anggota: 0" walaupun angkatan itu jelas berisi
+        // anggota.
+        $angkatan = Angkatan::withCount('members')->orderBy('angkatan')->paginate(20);
 
         return Inertia::render('Members/AngkatanIndex', ['angkatan' => $angkatan]);
     }

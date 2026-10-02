@@ -5,13 +5,34 @@ namespace App\Http\Controllers;
 use App\Models\AttendanceSession;
 use App\Models\Finance;
 use App\Models\Member;
+use App\Support\Roles;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
+    /**
+     * Halaman indeks laporan.
+     *
+     * Rute ini belum ada sebelumnya, padahal Reports/Index.vue sudah dibuat dan
+     * sidebar menautkan ke /reports. Akibatnya menu Laporan selalu berakhir di
+     * 404, keempat berkas unduhnya sendiri berfungsi.
+     *
+     * Halaman tidak mengirim data apa pun: yang ditampilkan hanyalah daftar
+     * tautan unduh, dan tiap tautan sudah dijaga controller masing-masing.
+     * Karena itu method ini cukup mengembalikan halaman kosong.
+     */
+    public function index(Request $request): InertiaResponse
+    {
+        Roles::guardManagement($request->user());
+
+        return Inertia::render('Reports/Index');
+    }
+
     public function financePdf(Request $request): Response
     {
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);

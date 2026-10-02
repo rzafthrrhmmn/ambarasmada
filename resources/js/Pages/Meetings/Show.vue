@@ -26,9 +26,9 @@
         <div v-for="agenda in meeting.agendas" :key="agenda.id" class="rounded-lg bg-[#263D26] p-3">
           <p class="text-sm font-bold text-[#f0ead8]">{{ agenda.urutan }}. {{ agenda.judul }}</p>
           <p v-if="agenda.votes?.length" class="mt-1 text-[10px] text-[#8fa06a]">
-            <span class="text-[#A7B92B]">{{ ag.votes.filter(v => v.pilihan === 'Setuju').length }} Setuju</span> •
-            <span class="text-[#ef4419]">{{ ag.votes.filter(v => v.pilihan === 'Tidak Setuju').length }} Tolak</span> •
-            <span class="text-[#EDD330]">{{ ag.votes.filter(v => v.pilihan === 'Abstain').length }} Abstain</span>
+            <span class="text-[#A7B92B]">{{ agenda.votes.filter(v => v.pilihan === 'Setuju').length }} Setuju</span> •
+                <span class="text-[#ef4419]">{{ agenda.votes.filter(v => v.pilihan === 'Tidak Setuju').length }} Tolak</span> •
+                <span class="text-[#EDD330]">{{ agenda.votes.filter(v => v.pilihan === 'Abstain').length }} Abstain</span>
           </p>
         </div>
       </div>

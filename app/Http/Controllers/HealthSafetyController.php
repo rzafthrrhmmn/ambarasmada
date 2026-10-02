@@ -4,36 +4,79 @@ namespace App\Http\Controllers;
 
 use App\Models\Ambalan;
 use App\Models\HealthRecord;
+use App\Models\Member;
 use App\Models\SafetyCheck;
+use App\Support\Roles;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Inertia\Response;
 
+/**
+ * Rekam medis dan pemeriksaan keselamatan.
+ *
+ * Data rekam medis adalah data pribadi yang paling sensitif di aplikasi ini:
+ * riwayat penyakit, alergi, golongan darah, tinggi, dan berat. Karena itu
+ * cakupannya selalu dibatasi ke ambalan milik pemohon, dan ambigu diselesaikan
+ * oleh peran sehingga peran baru otomatis ikut sempit.
+ */
 class HealthSafetyController extends Controller
 {
-    public function healthRecords(Request $request)
+    /**
+     * Ambalan tempat data pastas belongs.
+     *
+     * Dipakai bersama oleh pembacaan dan penulisan supaya keduanya tidak bisa
+     * berbeda. Sebelumnya penulisan memakai ambalan anggota atau, bila tidak
+     * ada, ambalan pertama; pembacaan tidak memakai filter sama sekali, jadi
+     * satu ambalan bisa membaca rekam medis ambalan lain.
+     */
+    private function resolveAmbalanId(Request $request): ?int
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        return $request->user()?->member?->ambalan_id ?? Ambalan::first()?->id;
+    }
 
-        $query = HealthRecord::query()->with(['member', 'createdBy']);
+    public function healthRecords(Request $request): Response
+    {
+        Roles::guardManagement($request->user());
+
+        $ambalanId = $this->resolveAmbalanId($request);
+
+        $query = HealthRecord::query()
+            ->with(['member', 'createdBy'])
+            ->where('ambalan_id', $ambalanId);
 
         if ($request->filled('member_id')) {
-            $query->where('member_id', $request->member_id);
+            $query->where('member_id', $request->integer('member_id'));
         }
 
-        $records = $query->paginate(20);
+        $records = $query->latest()->paginate(20)->withQueryString();
 
         return inertia('HealthSafety/HealthRecords', [
             'records' => $records,
             'filters' => $request->only(['member_id']),
-            'user' => $request->user(),
+            // Dropdown "pilih anggota" pada halaman ini memakai daftar ini.
+            // Tanpa prop tersebut select-nya selalu kosong dan formulir simpan
+            // tidak mungkin terisi karena member_id wajib diisi.
+            'allMembers' => Member::where('ambalan_id', $ambalanId)
+                ->where('status_aktif', 'Aktif')
+                ->orderBy('nama_lengkap')
+                ->get(['id', 'nama_lengkap', 'nta', 'angkatan']),
         ]);
     }
 
     public function storeHealthRecord(Request $request)
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        Roles::guardManagement($request->user());
 
-        $request->validate([
-            'member_id' => 'required|exists:members,id',
+        $ambalanId = $this->resolveAmbalanId($request);
+
+        $data = $request->validate([
+            'member_id' => [
+                'required',
+                // Validasi keberadaan anggota harus yang di ambalan ini, bukan
+                // cukup ada di tabel members. Kalau tidak, formulir bisa
+                // menyimpan rekam medis untuk anggota ambalan lain.
+                Rule::exists('members', 'id')->where('ambalan_id', $ambalanId),
+            ],
             'riwayat_penyakit' => 'nullable|string',
             'alergi' => 'nullable|string',
             'darah' => 'nullable|string',
@@ -43,15 +86,15 @@ class HealthSafetyController extends Controller
         ]);
 
         HealthRecord::create([
-            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
-            'member_id' => $request->member_id,
+            'ambalan_id' => $ambalanId,
+            'member_id' => $data['member_id'],
             'created_by' => $request->user()->id,
-            'riwayat_penyakit' => $request->riwayat_penyakit,
-            'alergi' => $request->alergi,
-            'darah' => $request->darah,
-            'tinggi_badan' => $request->tinggi_badan,
-            'berat_badan' => $request->berat_badan,
-            'catatan_tambahan' => $request->catatan_tambahan,
+            'riwayat_penyakit' => $data['riwayat_penyakit'] ?? null,
+            'alergi' => $data['alergi'] ?? null,
+            'darah' => $data['darah'] ?? null,
+            'tinggi_badan' => $data['tinggi_badan'] ?? null,
+            'berat_badan' => $data['berat_badan'] ?? null,
+            'catatan_tambahan' => $data['catatan_tambahan'] ?? null,
         ]);
 
         return redirect()->back()->with('success', 'Health record saved successfully.');
@@ -59,40 +102,67 @@ class HealthSafetyController extends Controller
 
     public function updateHealthRecord(Request $request, HealthRecord $record)
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        Roles::guardManagement($request->user());
 
-        $record->update($request->only(['riwayat_penyakit', 'alergi', 'darah', 'tinggi_badan', 'berat_badan', 'catatan_tambahan']));
+        $this->guardSameAmbalan($request, $record->ambalan_id);
 
-        return redirect()->back()->with('success', 'Health record updated successfully.');
+        $record->update($request->validate([
+            'riwayat_penyakit' => 'nullable|string',
+            'alergi' => 'nullable|string',
+            'darah' => 'nullable|string',
+            'tinggi_badan' => 'nullable|string',
+            'berat_badan' => 'nullable|string',
+            'catatan_tambahan' => 'nullable|string',
+        ]));
     }
 
-    public function safetyChecks(Request $request)
+    /**
+     * Hapus rekam medis.
+     *
+     * Rute ini sebelumnya tidak ada, sementara HealthRecords.vue sudah memanggil
+     * router.delete() dari tombol Hapus. Akibatnya tombolnya selalu gagal
+     * dengan 404, bukan 403.
+     */
+    public function destroyHealthRecord(Request $request, HealthRecord $record)
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        Roles::guardManagement($request->user());
 
-        $query = SafetyCheck::query()->with(['event', 'createdBy']);
+        $this->guardSameAmbalan($request, $record->ambalan_id);
+
+        $record->delete();
+
+        return redirect()->back()->with('success', 'Health record deleted successfully.');
+    }
+
+    public function safetyChecks(Request $request): Response
+    {
+        Roles::guardManagement($request->user());
+
+        $query = SafetyCheck::query()
+            ->with(['event', 'createdBy'])
+            ->where('ambalan_id', $this->resolveAmbalanId($request));
 
         if ($request->filled('kategori')) {
-            $query->where('kategori', $request->kategori);
-        }
-        if ($request->filled('passed')) {
-            $query->where('passed', $request->passed);
+            $query->where('kategori', $request->string('kategori'));
         }
 
-        $checks = $query->paginate(20);
+        if ($request->filled('passed')) {
+            $query->where('passed', $request->boolean('passed'));
+        }
+
+        $checks = $query->latest()->paginate(20)->withQueryString();
 
         return inertia('HealthSafety/SafetyChecks', [
             'checks' => $checks,
             'filters' => $request->only(['kategori', 'passed']),
-            'user' => $request->user(),
         ]);
     }
 
     public function storeSafetyCheck(Request $request)
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        Roles::guardManagement($request->user());
 
-        $request->validate([
+        $data = $request->validate([
             'kategori' => 'required|string|max:255',
             'deskripsi' => 'required|string',
             'event_id' => 'nullable|exists:events,id',
@@ -100,14 +170,27 @@ class HealthSafetyController extends Controller
         ]);
 
         SafetyCheck::create([
-            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
-            'event_id' => $request->event_id,
+            'ambalan_id' => $this->resolveAmbalanId($request),
+            'event_id' => $data['event_id'] ?? null,
             'created_by' => $request->user()->id,
-            'kategori' => $request->kategori,
-            'deskripsi' => $request->deskripsi,
-            'passed' => $request->passed,
+            'kategori' => $data['kategori'],
+            'deskripsi' => $data['deskripsi'],
+            'passed' => $data['passed'],
         ]);
 
         return redirect()->back()->with('success', 'Safety check saved successfully.');
+    }
+
+    /**
+     * Tolak tindakan terhadap baris milik ambalan lain.
+     *
+     * Rute sudah dibatasi per peran, tetapi peran managing boleh ada di lebih
+     * dari satu ambalan. Tanpa pemeriksaan ini, pengelola ambalan B bisa
+     * mengubah atau menghapus rekam medis anggota ambalan A hanya dengan
+     * menebak id pada URL.
+     */
+    private function guardSameAmbalan(Request $request, mixed $ambalanId): void
+    {
+        abort_unless($ambalanId === $this->resolveAmbalanId($request), 403);
     }
 }

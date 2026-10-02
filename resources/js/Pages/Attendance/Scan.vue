@@ -595,8 +595,14 @@ function resetForNextScan() {
   scanResult.value = '';
 }
 function autoSubmit() {
-  if (!form.qr_token || !form.member_id) {
-    toast.warning('Token QR atau ID anggota tidak ditemukan.');
+  // Hanya token QR yang diperiksa. member_id tidak lagi menentukan apa pun di
+  // server: AttendanceController::checkIn memakai profil anggota milik pengguna
+  // yang login dan mengabaikan nilai yang dikirim klien. Meminta member_id di
+  // sini membuat pemindaian otomatis diam-diam gagal untuk akun yang belum
+  // punya baris member, padahal server sudah punya pesan kesalahan yang jelas
+  // untuk keadaan itu.
+  if (!form.qr_token) {
+    toast.warning('Token QR tidak ditemukan.');
     return;
   }
   queueOrSubmit({ stayOnPage: false });

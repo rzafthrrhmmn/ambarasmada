@@ -33,12 +33,24 @@ class FinanceController extends Controller
             ->whereHas('position', fn ($q) => $q->whereIn('code', ['juru_uang_putra', 'juru_uang_putri']))
             ->exists();
 
+        $canManage = in_array($user->role, ['Admin', 'Pembina']) || $isJuruUang;
+
+        // Cakupan data ditetapkan satu kali di depan, lalu dipakai ulang oleh
+        // daftar transaksi, grafik arus kas, dan angka kas.
+        //
+        // Condisinya dibalik dari sebelumnya. Dulu syarat penyempitan hanya
+        // cocok untuk Anggota dan Pengurus biasa, jadi peran lain otomatis
+        // menerima seluruh buku kas tanpa filter. SekarangBarr everyone yang
+        // bukan pengelola ikut dipersempit ke akun sendiri, termasuk peran yang
+        // belum dikenal: lebih baik gagal menutup daripada diam-diam membuka.
+        $ownMemberId = $canManage ? null : $user->member?->id;
+
         $query = Finance::query()
             ->with(['member', 'category', 'period', 'createdBy'])
             ->orderByDesc('tgl_transaksi');
 
-        if ($user->role === 'Anggota' || ! $isJuruUang && $user->role === 'Pengurus') {
-            $query->where('member_id', $user->member?->id);
+        if ($ownMemberId !== null) {
+            $query->where('member_id', $ownMemberId);
         }
 
         if ($request->string('jenis_transaksi')->isNotEmpty()) {
@@ -52,18 +64,32 @@ class FinanceController extends Controller
         $transactions = $query->paginate(20)->withQueryString();
         $categories = FinanceCategory::where('is_active', true)->orderBy('nama')->get();
         $periods = FinancePeriod::where('is_closed', false)->orderByDesc('starts_at')->get();
-        $members = Member::where('status_aktif', 'Aktif')->orderBy('nama_lengkap')->get();
-        $balance = Finance::where('status', 'Posted')->where('jenis_transaksi', 'Masuk')->sum('nominal')
-            - Finance::where('status', 'Posted')->where('jenis_transaksi', 'Keluar')->sum('nominal');
-        $income = Finance::where('status', 'Posted')->where('jenis_transaksi', 'Masuk')->sum('nominal');
-        $expense = Finance::where('status', 'Posted')->where('jenis_transaksi', 'Keluar')->sum('nominal');
 
-        $canManage = in_array($user->role, ['Admin', 'Pembina']) || $isJuruUang;
+        // Direktori anggota tidak pernah dibutuhkan anggota: nama lengkap
+        // seluruh angkatan adalah data pribadi yang tidak perlu dikirim ke
+        // peramban miliknya.
+        $members = $canManage
+            ? Member::where('status_aktif', 'Aktif')->orderBy('nama_lengkap')->get()
+            : collect();
+
+        // Angka kas memakai query sendiri, bukan turunan $query. Kalau
+        // diturunkan, filter dari URL ikut terbawa dan memilih status Draft
+        // akan membuat saldo bernilai nol padahal kasnya berstatus Posted.
+        $totals = Finance::query()->where('status', 'Posted');
+
+        if ($ownMemberId !== null) {
+            $totals->where('member_id', $ownMemberId);
+        }
+
+        $balance = (clone $totals)->where('jenis_transaksi', 'Masuk')->sum('nominal')
+            - (clone $totals)->where('jenis_transaksi', 'Keluar')->sum('nominal');
+        $income = (clone $totals)->where('jenis_transaksi', 'Masuk')->sum('nominal');
+        $expense = (clone $totals)->where('jenis_transaksi', 'Keluar')->sum('nominal');
 
         $cashFlowQuery = Finance::where('status', 'Posted')
             ->whereBetween('tgl_transaksi', [now()->subMonths(6)->startOfMonth(), now()->endOfMonth()]);
-        if ($user->role === 'Anggota' || ! $isJuruUang && $user->role === 'Pengurus') {
-            $cashFlowQuery->where('member_id', $user->member?->id);
+        if ($ownMemberId !== null) {
+            $cashFlowQuery->where('member_id', $ownMemberId);
         }
         $chartLabels = [];
         $chartIncome = [];

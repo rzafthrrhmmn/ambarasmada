@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Ambalan;
 use App\Models\Member;
 use App\Models\User;
+use App\Support\Roles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -12,9 +13,22 @@ use Inertia\Response;
 
 class RegistrationController extends Controller
 {
-    public function pendingUsers(): Response
+    public function pendingUsers(Request $request): Response
     {
-        $pendingUsers = User::with('member')
+        // Metode ini sebelumnya tidak punya pemeriksaan sendiri dan seluruhnya
+        // bergantung pada middleware `pembina`. Menyandarkan diri pada satu
+        // rute saja tidak cukup: begitu controller dipanggil dari konteks lain
+        // atau middleware berubah, daftar pendaftar yang belum disetujui akan
+        // terbuka tanpa cek sama sekali.
+        Roles::guardApprover($request->user());
+
+        // Bentuk array, bukan closure. User::member adalah HasOne, sehingga
+        // closure diterima sebagai objek relasi yang tidak punya only() dan
+        // akan melempar BadMethodCallException. Bentuk array adalah bentuk
+        // yang benar untuk membatasi kolom pada eager load.
+        // Pendaftar yang belum disetujui bukan anggota resmi, jadi tanggal
+        // lahir dan nomor teleponnya tidak perlu ikut terbawa.
+        $pendingUsers = User::with(['member' => ['id', 'user_id', 'nta', 'nta_username', 'nama_lengkap']])
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->paginate(20);

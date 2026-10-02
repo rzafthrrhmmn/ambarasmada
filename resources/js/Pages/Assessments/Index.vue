@@ -6,6 +6,14 @@
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Penilaian Anggota</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Nilai kehadiran, disiplin, keterampilan, dan kepemimpinan.</p>
       </div>
+      <button
+        v-if="canManage"
+        type="button"
+        @click="showCreate = true"
+        class="inline-flex items-center self-start rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white"
+      >
+        Tambah Penilaian
+      </button>
     </div>
 
     <div class="grid gap-4 mb-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -62,7 +70,7 @@ import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useAccess } from '@/Composables/useAccess.js';
 
-defineProps({ assessments: Object, members: Array });
+const props = defineProps({ assessments: Object, members: Array });
 
 const { can } = useAccess();
 
@@ -82,9 +90,13 @@ function reset() {
   showCreate.value = false;
   form.reset();
 }
+// Rata-rata dihitung dari props, bukan dari nama prop telanjang. defineProps
+// yang hasilnya tidak dipegang tidak membuat identifier baru di script setup,
+// sehingga memakai `assessments` di dalam computed akan ReferenceError begitu
+// komponen dirender.
 const averages = computed(() => {
-  if (!assessments.data?.length) return null;
-  const data = assessments.data;
+  const data = props.assessments?.data ?? [];
+  if (!data.length) return null;
   return {
     kehadiran: data.reduce((s, a) => s + (a.nilai_kehadiran || 0), 0) / data.length,
     disiplin: data.reduce((s, a) => s + (a.nilai_disiplin || 0), 0) / data.length,
