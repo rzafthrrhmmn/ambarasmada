@@ -72,9 +72,13 @@ import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 defineProps({ teams: Array, taskMembers: Array });
-const canManage = true;
+const { can } = useAccess();
+// Dulu selalu true sehingga tombol terbit muncul untuk semua orang, lalu
+// ditolak 403 saat dikirim.
+const canManage = computed(() => can('teams.manage'));
 const showCreate = ref(false);
 const showTaskModal = ref(false);
 const editingTeam = ref(null);

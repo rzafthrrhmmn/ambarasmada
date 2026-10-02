@@ -44,9 +44,13 @@ import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 defineProps({ galleries: Object });
-const canManage = true;
+const { can } = useAccess();
+// Dulu selalu true sehingga tombol terbit muncul untuk semua orang, lalu
+// ditolak 403 saat dikirim.
+const canManage = computed(() => can('content.gallery.upload'));
 const showCreate = ref(false);
 const filterKategori = ref('');
 const categories = ['Umum', 'Kegiatan', 'Latihan', 'Outbound', 'Jambore', 'Peringatan'];

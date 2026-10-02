@@ -8,7 +8,7 @@
       </div>
     </div>
 
-    <div class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
+    <div v-if="canManage" class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
       <p class="text-sm font-semibold text-[#EDD330]">Tambah Rekam Medis</p>
       <form @submit.prevent="addRecord" class="mt-3 grid gap-3 sm:grid-cols-3">
         <select v-model="form.member_id" required class="rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]">
@@ -26,11 +26,11 @@
       </form>
     </div>
 
-    <div class="mb-4 grid gap-3 sm:grid-cols-2">
+    <div v-if="canAccess" class="mb-4 grid gap-3 sm:grid-cols-2">
       <input v-model="filters.member_id" placeholder="Cari anggota..." class="rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]" />
     </div>
 
-    <div class="rounded-2xl border-2 border-[#A7B92B]/40 bg-[#335233] p-5 shadow-sm">
+    <div v-if="canAccess" class="rounded-2xl border-2 border-[#A7B92B]/40 bg-[#335233] p-5 shadow-sm">
       <h2 class="mb-4 font-semibold text-[#f0ead8]">Daftar Rekam Medis</h2>
       <div v-if="records.data.length" class="space-y-3">
         <div v-for="r in records.data" :key="r.id" class="rounded-xl border border-[#6F9435] p-4">
@@ -45,7 +45,7 @@
                 <p v-if="r.catatan_tambahan">📝 {{ r.catatan_tambahan }}</p>
               </div>
             </div>
-            <div class="flex gap-2">
+            <div v-if="canManage" class="flex gap-2">
               <button @click="editRecord(r)" class="rounded-lg border border-[#EDD330] px-3 py-1.5 text-xs font-semibold text-[#EDD330] hover:bg-[#EDD330]/10">Edit</button>
               <button @click="deleteRecord(r)" class="rounded-lg border border-[#ef4419]/50 px-3 py-1.5 text-xs font-semibold text-[#ef4419] hover:bg-[#ef4419]/10">Hapus</button>
             </div>
@@ -59,12 +59,21 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 defineProps({ records: Object, filters: Object, allMembers: Array });
+
+// Rute dan HealthSafetyController sama-sama memblokir peran di luar
+// Admin, Pembina, dan Pengurus. Kapabilitas dipisah agar daftar hanya-baca
+// memakai satu aturan dan formulir yang menulis memakai aturan lain, tanpa
+// menulis ulang daftar peran di halaman ini.
+const { can } = useAccess();
+const canAccess = computed(() => can('health_safety.access'));
+const canManage = computed(() => can('health_safety.manage'));
 
 const form = useForm({ member_id: '', riwayat_penyakit: '', alergi: '', darah: '', tinggi_badan: '', berat_badan: '', catatan_tambahan: '' });
 const editMode = ref(false);

@@ -9,6 +9,12 @@
       <button @click="markAllRead" class="rounded-lg border-2 border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/30 hover:text-[#EDD330]">Tandai Semua Dibaca</button>
     </div>
 
+    <!-- Notifikasi milik penerima, jadi daftar dan aksi per-notifikasi (Baca,
+         Hapus, Tandai Semua Dibaca) tidak diberi gate peran: NotificationController
+         menolak aksi atas notifikasi orang lain dengan 403 lewat pengecekan
+         user_id. Menyembunyikannya berdasarkan peran justru membuat anggota
+         tidak bisa membersihkan kotaknya sendiri. -->
+    <template v-if="canAccessNotifications">
     <div v-if="unreadCount > 0" class="mb-4 rounded-xl border-2 border-[#EDD330]/50 bg-[#EDD330]/10 px-4 py-3 text-sm text-[#EDD330]">
       Anda memiliki <strong>{{ unreadCount }}</strong> notifikasi belum dibaca.
     </div>
@@ -30,6 +36,7 @@
       <p v-if="!notifications.data.length" class="rounded-xl border-2 border-[#6F9435]/30 bg-[#335233] p-10 text-center text-sm text-[#8fa06a]">Belum ada notifikasi.</p>
     </div>
     <Pagination :links="notifications.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
+    </template>
   </AppLayout>
 </template>
 
@@ -39,10 +46,18 @@ import { useForm, usePage, router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 defineProps({ notifications: Object, unreadCount: Number });
 const page = usePage();
 const form = useForm({});
+
+/**
+ * Halaman ini untuk semua akun aktif, sesuai kelompok middleware
+ * auth+approved+verified+not-alumni yang menaungi /notifications.
+ */
+const { can } = useAccess();
+const canAccessNotifications = computed(() => can('notifications.access'));
 
 function markRead(notif) {
   form.patch(`/notifications/${notif.id}/read`, {

@@ -8,7 +8,11 @@
       </div>
     </div>
 
-    <div class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
+    <!-- Formulir dan tombol hapus hanya untuk pengelola izin. Rute /permissions
+         sudah dibatasi role:Admin, jadi capability ini bekerja sebagai pagar
+         kedua: kalau suatu saat rute dilonggarkan, tombol tetap tidak muncul
+         untuk akun yang tidak managing izin. -->
+    <div v-if="canManage" class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
       <p class="text-sm font-semibold text-[#EDD330]">Tambah Izin</p>
       <form @submit.prevent="addPermission" class="mt-3 grid gap-3 sm:grid-cols-3">
         <select v-model="newForm.user_id" required class="rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]">
@@ -20,7 +24,7 @@
       </form>
     </div>
 
-    <div class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
+    <div v-if="canManage" class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
       <p class="text-sm font-semibold text-[#EDD330]">Sync Izin Pengguna</p>
       <form @submit.prevent="syncPermissions" class="mt-3 grid gap-3 sm:grid-cols-3">
         <select v-model="syncForm.user_id" required class="rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]">
@@ -49,7 +53,7 @@
             <p class="text-sm font-semibold text-[#f0ead8]">{{ perm.user?.name || 'Tidak diketahui' }} <span class="text-xs text-[#8fa06a]">({{ perm.user?.role }})</span></p>
             <p class="mt-1 text-xs font-medium text-[#EDD330]">{{ perm.permission }}</p>
           </div>
-          <button @click="deletePermission(perm)" class="rounded-lg border border-[#ef4419]/50 px-3 py-1.5 text-xs font-semibold text-[#ef4419] hover:bg-[#ef4419]/10">Hapus</button>
+          <button v-if="canManage" @click="deletePermission(perm)" class="rounded-lg border border-[#ef4419]/50 px-3 py-1.5 text-xs font-semibold text-[#ef4419] hover:bg-[#ef4419]/10">Hapus</button>
         </div>
         <Pagination :links="permissions.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
       </div>
@@ -64,9 +68,17 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 const page = usePage();
 const allUsers = computed(() => page.props.users || []);
+
+/**
+ * Menambah, menyinkron, dan menghapus izin semuanyacuri perubahan hak akses
+ * orang lain, jadi satu capability dipakai untuk tiga aksi sekaligus.
+ */
+const { can } = useAccess();
+const canManage = computed(() => can('permissions.manage'));
 
 defineProps({
   permissions: Object,

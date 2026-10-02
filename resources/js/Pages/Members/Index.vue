@@ -7,12 +7,12 @@
         <p class="mt-1 text-sm text-[#8fa06a]">Kelola anggota, angkatan, dan role secara menyeluruh.</p>
       </div>
       <div class="flex gap-2">
-        <button v-if="isPembina" @click="showAngkatan = true" class="inline-flex items-center rounded-lg border border-[#EDD330] px-4 py-2 text-sm font-semibold text-[#EDD330] transition hover:bg-[#EDD330]/10">Kelola Angkatan</button>
+        <button v-if="canManageAngkatan" @click="showAngkatan = true" class="inline-flex items-center rounded-lg border border-[#EDD330] px-4 py-2 text-sm font-semibold text-[#EDD330] transition hover:bg-[#EDD330]/10">Kelola Angkatan</button>
         <button v-if="canManage" @click="showCreate = true" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6F9435]">+ Tambah anggota</button>
       </div>
     </div>
 
-    <div v-if="isPembina" class="mb-5 rounded-2xl border-2 border-[#EDD330]/40 bg-[#335233] p-4 shadow-sm border-[#EDD330]/40">
+    <div v-if="canBulkRole" class="mb-5 rounded-2xl border-2 border-[#EDD330]/40 bg-[#335233] p-4 shadow-sm border-[#EDD330]/40">
       <p class="text-sm font-semibold text-[#EDD330]">Ubah Role Massal</p>
       <p class="mt-1 text-xs text-[#8fa06a]">Ubah role seluruh anggota satu angkatan sekaligus.</p>
       <form @submit.prevent="applyBulkChange" class="mt-3 grid gap-3 sm:grid-cols-3">
@@ -372,6 +372,7 @@ import { router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 const props = defineProps({
   members: Object,
@@ -384,12 +385,16 @@ const props = defineProps({
   pengurus: Array,
 });
 const page = usePage();
-const user = page.props.auth?.user;
-const canManage = computed(() => {
-  const role = user?.role;
-  return role === 'Admin' || role === 'Pembina' || role === 'Pengurus';
-});
-const isPembina = computed(() => user?.role === 'Pembina');
+
+// `page.props.auth.user` pernah diambil sekali ke variabel biasa lalu dibungkus
+// computed. Nilai itu tidak pernah berubah, jadi hasil cek perannya tidak
+// mengikuti pembaruan props. useAccess membaca lewat computed sehingga reaktif.
+const { can, user, isPembina } = useAccess(page);
+const canManage = computed(() => can('members.manage'));
+const canBulkRole = computed(() => can('members.role.bulk_update'));
+// Rute angkatan memakai kelompok Admin, Pembina, dan Pengurus, jadi tombol
+// "Kelola Angkatan" tidak boleh dibatasi pada Pembina saja.
+const canManageAngkatan = computed(() => can('members.angkatan.manage'));
 
 const showCreate = ref(false);
 const showAngkatan = ref(false);

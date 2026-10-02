@@ -5,11 +5,11 @@
         <p class="text-sm font-medium text-[#EDD330]">Pelatihan</p>
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Modul Pelatihan</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Kelola modul pelatihan dan progres anggota.</p>
-      </div>
-      <button @click="showCreate = true" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6F9435]">+ Tambah Pelatihan</button>
+</div>
+      <button v-if="canManage" @click="showCreate = true" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6F9435]">+ Tambah Pelatihan</button>
     </div>
 
-    <div v-if="showCreate" class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
+    <div v-if="canManage && showCreate" class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
       <p class="text-sm font-semibold text-[#EDD330]">Modul Pelatihan Baru</p>
       <form @submit.prevent="createTraining" class="mt-3 grid gap-3 sm:grid-cols-3">
         <input v-model="form.judul" placeholder="Judul pelatihan" required class="rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]" />
@@ -57,7 +57,7 @@
                 <p class="mt-1 text-xs text-[#8fa06a]">{{ t.kategori }} • {{ t.status }} • {{ t.createdBy?.name || '-' }}</p>
                 <p v-if="t.tanggal" class="text-xs text-[#8fa06a]">{{ t.tanggal }}</p>
               </div>
-              <div class="flex gap-2">
+              <div v-if="canManage" class="flex gap-2">
                 <button @click="editTraining(t)" class="rounded-lg border border-[#EDD330] px-3 py-1.5 text-xs font-semibold text-[#EDD330] hover:bg-[#EDD330]/10">Edit</button>
                 <button @click="deleteTraining(t)" class="rounded-lg border border-[#ef4419]/50 px-3 py-1.5 text-xs font-semibold text-[#ef4419] hover:bg-[#ef4419]/10">Hapus</button>
               </div>
@@ -94,13 +94,22 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue';
-import { useForm, router, usePage } from '@inertiajs/vue3';
+import { computed, reactive, ref } from 'vue';
+import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 defineProps({ trainings: Object, filters: Object, user: Object });
+
+const { can } = useAccess();
+
+// Rute /trainings hanya dilayani untuk Admin dan Pembina, jadi kapabilitas ini
+// selalu ada bagi yang sampai ke halaman. Gate tetap dipasang pada setiap
+// tempat yang mengirim POST, PATCH, atau DELETE, supaya kendali tidak ikut
+// tampil ketika daftar kapabilitas berubah padahal server sudah menolak.
+const canManage = computed(() => can('trainings.manage'));
 
 const showCreate = ref(false);
 const form = useForm({ judul: '', kategori: '', konten: '', video_url: '', file_path: '', tanggal: '', status: 'Draft' });

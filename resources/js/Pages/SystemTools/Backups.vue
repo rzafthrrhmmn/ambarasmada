@@ -6,7 +6,7 @@
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Backup Database</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Kelola backup database dan riwayatnya.</p>
       </div>
-      <button @click="createBackupFn" :disabled="creating" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50">
+      <button v-if="canManageTools" @click="createBackupFn" :disabled="creating" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50">
         <span v-if="creating">Membuat...</span>
         <span v-else>+ Backup Sekarang</span>
       </button>
@@ -28,7 +28,10 @@
               </p>
               <p class="text-xs text-[#8fa06a]">{{ formatDate(log.created_at) }}</p>
             </div>
-            <a v-if="log.file_path" :href="`/storage/${log.file_path}`" target="_blank" class="rounded-lg border border-[#EDD330] px-3 py-1.5 text-xs font-semibold text-[#EDD330] hover:bg-[#EDD330]/10">Unduh</a>
+            <!-- Unduh dumping database hanya untuk pengelola sistem. Tautan ini menuju
+             berkas statis, bukan rute download, jadi gate di sini satu-satunya
+             penyaring sebelum berkas benar-benar terekspos. -->
+             <a v-if="canManageTools && log.file_path" :href="`/storage/${log.file_path}`" target="_blank" class="rounded-lg border border-[#EDD330] px-3 py-1.5 text-xs font-semibold text-[#EDD330] hover:bg-[#EDD330]/10">Unduh</a>
           </div>
         </div>
         <Pagination :links="logs.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
@@ -39,12 +42,20 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 defineProps({ logs: Object });
+
+/**
+ * Membuat backup, mengunduhnya, dan menghapus lognya adalah satu kelompok
+ * hak akses: semuanya menyangkut data internal sistem, bukan data keanggotaan.
+ */
+const { can } = useAccess();
+const canManageTools = computed(() => can('tools.manage'));
 
 const creating = ref(false);
 const message = ref('');

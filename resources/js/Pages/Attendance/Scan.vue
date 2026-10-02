@@ -112,7 +112,7 @@
           </select>
         </label>
         <input v-model="form.member_id" type="hidden" />
-        <button type="submit" :disabled="isSubmitting || !form.qr_token" class="rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+        <button v-if="canScan" type="submit" :disabled="isSubmitting || !form.qr_token" class="rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
           <span v-if="isSubmitting">Menyimpan...</span>
           <span v-else>Catat Kehadiran</span>
         </button>
@@ -145,6 +145,7 @@ import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import { Html5Qrcode } from 'html5-qrcode';
 import { enqueue } from '@/OfflineQueue.js';
 import { useNetworkStatus } from '@/Composables/useNetworkStatus.js';
+import { useAccess } from '@/Composables/useAccess.js';
 import {
   describeMediaError,
   hasCameraSupport,
@@ -157,6 +158,7 @@ const props = defineProps({
   session: Object,
   member: Object,
 });
+const { can } = useAccess();
 const toast = useToast();
 const scanning = ref(false);
 const cameraLoading = ref(false);
@@ -288,8 +290,19 @@ function watchPermission(name, target) {
   }
 }
 
+// Halaman ini sudah dibatasi role:Anggota di rute dan guardMember di
+// AttendanceController, sehingga nilai ini praktis selalu benar. Pintunya
+// tetap ditulis supaya tombol yang benar-benar mengirim presensi tidak lagi
+// bergantung pada anggapan "semua yang bisa membuka halaman pasti boleh
+// mencatat".
+const canScan = computed(() => can('attendance.self.scan'));
+
 const form = useForm({
   qr_token: '',
+  // Nilai ini sengaja tetap dikirim. Bentuk payload ini adalah kontrak antrean
+  // offline, dan AttendanceController menerimanya sebagai nullable integer lalu
+  // mengabaikannya: yang menentukan adalah profil anggota milik pengguna yang
+  // sedang login. Jadi field ini kini kosmetik, bukan pembuka celah.
   member_id: props.member?.id ?? '',
   keterangan: 'Hadir',
   nama: props.session?.nama ?? '',

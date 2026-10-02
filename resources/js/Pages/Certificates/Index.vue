@@ -48,15 +48,19 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 defineProps({ certificates: Object, members: Array });
-const canManage = true;
+const { can } = useAccess();
+// Dulu selalu true sehingga tombol terbit muncul untuk semua orang, lalu
+// ditolak 403 saat dikirim.
+const canManage = computed(() => can('certificates.manage'));
 const showCreate = ref(false);
 const form = useForm({ member_id: '', jenis: '', judul: '', deskripsi: '', tanggal_diterbitkan: '', file: null });
 

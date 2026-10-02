@@ -4,10 +4,10 @@
       <div>
         <p class="text-sm font-medium text-[#EDD330]">Syarat Kecakapan Umum</p>
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Digitalisasi SKU / TKU</h1>
-        <p v-if="nonAnggota" class="mt-1 text-sm text-[#8fa06a]">{{ canApprove ? 'Kelola poin SKU dan TKK, serta verifikasi pengajuan anggota.' : 'Lihat pengajuan dan statistik SKU.' }}</p>
+        <p v-if="!can('sku.submit')" class="mt-1 text-sm text-[#8fa06a]">{{ can('sku.review') ? 'Kelola poin SKU dan TKK, serta verifikasi pengajuan anggota.' : 'Lihat pengajuan dan statistik SKU.' }}</p>
         <p v-else class="mt-1 text-sm text-[#8fa06a]">Pilih poin yang sudah diselesaikan, lalu kirim dokumentasi untuk diverifikasi.</p>
       </div>
-      <button v-if="$page.props.auth?.user?.role === 'Anggota' && !completed" type="button" @click="openSubmission()" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Ajukan SKU</button>
+      <button v-if="can('sku.submit') && !completed" type="button" @click="openSubmission()" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Ajukan SKU</button>
     </div>
 
     <div v-if="progress" class="mb-6 rounded-2xl border border-[#6F9435]/50 bg-[#335233] p-5">
@@ -39,8 +39,8 @@
               <span v-if="item.status === 'Pending'" class="rounded-full bg-[#EDD330]/20 px-2.5 py-1 text-xs font-medium text-[#EDD330]">Pending</span>
               <span v-else-if="item.status === 'Approved'" class="rounded-full bg-[#A7B92B]/20 px-2.5 py-1 text-xs font-medium text-[#A7B92B]">Disetujui</span>
               <span v-else class="rounded-full bg-[#ef4419]/20 px-2.5 py-1 text-xs font-medium text-[#ef4419]">Ditolak</span>
-              <template v-if="item.status === 'Pending' && canApprove"><button type="button" @click="decision(item, 'approve')" class="rounded-lg bg-[#A7B92B] px-3 py-1.5 text-xs font-semibold text-white">Setujui</button><button type="button" @click="rejectId = item.id; rejectCatatan = ''; showReject = true" class="rounded-lg border border-[#ef4419]/50 px-3 py-1.5 text-xs font-semibold text-[#ef4419]">Tolak</button></template>
-              <button v-if="item.status === 'Pending' && $page.props.auth?.user?.role === 'Anggota'" type="button" @click="router.post(`/sku/${item.id}/cancel`)" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Batalkan</button>
+              <template v-if="item.status === 'Pending' && can('sku.review')"><button type="button" @click="decision(item, 'approve')" class="rounded-lg bg-[#A7B92B] px-3 py-1.5 text-xs font-semibold text-white">Setujui</button><button type="button" @click="rejectId = item.id; rejectCatatan = ''; showReject = true" class="rounded-lg border border-[#ef4419]/50 px-3 py-1.5 text-xs font-semibold text-[#ef4419]">Tolak</button></template>
+              <button v-if="item.status === 'Pending' && can('sku.submit')" type="button" @click="router.post(`/sku/${item.id}/cancel`)" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Batalkan</button>
             </div>
           </div>
           <p v-if="!submissions.data.length" class="text-center text-xs text-[#8fa06a]">Belum ada pengajuan.</p>
@@ -79,7 +79,7 @@
       <div class="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
           <h2 class="font-semibold text-[#f0ead8]">{{ sectionTitle }}</h2>
-          <template v-if="nonAnggota">
+          <template v-if="!can('sku.submit')">
             <select v-model="filterTingkatan" @change="onFilterChange" class="mt-2 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] sm:w-auto">
               <option value="">Semua Tingkatan</option>
               <option value="Bantara">Bantara</option>
@@ -87,7 +87,7 @@
             </select>
           </template>
         </div>
-        <button v-if="isEditable()" type="button" @click="openEdit(null)" class="inline-flex items-center rounded-lg bg-[#EDD330] px-4 py-2 text-xs font-bold text-[#263D26] hover:bg-white">Kelola Poin SKU</button>
+        <button v-if="can('sku.point.manage')" type="button" @click="openEdit(null)" class="inline-flex items-center rounded-lg bg-[#EDD330] px-4 py-2 text-xs font-bold text-[#263D26] hover:bg-white">Kelola Poin SKU</button>
       </div>
 
       <template v-for="(level, levelName) in skuPointsByLevel" :key="levelName">
@@ -100,7 +100,7 @@
               </span>
               <div class="min-w-0 flex-1">
                 <p class="text-sm font-medium text-[#f0ead8]">{{ point.nomor_poin }}. {{ point.deskripsi_poin }}</p>
-                <p v-if="nonAnggota && point.aggregate" class="mt-1 flex flex-wrap gap-1">
+                 <p v-if="!can('sku.submit') && point.aggregate" class="mt-1 flex flex-wrap gap-1">
                   <span class="rounded-full bg-[#A7B92B]/20 px-2 py-0.5 text-[10px] font-bold text-[#A7B92B]">{{ point.aggregate.Approved || 0 }} disetujui</span>
                   <span class="rounded-full bg-[#EDD330]/20 px-2 py-0.5 text-[10px] font-bold text-[#EDD330]">{{ point.aggregate.Pending || 0 }} pending</span>
                   <span v-if="point.aggregate.Rejected" class="rounded-full bg-[#ef4419]/20 px-2 py-0.5 text-[10px] font-bold text-[#ef4419]">{{ point.aggregate.Rejected }} ditolak</span>
@@ -109,12 +109,12 @@
                 <p v-else-if="point.status === 'Rejected'" class="mt-1 text-[10px] text-[#ef4419]">Pengajuan ditolak. Perbaiki bukti lalu ajukan ulang.</p>
               </div>
               <template v-if="point.status === 'Approved'">
-                <span v-if="isEditable(point)" class="shrink-0 rounded-lg bg-[#EDD330] px-3 py-1.5 text-[10px] font-bold text-[#263D26] hover:bg-white cursor-pointer" @click.stop="openEdit(point)">Edit</span>
+                <span v-if="can('sku.point.manage')" class="shrink-0 rounded-lg bg-[#EDD330] px-3 py-1.5 text-[10px] font-bold text-[#263D26] hover:bg-white cursor-pointer" @click.stop="openEdit(point)">Edit</span>
               </template>
               <template v-else>
-                <span v-if="isEditable(point)" class="shrink-0 rounded-lg border border-[#EDD330]/50 px-3 py-1.5 text-[10px] font-bold text-[#EDD330] hover:bg-[#EDD330]/20 cursor-pointer" @click.stop="openEdit(point)">Edit</span>
+                <span v-if="can('sku.point.manage')" class="shrink-0 rounded-lg border border-[#EDD330]/50 px-3 py-1.5 text-[10px] font-bold text-[#EDD330] hover:bg-[#EDD330]/20 cursor-pointer" @click.stop="openEdit(point)">Edit</span>
               </template>
-              <template v-if="$page.props.auth?.user?.role === 'Anggota'">
+              <template v-if="can('sku.submit')">
                 <span v-if="point.status === 'Approved'" class="shrink-0 rounded-full bg-[#A7B92B]/20 px-2 py-0.5 text-[10px] font-bold text-[#A7B92B]">Disetujui</span>
                 <span v-else-if="point.status === 'Pending'" class="shrink-0 rounded-full bg-[#EDD330]/20 px-2 py-0.5 text-[10px] font-bold text-[#EDD330]">Pending</span>
                 <button v-else-if="isSubmissionAvailable(point)" type="button" @click.stop="openSubmission(point)" class="shrink-0 rounded-lg bg-[#A7B92B] px-3 py-1.5 text-[10px] font-bold text-[#263D26] hover:bg-[#EDD330]">Ajukan</button>
@@ -139,7 +139,7 @@
       <div v-if="tkkPointsWithStatus.length" class="mt-4 border-t border-[#6F9435]/30 pt-4">
         <div class="mb-3 flex items-center justify-between">
           <h3 class="text-sm font-bold text-[#EDD330]">TKK Wajib Penegak</h3>
-          <button v-if="canApprove" type="button" @click="openTkkEdit(null)" class="inline-flex items-center rounded-lg bg-[#EDD330] px-3 py-1.5 text-xs font-bold text-[#263D26] hover:bg-white">Kelola Poin TKK</button>
+          <button v-if="can('sku.review')" type="button" @click="openTkkEdit(null)" class="inline-flex items-center rounded-lg bg-[#EDD330] px-3 py-1.5 text-xs font-bold text-[#263D26] hover:bg-white">Kelola Poin TKK</button>
         </div>
         <div class="space-y-2">
           <div v-for="tkk in tkkPointsWithStatus" :key="tkk.id" class="flex items-center gap-3 rounded-xl border border-[#6F9435]/30 bg-[#263D26] p-3">
@@ -149,7 +149,7 @@
             <div class="min-w-0 flex-1">
               <p class="text-sm font-medium text-[#f0ead8]">{{ tkk.nama }}</p>
               <p v-if="tkk.deskripsi" class="text-xs text-[#8fa06a]">{{ tkk.deskripsi }}</p>
-              <template v-if="nonAnggota && tkk.aggregate">
+              <template v-if="!can('sku.submit') && tkk.aggregate">
                 <div class="mt-1 flex flex-wrap gap-1">
                   <span class="rounded-full bg-[#A7B92B]/20 px-2 py-0.5 text-[10px] font-bold text-[#A7B92B]">{{ tkk.aggregate.Approved || 0 }} disetujui</span>
                   <span class="rounded-full bg-[#EDD330]/20 px-2 py-0.5 text-[10px] font-bold text-[#EDD330]">{{ tkk.aggregate.Pending || 0 }} pending</span>
@@ -157,7 +157,7 @@
                 </div>
               </template>
             </div>
-            <template v-if="$page.props.auth?.user?.role === 'Anggota'">
+            <template v-if="can('sku.submit')">
               <span v-if="tkk.status === 'Approved'" class="shrink-0 rounded-full bg-[#A7B92B]/20 px-2 py-0.5 text-[10px] font-bold text-[#A7B92B]">Disetujui</span>
               <span v-else-if="tkk.status === 'Pending'" class="shrink-0 rounded-full bg-[#EDD330]/20 px-2 py-0.5 text-[10px] font-bold text-[#EDD330]">Pending</span>
               <span v-else-if="tkk.status === 'Rejected'" class="shrink-0 rounded-full bg-[#ef4419]/20 px-2 py-0.5 text-[10px] font-bold text-[#ef4419]">Ditolak</span>
@@ -285,6 +285,7 @@ import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 const props = defineProps({
   submissions: Object,
@@ -296,6 +297,11 @@ const props = defineProps({
   completed: Boolean,
 });
 const page = usePage();
+const { can } = useAccess();
+
+const nonAnggota = computed(() => !can('sku.submit'));
+
+const canApprove = computed(() => can('sku.review'));
 
 const showCreate = ref(false);
 const showReject = ref(false);
@@ -314,13 +320,6 @@ const formReject = useForm({ catatan: '' });
 const formEdit = useForm({ tingkatan: '', nomor_poin: null, deskripsi_poin: '', is_active: true });
 const formTkkEdit = useForm({ nama: '', deskripsi: '', is_active: true });
 
-const nonAnggota = computed(() => page.props.auth?.user?.role !== 'Anggota');
-
-const canApprove = computed(() => {
-  const r = page.props.auth?.user?.role;
-  return r === 'Admin' || r === 'Pembina';
-});
-
 const sectionTitle = computed(() => {
   const t = filterTingkatan.value;
   if (!t) {
@@ -335,15 +334,15 @@ const hasFilteredResults = computed(() => {
 });
 
 function isEditable(point = null) {
-  return page.props.auth?.user?.role === 'Pembina';
+  return can('sku.point.manage');
 }
 
 function isSubmissionAvailable(point) {
-  return page.props.auth?.user?.role === 'Anggota' && point.status !== 'Approved' && point.status !== 'Pending';
+  return can('sku.submit') && point.status !== 'Approved' && point.status !== 'Pending';
 }
 
 function openSubmission(point = null) {
-  if (page.props.auth?.user?.role !== 'Anggota') {
+  if (!can('sku.submit')) {
     return;
   }
 

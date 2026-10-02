@@ -17,7 +17,9 @@
         <p class="mt-2 line-clamp-3 text-xs leading-5 text-[#8fa06a]">{{ guide.konten }}</p>
         <div class="mt-3 flex items-center justify-between">
           <span class="text-[10px] text-[#8fa06a]">{{ guide.createdBy?.name }}</span>
-          <button v-if="guide.is_favorited" class="text-[10px]">⭐</button>
+          <button v-if="guide.is_favorited" class="text-[#EDD330]" aria-hidden="true">
+            <svg class="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1.5l2.47 5.01 5.53.8-4 3.9.94 5.5L10 14.17l-4.94 2.6.94-5.5-4-3.9 5.53-.8L10 1.5z" /></svg>
+          </button>
         </div>
       </div>
       <p v-if="!filteredGuides.length" class="col-span-full rounded-xl border-2 border-[#6F9435]/30 bg-[#335233] p-10 text-center text-sm text-[#8fa06a]">Belum ada panduan.</p>

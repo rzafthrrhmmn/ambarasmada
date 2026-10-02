@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\UserPermission;
+use App\Support\Roles;
 use Illuminate\Http\Request;
 
 class UserPermissionController extends Controller
 {
     public function index(Request $request)
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina'], true), 403);
+        abort_unless($request->user()->role === Roles::ADMIN, 403);
 
         $query = UserPermission::query();
 
@@ -30,7 +31,7 @@ class UserPermissionController extends Controller
 
     public function store(Request $request)
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina'], true), 403);
+        abort_unless($request->user()->role === Roles::ADMIN, 403);
 
         $request->validate([
             'user_id' => 'required|exists:users,id',
@@ -47,7 +48,7 @@ class UserPermissionController extends Controller
 
     public function destroy(Request $request, UserPermission $permission)
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina'], true), 403);
+        abort_unless($request->user()->role === Roles::ADMIN, 403);
 
         $permission->delete();
 
@@ -56,7 +57,7 @@ class UserPermissionController extends Controller
 
     public function sync(Request $request)
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina'], true), 403);
+        abort_unless($request->user()->role === Roles::ADMIN, 403);
 
         $request->validate([
             'user_id' => 'required|exists:users,id',

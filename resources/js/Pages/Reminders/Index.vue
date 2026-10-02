@@ -39,13 +39,20 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 defineProps({ reminders: Object, users: Array });
+
+// canManage tadinya tidak pernah didefinisikan sehingga template memakai nilai
+// kosong dan tombol Kirim tidak pernah tampil untuk siapa pun.
+const { can } = useAccess();
+const canManage = computed(() => can('reminders.manage'));
+
 const showCreate = ref(false);
 const form = useForm({ user_id: '', judul: '', deskripsi: '', jadwal: '', jenis: 'Pengingat' });
 

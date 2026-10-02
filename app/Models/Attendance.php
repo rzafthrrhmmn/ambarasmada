@@ -11,6 +11,18 @@ class Attendance extends Model
 {
     protected $fillable = ['attendance_session_id', 'member_id', 'keterangan', 'catatan', 'checked_at'];
 
+    /**
+     * checked_at harus jadi objek tanggal, bukan string, supaya bisa diformat
+     * dengan toIso8601String() saat dikirim ke Inertia. Tanpa cast ini halaman
+     * kehadiran anggota gagal dengan Call to a member function on string.
+     */
+    protected function casts(): array
+    {
+        return [
+            'checked_at' => 'datetime',
+        ];
+    }
+
     public function session(): BelongsTo
     {
         return $this->belongsTo(AttendanceSession::class, 'attendance_session_id');

@@ -53,9 +53,13 @@ import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 defineProps({ articles: Object });
-const canManage = true;
+const { can } = useAccess();
+// Dulu selalu true sehingga tombol terbit muncul untuk semua orang, lalu
+// ditolak 403 saat dikirim.
+const canManage = computed(() => can('content.articles.create'));
 const showCreate = ref(false);
 const editingArticle = ref(null);
 const filterKategori = ref('');

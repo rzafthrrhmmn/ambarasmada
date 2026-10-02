@@ -32,7 +32,7 @@
         <p v-if="item.deskripsi" class="mt-1 text-xs text-[#8fa06a]">Kategori: {{ item.deskripsi }}</p>
         <div class="mt-4 flex gap-2">
           <button @click="router.visit(`/materials/${item.id}`)" class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-3 py-2 text-xs font-semibold text-white">Baca</button>
-          <button v-if="item.file_path" @click="openDownload(item)" class="rounded-lg border border-[#6F9435] px-3 py-2 text-xs font-semibold text-[#d4dc9a]">Unduh</button>
+          <button v-if="item.file_path && canDownload" @click="openDownload(item)" class="rounded-lg border border-[#6F9435] px-3 py-2 text-xs font-semibold text-[#d4dc9a]">Unduh</button>
         </div>
       </article>
     </div>
@@ -55,18 +55,21 @@
 
 <script setup>
 import { computed, reactive, ref } from 'vue';
-import { router, useForm, usePage } from '@inertiajs/vue3';
+import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 const props = defineProps({ materials: Object, categories: Array, filters: Object });
-const page = usePage();
-const canManage = computed(() => {
-  const role = page.props.auth?.user?.role;
-  return role === 'Admin' || role === 'Pembina' || role === 'Pengurus';
-});
+const { can } = useAccess();
+
+// materials belum punya kapabilitas manage di Access/capabilities.js, jadi
+// tombol tambah memakai kelompok management yang sama dengan guard
+// LearningMaterialController.
+const canManage = computed(() => can('materials.manage'));
+const canDownload = computed(() => can('materials.download'));
 
 const showCreate = ref(false);
 const editItem = ref(null);

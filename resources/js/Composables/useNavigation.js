@@ -1,13 +1,14 @@
 import { computed, ref, watch } from 'vue';
+import { useAccess } from '@/Composables/useAccess.js';
 import { bottomNavModel, navigationModel, resolveSidebarFooter } from '@/Navigation/model.js';
 
 /**
  * Resolver model navigasi.
  *
- * `Navigation/model.js` hanya berisi data; berkas inilah yang mengubahnya
- * menjadi tampilan sesuai kondisi nyata: peran pengguna, angka badge dari
- * props Inertia, rute yang sedang aktif, kata kunci pencarian, dan apakah rail
- * sidebar sedang dalam keadaan ringkas.
+ * Navigation/model.js hanya berisi data; berkas inilah yang mengubahnya
+ * menjadi tampilan sesuai kondisi nyata: kapabilitas yang dimiliki pengguna,
+ * angka badge dari props Inertia, rute yang sedang aktif, kata kunci pencarian,
+ * dan apakah rail sidebar sedang dalam keadaan ringkas.
  *
  * Semua nilai turunan dihitung ulang otomatis saat props Inertia berpindah, jadi
  * sidebar desktop, drawer mobile, dan bottom nav selalu membaca sumber yang
@@ -77,20 +78,17 @@ function writeCollapsedPreference(collapsed) {
 }
 
 export function useNavigation(page) {
-    const user = computed(() => page.props.auth?.user || null);
+    const { user, canAny } = useAccess(page);
     const currentPath = computed(() => normalizePath(page.url));
     const query = ref('');
     const collapsed = ref(typeof window === 'undefined' ? false : readCollapsedPreference());
 
-    const canSee = (item) => {
-        const current = user.value;
-
-        if (!current?.role || !item.roles?.includes(current.role)) {
-            return false;
-        }
-
-        return typeof item.requires === 'function' ? item.requires(current) : true;
-    };
+    /**
+     * Entri terlihat bila pengguna punya salah satu kapabilitas yang diminta.
+     * Aturan ini sama dengan yang dipakai halaman, jadi menu dan isi halaman
+     * tidak pernah berbeda isi.
+     */
+    const canSee = (item) => Boolean(user.value?.role) && canAny(item.capabilities ?? []);
 
     /** Entri dianggap aktif pada path persis atau pada turunannya. */
     const matchesPath = (item) => {

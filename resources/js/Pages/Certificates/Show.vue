@@ -69,11 +69,15 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import AppLayout from '@/Components/AppLayout.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 defineProps({ certificate: Object });
-const canManage = true;
+const { can } = useAccess();
+// Dulu selalu true sehingga tombol terbit muncul untuk semua orang, lalu
+// ditolak 403 saat dikirim.
+const canManage = computed(() => can('certificates.manage'));
 const generatingPdf = ref(false);
 
 function formatDate(value) {

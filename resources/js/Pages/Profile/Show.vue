@@ -41,16 +41,16 @@
           
           <label class="block"><span class="text-xs font-medium">NTA</span><input :value="member.nta || '-'" disabled class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#8fa06a] border-[#6F9435]" /></label>
           
-          <label class="block"><span class="text-xs font-medium">Kelas</span><input v-model="form.kelas" :disabled="!isPembina" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] disabled:bg-[#263D26] disabled:text-[#8fa06a]" /></label>
+          <label class="block"><span class="text-xs font-medium">Kelas</span><input v-model="form.kelas" :disabled="!canEditAcademic" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] disabled:bg-[#263D26] disabled:text-[#8fa06a]" /></label>
           <p v-if="form.errors.kelas" class="text-xs text-[#ef4419] mt-1">{{ form.errors.kelas }}</p>
           
-          <label class="block"><span class="text-xs font-medium">Tingkatan</span><select v-model="form.tingkatan" :disabled="!isPembina" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] disabled:bg-[#263D26] disabled:text-[#8fa06a]"><option>Tamu</option><option>Calon</option><option>Bantara</option><option>Laksana</option><option>Alumni</option></select></label>
+          <label class="block"><span class="text-xs font-medium">Tingkatan</span><select v-model="form.tingkatan" :disabled="!canEditAcademic" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] disabled:bg-[#263D26] disabled:text-[#8fa06a]"><option>Tamu</option><option>Calon</option><option>Bantara</option><option>Laksana</option><option>Alumni</option></select></label>
           <p v-if="form.errors.tingkatan" class="text-xs text-[#ef4419] mt-1">{{ form.errors.tingkatan }}</p>
           
           <label class="block"><span class="text-xs font-medium">Tahun Lulus</span><input v-model.number="form.tahun_lulus" type="number" min="2000" max="2100" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]" /></label>
           <p v-if="form.errors.tahun_lulus" class="text-xs text-[#ef4419] mt-1">{{ form.errors.tahun_lulus }}</p>
           
-          <label class="block"><span class="text-xs font-medium">Status Aktif</span><select v-model="form.status_aktif" :disabled="!isPembina" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] disabled:bg-[#263D26] disabled:text-[#8fa06a]"><option>Aktif</option><option>Non-Aktif</option><option>Alumni</option></select></label>
+          <label class="block"><span class="text-xs font-medium">Status Aktif</span><select v-model="form.status_aktif" :disabled="!canEditAcademic" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] disabled:bg-[#263D26] disabled:text-[#8fa06a]"><option>Aktif</option><option>Non-Aktif</option><option>Alumni</option></select></label>
           <p v-if="form.errors.status_aktif" class="text-xs text-[#ef4419] mt-1">{{ form.errors.status_aktif }}</p>
           <div class="sm:col-span-2 flex items-end gap-3">
             <button type="submit" :disabled="form.processing" class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-6 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50">
@@ -126,16 +126,21 @@ import { useToast } from 'vue-toastification';
 import AppLayout from '@/Components/AppLayout.vue';
 import KtaCard from '@/Components/KtaCard.vue';
 import CropModal from '@/Components/CropModal.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 const props = defineProps({ member: Object });
 const page = usePage();
+const { can } = useAccess(page);
 const ambalan = computed(() => page.props.ambalan || null);
 const ktaCard = ref(null);
 const ktaPreviewCard = ref(null);
 const member = computed(() => props.member);
 const showKtaPreview = ref(false);
 const toast = useToast();
-const isPembina = computed(() => page.props.auth?.user?.role === 'pembina');
+// Tulisannya pernah 'pembina' huruf kecil, sedangkan server mengirim 'Pembina',
+// sehingga kelas, tingkatan, dan status aktif selalu terkunci termasuk untuk
+// Pembina. Sekarang aturan yang sama dipakai server lewat MemberController.
+const canEditAcademic = computed(() => can('members.profile.edit_academic'));
 const photoObjectUrl = ref(null);
 const showCropModal = ref(false);
 const cropImageUrl = ref(null);

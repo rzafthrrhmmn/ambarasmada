@@ -29,7 +29,14 @@
         <div class="mt-3 flex flex-wrap gap-2">
           <span v-if="event.participants_count !== undefined" class="text-[10px] font-medium text-[#8fa06a]">{{ event.participants_count }} peserta</span>
           <button v-if="canManage" @click="openEdit(event)" class="text-[10px] text-[#EDD330] hover:underline">Edit</button>
-          <Link v-if="isAnggota" :href="`/events/${event.id}/join`" class="text-[10px] rounded-lg border border-[#6F9435] px-2 py-0.5 text-[#d4dc9a]">Daftar</Link>
+          <button
+            v-if="canJoin"
+            :disabled="joining === event.id || joining"
+            @click="join(event)"
+            class="rounded-lg border border-[#6F9435] px-2 py-0.5 text-[10px] text-[#d4dc9a] disabled:opacity-50"
+          >
+            {{ joining === event.id ? 'Mendaftarkan...' : 'Daftar' }}
+          </button>
         </div>
       </div>
       <p v-if="!events.data.length" class="col-span-full rounded-xl border-2 border-[#6F9435]/30 bg-[#335233] p-10 text-center text-sm text-[#8fa06a]">Belum ada kegiatan.</p>
@@ -54,13 +61,31 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useForm, Link, router, usePage } from '@inertiajs/vue3';
+import { useForm, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
-defineProps({ events: Object, canManage: Boolean });
+defineProps({ events: Object });
+
+const { can, user, isAnggota } = useAccess();
+
+// Controller tidak pernah mengirim canManage, sehingga declareProps lama
+// membuat nilainya selalu false dan tombol buat kegiatan tidak pernah tampil.
+const canManage = computed(() => can('events.manage'));
+
+// Rute pendaftaran adalah POST, sedangkan tautan lama memakai GET sehingga
+// selalu berakhir 405. Daftar hanya relevan bagi anggota yang punya data member.
+const canJoin = computed(() => isAnggota.value && Boolean(user.value?.member_id));
+const joining = ref(null);
+
+async function join(event) {
+  joining.value = event.id;
+  router.post(`/events/${event.id}/join`, {}, { preserveScroll: true });
+}
+
 const showCreate = ref(false);
 const editingEvent = ref(null);
 const form = useForm({ nama: '', deskripsi: '', tanggal: '', lokasi: '', jenis: '', status: 'Draft' });
@@ -88,7 +113,5 @@ function submit() {
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
 }
-const isAnggota = computed(() => page.props.auth?.user?.role === 'Anggota');
-const page = usePage();
 </script>
 

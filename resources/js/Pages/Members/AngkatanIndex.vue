@@ -78,17 +78,21 @@
 
 <script setup>
 import { computed, ref } from 'vue';
-import { router, useForm, usePage } from '@inertiajs/vue3';
+import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 const props = defineProps({
   angkatan: Object,
 });
 
-const page = usePage();
-const canManage = computed(() => page.props.auth?.user?.role === 'Pembina');
+const { can } = useAccess();
+// Rute /angkatan dan MemberController::angkatanIndex sama-sama memakai
+// kelompok Admin, Pembina, dan Pengurus. Dibatasi pada Pembina saja membuat
+// dua peran lain tidak bisa mengelola angkatan meski server mengizinkan.
+const canManage = computed(() => can('members.angkatan.manage'));
 const showModal = ref(false);
 const editing = ref(null);
 const form = useForm({

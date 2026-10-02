@@ -10,6 +10,11 @@
       </div>
     </div>
 
+    <!-- Log aktivitas memuat jejak siapa mengubah apa, jadi seluruh isi
+         halaman disembunyikan bila capability ini tidak dimiliki, bukan hanya
+         tombolnya. Rute /audit-logs sudah role:Admin; gate ini memastikan
+         halaman kosong bila daftar kapabilitas dan middleware pernah berbeda. -->
+    <template v-if="canViewAudit">
     <div class="mb-4 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
       <p class="text-sm font-semibold text-[#EDD330]">Filter</p>
       <div class="mt-3 grid gap-3 sm:grid-cols-4">
@@ -88,19 +93,24 @@
         Belum ada log aktivitas.
       </p>
     </div>
+    </template>
   </AppLayout>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 const props = defineProps({
   logs: Object,
   filters: Object,
 });
+
+const { can } = useAccess();
+const canViewAudit = computed(() => can('audit.view'));
 
 const filters = ref({
   action: props.filters.action || '',

@@ -206,7 +206,12 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
 
         Route::post('/tkk/points', [TkkPointController::class, 'store'])->name('tkk.points.store')->middleware('throttle:10,1');
         Route::patch('/tkk/points/{tkkPoint}', [TkkPointController::class, 'update'])->name('tkk.points.update')->middleware('throttle:20,1');
+    });
 
+    // Presensi mandiri. Rute ini khusus anggota: bila tetap di dalam kelompok
+    // bersama SKU, daftar perannya menjadi lebih longgar dari yang sebenarnya
+    // diizinkan controller.
+    Route::middleware(['role:Anggota'])->group(function () {
         Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.member.check-in')->middleware('throttle:30,1');
     });
 

@@ -39,18 +39,18 @@
 
 <script setup>
 import { computed, reactive, ref } from 'vue';
-import { router, useForm, usePage } from '@inertiajs/vue3';
+import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 const props = defineProps({ medias: Object, ambalans: Array, filters: Object });
-const page = usePage();
-const canManage = computed(() => {
-  const role = page.props.auth?.user?.role;
-  return role === 'Admin' || role === 'Pembina' || role === 'Pengurus';
-});
+const { can } = useAccess();
+// Dulu ikut Admin/Pembina/Pengurus; medias.manage mengikuti aturan server yang
+// menolak 403 di luar Admin dan Pembina.
+const canManage = computed(() => can('medias.manage'));
 
 const showCreate = ref(false);
 const editItem = ref(null);

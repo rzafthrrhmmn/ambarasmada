@@ -30,12 +30,12 @@
             </span>
           </div>
         </div>
-        <div v-if="canManage" class="flex shrink-0 flex-wrap gap-2">
-          <button @click="openAdd" class="inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-3.5 py-2 text-xs font-semibold text-white transition hover:shadow-lg hover:shadow-[#6F9435]/30">
+        <div v-if="canManageRecords || canEditSession || canDeleteSession" class="flex shrink-0 flex-wrap gap-2">
+          <button v-if="canManageRecords" @click="openAdd" class="inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-3.5 py-2 text-xs font-semibold text-white transition hover:shadow-lg hover:shadow-[#6F9435]/30">
             + Tambah presensi
           </button>
-          <button @click="openSessionEdit()" class="rounded-lg border border-[#6F9435] px-3.5 py-2 text-xs font-semibold text-[#d4dc9a] transition hover:bg-[#6F9435]/30">Edit sesi</button>
-          <button @click="openDeleteSession" class="rounded-lg border border-[#ef4419]/60 px-3.5 py-2 text-xs font-semibold text-[#ef4419] transition hover:bg-[#ef4419]/15">Hapus sesi</button>
+          <button v-if="canEditSession" @click="openSessionEdit()" class="rounded-lg border border-[#6F9435] px-3.5 py-2 text-xs font-semibold text-[#d4dc9a] transition hover:bg-[#6F9435]/30">Edit sesi</button>
+          <button v-if="canDeleteSession" @click="openDeleteSession" class="rounded-lg border border-[#ef4419]/60 px-3.5 py-2 text-xs font-semibold text-[#ef4419] transition hover:bg-[#ef4419]/15">Hapus sesi</button>
         </div>
       </div>
     </header>
@@ -78,7 +78,7 @@
             </div>
           </div>
 
-          <div v-if="canManage && visibleRows.length" class="mt-3 flex flex-wrap items-center gap-3 border-t border-[#6F9435]/20 pt-3">
+          <div v-if="canManageRecords && visibleRows.length" class="mt-3 flex flex-wrap items-center gap-3 border-t border-[#6F9435]/20 pt-3">
             <label class="flex cursor-pointer items-center gap-2 text-xs text-[#8fa06a]">
               <input type="checkbox" :checked="allSelected" @change="toggleAll" class="h-4 w-4 rounded border-[#6F9435] bg-[#263D26] text-[#EDD330]" />
               Pilih semua yang tampil
@@ -91,17 +91,17 @@
           <table class="min-w-full divide-y divide-[#6F9435]/30">
             <thead class="bg-[#263D26]">
               <tr>
-                <th v-if="canManage" class="w-10 px-4 py-3"><span class="sr-only">Pilih</span></th>
+                <th v-if="canManageRecords" class="w-10 px-4 py-3"><span class="sr-only">Pilih</span></th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#8fa06a]">Anggota</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#8fa06a]">Keterangan</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#8fa06a]">Catatan</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#8fa06a]">Waktu</th>
-                <th v-if="canManage" class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#8fa06a]">Aksi</th>
+                <th v-if="canManageRecords" class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#8fa06a]">Aksi</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-[#6F9435]/30">
               <tr v-if="!visibleRows.length">
-                <td :colspan="canManage ? 6 : 4" class="px-4 py-10 text-center">
+                <td :colspan="canManageRecords ? 6 : 4" class="px-4 py-10 text-center">
                   <p class="text-sm text-[#8fa06a]">Tidak ada baris yang cocok dengan pencarian ini.</p>
                   <button @click="resetTableFilters" class="mt-2 rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Reset pencarian</button>
                 </td>
@@ -112,7 +112,7 @@
                 class="transition hover:bg-[#3d5c3b]/40"
                 :class="isSelected(item.id) ? 'bg-[#3d5c3b]' : ''"
               >
-                <td v-if="canManage" class="px-4 py-3">
+                <td v-if="canManageRecords" class="px-4 py-3">
                   <input
                     type="checkbox"
                     :checked="isSelected(item.id)"
@@ -133,7 +133,7 @@
                 <td class="px-4 py-3"><span class="rounded-full px-2.5 py-1 text-xs font-semibold" :class="keteranganClass(item.keterangan)">{{ item.keterangan }}</span></td>
                 <td class="max-w-[16rem] px-4 py-3 text-sm text-[#8fa06a]"><span class="line-clamp-2">{{ item.catatan || '-' }}</span></td>
                 <td class="whitespace-nowrap px-4 py-3 text-xs text-[#8fa06a]">{{ formatTime(item.checked_at) }}</td>
-                <td v-if="canManage" class="whitespace-nowrap px-4 py-3 text-right text-xs">
+                <td v-if="canManageRecords" class="whitespace-nowrap px-4 py-3 text-right text-xs">
                   <div class="flex justify-end gap-3">
                     <button @click="openEdit(item)" class="font-semibold text-[#EDD330] hover:underline">Edit</button>
                     <button @click="openDeleteRecord(item)" class="font-semibold text-[#ef4419] hover:underline">Hapus</button>
@@ -149,7 +149,7 @@
             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           </span>
           <p class="mt-3 text-sm text-[#8fa06a]">Belum ada presensi pada sesi ini.</p>
-          <button v-if="canManage" @click="openAdd" class="mt-3 rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-xs font-semibold text-white">+ Tambah presensi pertama</button>
+          <button v-if="canManageRecords" @click="openAdd" class="mt-3 rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-xs font-semibold text-white">+ Tambah presensi pertama</button>
         </div>
       </section>
 
@@ -177,9 +177,6 @@
               <dd class="text-right text-xs text-[#d4dc9a]">{{ session.ambalan?.nama || '-' }}</dd>
             </div>
           </dl>
-          <Link v-if="isAnggota" :href="route('attendance.scan', session.qr_token)" class="mt-4 block rounded-lg border border-[#6F9435] px-3 py-2 text-center text-xs font-semibold text-[#d4dc9a] transition hover:bg-[#6F9435]/30">
-            Buka halaman pindai QR
-          </Link>
         </section>
 
         <section v-if="session.materi_nama" class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm">
@@ -216,7 +213,7 @@
       </aside>
     </div>
 
-    <div v-if="canManage && selectedIds.length" class="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[#EDD330]/60 bg-[#335233] px-4 py-3 shadow-sm">
+    <div v-if="canManageRecords && selectedIds.length" class="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[#EDD330]/60 bg-[#335233] px-4 py-3 shadow-sm">
       <p class="text-sm font-semibold text-[#f0ead8]">{{ selectedIds.length }} presensi dipilih</p>
       <button @click="openBulkUpdate" class="rounded-lg bg-[#6F9435] px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90">Ubah keterangan</button>
       <button @click="openBulkDelete" class="rounded-lg bg-[#ef4419] px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90">Hapus terpilih</button>
@@ -272,7 +269,7 @@
       </form>
     </Modal>
 
-    <Modal v-if="showAdd && canManage" title="Tambah presensi manual" @close="closeAdd">
+    <Modal v-if="showAdd && canManageRecords" title="Tambah presensi manual" @close="closeAdd">
       <form @submit.prevent="submitAdd" class="grid gap-3">
         <p class="text-xs text-[#8fa06a]">Gunakan ini ketika seorang anggota hadir tetapi tidak sempat memindai QR Code.</p>
         <label class="block">
@@ -293,7 +290,7 @@
       </form>
     </Modal>
 
-    <Modal v-if="deleteRecordTarget && canManage" title="Hapus presensi" @close="deleteRecordTarget = null">
+    <Modal v-if="deleteRecordTarget && canManageRecords" title="Hapus presensi" @close="deleteRecordTarget = null">
       <div class="grid gap-3">
         <p class="text-sm text-[#f0ead8]">Hapus presensi <strong>{{ deleteRecordTarget.member?.nama_lengkap }}</strong> pada sesi ini?</p>
         <p class="text-xs text-[#ef4419]">Baris presensi ini akan dihapus permanen dan tidak bisa dibatalkan.</p>
@@ -304,7 +301,7 @@
       </div>
     </Modal>
 
-    <Modal v-if="showDeleteSession && canManage" title="Hapus sesi latihan" @close="showDeleteSession = false">
+    <Modal v-if="showDeleteSession && canDeleteSession" title="Hapus sesi latihan" @close="showDeleteSession = false">
       <div class="grid gap-3">
         <p class="text-sm text-[#f0ead8]">Hapus sesi "<strong>{{ session.nama }}</strong>" beserta {{ rows.length }} baris presensinya?</p>
         <p class="text-xs text-[#ef4419]">Baris presensi ikut terhapus permanen. Tindakan ini tidak bisa dibatalkan.</p>
@@ -317,7 +314,7 @@
       </div>
     </Modal>
 
-    <Modal v-if="showBulkUpdate && canManage" title="Ubah keterangan terpilih" @close="showBulkUpdate = false">
+    <Modal v-if="showBulkUpdate && canManageRecords" title="Ubah keterangan terpilih" @close="showBulkUpdate = false">
       <form @submit.prevent="submitBulkUpdate" class="grid gap-3">
         <p class="text-xs text-[#8fa06a]">Perubahan diterapkan ke {{ selectedIds.length }} baris presensi.</p>
         <label class="block"><span class="text-xs font-medium">Keterangan</span><select v-model="bulkForm.keterangan" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm"><option>Hadir</option><option>Izin</option><option>Sakit</option><option>Alpa</option></select></label>
@@ -330,7 +327,7 @@
       </form>
     </Modal>
 
-    <Modal v-if="showBulkDelete && canManage" title="Hapus presensi terpilih" @close="showBulkDelete = false">
+    <Modal v-if="showBulkDelete && canManageRecords" title="Hapus presensi terpilih" @close="showBulkDelete = false">
       <div class="grid gap-3">
         <p class="text-sm text-[#f0ead8]">Hapus {{ selectedIds.length }} baris presensi?</p>
         <ul class="max-h-40 list-inside list-disc overflow-y-auto text-xs text-[#8fa06a]">
@@ -350,17 +347,26 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { Link, useForm, usePage } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import LocationPicker from '@/Components/LocationPicker.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
+/**
+ * Tampilan pengelola untuk detail satu sesi latihan: daftar presensi seluruh
+ * anggota, pencarian, filter keterangan, ubah/hapus baris, dan pencarian massal.
+ *
+ * Anggota tidak pernah menerima komponen ini. Mereka diarahkan ke
+ * Attendance/MemberShow yang datanya sudah dibatasi di server.
+ */
 const props = defineProps({ session: Object, members: { type: Array, default: () => [] } });
 
-const page = usePage();
-const role = computed(() => page.props.auth?.user?.role);
-const canManage = computed(() => ['Admin', 'Pembina', 'Pengurus'].includes(role.value));
-const isAnggota = computed(() => role.value === 'Anggota');
+const { can } = useAccess();
+
+const canManageRecords = computed(() => can('attendance.record.manage'));
+const canEditSession = computed(() => can('attendance.session.edit'));
+const canDeleteSession = computed(() => can('attendance.session.delete'));
 
 const rows = computed(() => props.session?.attendances ?? []);
 const selectedIds = ref([]);

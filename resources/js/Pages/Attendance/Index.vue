@@ -6,10 +6,10 @@
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Presensi Anggota</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Buat sesi latihan, gunakan QR Code, dan lihat rekap kehadiran.</p>
       </div>
-      <button v-if="canManage" @click="openCreate" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Sesi latihan</button>
+      <button v-if="canCreate" @click="openCreate" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Sesi latihan</button>
     </div>
 
-    <section v-if="canManage" class="mb-5 rounded-2xl border border-[#6F9435] bg-[#335233] p-4">
+    <section v-if="canBulkDelete" class="mb-5 rounded-2xl border border-[#6F9435] bg-[#335233] p-4">
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5" @submit.prevent="applyFilters">
         <label class="block lg:col-span-2">
           <span class="text-xs font-medium text-[#8fa06a]">Cari</span>
@@ -43,11 +43,11 @@
       <section class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm lg:col-span-2">
         <div class="mb-4 flex items-center justify-between">
           <h2 class="font-semibold text-[#f0ead8]">Riwayat sesi</h2>
-          <label v-if="canManage && allSelected" class="flex items-center gap-2 text-xs text-[#8fa06a]">
+          <label v-if="canBulkDelete && allSelected" class="flex items-center gap-2 text-xs text-[#8fa06a]">
             <input type="checkbox" checked class="h-4 w-4 rounded border-[#6F9435] bg-[#263D26] text-[#EDD330]" disabled />
             Semua di halaman ini dipilih
           </label>
-          <button v-else-if="canManage" @click="selectAllOnPage" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Pilih semua di halaman</button>
+          <button v-else-if="canBulkDelete" @click="selectAllOnPage" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Pilih semua di halaman</button>
         </div>
 
         <div class="space-y-3">
@@ -63,7 +63,7 @@
           >
             <div class="flex items-start gap-3">
               <input
-                v-if="canManage"
+                v-if="canBulkDelete"
                 type="checkbox"
                 :checked="isSelected(session.id)"
                 @change="toggleSelect(session.id)"
@@ -79,11 +79,10 @@
             </div>
             <div class="flex flex-wrap gap-2 items-center">
               <span class="rounded-full bg-[#263D26] px-2.5 py-1 text-xs text-[#EDD330]">{{ session.qr_token }}</span>
-              <Link v-if="canManage" :href="`/attendance/${session.id}`" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Detail</Link>
-              <button v-if="canManage" @click="openEdit(session)" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Edit</button>
-              <button v-if="canManage" @click="openDelete(session)" class="rounded-lg border border-[#ef4419]/60 px-3 py-1.5 text-xs font-semibold text-[#ef4419]">Hapus</button>
-              <button v-if="canManage" @click="openQr(session)" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">QR Code</button>
-              <Link v-if="isAnggota" :href="route('attendance.scan', session.qr_token)" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Scan</Link>
+              <Link v-if="canEdit" :href="`/attendance/${session.id}`" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Detail</Link>
+              <button v-if="canEdit" @click="openEdit(session)" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Edit</button>
+              <button v-if="canDelete" @click="openDelete(session)" class="rounded-lg border border-[#ef4419]/60 px-3 py-1.5 text-xs font-semibold text-[#ef4419]">Hapus</button>
+              <button v-if="canViewQr" @click="openQr(session)" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">QR Code</button>
             </div>
           </div>
         </div>
@@ -105,13 +104,13 @@
       </aside>
     </div>
 
-    <div v-if="canManage && selectedIds.length" class="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[#EDD330]/60 bg-[#335233] px-4 py-3">
+    <div v-if="canBulkDelete && selectedIds.length" class="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[#EDD330]/60 bg-[#335233] px-4 py-3">
       <p class="text-sm text-[#f0ead8]">{{ selectedIds.length }} sesi dipilih</p>
       <button @click="openBulkDelete" class="rounded-lg bg-[#ef4419] px-3 py-1.5 text-xs font-semibold text-white">Hapus terpilih</button>
       <button @click="clearSelection" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Batalkan pilihan</button>
     </div>
 
-    <Modal v-if="showCreate && canManage" title="Buat sesi latihan" @close="closeCreate">
+    <Modal v-if="showCreate && canCreate" title="Buat sesi latihan" @close="closeCreate">
       <form @submit.prevent="submitCreate" class="grid gap-3">
         <label class="block"><span class="text-xs font-medium">Nama sesi</span><input v-model="form.nama" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label>
         <div class="grid gap-3 sm:grid-cols-2">
@@ -137,7 +136,7 @@
       </form>
     </Modal>
 
-    <Modal v-if="showEdit && canManage && editTarget" title="Edit sesi latihan" @close="closeEdit">
+    <Modal v-if="showEdit && canEdit && editTarget" title="Edit sesi latihan" @close="closeEdit">
       <form @submit.prevent="submitEdit" class="grid gap-3">
         <label class="block"><span class="text-xs font-medium">Nama sesi</span><input v-model="editForm.nama" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8]" /></label>
         <div class="grid gap-3 sm:grid-cols-2">
@@ -173,7 +172,7 @@
       </form>
     </Modal>
 
-    <Modal v-if="showDelete && canManage && deleteTarget" title="Hapus sesi latihan" @close="closeDelete">
+    <Modal v-if="showDelete && canDelete && deleteTarget" title="Hapus sesi latihan" @close="closeDelete">
       <div class="grid gap-3">
         <p class="text-sm text-[#f0ead8]">Hapus sesi "<strong>{{ deleteTarget.nama }}</strong>"?</p>
         <p v-if="deleteTarget.attendances_count" class="text-xs text-[#ef4419]">
@@ -194,7 +193,7 @@
       </div>
     </Modal>
 
-    <Modal v-if="showBulkDelete && canManage" title="Hapus sesi terpilih" @close="showBulkDelete = false">
+    <Modal v-if="showBulkDelete && canBulkDelete" title="Hapus sesi terpilih" @close="showBulkDelete = false">
       <div class="grid gap-3">
         <p class="text-sm text-[#f0ead8]">Hapus {{ selectedIds.length }} sesi yang dipilih?</p>
         <div v-if="blockedPreview.length" class="rounded-lg border border-[#ef4419]/50 bg-[#263D26] p-3">
@@ -218,25 +217,36 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
 import LocationPicker from '@/Components/LocationPicker.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
+/**
+ * Tampilan pengelola sesi latihan: Admin, Pembina, dan Pengurus.
+ *
+ * Halaman ini hanya dirender oleh server untuk peran pengelola, namun setiap
+ * tombol tetap dijaga kapabilitasnya supaya tidak pernah menampilkan aksi yang
+ * akan ditolak 403 bila aturan akses berubah.
+ *
+ * Anggota tidak pernah sampai ke komponen ini; mereka menerima
+ * Attendance/MemberIndex beserta data yang sudah dibatasi di server.
+ */
 const props = defineProps({
   sessions: Object,
-  members: Array,
   filters: { type: Object, default: () => ({ q: '', from: '', to: '', status: 'all' }) },
 });
 
-const page = usePage();
-const isAnggota = computed(() => page.props.auth?.user?.role === 'Anggota');
-const canManage = computed(() => {
-  const role = page.props.auth?.user?.role;
-  return role === 'Admin' || role === 'Pembina' || role === 'Pengurus';
-});
+const { can } = useAccess();
+
+const canCreate = computed(() => can('attendance.session.create'));
+const canEdit = computed(() => can('attendance.session.edit'));
+const canDelete = computed(() => can('attendance.session.delete'));
+const canBulkDelete = computed(() => can('attendance.session.bulk_delete'));
+const canViewQr = computed(() => can('attendance.session.view_qr'));
 
 const showCreate = ref(false);
 const showMapPicker = ref(false);

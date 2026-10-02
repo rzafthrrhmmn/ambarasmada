@@ -9,6 +9,7 @@
         </p>
       </div>
       <button
+        v-if="canManageCategories"
         @click="showForm = true; editForm = null"
         class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
       >
@@ -16,7 +17,7 @@
       </button>
     </div>
 
-    <div v-if="showForm" class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-5">
+    <div v-if="showForm && canManageCategories" class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-5">
       <p class="text-sm font-semibold text-[#EDD330]">{{ editForm ? 'Edit' : 'Tambah' }} Kategori</p>
       <form @submit.prevent="saveCategory" class="mt-3 grid gap-3 sm:grid-cols-4">
         <input
@@ -88,12 +89,14 @@
           </div>
           <div class="flex items-center gap-1">
             <button
+              v-if="canManageCategories"
               @click="editCategory(category)"
               class="rounded-lg border border-[#6F9435] px-2.5 py-1.5 text-xs font-semibold text-[#d4dc9a] hover:bg-[#6F9435]/20"
             >
               Edit
             </button>
             <button
+              v-if="canManageCategories"
               @click="toggleCategory(category)"
               class="rounded-lg border border-[#6F9435] px-2.5 py-1.5 text-xs font-semibold text-[#d4dc9a] hover:bg-[#6F9435]/20"
               :title="category.is_active ? 'Nonaktifkan' : 'Aktifkan'"
@@ -101,6 +104,7 @@
               {{ category.is_active ? 'Non-Aktif' : 'Aktif' }}
             </button>
             <button
+              v-if="canManageCategories"
               @click="deleteCategory(category)"
               class="rounded-lg border border-[#ef4419]/50 px-2.5 py-1.5 text-xs font-semibold text-[#ef4419] hover:bg-[#ef4419]/10"
             >
@@ -118,15 +122,25 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { computed, ref, reactive } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 const props = defineProps({
   categories: Object,
   ambalans: Array,
 });
+
+const { can } = useAccess();
+
+/**
+ * Halaman ini sudah dibatasi middleware juru-uang, tetapi setiap aksi tulis
+ * tetap digerbang kapabilitasnya sendiri supaya tombol tidak pernah tampil
+ * lalu ditolak 403 saat dikirim.
+ */
+const canManageCategories = computed(() => can('finance.categories.manage'));
 
 const showForm = ref(false);
 const editForm = ref(null);

@@ -1,3 +1,5 @@
+import { ROLES } from '@/Access/capabilities.js';
+
 /**
  * Model navigasi aplikasi.
  *
@@ -6,34 +8,19 @@
  * dilakukan di sini, bukan di template.
  *
  * Bentuk entri:
- *   key      identifier unik, dipakai sebagai `:key` dan untuk pengujian.
- *   href     tujuan rute Inertia.
- *   label    teks tombol.
- *   icon     nama ikon pada `Navigation/icons.js`.
- *   hint     keterangan pendek, dipakai sebagai tooltip saat rail ringkas.
- *   roles    daftar peran yang boleh melihat entri.
- *   badge    sumber angka badge, mis. `{ source: 'pendingCount' }`. Angka dibaca
- *            dari props Inertia yang sudah dihitung server dari model terkait.
- *   requires(predikat)  syarat tambahan di luar peran, mis. khusus juru uang.
- *   exact    true bila hanya cocok pada path persis, bukan turunannya.
- *   keywords kata kunci tambahan untuk pencarian menu di sidebar.
+ *   key         identifier unik, dipakai sebagai :key dan untuk pengujian.
+ *   href        tujuan rute Inertia.
+ *   label       teks tombol.
+ *   icon        nama ikon pada Navigation/icons.js.
+ *   hint        keterangan pendek, dipakai sebagai tooltip saat rail ringkas.
+ *   capabilities kapabilitas yang boleh melihat entri. Diambil dari
+ *               Access/capabilities.js, bukan daftar peran terpisah, sehingga
+ *               menu sidebar dan isi halaman memakai satu aturan yang sama.
+ *   exact       true bila hanya cocok pada path persis, bukan turunannya.
+ *   keywords    kata kunci tambahan untuk pencarian menu di sidebar.
  */
 
-export const ROLES = {
-    ADMIN: 'Admin',
-    PEMBINA: 'Pembina',
-    PENGURUS: 'Pengurus',
-    ANGGOTA: 'Anggota',
-    ALUMNI: 'Alumni',
-};
-
-/** Peran pengguna internal (bukan alumni). */
-export const INTERNAL_ROLES = [ROLES.ADMIN, ROLES.PEMBINA, ROLES.PENGURUS];
-export const MEMBER_ROLES = [...INTERNAL_ROLES, ROLES.ANGGOTA];
-export const ALUMNI_ROLES = [ROLES.ALUMNI];
-
-const canApproveMember = (user) => user?.role === ROLES.ADMIN || user?.role === ROLES.PEMBINA;
-const isFinanceOfficer = (user) => user?.role !== ROLES.PENGURUS || Boolean(user?.is_juru_uang);
+export { ROLES };
 
 export const navigationModel = [
     {
@@ -47,15 +34,16 @@ export const navigationModel = [
                 hint: 'Ringkasan aktivitas ambalan',
                 icon: 'dashboard',
                 exact: true,
-                roles: MEMBER_ROLES,
+                capabilities: ['app.access'],
                 keywords: ['beranda', 'ringkasan', 'home'],
             },
             {
                 key: 'peta-kontur',
                 href: '/peta',
+                label: 'Peta Kontur',
                 hint: 'Peta kontur titik kegiatan',
                 icon: 'map',
-                roles: MEMBER_ROLES,
+                capabilities: ['app.access'],
                 keywords: ['peta', 'contour', 'lokasi', 'titik'],
             },
             {
@@ -64,7 +52,7 @@ export const navigationModel = [
                 label: 'Notifikasi',
                 hint: 'Pemberitahuan terbaru',
                 icon: 'bell',
-                roles: MEMBER_ROLES,
+                capabilities: ['app.access'],
                 badge: { source: 'unreadNotificationCount' },
                 keywords: ['notifikasi', 'bell', 'pemberitahuan'],
             },
@@ -74,7 +62,7 @@ export const navigationModel = [
                 label: 'Kegiatan',
                 hint: 'Agenda dan jadwal kegiatan',
                 icon: 'events',
-                roles: MEMBER_ROLES,
+                capabilities: ['events.access'],
                 keywords: ['kegiatan', 'event', 'agenda', 'jadwal'],
             },
         ],
@@ -89,7 +77,7 @@ export const navigationModel = [
                 label: 'Anggota',
                 hint: 'Direktorium anggota ambalan',
                 icon: 'members',
-                roles: INTERNAL_ROLES,
+                capabilities: ['members.access'],
                 keywords: ['anggota', 'member', 'daftar', 'direktori'],
             },
             {
@@ -98,8 +86,7 @@ export const navigationModel = [
                 label: 'Menunggu Persetujuan',
                 hint: 'Verifikasi anggota baru',
                 icon: 'pending',
-                roles: [ROLES.ADMIN, ROLES.PEMBINA],
-                requires: canApproveMember,
+                capabilities: ['members.verify'],
                 badge: { source: 'pendingCount' },
                 keywords: ['verifikasi', 'approve', 'pending', 'calon'],
             },
@@ -109,7 +96,7 @@ export const navigationModel = [
                 label: 'Kehadiran',
                 hint: 'Rekap absensi kegiatan',
                 icon: 'attendance',
-                roles: MEMBER_ROLES,
+                capabilities: ['attendance.access'],
                 keywords: ['kehadiran', 'absensi', 'presensi', 'hadir'],
             },
             {
@@ -118,7 +105,7 @@ export const navigationModel = [
                 label: 'SKU / TKU',
                 hint: 'Satuan Kompetensi dan Tunai',
                 icon: 'sku',
-                roles: MEMBER_ROLES,
+                capabilities: ['app.access'],
                 keywords: ['sku', 'tku', 'kompetsi', 'lipatan'],
             },
             {
@@ -127,7 +114,7 @@ export const navigationModel = [
                 label: 'Gugus Depan',
                 hint: 'Unit dan gugus depan',
                 icon: 'teams',
-                roles: INTERNAL_ROLES,
+                capabilities: ['members.access'],
                 keywords: ['gugus', 'unit', 'tim', 'departemen'],
             },
         ],
@@ -142,7 +129,7 @@ export const navigationModel = [
                 label: 'Penilaian',
                 hint: 'Nilai dan capaian',
                 icon: 'assessments',
-                roles: [ROLES.ADMIN, ROLES.PEMBINA],
+                capabilities: ['assessments.manage'],
                 keywords: ['penilaian', 'nilai', 'asesmen'],
             },
             {
@@ -151,7 +138,7 @@ export const navigationModel = [
                 label: 'Sertifikat',
                 hint: 'Sertifikat kepramukaan',
                 icon: 'certificates',
-                roles: [ROLES.ADMIN, ROLES.PEMBINA],
+                capabilities: ['certificates.manage'],
                 keywords: ['sertifikat', 'certificate', 'sert'],
             },
             {
@@ -160,7 +147,7 @@ export const navigationModel = [
                 label: 'Laporan',
                 hint: 'Rekap dan cetakan',
                 icon: 'reports',
-                roles: INTERNAL_ROLES,
+                capabilities: ['reports.view'],
                 keywords: ['laporan', 'report', 'rekap', 'cetak'],
             },
             {
@@ -169,7 +156,7 @@ export const navigationModel = [
                 label: 'Rapat',
                 hint: 'Notulen rapat kepengurusan',
                 icon: 'meetings',
-                roles: INTERNAL_ROLES,
+                capabilities: ['meetings.manage'],
                 keywords: ['rapat', 'meeting', 'notulen', 'minset'],
             },
         ],
@@ -184,8 +171,7 @@ export const navigationModel = [
                 label: 'Keuangan & Iuran',
                 hint: 'Kas ambalan dan iuran',
                 icon: 'wallet',
-                roles: MEMBER_ROLES,
-                requires: isFinanceOfficer,
+                capabilities: ['finance.view'],
                 keywords: ['keuangan', 'kas', 'iuran', 'uang', 'finance'],
             },
             {
@@ -194,7 +180,7 @@ export const navigationModel = [
                 label: 'Inventaris',
                 hint: 'Barang dan aset ambalan',
                 icon: 'inventory',
-                roles: INTERNAL_ROLES,
+                capabilities: ['inventory.manage'],
                 keywords: ['inventaris', 'barang', 'aset', 'stok'],
             },
         ],
@@ -209,7 +195,7 @@ export const navigationModel = [
                 label: 'Pengumuman',
                 hint: 'Info resmi ambalan',
                 icon: 'announcements',
-                roles: MEMBER_ROLES,
+                capabilities: ['content.access'],
                 keywords: ['pengumuman', 'announcement', 'info'],
             },
             {
@@ -218,7 +204,7 @@ export const navigationModel = [
                 label: 'Buku Saku',
                 hint: 'Panduan lapangan',
                 icon: 'guides',
-                roles: MEMBER_ROLES,
+                capabilities: ['content.access'],
                 keywords: ['buku saku', 'panduan', 'field guide', 'literatur'],
             },
             {
@@ -227,7 +213,7 @@ export const navigationModel = [
                 label: 'Blog',
                 hint: 'Artikel dan catatan',
                 icon: 'articles',
-                roles: MEMBER_ROLES,
+                capabilities: ['content.access'],
                 keywords: ['blog', 'artikel', 'berita', 'catatan'],
             },
             {
@@ -236,7 +222,7 @@ export const navigationModel = [
                 label: 'Galeri',
                 hint: 'Dokumentasi kegiatan',
                 icon: 'galleries',
-                roles: MEMBER_ROLES,
+                capabilities: ['content.access'],
                 keywords: ['galeri', 'foto', 'dokumentasi', 'gallery'],
             },
             {
@@ -245,7 +231,7 @@ export const navigationModel = [
                 label: 'Materi',
                 hint: 'Materi dan berkas',
                 icon: 'materials',
-                roles: MEMBER_ROLES,
+                capabilities: ['content.access'],
                 keywords: ['materi', 'berkas', 'file', 'unduh', 'modul'],
             },
             {
@@ -254,7 +240,7 @@ export const navigationModel = [
                 label: 'Persuratan',
                 hint: 'Surat dan disposisi',
                 icon: 'letters',
-                roles: [ROLES.PEMBINA, ROLES.PENGURUS],
+                capabilities: ['letters.manage'],
                 keywords: ['surat', 'persuratan', 'disposisi', 'letter'],
             },
         ],
@@ -269,7 +255,7 @@ export const navigationModel = [
                 label: 'Poin Sistem',
                 hint: 'Poin dan penghargaan',
                 icon: 'points',
-                roles: INTERNAL_ROLES,
+                capabilities: ['points.manage'],
                 keywords: ['poin', 'points', 'skor', 'reward'],
             },
             {
@@ -278,7 +264,7 @@ export const navigationModel = [
                 label: 'Log Aktivitas',
                 hint: 'Jejak perubahan data',
                 icon: 'audit',
-                roles: [ROLES.ADMIN],
+                capabilities: ['audit.view'],
                 keywords: ['log', 'audit', 'aktivitas', 'riwayat'],
             },
             {
@@ -287,7 +273,7 @@ export const navigationModel = [
                 label: 'Izin Pengguna',
                 hint: 'Peran dan hak akses',
                 icon: 'permissions',
-                roles: [ROLES.ADMIN],
+                capabilities: ['permissions.manage'],
                 keywords: ['izin', 'permission', 'role', 'hak akses', 'peran'],
             },
             {
@@ -296,7 +282,7 @@ export const navigationModel = [
                 label: 'Tools Sistem',
                 hint: 'Cadangan dan pemeliharaan',
                 icon: 'tools',
-                roles: [ROLES.ADMIN],
+                capabilities: ['tools.manage'],
                 keywords: ['tools', 'backup', 'cadangan', 'sistem', 'perawatan'],
             },
             {
@@ -305,7 +291,7 @@ export const navigationModel = [
                 label: 'Pengaturan',
                 hint: 'Identitas ambalan',
                 icon: 'settings',
-                roles: [ROLES.ADMIN, ROLES.PEMBINA],
+                capabilities: ['settings.manage'],
                 keywords: ['pengaturan', 'settings', 'ambalan', 'konfigurasi', 'profil ambalan'],
             },
         ],
@@ -320,7 +306,7 @@ export const navigationModel = [
                 label: 'Profil',
                 hint: 'Data dan riwayat pribadi',
                 icon: 'profile',
-                roles: MEMBER_ROLES,
+                capabilities: ['profile.access'],
                 keywords: ['profil', 'profile', 'akun', 'saya', 'password'],
             },
         ],
@@ -335,7 +321,7 @@ export const navigationModel = [
                 label: 'Portal Alumni',
                 hint: 'Jaringan dan donasi alumni',
                 icon: 'alumni',
-                roles: ALUMNI_ROLES,
+                capabilities: ['alumni.access'],
                 keywords: ['alumni', 'purna', 'lulusan', 'donasi', 'direktori alumni'],
             },
         ],
@@ -347,11 +333,11 @@ export const navigationModel = [
  * sisanya tetap terjangkau lewat drawer sidebar.
  */
 export const bottomNavModel = [
-    { key: 'beranda', href: '/dashboard', label: 'Beranda', icon: 'dashboard', exact: true, roles: MEMBER_ROLES },
-    { key: 'kehadiran-nav', href: '/attendance', label: 'Kehadiran', icon: 'attendance', roles: MEMBER_ROLES },
-    { key: 'sku-nav', href: '/sku', label: 'SKU', icon: 'sku', roles: MEMBER_ROLES },
-    { key: 'peta-nav', href: '/peta', label: 'Peta', icon: 'map', roles: MEMBER_ROLES },
-    { key: 'profil-nav', href: '/profile', label: 'Profil', icon: 'profile', roles: MEMBER_ROLES },
+    { key: 'beranda', href: '/dashboard', label: 'Beranda', icon: 'dashboard', exact: true, capabilities: ['app.access'] },
+    { key: 'kehadiran-nav', href: '/attendance', label: 'Kehadiran', icon: 'attendance', capabilities: ['attendance.access'] },
+    { key: 'sku-nav', href: '/sku', label: 'SKU', icon: 'sku', capabilities: ['app.access'] },
+    { key: 'peta-nav', href: '/peta', label: 'Peta', icon: 'map', capabilities: ['app.access'] },
+    { key: 'profil-nav', href: '/profile', label: 'Profil', icon: 'profile', capabilities: ['profile.access'] },
 ];
 
 /**

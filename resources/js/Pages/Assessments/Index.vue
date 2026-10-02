@@ -36,7 +36,7 @@
     </div>
     <Pagination :links="assessments.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
 
-    <Modal v-if="showCreate" :title="'Tambah Penilaian'" @close="reset">
+    <Modal v-if="canManage && showCreate" :title="'Tambah Penilaian'" @close="reset">
       <form @submit.prevent="submit" class="grid gap-3">
         <label class="block"><span class="text-xs font-medium">Anggota</span><select v-model="form.member_id" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm"><option value="">Pilih</option><option v-for="m in members" :key="m.id" :value="m.id">{{ m.nama_lengkap }}</option></select></label>
         <label class="block"><span class="text-xs font-medium">Periode</span><input v-model="form.periode" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label>
@@ -55,13 +55,23 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useForm, Link, usePage } from '@inertiajs/vue3';
+import { useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 defineProps({ assessments: Object, members: Array });
+
+const { can } = useAccess();
+
+// Modul ini seluruhnya dibatasi Admin dan Pembina di AssessmentController, jadi
+// tidak perlu gate untuk isi halaman. Yang tetap dijaga adalah form penilaian:
+// ia mengirim POST yang akan ditolak server, dan halaman tidak boleh ikut
+// menawarkannya bila daftar kapabilitas suatu saat melebar.
+const canManage = computed(() => can('assessments.manage'));
+
 const showCreate = ref(false);
 const form = useForm({ member_id: '', periode: '', nilai_kehadiran: 0, nilai_disiplin: 0, nilai_keterampilan: 0, nilai_kepemimpinan: 0, catatan: '' });
 

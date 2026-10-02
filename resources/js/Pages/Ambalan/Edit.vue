@@ -30,7 +30,7 @@
         </div>
 
         <div class="flex gap-2 pt-2">
-          <button :disabled="form.processing" class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#EDD330] px-4 py-2 text-sm font-extrabold text-[#263D26] transition hover:from-[#EDD330] hover:to-[#A7B92A] disabled:opacity-50">
+          <button v-if="canManage" :disabled="form.processing" class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#EDD330] px-4 py-2 text-sm font-extrabold text-[#263D26] transition hover:from-[#EDD330] hover:to-[#A7B92A] disabled:opacity-50">
             {{ form.processing ? 'Menyimpan...' : 'Simpan Logo' }}
           </button>
           <button type="button" @click="removeLogo" :disabled="!ambalan?.logo_path" class="rounded-lg border border-[#ef4419]/50 px-4 py-2 text-sm font-bold text-[#ef4419] transition hover:bg-[#ef4419]/20 disabled:opacity-30">
@@ -46,10 +46,20 @@
 import { ref, computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 const props = defineProps({
   ambalan: Object,
 });
+
+const { can } = useAccess();
+
+/**
+ * AmbalanController menolak apa pun selain Admin dan Pembina pada setiap
+ * endpoint logo, jadi tombol simpan tidak boleh muncul lebih luas dari itu.
+ * Menampilkan tombol yang pasti berakhir 403 hanya menjebak pengelolanya.
+ */
+const canManage = computed(() => can('ambalan.manage'));
 
 const previewUrl = ref(null);
 const form = useForm({ logo: null });

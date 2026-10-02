@@ -7,8 +7,11 @@ use App\Models\Attendance;
 use App\Models\AttendanceSession;
 use App\Models\AuditLog;
 use App\Models\Member;
+use App\Models\User;
+use App\Support\Roles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -16,11 +19,39 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttendanceController extends Controller
 {
+    private function canManage(?User $user): bool
+    {
+        return Roles::isManagement($user);
+    }
+
+    private function guardManage(?User $user): void
+    {
+        Roles::guardManagement($user);
+    }
+
+    /**
+     * Presensi mandiri hanya untuk anggota. Rute memakai kelompok yang sama
+     * dengan SKU sehingga daftar perannya lebih longgar; pemeriksaan di sini
+     * yang benar-benar menegakkan aturan.
+     */
+    private function guardMember(?User $user): void
+    {
+        abort_unless(Roles::isMember($user), 403);
+    }
+
     public function index(Request $request): Response
     {
+        // Anggota dan peran lain tanpa hak kelola menerima halaman yang
+        // benar-benar berbeda: hanya sesi latihan, hanya catatan kehadiran
+        // sendiri, dan tanpa direktori anggota.
+        if (! $this->canManage($request->user())) {
+            return $this->memberIndex($request->user());
+        }
+
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:255'],
             'from' => ['nullable', 'date'],
@@ -66,6 +97,8 @@ class AttendanceController extends Controller
             ->paginate(15)
             ->withQueryString();
 
+        // Dipakai form tambah presensi manual supaya petugas tidak perlu
+        // mengingat NTA atau mencari anggota lewat halaman lain.
         $members = Member::where('status_aktif', 'Aktif')
             ->orderBy('nama_lengkap')
             ->get();
@@ -82,8 +115,83 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function show(AttendanceSession $attendanceSession): Response
+    /**
+     * Tampilan anggota: daftar sesi latihan beserta status kehadiran sendiri.
+     *
+     * Yang TIDAK dikirim ke peran ini, meskipun halamannya terbuka bagi semua
+     * pengguna terverifikasi:
+     *   - direktori anggota (nama, NTA, angkatan milik orang lain),
+     *   - presensi anggota lain pada sesi yang sama,
+     *   - koordinat persis titik geofence,
+     *   - token QR sesi yang sudah lewat, akan datang, atau memakai QR dinamis.
+     *
+     * Radius tetap dikirim karena sudah ditampilkan di halaman pemindai.
+     */
+    private function memberIndex(?User $user): Response
     {
+        $member = $user?->member;
+
+        $sessions = AttendanceSession::query()
+            ->orderByDesc('tanggal')
+            ->orderByDesc('id')
+            ->paginate(15);
+
+        $records = $this->ownRecords($member?->id, $sessions->getCollection()->pluck('id'));
+        $today = now()->toDateString();
+
+        $sessions->getCollection()->transform(function (AttendanceSession $session) use ($records, $today) {
+            $session->makeHidden(['latitude', 'longitude', 'createdBy']);
+            $record = $records->get($session->id);
+
+            // Token QR hanya berguna untuk sesi yang sedang berlangsung dan
+            // belum dicatat. Kalau dikirim untuk seluruh sesi, anggota bisa
+            // memakai halaman daftar untuk melakukan check-in di sesi yang
+            // sudah lewat maupun yang akan datang.
+            $isOpen = $session->tanggal === $today && $record === null;
+
+            // Sesi dengan QR dinamis tidak boleh memakai token dari daftar:
+            // token itu sudah digilir oleh pemandu, sehingga tautannya pasti
+            // 404. Anggota harus memindai kode yang benar-benar tampil.
+            $canScan = $isOpen && ! $session->qr_dynamic;
+
+            if (! $canScan) {
+                $session->makeHidden('qr_token');
+            }
+
+            $session->setAttribute('can_scan', $canScan);
+
+            $session->setAttribute('my_attendance', [
+                'keterangan' => $record?->keterangan,
+                'catatan' => $record?->catatan,
+                'checked_at' => $record?->checked_at?->toIso8601String(),
+            ]);
+
+            return $session;
+        });
+
+        return Inertia::render('Attendance/MemberIndex', [
+            'sessions' => $sessions,
+            'member' => $member ? [
+                'id' => $member->id,
+                'nama_lengkap' => $member->nama_lengkap,
+                'nta' => $member->nta,
+                'angkatan' => $member->angkatan,
+            ] : null,
+            'summary' => $this->attendanceSummary($member?->id),
+            // Akun tanpa profil anggota mendapat empty state, bukan angka nol yang
+            // terlihat seperti rekap sungguhan. Alumni tidak termasuk di sini
+            // karena middleware EnsureNotAlumni sudah mengalihkannya ke
+            // portal alumni sebelum mencapai controller.
+            'linked' => $member !== null,
+        ]);
+    }
+
+    public function show(Request $request, AttendanceSession $attendanceSession): Response
+    {
+        if (! $this->canManage($request->user())) {
+            return $this->memberShow($request->user(), $attendanceSession);
+        }
+
         $session = $attendanceSession->load(['attendances.member.user', 'ambalan']);
 
         // Dipakai form tambah presensi manual supaya petugas tidak perlu
@@ -98,9 +206,92 @@ class AttendanceController extends Controller
         ]);
     }
 
+    /**
+     * Detail sesi untuk anggota: hanya data sesi dan catatan kehadiran sendiri.
+     */
+    private function memberShow(?User $user, AttendanceSession $attendanceSession): Response
+    {
+        $session = $attendanceSession->makeHidden(['latitude', 'longitude', 'createdBy']);
+
+        $record = $this->ownRecords(
+            $user?->member?->id,
+            [$attendanceSession->id]
+        )->get($attendanceSession->id);
+
+        // Sama seperti halaman daftar: token hanya untuk sesi hari ini yang
+        // belum dicatat dan tidak memakai QR dinamis.
+        $canScan = $attendanceSession->tanggal === now()->toDateString()
+            && $record === null
+            && ! $attendanceSession->qr_dynamic;
+
+        if (! $canScan) {
+            $session->makeHidden('qr_token');
+        }
+
+        $session->setAttribute('can_scan', $canScan);
+
+        return Inertia::render('Attendance/MemberShow', [
+            'session' => $session,
+            'myAttendance' => $record === null ? null : [
+                'id' => $record->id,
+                'keterangan' => $record->keterangan,
+                'catatan' => $record->catatan,
+                'checked_at' => $record->checked_at?->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
+     * Catatan kehadiran seorang anggota pada sekumpulan sesi, diindeks per id sesi.
+     *
+     * @param  iterable<int, mixed>  $sessionIds
+     * @return Collection<int, Attendance>
+     */
+    private function ownRecords(?int $memberId, iterable $sessionIds): Collection
+    {
+        $ids = collect($sessionIds);
+
+        if ($memberId === null || $ids->isEmpty()) {
+            return collect();
+        }
+
+        return Attendance::where('member_id', $memberId)
+            ->whereIn('attendance_session_id', $ids)
+            ->get()
+            ->keyBy('attendance_session_id');
+    }
+
+    /**
+     * Rekap kehadiran pribadi untuk kartu ringkasan di halaman anggota.
+     *
+     * @return array<string, int>
+     */
+    private function attendanceSummary(?int $memberId): array
+    {
+        $counts = $memberId === null
+            ? []
+            : Attendance::where('member_id', $memberId)
+                ->selectRaw('keterangan, COUNT(*) AS total')
+                ->groupBy('keterangan')
+                ->pluck('total', 'keterangan')
+                ->all();
+
+        $hadir = (int) ($counts['Hadir'] ?? 0);
+        $total = array_sum(array_map('intval', $counts));
+
+        return [
+            'total' => $total,
+            'hadir' => $hadir,
+            'izin' => (int) ($counts['Izin'] ?? 0),
+            'sakit' => (int) ($counts['Sakit'] ?? 0),
+            'alpa' => (int) ($counts['Alpa'] ?? 0),
+            'percentage' => $total > 0 ? (int) round($hadir / $total * 100) : 0,
+        ];
+    }
+
     public function store(Request $request): RedirectResponse
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        $this->guardManage($request->user());
         $data = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
             'tanggal' => ['required', 'date'],
@@ -156,7 +347,7 @@ class AttendanceController extends Controller
 
     public function update(Request $request, AttendanceSession $attendanceSession): RedirectResponse
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        $this->guardManage($request->user());
         $data = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
             'tanggal' => ['required', 'date'],
@@ -216,7 +407,7 @@ class AttendanceController extends Controller
 
     public function destroy(Request $request, AttendanceSession $attendanceSession): RedirectResponse
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        $this->guardManage($request->user());
 
         // ValidationException (bukan abort 422) supaya Inertia mengirim galat
         // formulir ke klien. abort() hanya menghasilkan halaman 404/422 kosong
@@ -248,7 +439,7 @@ class AttendanceController extends Controller
      */
     public function bulkDestroySessions(Request $request): RedirectResponse
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        $this->guardManage($request->user());
 
         $data = $request->validate([
             'ids' => ['required', 'array', 'min:1', 'max:100'],
@@ -337,7 +528,7 @@ class AttendanceController extends Controller
 
     public function updateAttendance(Request $request, Attendance $attendance): RedirectResponse
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        $this->guardManage($request->user());
         $data = $request->validate([
             'keterangan' => ['required', 'in:Hadir,Izin,Sakit,Alpa'],
             'catatan' => ['nullable', 'string', 'max:1000'],
@@ -357,7 +548,7 @@ class AttendanceController extends Controller
 
     public function storeAttendance(Request $request, AttendanceSession $attendanceSession): RedirectResponse
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        $this->guardManage($request->user());
 
         $data = $request->validate([
             'member_id' => ['required', 'integer', 'exists:members,id'],
@@ -393,7 +584,7 @@ class AttendanceController extends Controller
 
     public function destroyAttendance(Request $request, Attendance $attendance): RedirectResponse
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        $this->guardManage($request->user());
 
         $sessionId = $attendance->attendance_session_id;
         $memberName = $attendance->member?->nama_lengkap;
@@ -416,7 +607,7 @@ class AttendanceController extends Controller
      */
     public function bulkAttendance(Request $request): RedirectResponse
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        $this->guardManage($request->user());
 
         $data = $request->validate([
             'ids' => ['required', 'array', 'min:1', 'max:500'],
@@ -469,7 +660,7 @@ class AttendanceController extends Controller
 
     public function scanPage(string $qr_token): Response
     {
-        abort_unless(in_array(request()->user()->role, ['Anggota']), 403);
+        $this->guardMember(request()->user());
         $session = AttendanceSession::where('qr_token', strtoupper($qr_token))->firstOrFail();
 
         return Inertia::render('Attendance/Scan', [
@@ -480,7 +671,8 @@ class AttendanceController extends Controller
 
     public function checkIn(Request $request): RedirectResponse|JsonResponse
     {
-        abort_unless($request->user()->role === 'Anggota', 403);
+        $user = $request->user();
+        $this->guardMember($user);
 
         // Permintaan dari antrean offline mengirim Accept: application/json agar
         // kegagalan (sesi kedaluwarsa, di luar radius) terbaca sebagai status
@@ -489,11 +681,28 @@ class AttendanceController extends Controller
 
         $data = $request->validate([
             'qr_token' => ['required', 'string', 'max:100'],
-            'member_id' => ['required', 'exists:members,id'],
+            // member_id tetap diterima karena halaman pemindai dan antrean
+            // offline mengirimkannya, tetapi TIDAK pernah dipercaya: yang
+            // menentukan adalah profil anggota milik pengguna yang sedang
+            // login. Sebelumnya nilai ini hanya dicek exists:members,id, jadi
+            // seorang anggota bisa menulis atau menimpa presensi orang lain.
+            'member_id' => ['nullable', 'integer'],
             'keterangan' => ['required', 'in:Hadir,Izin,Sakit,Alpa'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
+
+        $memberId = $user->member?->id;
+
+        if (! $memberId) {
+            $message = 'Akun ini belum terhubung dengan data anggota, sehingga presensi tidak dapat dicatat.';
+
+            if ($wantsJson) {
+                return response()->json(['message' => $message, 'errors' => ['member_id' => $message]], 422);
+            }
+
+            return back()->withErrors(['member_id' => $message]);
+        }
 
         $session = AttendanceSession::where('qr_token', strtoupper($data['qr_token']))->first();
 
@@ -555,7 +764,7 @@ class AttendanceController extends Controller
         // updateOrCreate membuat endpoint ini idempoten: pengiriman ulang dari
         // antrean offline memperbarui baris yang sama, bukan membuat duplikat.
         Attendance::updateOrCreate(
-            ['attendance_session_id' => $session->id, 'member_id' => $data['member_id']],
+            ['attendance_session_id' => $session->id, 'member_id' => $memberId],
             [
                 'keterangan' => $data['keterangan'],
                 'checked_at' => now(),
@@ -572,7 +781,7 @@ class AttendanceController extends Controller
 
     public function refreshQrToken(Request $request, AttendanceSession $attendanceSession): JsonResponse
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        $this->guardManage($request->user());
         abort_unless($attendanceSession->qr_dynamic, 422, 'QR code dinamis tidak diaktifkan untuk sesi ini.');
 
         $attendanceSession->refreshQrToken();
@@ -591,7 +800,7 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function downloadMateri(AttendanceSession $attendanceSession): BinaryFileResponse
+    public function downloadMateri(AttendanceSession $attendanceSession): StreamedResponse|BinaryFileResponse
     {
         abort_unless($attendanceSession->materi_path && Storage::disk('public')->exists($attendanceSession->materi_path), 404);
 

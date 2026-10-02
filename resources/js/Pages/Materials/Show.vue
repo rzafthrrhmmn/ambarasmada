@@ -16,7 +16,7 @@
         </div>
       </div>
       <div class="space-y-4">
-        <div v-if="material.file_path" class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm border-[#6F9435]">
+        <div v-if="material.file_path && canDownload" class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm border-[#6F9435]">
           <p class="text-xs font-semibold uppercase tracking-wide text-[#8fa06a]">Berkas</p>
           <a :href="`/materials/${material.id}/download`" target="_blank" class="mt-2 inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Unduh berkas</a>
         </div>
@@ -34,8 +34,14 @@
 import { computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 const props = defineProps({ material: Object });
+const { can } = useAccess();
+
+// Panel berkas disembunyikan menyeluruh, bukan hanya tombolnya: satu-satunya isi
+// panel adalah tautan unduh, jadi menyisakan judul "Berkas" tanpa aksi.
+const canDownload = computed(() => can('materials.download'));
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';

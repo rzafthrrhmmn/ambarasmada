@@ -3,13 +3,13 @@
     <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
         <p class="text-sm font-medium text-[#EDD330]">Keuangan Ambalan</p>
-        <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">{{ isAnggota ? 'Iuran Saya' : 'Kas dan Tabungan' }}</h1>
-        <p v-if="isAnggota" class="mt-1 text-sm text-[#8fa06a]">Riwayat pembayaran iuran dan ajukan pembayaran baru.</p>
+        <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">{{ isSelfView ? 'Iuran Saya' : 'Kas dan Tabungan' }}</h1>
+        <p v-if="isSelfView" class="mt-1 text-sm text-[#8fa06a]">Riwayat pembayaran iuran dan ajukan pembayaran baru.</p>
         <p v-else class="mt-1 text-sm text-[#8fa06a]">Catat transaksi, pantau neraca, dan jaga transparansi kas ambalan.</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <button v-if="isAnggota" @click="showPay = true" type="button" class="inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Bayar iuran</button>
-        <button v-if="! isAnggota && canManage" @click="showCreate = true" type="button" class="inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Transaksi baru</button>
+        <button v-if="canPayIuran" @click="showPay = true" type="button" class="inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Bayar iuran</button>
+        <button v-if="canManageFinance" @click="showCreate = true" type="button" class="inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Transaksi baru</button>
       </div>
     </div>
 
@@ -20,14 +20,14 @@
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 0V4m0 8v8" /></svg>
           </span>
           <p class="text-xs text-[#8fa06a]">
-            <span v-if="isAnggota">Total dibayarkan</span>
+            <span v-if="isSelfView">Total dibayarkan</span>
             <span v-else>Saldo kas</span>
           </p>
         </div>
-        <p class="text-2xl font-bold text-[#f0ead8]">{{ formatRupiah(isAnggota ? memberPayments : balance) }}</p>
+        <p class="text-2xl font-bold text-[#f0ead8]">{{ formatRupiah(isSelfView ? memberPayments : balance) }}</p>
       </div>
 
-      <div v-if="! isAnggota" class="group rounded-2xl border border-[#A7B92A]/50 bg-[#A7B92A]/20 p-5 transition hover:bg-[#A7B92A]/30">
+      <div v-if="canManageFinance" class="group rounded-2xl border border-[#A7B92A]/50 bg-[#A7B92A]/20 p-5 transition hover:bg-[#A7B92A]/30">
         <div class="mb-2 flex items-center gap-2">
           <span class="rounded-lg bg-[#263D26] p-2 text-[#A7B92A]">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v4m0 12v-4m6-6H6" /></svg>
@@ -37,7 +37,7 @@
         <p class="text-2xl font-bold text-[#A7B92A]">{{ formatRupiah(income) }}</p>
       </div>
 
-      <div v-if="! isAnggota" class="group rounded-2xl border border-[#ef4419]/50 bg-[#ef4419]/20 p-5 transition hover:bg-[#ef4419]/30">
+      <div v-if="canManageFinance" class="group rounded-2xl border border-[#ef4419]/50 bg-[#ef4419]/20 p-5 transition hover:bg-[#ef4419]/30">
         <div class="mb-2 flex items-center gap-2">
           <span class="rounded-lg bg-[#263D26] p-2 text-[#ef4419]">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v4m0 12v-4m-6-6h12" /></svg>
@@ -47,7 +47,7 @@
         <p class="text-2xl font-bold text-[#ef4419]">{{ formatRupiah(expense) }}</p>
       </div>
 
-      <div v-if="isAnggota" class="group rounded-2xl border border-[#6F9435] bg-[#335233] p-5 transition hover:border-[#A7B92B]/50">
+      <div v-if="isSelfView" class="group rounded-2xl border border-[#6F9435] bg-[#335233] p-5 transition hover:border-[#A7B92B]/50">
         <div class="mb-2 flex items-center gap-2">
           <span class="rounded-lg bg-[#263D26] p-2 text-[#A7B92B]">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m0 0v8m0-8V4" /></svg>
@@ -58,7 +58,7 @@
       </div>
     </section>
 
-    <section v-if="! isAnggota" class="mb-6 rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm">
+    <section v-if="canManageFinance" class="mb-6 rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm">
       <div class="mb-4 flex items-center justify-between">
         <h2 class="font-semibold text-[#f0ead8]">Cash Flow 6 Bulan Terakhir</h2>
         <div class="flex gap-3 text-xs">
@@ -96,9 +96,9 @@
                 <span class="rounded-full px-2.5 py-1 text-xs" :class="statusClass(item.status)">{{ item.status }}</span>
               </td>
               <td class="whitespace-nowrap px-4 py-3 text-right text-sm">
-                <button v-if="item.status === 'Draft' && canManage" @click="router.post(`/finance/${item.id}/post`)" class="mr-2 text-[#EDD330] hover:underline">Post</button>
-                <button v-if="item.status === 'Posted' && canManage" @click="router.post(`/finance/${item.id}/reverse`)" class="mr-2 text-[#EDD330] hover:underline">Balik</button>
-                <button v-if="item.status === 'Draft' && canManage" @click="router.delete(`/finance/${item.id}`)" class="text-[#ef4419] hover:underline">Hapus</button>
+                <button v-if="item.status === 'Draft' && canManageFinance" @click="router.post(`/finance/${item.id}/post`)" class="mr-2 text-[#EDD330] hover:underline">Post</button>
+                <button v-if="item.status === 'Posted' && canManageFinance" @click="router.post(`/finance/${item.id}/reverse`)" class="mr-2 text-[#EDD330] hover:underline">Balik</button>
+                <button v-if="item.status === 'Draft' && canManageFinance" @click="router.delete(`/finance/${item.id}`)" class="text-[#ef4419] hover:underline">Hapus</button>
               </td>
             </tr>
           </tbody>
@@ -108,7 +108,7 @@
       <p v-if="! transactions.data?.length" class="px-4 py-6 text-center text-xs text-[#8fa06a]">Belum ada transaksi.</p>
     </section>
 
-    <Modal v-if="showCreate && canManage" title="Tambah transaksi kas" @close="showCreate = false">
+    <Modal v-if="showCreate && canManageFinance" title="Tambah transaksi kas" @close="showCreate = false">
       <form @submit.prevent="form.post('/finance', { onSuccess: () => showCreate = false })" class="grid gap-4 sm:grid-cols-2">
         <label class="block sm:col-span-2">
           <span class="text-xs font-medium">Jenis transaksi</span>
@@ -136,7 +136,7 @@
       </form>
     </Modal>
 
-    <Modal v-if="showPay && isAnggota" title="Bayar iuran" @close="showPay = false">
+    <Modal v-if="showPay && canPayIuran" title="Bayar iuran" @close="showPay = false">
       <form @submit.prevent="payForm.post('/finance', { onSuccess: () => showPay = false })" class="grid gap-4">
         <div class="rounded-xl border border-[#A7B92A]/40 bg-[#263D26] p-4">
           <p class="text-xs font-semibold text-[#A7B92B]">Pembayaran iuran wajib</p>
@@ -162,12 +162,13 @@
 
 <script setup>
 import { computed, ref } from 'vue';
-import { router, useForm, usePage } from '@inertiajs/vue3';
+import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
 import ChartCard from '@/Components/ChartCard.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 const props = defineProps({
   transactions: Object,
@@ -182,8 +183,26 @@ const props = defineProps({
   chartExpense: Array,
 });
 
-const page = usePage();
-const isAnggota = computed(() => page.props.auth?.user?.role === 'Anggota');
+const { can } = useAccess();
+
+/**
+ * FinanceController hanya memotong daftar transaksi ke akun sendiri bila
+ * pemohon bukan pengelola kas, jadi kapabilitas finance.manage juga yang
+ * menentukan apakah halaman ini menampilkan seluruh buku kas atau hanya
+ * transaksi milik sendiri. Dengan begitu tampilan dan data yang dikirim server
+ * tidak bisa berbeda, termasuk ketika posisi juru uang berubah.
+ */
+const canManageFinance = computed(() => can('finance.manage'));
+const isSelfView = computed(() => !canManageFinance.value);
+
+/**
+ * Pembayaran iuran ditangani cabang terpisah di FinanceController::store yang
+ * hanya berlaku bagi akun beranggota. Dahulu syaratnya ditulis sebagai
+ * `finance.view && !finance.manage`, yang hanya kebetulan sama dengan
+ * "anggota": begitu finance.view ikut berubah, tombol ini ikut bergeser tanpa
+ * ada yang menyadari. finance.self.pay menyatakan syaratnya langsung.
+ */
+const canPayIuran = computed(() => can('finance.self.pay'));
 
 const memberPayments = computed(() =>
   props.transactions.data

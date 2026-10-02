@@ -409,16 +409,23 @@ class MemberController extends Controller
             'delete_foto' => ['nullable', 'boolean'],
         ]);
 
+        // Kelas, tingkatan, dan status aktif bukan milik anggota sendiri. Halaman
+        // profil sudah mengunci ketiga field itu kecuali untuk Pembina, tetapi
+        // endpoint ini menerima nilai apa pun dari request sehingga anggota bisa
+        // menaikkan dirinya sendiri menjadi Laksana atau mengubah status aktifnya sendiri.
+        // Nilai yang dikirim diabaikan; hanya Pembina dan Admin yang boleh mengubah.
+        $canEditAcademic = in_array($request->user()->role, ['Pembina', 'Admin'], true);
+
         $member->update([
             'nama_lengkap' => $data['nama_lengkap'],
             'no_hp' => $data['no_hp'] ?? null,
             'tempat_lahir' => $data['tempat_lahir'] ?? null,
             'tanggal_lahir' => $data['tanggal_lahir'] ?? null,
             'jenis_kelamin' => $data['jenis_kelamin'] ?? null,
-            'kelas' => $data['kelas'],
-            'tingkatan' => $data['tingkatan'] ?? null,
-            'tahun_lulus' => $data['tahun_lulus'] ?? null,
-            'status_aktif' => $data['status_aktif'] ?? null,
+            'kelas' => $canEditAcademic ? $data['kelas'] : $member->kelas,
+            'tingkatan' => $canEditAcademic ? ($data['tingkatan'] ?? null) : $member->tingkatan,
+            'tahun_lulus' => $canEditAcademic ? ($data['tahun_lulus'] ?? null) : $member->tahun_lulus,
+            'status_aktif' => $canEditAcademic ? ($data['status_aktif'] ?? null) : $member->status_aktif,
         ]);
 
         if ($data['delete_foto'] ?? false) {

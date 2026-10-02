@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Ambalan;
 use App\Models\Candidate;
+use App\Support\Roles;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -31,7 +32,7 @@ class CandidateController extends Controller
 
     public function store(Request $request)
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        Roles::guardApprover($request->user());
 
         $request->validate([
             'nama_lengkap' => 'required|string|max:255',
@@ -63,7 +64,7 @@ class CandidateController extends Controller
 
     public function update(Request $request, Candidate $candidate)
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        Roles::guardApprover($request->user());
 
         $request->validate([
             'status' => 'required|in:Pending,Diterima,Ditolak',

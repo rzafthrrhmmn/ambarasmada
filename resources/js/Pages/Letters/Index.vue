@@ -6,7 +6,7 @@
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Surat Masuk & Keluar</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Kelola surat keputusan, surat masuk, dan surat keluar ambalan.</p>
       </div>
-      <button v-if="canManage" @click="showCreate = true" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Tambah surat</button>
+      <button v-if="can('letters.manage')" @click="showCreate = true" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Tambah surat</button>
     </div>
 
     <div class="mb-4 flex flex-wrap items-center gap-3">
@@ -19,10 +19,10 @@
       </select>
     </div>
 
-    <div v-if="canManage" class="mb-6 rounded-2xl border-2 border-[#6F9435] bg-[#335233] p-5 shadow-lg">
+    <div v-if="can('letters.templates.manage')" class="mb-6 rounded-2xl border-2 border-[#6F9435] bg-[#335233] p-5 shadow-lg">
       <div class="mb-4 flex items-center justify-between">
         <div><p class="text-sm font-bold text-[#EDD330]">Template Surat</p><p class="mt-1 text-xs text-[#8fa06a]">Unggah file template sebagai dasar pembuatan surat.</p></div>
-        <button @click="showTemplate = true" class="rounded-lg border-2 border-[#6F9435] px-3 py-1.5 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/30 hover:text-[#EDD330]">+ Template</button>
+        <button v-if="can('letters.templates.manage')" @click="showTemplate = true" class="rounded-lg border-2 border-[#6F9435] px-3 py-1.5 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/30 hover:text-[#EDD330]">+ Template</button>
       </div>
       <div class="grid gap-2">
         <div v-for="tpl in templates" :key="tpl.id" class="flex items-center justify-between rounded-lg bg-[#263D26] p-3">
@@ -32,7 +32,7 @@
           </div>
           <div class="flex items-center gap-2">
             <a :href="`/storage/${tpl.file_path}`" target="_blank" class="text-xs text-[#EDD330] hover:underline">Unduh</a>
-            <button @click="deleteTemplate(tpl)" class="text-xs text-[#ef4419] hover:underline">Hapus</button>
+            <button v-if="can('letters.templates.manage')" @click="deleteTemplate(tpl)" class="text-xs text-[#ef4419] hover:underline">Hapus</button>
           </div>
         </div>
         <p v-if="!templates.length" class="text-center py-4 text-sm text-[#8fa06a]">Belum ada template.</p>
@@ -52,8 +52,8 @@
             <a v-if="item.file_path" :href="`/letters/${item.id}/download`" target="_blank" class="text-xs text-[#EDD330] hover:underline">Unduh Berkas</a>
             <a :href="`/letters/${item.id}/generate?format=pdf`" target="_blank" v-if="item.perihal && item.isi_surat" class="text-xs text-[#A7B92A] hover:underline">Generate PDF</a>
             <a :href="`/letters/${item.id}/generate?format=docx`" target="_blank" v-if="item.perihal && item.isi_surat" class="text-xs text-[#6F9435] hover:underline">Generate DOCX</a>
-            <button v-if="canManage" @click="openEdit(item)" class="text-xs text-[#EDD330] hover:underline">Edit</button>
-            <button v-if="canManage" @click="confirmDelete(item)" class="text-xs text-[#ef4419] hover:underline">Hapus</button>
+             <button v-if="can('letters.manage')" @click="openEdit(item)" class="text-xs text-[#EDD330] hover:underline">Edit</button>
+             <button v-if="can('letters.manage')" @click="confirmDelete(item)" class="text-xs text-[#ef4419] hover:underline">Hapus</button>
           </div>
         </div>
       </article>
@@ -62,7 +62,7 @@
 
     <Pagination :links="letters.links" />
 
-    <Modal v-if="showTemplate && canManage" title="Template surat" @close="showTemplate = false">
+    <Modal v-if="showTemplate && can('letters.templates.manage')" title="Template surat" @close="showTemplate = false">
       <form @submit.prevent="submitTemplate" class="grid gap-3">
         <label class="block"><span class="text-xs font-medium">Nama template</span><input v-model="templateForm.name" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" />
           <p v-if="templateForm.errors.name" class="mt-1 text-xs text-[#ef4419]">{{ templateForm.errors.name }}</p>
@@ -80,7 +80,7 @@
       </form>
     </Modal>
 
-    <Modal v-if="showCreate && canManage" :title="editItem ? 'Edit surat' : 'Nama surat'" @close="reset">
+    <Modal v-if="showCreate && can('letters.manage')" :title="editItem ? 'Edit surat' : 'Nama surat'" @close="reset">
       <form @submit.prevent="submitForm" class="grid gap-3">
         <label v-if="selectedTemplate" class="block rounded-lg border-2 border-[#6F9435]/50 bg-[#263D26] p-3">
           <span class="text-xs font-medium text-[#EDD330]">Template Dipilih</span>
@@ -130,13 +130,10 @@ import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 const props = defineProps({ letters: Object, templates: Array, ambalans: Array, filters: Object });
-const page = usePage();
-const canManage = computed(() => {
-  const role = page.props.auth?.user?.role;
-  return role === 'Admin' || role === 'Pembina' || role === 'Pengurus';
-});
+const { can } = useAccess();
 const showCreate = ref(false);
 const showTemplate = ref(false);
 const showPreview = ref(false);

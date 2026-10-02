@@ -14,7 +14,7 @@
             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#8fa06a]">NTA</th>
             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#8fa06a]">Email</th>
             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#8fa06a]">Terdaftar</th>
-            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#8fa06a]">Aksi</th>
+            <th v-if="canVerify" class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#8fa06a]">Aksi</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-[#6F9435]/30">
@@ -23,7 +23,7 @@
             <td class="px-4 py-3 text-sm font-mono text-[#EDD330]">{{ user.member?.nta || user.member?.nta_username || '-' }}</td>
             <td class="px-4 py-3 text-sm text-[#d4dc9a]">{{ user.email }}</td>
             <td class="px-4 py-3 text-sm text-[#8fa06a]">{{ user.created_at }}</td>
-            <td class="whitespace-nowrap px-4 py-3 text-right text-sm">
+            <td v-if="canVerify" class="whitespace-nowrap px-4 py-3 text-right text-sm">
               <button @click="approve(user.id)" class="rounded-lg bg-[#A7B92A] px-3 py-1.5 text-xs font-bold text-[#263D26] hover:brightness-110 mr-2">Setujui</button>
               <button @click="reject(user.id)" class="rounded-lg bg-[#ef4419]/20 px-3 py-1.5 text-xs font-bold text-[#ef4419] hover:bg-[#ef4419]/30">Tolak</button>
             </td>
@@ -42,12 +42,20 @@
 <script setup>
 import AppLayout from '@/Components/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
-import { defineProps } from 'vue';
+import { computed } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { useAccess } from '@/Composables/useAccess.js';
 
 const props = defineProps({
   pendingUsers: Object,
 });
+
+// Antrean ini hanya dibuka untuk Admin dan Pembina lewat middleware `pembina`,
+// dan RegistrationController::approve/reject menolak peran lain dengan 403.
+// Tombol keputusan ikut memakai kapabilitas yang sama supaya tidak pernah
+// tampil untuk orang yang pasti akan gagal saat dikirim.
+const { can } = useAccess();
+const canVerify = computed(() => can('members.pending.review'));
 
 function approve(userId) {
   if (!confirm('Setujui akun ini?')) return;

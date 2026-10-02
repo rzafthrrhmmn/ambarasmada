@@ -43,18 +43,25 @@
       </div>
     </section>
 
-    <Link v-if="isAdmin" :href="`/meetings`" class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/30 hover:text-[#EDD330]">← Kembali</Link>
+    <Link v-if="canManage" :href="`/meetings`" class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/30 hover:text-[#EDD330]">← Kembali</Link>
   </AppLayout>
 </template>
 
 <script setup>
 import { computed } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 defineProps({ meeting: Object });
-const page = usePage();
-const isAdmin = computed(() => page.props.auth?.user?.role === 'Admin' || page.props.auth?.user?.role === 'Pembina');
+
+const { can } = useAccess();
+
+// Gate lama membandingkan nilai role langsung di template. Admin dan Pembina
+// persis penjaga toggleAttendee di MeetingController, yaitu pihak yang boleh
+// menyentuh hasil suara dan kehadiran peserta, jadi sekarang dibaca dari daftar
+// kapabilitas.
+const canManage = computed(() => can('meetings.vote.manage'));
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';

@@ -44,13 +44,21 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useForm, Link, usePage } from '@inertiajs/vue3';
+import { useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
-defineProps({ meetings: Object, canManage: Boolean });
+defineProps({ meetings: Object });
+
+const { can } = useAccess();
+
+// Controller hanya mengirim meetings dan filters, jadi declareProps lama
+// membuat nilai canManage selalu false dan tombol rapat baru tidak tampil.
+const canManage = computed(() => can('meetings.manage'));
+
 const showCreate = ref(false);
 const editingMeeting = ref(null);
 const form = useForm({ judul: '', agenda: '', tanggal: '', lokasi: '', jenis: 'Musyawarah', status: 'Draft' });

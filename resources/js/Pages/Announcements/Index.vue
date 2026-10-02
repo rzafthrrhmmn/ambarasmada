@@ -48,16 +48,14 @@
 
 <script setup>
 import { computed, ref } from 'vue';
-import { useForm, usePage } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 defineProps({ announcements: Object });
-const page = usePage();
-const canManage = computed(() => {
-  const role = page.props.auth?.user?.role;
-  return role === 'Admin' || role === 'Pembina' || role === 'Pengurus';
-});
+const { can } = useAccess();
+const canManage = computed(() => can('announcements.manage'));
 const showCreate = ref(false);
 const editItem = ref(null);
 const form = useForm({ judul: '', isi: '', image: null });

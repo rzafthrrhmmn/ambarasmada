@@ -23,7 +23,10 @@
       </div>
     </div>
 
-    <div class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
+    <!-- Poin menentukan penilaian dan penghargaan, jadi menambah serta menghapusnya
+         hanya untuk pengelola. Capability-nya sama dengan navigasi "Poin Sistem"
+         supaya menu dan tombol tidak pernah berbeda. -->
+    <div v-if="canManagePoints" class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
       <p class="text-sm font-semibold text-[#EDD330]">Tambah Poin</p>
       <form @submit.prevent="addPoint" class="mt-3 grid gap-3 sm:grid-cols-3">
         <select v-model="form.member_id" required class="rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]">
@@ -59,7 +62,7 @@
             </div>
             <div class="flex items-center gap-2">
               <span class="rounded-full bg-[#A7B92A]/20 px-2.5 py-1 text-xs font-bold text-[#A7B92A]">+{{ p.poin }}</span>
-              <button @click="deletePoint(p)" class="rounded-lg border border-[#ef4419]/50 px-3 py-1.5 text-xs font-semibold text-[#ef4419] hover:bg-[#ef4419]/10">Hapus</button>
+              <button v-if="canManagePoints" @click="deletePoint(p)" class="rounded-lg border border-[#ef4419]/50 px-3 py-1.5 text-xs font-semibold text-[#ef4419] hover:bg-[#ef4419]/10">Hapus</button>
             </div>
           </div>
         </div>
@@ -76,8 +79,12 @@ import { useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 defineProps({ points: Object, totalPoints: Number, filters: Object, allMembers: Array });
+
+const { can } = useAccess();
+const canManagePoints = computed(() => can('points.manage'));
 
 const categories = computed(() => [...new Set(points.data.map(p => p.kategori))]);
 

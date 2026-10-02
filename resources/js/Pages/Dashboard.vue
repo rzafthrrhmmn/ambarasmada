@@ -20,18 +20,18 @@
       </div>
     </div>
 
-    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <section v-if="canViewMetrics" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard v-for="(value, label) in stats" :key="label" :label="labels[label]" :value="value" :icon="icons[label]" v-if="!loading" />
       <SkeletonLoader v-for="i in (loading ? 4 : 0)" :key="i" variant="card" class="h-24" />
     </section>
 
-    <section class="mt-6 grid gap-6" :class="isMember ? 'xl:grid-cols-3' : 'xl:grid-cols-2'">
+    <section class="mt-6 grid gap-6" :class="isAnggota ? 'xl:grid-cols-3' : 'xl:grid-cols-2'">
       <div v-if="loading" class="space-y-4 xl:col-span-1">
         <SkeletonLoader variant="chart" />
       </div>
-      <ActivityCalendar v-else-if="isMember" :sessions="upcomingSessions" class="xl:col-span-1" />
-      <SkeletonLoader v-if="loading" variant="chart" :class="{'xl:col-span-2': !isMember, 'xl:col-span-1': isMember}" />
-      <UpcomingActivities v-else-if="isMember" :sessions="upcomingSessions" :attended-session-ids="attendedSessionIds" :class="isMember ? 'xl:col-span-2' : 'xl:col-span-1'" />
+      <ActivityCalendar v-else-if="isAnggota" :sessions="upcomingSessions" class="xl:col-span-1" />
+      <SkeletonLoader v-if="loading" variant="chart" :class="{'xl:col-span-2': !isAnggota, 'xl:col-span-1': isAnggota}" />
+      <UpcomingActivities v-else-if="isAnggota" :sessions="upcomingSessions" :attended-session-ids="attendedSessionIds" :class="isAnggota ? 'xl:col-span-2' : 'xl:col-span-1'" />
     </section>
 
     <section class="mt-6 grid gap-6 xl:grid-cols-3">
@@ -46,7 +46,7 @@
             <p class="text-xs font-medium text-[#8fa06a]">Antrean terbaru dari anggota ambalan</p>
           </div>
           <SkeletonLoader v-if="loading" variant="text" :lines="1" class="h-5 w-24" />
-          <Link v-else-if="!isMember" href="/sku" class="text-xs font-bold text-[#A7B92B] hover:text-[#EDD330]">Lihat semua</Link>
+          <Link v-else-if="!isAnggota" href="/sku" class="text-xs font-bold text-[#A7B92B] hover:text-[#EDD330]">Lihat semua</Link>
         </div>
         <div v-if="loading" class="space-y-3">
           <SkeletonLoader v-for="i in 3" :key="i" variant="list" :lines="2" class="h-14" />
@@ -118,12 +118,22 @@ import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import { useAccess } from '@/Composables/useAccess.js';
 
 defineProps({ member: Object, stats: Object, pendingSku: Array, announcements: Array, upcomingSessions: Array, attendedSessionIds: Array, tkuData: Array, tkkPoints: Array, skuPointsByLevel: Object, upcomingEvents: Array, teams: Array, unreadCount: Number });
 const page = usePage();
-const role = computed(() => page.props?.auth?.user?.role);
-const isMember = computed(() => role.value === 'Anggota');
-const isAdminOrPembina = computed(() => role.value === 'Pembina' || role.value === 'Admin');
+// `isAnggota` sengaja bukan `!can('dashboard.view_metrics')`. Pengurus termasuk
+// kelompok approver, sehingga bentuk kedua itu juga bernilai benar untuk dia,
+// padahal dia bukan anggota dan tidak punya catatan kehadiran pribadi di sini.
+const { can, isAnggota } = useAccess();
+
+/**
+ * Ringkasan angka hanya untuk pengambil keputusan. Kolom "Total anggota" dan
+ * "Transaksi kas" di sini adalah angka seluruh ambalan, jadi membukanya bagi
+ * anggota atau pengurus tidak menambah manfaat apa pun.
+ */
+const canViewMetrics = computed(() => can('dashboard.view_metrics'));
+
 const loading = computed(() => !page.props.stats && !page.props.pendingSku && !page.props.announcements);
 const labels = { members: 'Total anggota', attendance: 'Rekap kehadiran', sku: 'Pengajuan SKU', finance: 'Transaksi kas' };
 const icons = {
