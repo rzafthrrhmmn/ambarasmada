@@ -1,4 +1,4 @@
-﻿const CACHE_VERSION = 'v1.4.2';
+﻿const CACHE_VERSION = 'v1.4.3';
 const CACHE_NAME = 'jaya-jaya-jaya-' + CACHE_VERSION;
 const ASSETS_CACHE = 'jaya-jaya-jaya-assets-' + CACHE_VERSION;
 const TILES_CACHE = 'jaya-jaya-jaya-tiles-' + CACHE_VERSION;
@@ -91,6 +91,14 @@ const APP_SHELL = '/';
 // purgeUserScopedCaches) karena props Inertia memuat data per-pengguna.
 const INERTIA_CACHE = 'jaya-jaya-jaya-inertia-' + CACHE_VERSION;
 
+// Halaman peta offline yang dihasilkan generateOfflineMapHTML(). Wajib
+// bertahan dari garbage collection activate, kalau tidak setiap pembaruan
+// service worker menghapus peta offline yang baru saja pengguna unduh.
+const OFFLINE_HTML_CACHE = 'jaya-jaya-jaya-offline-html';
+
+// Path tempat halaman peta offline hasil unduhan disimpan.
+const OFFLINE_MAP_HTML = '/offline-map.html';
+
 self.addEventListener('install', (event) => {
     event.waitUntil(
         Promise.all([
@@ -131,7 +139,14 @@ self.addEventListener('activate', (event) => {
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((name) => {
-                    if (name !== CACHE_NAME && name !== ASSETS_CACHE && name !== TILES_CACHE && name !== INERTIA_CACHE) {
+                    const keep = [
+                        CACHE_NAME,
+                        ASSETS_CACHE,
+                        TILES_CACHE,
+                        INERTIA_CACHE,
+                        OFFLINE_HTML_CACHE,
+                    ];
+                    if (!keep.includes(name)) {
                         return caches.delete(name);
                     }
                 })
@@ -217,6 +232,23 @@ self.addEventListener('fetch', (event) => {
  * error browser; OfflineBanner memberi tahu pengguna sedang offline.
  */
 async function handleNavigate(request) {
+    // Halaman peta offline hanya ada di Cache Storage, tidak pernah di origin:
+    // /offline-map.html akan jatuh ke catch-all Laravel dan membalas 404, jadi
+    // harus dilayani dari cache sebelum jaringan dicoba.
+    if (new URL(request.url).pathname === OFFLINE_MAP_HTML) {
+        const generated = await caches.match(OFFLINE_MAP_HTML);
+
+        if (generated) return generated;
+
+        return new Response(
+            '<!doctype html><meta charset="utf-8"><title>Peta Offline</title>' +
+                '<body style="background:#263D26;color:#f0ead8;font-family:sans-serif;padding:2rem">' +
+                '<h1 style="color:#EDD330">Peta Offline Belum Disimpan</h1>' +
+                '<p>Unduh peta offline terlebih dahulu dari halaman Peta.</p></body>',
+            { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        );
+    }
+
     try {
         return await fetch(request);
     } catch {
@@ -329,12 +361,13 @@ async function handleOfflineTileRequest(request) {
         const tile = await getTileFromDB(db, zoom, tileX, tileY);
         
         if (tile && tile.data) {
-            // Return tile data with appropriate headers
+            // Data tile disimpan dalam bentuk yang sudah didekompresi, jadi
+            // header Content-Encoding: gzip akan membuat MapLibre gagal
+            // mendecode MVT dan layer tidak pernah tergambar.
             return new Response(tile.data, {
                 status: 200,
                 headers: {
                     'Content-Type': 'application/vnd.mapbox-vector-tile',
-                    'Content-Encoding': 'gzip',
                     'Cache-Control': 'public, max-age=31536000, immutable',
                 },
             });
@@ -388,138 +421,261 @@ self.addEventListener('message', (event) => {
 });
 
 async function handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName) {
-    const west = bbox.west;
-    const east = bbox.east;
-    const south = bbox.south;
-    const north = bbox.north;
-
     function sendProgress(status, downloaded, total) {
         port.postMessage({ type: 'DOWNLOAD_PROGRESS', status, downloaded, total });
     }
 
-    sendProgress('Memulai pengunduhan...', 0, 0);
+    sendProgress('Menyiapkan arsip peta...', 0, 0);
 
-    let totalTiles = 0;
-    let downloadedTiles = 0;
-    const tileQueue = [];
+    let db = null;
+
+    try {
+        const reader = await initPMTilesReader(pmtilesUrl);
+
+        // Arsip pmtiles produksi hanya memuat z8-z12. Meminta level di luar
+        // rentang itu hanya menambah tile yang pasti tidak ada, jadi rentang
+        //effective dipotong ke rentang arsip.
+        const effMin = Math.max(zoomMin, reader.minZoom);
+        const effMax = Math.min(zoomMax, reader.maxZoom);
+
+        if (effMin > effMax) {
+            port.postMessage({
+                type: 'DOWNLOAD_ERROR',
+                error: `Arsip peta hanya memuat level zoom ${reader.minZoom}-${reader.maxZoom}.`,
+            });
+            return;
+        }
+
+        if (effMin !== zoomMin || effMax !== zoomMax) {
+            sendProgress(`Level zoom dibatasi ${effMin}-${effMax} sesuai arsip`, 0, 0);
+        }
+
+        const tileQueue = buildTileQueue(bbox, effMin, effMax);
+        if (tileQueue.length === 0) {
+            port.postMessage({
+                type: 'DOWNLOAD_ERROR',
+                error: 'Wilayah terpilih tidak menghasilkan satu pun tile.',
+            });
+            return;
+        }
+
+        db = await openTilesDB();
+        sendProgress('Mengunduh tile...', 0, tileQueue.length);
+
+        let downloadedTiles = 0;
+        let missingTiles = 0;
+        let processed = 0;
+
+        for (const tile of tileQueue) {
+            try {
+                const data = await reader.getTile(tile.z, tile.x, tile.y);
+                if (data && data.byteLength) {
+                    await storeTile(db, tile.z, tile.x, tile.y, data);
+                    downloadedTiles++;
+                } else {
+                    missingTiles++;
+                }
+            } catch {
+                missingTiles++;
+            }
+
+            processed++;
+            if (processed % 25 === 0 || processed === tileQueue.length) {
+                sendProgress('Mengunduh...', downloadedTiles, tileQueue.length);
+            }
+        }
+
+        // Dulu setiap kegagalan ditelan dan halaman tetap melaporkan "Selesai!
+        // 0 tile", sehingga penyebabnya tidak pernah terlihat oleh pengguna.
+        if (downloadedTiles === 0) {
+            port.postMessage({
+                type: 'DOWNLOAD_ERROR',
+                error: `Tidak ada tile yang bisa diunduh dari ${tileQueue.length} tile yang diminta. Periksa koneksi dan alamat arsip peta.`,
+            });
+            return;
+        }
+
+        if (layoutOptions) {
+            sendProgress('Membuat layout peta offline...', downloadedTiles, tileQueue.length);
+            await generateOfflineMapHTML(db, bbox, effMin, effMax, geojsonUrl, layoutOptions, areaName);
+        }
+
+        sendProgress('Selesai', downloadedTiles, tileQueue.length);
+        port.postMessage({
+            type: 'DOWNLOAD_COMPLETE',
+            downloaded: downloadedTiles,
+            total: tileQueue.length,
+            skipped: missingTiles,
+            zoomMin: effMin,
+            zoomMax: effMax,
+        });
+    } catch (error) {
+        // Tanpa jalur ini, kegagalan di dalam service worker tidak pernah sampai
+        // ke halaman dan tombol unduh menggantung selamanya.
+        port.postMessage({
+            type: 'DOWNLOAD_ERROR',
+            error: `Gagal mengunduh peta: ${error.message}`,
+        });
+    } finally {
+        if (db) db.close();
+    }
+}
+
+/**
+ * Susun daftar tile Web Mercator yang menutupi bbox pada rentang zoom tertentu.
+ * Rumus dan pembulatan di sini harus identik dengan estimasi di halaman
+ * (estimatedTiles) supaya jumlah tile yang benar-benar diunduh sama dengan
+ * angka "Estimasi tile" yang tampil di modal.
+ */
+function buildTileQueue(bbox, zoomMin, zoomMax) {
+    const { west, east, south, north } = bbox;
+    const queue = [];
+
+    const latRadN = (north * Math.PI) / 180;
+    const latRadS = (south * Math.PI) / 180;
 
     for (let z = zoomMin; z <= zoomMax; z++) {
-        const xMin = Math.floor(((west + 180) / 360) * Math.pow(2, z));
-        const xMax = Math.ceil(((east + 180) / 360) * Math.pow(2, z)) - 1;
-        const latRadN = (north * Math.PI) / 180;
-        const latRadS = (south * Math.PI) / 180;
-        const yMin = Math.ceil((1 - Math.log(Math.tan(latRadN) + 1 / Math.cos(latRadN)) / Math.PI) / 2 * Math.pow(2, z));
-        const yMax = Math.floor((1 - Math.log(Math.tan(latRadS) + 1 / Math.cos(latRadS)) / Math.PI) / 2 * Math.pow(2, z));
+        const scale = Math.pow(2, z);
+        const xMin = Math.floor(((west + 180) / 360) * scale);
+        const xMax = Math.ceil(((east + 180) / 360) * scale) - 1;
+        const yMin = Math.ceil(((1 - Math.log(Math.tan(latRadN) + 1 / Math.cos(latRadN)) / Math.PI) / 2) * scale);
+        const yMax = Math.floor(((1 - Math.log(Math.tan(latRadS) + 1 / Math.cos(latRadS)) / Math.PI) / 2) * scale);
 
         for (let x = xMin; x <= xMax; x++) {
             for (let y = yMin; y <= yMax; y++) {
-                tileQueue.push({ z, x, y });
+                queue.push({ z, x, y });
             }
         }
     }
 
-    totalTiles = tileQueue.length;
-    sendProgress('Mengunduh tile...', 0, totalTiles);
-
-    const db = await openTilesDB();
-
-    // Initialize PMTiles reader for the archive
-    const pmtilesReader = await initPMTilesReader(pmtilesUrl);
-
-    for (const tile of tileQueue) {
-        try {
-            const data = await pmtilesReader.getTile(tile.z, tile.x, tile.y);
-            if (data) {
-                await storeTile(db, tile.z, tile.x, tile.y, data);
-                downloadedTiles++;
-            }
-        } catch {
-            // Skip failed tile
-        }
-
-        if (downloadedTiles % 50 === 0 || downloadedTiles === totalTiles) {
-            sendProgress('Mengunduh...', downloadedTiles, totalTiles);
-        }
-    }
-
-    // Generate offline map HTML with professional layout (before closing db)
-    if (layoutOptions) {
-        sendProgress('Membuat layout peta offline...', downloadedTiles, totalTiles);
-        await generateOfflineMapHTML(db, bbox, zoomMin, zoomMax, geojsonUrl, layoutOptions, areaName);
-    }
-
-    await db.close();
-
-    sendProgress('Selesai', downloadedTiles, totalTiles);
-    port.postMessage({ type: 'DOWNLOAD_COMPLETE', downloaded: downloadedTiles, total: totalTiles });
+    return queue;
 }
 
 async function initPMTilesReader(pmtilesUrl) {
-    // Fetch the PMTiles header to get metadata
+    // Header PMTiles v3 selalu 127 byte. Susunannya:
+    //   0-6 magic, 7 versi, 8-15 root offset, 16-23 root length,
+    //   24-31 metadata offset, 32-39 metadata length,
+    //   40-47 leaf offset, 48-55 leaf length,
+    //   56-63 tile data offset, 64-71 tile data length,
+    //   72-79 jumlah tile yang dialamat, 80-87 jumlah entri,
+    //   88-95 jumlah isi, 96 clustered, 97 kompresi internal,
+    //   98 kompresi tile, 99 tipe tile, 100 min zoom, 101 max zoom,
+    //   102-117 bounding box (int32 x 1e7), 118 center zoom,
+    //   119-126 center lon/lat (int32 x 1e7).
     const headerResp = await fetch(pmtilesUrl, { headers: { Range: 'bytes=0-16383' } });
+
+    if (!headerResp.ok) {
+        throw new Error(`Arsip peta tidak dapat diakses (HTTP ${headerResp.status})`);
+    }
+
     const headerData = await headerResp.arrayBuffer();
-    
+
     const view = new DataView(headerData);
     if (view.getUint16(0, true) !== 0x4d50) {
-        throw new Error('Not a PMTiles file');
+        throw new Error('Berkas bukan arsip PMTiles');
     }
-    
-    const specVersion = view.getUint8(2);
+
     const rootOffset = readUint64(view, 8);
     const rootLength = readUint64(view, 16);
-    const tileDataOffset = readUint64(view, 40);
-    const minZoom = view.getUint8(83);
-    const maxZoom = view.getUint8(84);
-    const minLat = readInt64(view, 85) / 1e7;
-    const minLon = readInt64(view, 93) / 1e7;
-    const maxLat = readInt64(view, 101) / 1e7;
-    const maxLon = readInt64(view, 109) / 1e7;
-    const tileType = view.getUint8(81);
-    const tileCompression = view.getUint8(80);
-    const internalCompression = view.getUint8(82);
+    const leafOffset = readUint64(view, 40);
+    const tileDataOffset = readUint64(view, 56);
+    const minZoom = view.getUint8(100);
+    const maxZoom = view.getUint8(101);
+    const minLat = view.getInt32(106, true) / 1e7;
+    const minLon = view.getInt32(102, true) / 1e7;
+    const maxLat = view.getInt32(114, true) / 1e7;
+    const maxLon = view.getInt32(110, true) / 1e7;
+    const tileType = view.getUint8(99);
+    const tileCompression = view.getUint8(98);
+    const internalCompression = view.getUint8(97);
 
-    // Fetch root directory
-    const rootResp = await fetch(pmtilesUrl, { 
-        headers: { Range: `bytes=${rootOffset}-${rootOffset + rootLength - 1}` } 
-    });
-    const rootData = await rootResp.arrayBuffer();
-    
-    const rootEntries = parseDirectory(rootData, internalCompression);
-    
+    if (!maxZoom || minZoom > maxZoom) {
+        throw new Error('Header arsip peta tidak memuat rentang zoom yang sah');
+    }
+
+    async function fetchRange(offset, length) {
+        const resp = await fetch(pmtilesUrl, {
+            headers: { Range: `bytes=${offset}-${offset + length - 1}` },
+        });
+        if (!resp.ok) return null;
+        return resp.arrayBuffer();
+    }
+
+    const rootData = await fetchRange(rootOffset, rootLength);
+    if (!rootData) {
+        throw new Error('Direktori root arsip peta tidak dapat dibaca');
+    }
+
+    const rootEntries = await parseDirectory(rootData, internalCompression);
+
     return {
         pmtilesUrl,
         tileDataOffset,
         minZoom,
         maxZoom,
+        minLat,
+        minLon,
+        maxLat,
+        maxLon,
         tileType,
         tileCompression,
         rootEntries,
-        
+
+        /**
+         * Telusuri entri tile, descend ke direktori leaf bila direktori yang
+         * sedang dicari hanya berisi pointer (runLength 0). Arsip besar punya
+         * root directory > 16 KB sehingga sebagian tile tidak ada di root.
+         */
+        async findEntry(entries, tileId, depth) {
+            const entry = findTile(entries, tileId);
+            if (!entry) return null;
+
+            // runLength > 0 berarti entri tile; runLength 0 berarti entri
+            // direktori leaf dengan panjang di entry.length.
+            if (entry.runLength > 0) return entry;
+
+            if (depth >= 3) return null;
+
+            const leafData = await fetchRange(leafOffset + entry.offset, entry.length);
+            if (!leafData) return null;
+
+            const leafEntries = await parseDirectory(leafData, internalCompression);
+            return this.findEntry(leafEntries, tileId, depth + 1);
+        },
+
         async getTile(z, x, y) {
-            const tileId = zxyToTileId(z, x, y);
-            const entry = findTile(this.rootEntries, tileId);
-            if (!entry || entry.runLength === 0) return null;
-            
-            const offset = this.tileDataOffset + entry.offset;
-            const length = entry.length;
-            
-            const tileResp = await fetch(this.pmtilesUrl, { 
-                headers: { Range: `bytes=${offset}-${offset + length - 1}` } 
-            });
-            if (!tileResp.ok) return null;
-            
-            let data = await tileResp.arrayBuffer();
-            
-            // Decompress if needed
-            if (this.tileCompression === 2) { // Gzip
-                const ds = new DecompressionStream('gzip');
-                const decompressed = await new Response(data).body.pipeThrough(ds).arrayBuffer();
-                data = decompressed;
+            if (z < this.minZoom || z > this.maxZoom) return null;
+
+            let tileId;
+            try {
+                tileId = zxyToTileId(z, x, y);
+            } catch {
+                return null;
             }
-            
-            return data;
-        }
+
+            const entry = await this.findEntry(this.rootEntries, tileId, 0);
+            if (!entry) return null;
+
+            const offset = this.tileDataOffset + entry.offset;
+            const data = await fetchRange(offset, entry.length);
+            if (!data) return null;
+
+            if (this.tileCompression === 2) {
+                // Tile disimpan sudah InflationStream-didekompresi, jadi tidak
+                // perlu-header Content-Encoding saat dilayani lagi.
+                return await inflateGzip(data);
+            }
+
+            if (this.tileCompression === 1) return data;
+
+            return await inflateGzip(data);
+        },
     };
+}
+
+async function inflateGzip(buffer) {
+    const stream = new Response(buffer).body.pipeThrough(new DecompressionStream('gzip'));
+    return await new Response(stream).arrayBuffer();
 }
 
 function readUint64(view, offset) {
@@ -534,78 +690,127 @@ function readInt64(view, offset) {
     return high * 0x100000000 + low;
 }
 
+/**
+ * PMTiles v3 mengurutkan tile dengan kurva Hilbert, bukan sekadar
+ * menyisipkan bit x dan y berselang-seling.
+ *
+ * Versi lama memakai bit-interleave, sehingga zxyToTileId() menghasilkan
+ * nomor yang tidak pernah ada di direktori arsip: findTile() mengembalikan
+ * null untuk setiap tile, galat-nya ditelan di dalam loop, dan unduhan
+ * selesai dengan "0 tile berhasil diunduh".
+ *
+ * Implementasi ini sama dengan pmtiles v3/v4 (lihat fungsi zxyToTileId di
+ * paket pmtiles), termasuk rotasi kurva Hilbert di setiap tingkat zoom.
+ */
 function zxyToTileId(z, x, y) {
-    if (z >= 32) throw new Error('Zoom too high');
-    const n = 1 << z;
-    let id = 0;
-    let bit = 0;
-    while (bit < z) {
-        const mask = 1 << bit;
-        if (x & mask) id |= 1 << (2 * bit);
-        if (y & mask) id |= 1 << (2 * bit + 1);
-        bit++;
+    if (z > 26) {
+        throw new Error('Level zoom tile melebihi batas aman (26)');
     }
-    return id + ((1 << (2 * z)) - 1) / 3;
+    if (x >= 1 << z || y >= 1 << z) {
+        throw new Error('Koordinat tile di luar batas level zoom');
+    }
+
+    let acc = ((1 << z) * (1 << z) - 1) / 3;
+    let a = z - 1;
+    let [tx, ty] = [x, y];
+
+    for (let s = 1 << a; s > 0; s >>= 1) {
+        const rx = tx & s;
+        const ry = ty & s;
+        acc += ((3 * rx) ^ ry) * (1 << a);
+        [tx, ty] = rotateHilbert(s, tx, ty, rx, ry);
+        a--;
+    }
+
+    return acc;
 }
 
+function rotateHilbert(n, x, y, rx, ry) {
+    if (ry === 0) {
+        if (rx !== 0) return [n - 1 - y, n - 1 - x];
+        return [y, x];
+    }
+    return [x, y];
+}
+
+/**
+ * Baca direktori PMTiles. Kolomnya diserialisasi terpisah: jumlah entri,
+ * delta tileId, runLength, panjang, lalu offset. Offset kolom pertama
+ * disimpan relatif terhadap entri sebelumnya (nilai varint 0), sehingga harus
+ * dihitung ulang secara berurutan.
+ */
 async function parseDirectory(data, compression) {
     let bytes = new Uint8Array(data);
-    if (compression === 2) { // Gzip
-        const ds = new DecompressionStream('gzip');
-        bytes = new Uint8Array(await new Response(bytes).body.pipeThrough(ds).arrayBuffer());
+    if (compression === 2) {
+        bytes = new Uint8Array(await inflateGzip(bytes));
     }
-    
+
     const entries = [];
     const posRef = { pos: 0 };
     const numEntries = readVarint(bytes, posRef);
-    
+
     let lastId = 0;
     for (let i = 0; i < numEntries; i++) {
-        const v = readVarint(bytes, posRef);
-        lastId += v;
+        lastId += readVarint(bytes, posRef);
         entries.push({ tileId: lastId, offset: 0, length: 0, runLength: 1 });
     }
-    
+
     for (let i = 0; i < numEntries; i++) {
         entries[i].runLength = readVarint(bytes, posRef);
     }
-    
+
     for (let i = 0; i < numEntries; i++) {
         entries[i].length = readVarint(bytes, posRef);
     }
-    
+
+    let lastEnd = 0;
     for (let i = 0; i < numEntries; i++) {
         const v = readVarint(bytes, posRef);
-        entries[i].offset = v === 0 && i > 0 ? entries[i-1].offset + entries[i-1].length : v - 1;
+        entries[i].offset = v === 0 && i > 0 ? lastEnd : v - 1;
+        lastEnd = entries[i].offset + entries[i].length;
     }
-    
+
     return entries;
 }
 
+/**
+ * Varint PMTiles bisa melebihi 32 bit, jadi bit digeser dengan perkalian dan
+ * bukan operator << yang selalu bekerja pada 32 bit signed.
+ */
 function readVarint(bytes, posRef) {
     let val = 0;
     let shift = 0;
-    while (true) {
+
+    for (let i = 0; i < 10; i++) {
         const b = bytes[posRef.pos++];
-        val |= (b & 0x7f) << shift;
-        if (b < 0x80) break;
+        val += (b & 0x7f) * 2 ** shift;
+        if (b < 0x80) return val;
         shift += 7;
     }
-    return val;
+
+    throw new Error('Varint PMTiles melebihi 10 byte');
 }
 
 function findTile(entries, tileId) {
-    let lo = 0, hi = entries.length - 1;
+    let lo = 0;
+    let hi = entries.length - 1;
+
     while (lo <= hi) {
         const mid = (lo + hi) >> 1;
-        const diff = tileId - entries[mid].tileId;
-        if (diff > 0) lo = mid + 1;
-        else if (diff < 0) hi = mid - 1;
+        const cmp = tileId - entries[mid].tileId;
+        if (cmp > 0) lo = mid + 1;
+        else if (cmp < 0) hi = mid - 1;
         else return entries[mid];
     }
-    if (hi >= 0 && entries[hi].runLength > 0 && tileId - entries[hi].tileId < entries[hi].runLength) {
-        return entries[hi];
+
+    // Binary search berhenti dengan lo > hi. Entri di indeks hi masih mungkin
+    // mencakup tile yang dicari lewat runLength (beberapa tile berurutan
+    // memakai data yang sama), atau merupakan pointer direktori leaf.
+    if (hi >= 0) {
+        if (entries[hi].runLength === 0) return entries[hi];
+        if (tileId - entries[hi].tileId < entries[hi].runLength) return entries[hi];
     }
+
     return null;
 }
 
@@ -632,11 +837,11 @@ async function generateOfflineMapHTML(db, bbox, zoomMin, zoomMax, geojsonUrl, la
     });
 
     // Store the HTML for offline access
-    const htmlCache = await caches.open('jaya-jaya-jaya-offline-html');
+    const htmlCache = await caches.open(OFFLINE_HTML_CACHE);
     const response = new Response(html, {
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
     });
-    await htmlCache.put('/offline-map.html', response);
+    await htmlCache.put(OFFLINE_MAP_HTML, response);
 }
 
 async function getElevationStats(db) {
@@ -941,7 +1146,7 @@ async function storeTile(db, z, x, y, data) {
         const tx = db.transaction('tiles', 'readwrite');
         const store = tx.objectStore('tiles');
         const tileId = `${z}/${x}/${y}`;
-        const putRequest = store.put({ id: tileId, z, x, y, data });
+        const putRequest = store.put({ id: tileId, zxy: tileId, z, x, y, data });
         putRequest.onsuccess = () => resolve();
         putRequest.onerror = (e) => reject(e.target.error);
     });

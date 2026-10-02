@@ -15,6 +15,13 @@
           Unduh Peta Offline
         </button>
         <button
+          @click="printMapPng"
+          :disabled="isExporting || loading"
+          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {{ isExporting ? 'Menyiapkan PNG...' : 'Cetak Peta PNG' }}
+        </button>
+        <button
           @click="toggleLayer"
           class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
         >
@@ -108,18 +115,21 @@
     <div class="space-y-4">
       <div>
         <label class="block text-xs font-medium text-[#d4dc9a]">Zoom Min</label>
-        <input v-model.number="offlineZoomMin" type="range" min="8" max="15" class="mt-1 w-full" />
+        <input v-model.number="offlineZoomMin" type="range" :min="zoomBounds.min" :max="zoomBounds.max" class="mt-1 w-full" />
         <p class="text-xs text-[#8fa06a]">Zoom: {{ offlineZoomMin }}</p>
       </div>
       <div>
         <label class="block text-xs font-medium text-[#d4dc9a]">Zoom Max</label>
-        <input v-model.number="offlineZoomMax" type="range" min="8" max="15" class="mt-1 w-full" />
+        <input v-model.number="offlineZoomMax" type="range" :min="zoomBounds.min" :max="zoomBounds.max" class="mt-1 w-full" />
         <p class="text-xs text-[#8fa06a]">Zoom: {{ offlineZoomMax }}</p>
       </div>
       <div class="rounded-lg bg-[#263D26] p-3 text-xs text-[#8fa06a]">
         <p>Area: Bounding Box Sulawesi</p>
         <p>Barat: {{ boundingBox.west }} | Timur: {{ boundingBox.east }}</p>
         <p>Selatan: {{ boundingBox.south }} | Utara: {{ boundingBox.north }}</p>
+        <p v-if="archiveZoom" class="mt-1">
+          Arsip peta memuat zoom {{ archiveZoom.min }}&ndash;{{ archiveZoom.max }}.
+        </p>
       </div>
       <div v-if="downloadStatus" class="rounded-lg border border-[#6F9435]/30 bg-[#263D26] p-3 text-xs text-[#d4dc9a]">
         {{ downloadStatus }}
@@ -136,12 +146,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import { getActiveServiceWorker } from '@/ServiceWorker.js';
+import { useMapPngExport } from '@/Composables/useMapPngExport.js';
 
 const props = defineProps({
   mapConfig: Object,
@@ -158,7 +169,70 @@ const downloading = ref(false);
 const downloadStatus = ref('');
 const mapStatus = ref('');
 const offlineZoomMin = ref(8);
-const offlineZoomMax = ref(15);
+const offlineZoomMax = ref(12);
+
+const { isExporting, exportError, exportMapPng } = useMapPngExport();
+
+/**
+ * Cetak peta yang sedang tampil sebagai PNG.
+ *
+ * Hasilnya bukan screenshot polos: peta, kompas, dan skala digambar di atas
+ * kanvas yang sama dengan uraian komponen peta kontur, supaya berkas tunggal
+ * itu bisa langsung dipakai sebagai bahan ajar.
+ */
+async function printMapPng({ silent = false } = {}) {
+  const result = await exportMapPng(map.value, {
+    title: 'Peta Kontur Sulawesi',
+  });
+
+  if (result.ok) {
+    mapStatus.value = result.blocked
+      ? 'PNG tersimpan, tetapi area peta tidak ikut karena browser memblokir pembacaan tile.'
+      : 'PNG peta tersimpan otomatis.';
+
+    if (!silent && result.blocked) {
+      console.warn(
+        '[peta] Area peta tidak masuk PNG. Tile dari luar biasanya perlu header CORS;'
+          + ' kalau ini terjadi, ganti basemap atau pakai tombol Cetak Peta.',
+      );
+    }
+  } else {
+    mapStatus.value = exportError.value ?? 'Gagal membuat PNG peta.';
+  }
+
+  return result;
+}
+
+// Rentang zoom yang benar-benar ada di arsip PMTiles. Arsip produksi hanya
+// memuat z8-z12, jadi slider offering sampai z15 membuat estimasi jauh lebih
+// besar dari tile yang benar-benar bisa diambil.
+const archiveZoom = ref(null);
+
+const zoomBounds = computed(() => ({
+  min: archiveZoom.value?.min ?? 8,
+  max: archiveZoom.value?.max ?? 15,
+}));
+
+async function loadArchiveZoomRange() {
+  if (archiveZoom.value || !hasPmtiles.value || !props.mapConfig?.pmtilesUrl) return;
+
+  try {
+    const { PMTiles, FetchSource } = await import('pmtiles');
+    const header = await new PMTiles(new FetchSource(props.mapConfig.pmtilesUrl)).getHeader();
+
+    if (header?.minZoom != null && header?.maxZoom != null) {
+      archiveZoom.value = { min: header.minZoom, max: header.maxZoom };
+      offlineZoomMin.value = Math.min(Math.max(offlineZoomMin.value, header.minZoom), header.maxZoom);
+      offlineZoomMax.value = Math.min(Math.max(offlineZoomMax.value, header.minZoom), header.maxZoom);
+    }
+  } catch {
+    // Header tidak terbaca: biarkan rentang slider, service worker yang memotong.
+  }
+}
+
+watch(showOfflineModal, (open) => {
+  if (open) loadArchiveZoomRange();
+});
 
 // Map controls state
 const showCoordinates = ref(true);
@@ -227,6 +301,12 @@ async function initMap() {
 
     map.value = new Map({
       container: mapContainer.value,
+      // Wajib agar kanvas peta bisa dibaca sebagai gambar saat diekspor jadi
+      // PNG. Tanpa ini browser boleh membuang buffer WebGL tepat setelah frame
+      // selesai digambar, sehingga toDataURL() mengembalikan kanvas kosong.
+      // Ada sedikit biaya performa, jadi hanya peta yang benar-benar butuh
+      // ekspor yang mengaktifkannya.
+      preserveDrawingBuffer: true,
       style: {
         version: 8,
         // Layer symbol memakai text-field, jadi style wajib punya glyphs.
@@ -544,7 +624,10 @@ async function downloadOffline() {
     const minZoom = offlineZoomMin.value;
     const maxZoom = offlineZoomMax.value;
 
-    const pmtilesUrl = props.mapConfig.pmtilesUrl.replace(/^https?:\/\/[^\/]+/, '');
+    // PMTiles di-host di Supabase Storage, jadi service worker harus memakai
+    // URL absolut agar HTTP Range langsung dibaca dari host arsip. GeoJSON
+    // masih dilayani dari origin sendiri sehingga boleh dibuat relatif.
+    const pmtilesUrl = props.mapConfig.pmtilesUrl;
     const geojsonUrlRelative = geojsonUrl.value.replace(/^https?:\/\/[^\/]+/, '');
 
     const channel = new MessageChannel();
@@ -554,7 +637,19 @@ async function downloadOffline() {
         downloadStatus.value = `${data.status} (${data.downloaded}/${data.total} tile)`;
       }
       if (data.type === 'DOWNLOAD_COMPLETE') {
-        downloadStatus.value = `Selesai! ${data.downloaded} tile berhasil diunduh untuk offline.`;
+        const skipped = data.skipped ? `, ${data.skipped} tile tidak tersedia di arsip` : '';
+        downloadStatus.value =
+          `Selesai! ${data.downloaded} tile berhasil diunduh untuk offline (zoom ${data.zoomMin}-${data.zoomMax}${skipped}).`;
+        downloading.value = false;
+
+        // Cetak peta dikirim tepat setelah tile selesai, supaya satu klik
+        // "Unduh Peta Offline" menghasilkan dua berkas: paket tile untuk
+        // dipakai tanpa sinyal, dan satu PNG peta siap dicetak yang sudah
+        // berisi kompas, skala, serta uraian komponen peta kontur.
+        printMapPng({ silent: true });
+      }
+      if (data.type === 'DOWNLOAD_ERROR') {
+        downloadStatus.value = data.error;
         downloading.value = false;
       }
     };

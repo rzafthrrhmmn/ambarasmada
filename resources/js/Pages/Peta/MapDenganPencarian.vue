@@ -305,8 +305,8 @@
             <input
               v-model.number="offlineZoomMin"
               type="range"
-              min="6"
-              max="14"
+              :min="zoomBounds.min"
+              :max="zoomBounds.max"
               class="w-full"
             />
             <p class="text-xs text-[#8fa06a] text-right">Zoom: {{ offlineZoomMin }}</p>
@@ -316,8 +316,8 @@
             <input
               v-model.number="offlineZoomMax"
               type="range"
-              min="6"
-              max="14"
+              :min="zoomBounds.min"
+              :max="zoomBounds.max"
               class="w-full"
             />
             <p class="text-xs text-[#8fa06a] text-right">Zoom: {{ offlineZoomMax }}</p>
@@ -326,6 +326,9 @@
         <div class="mt-3 rounded-lg bg-[#263D26] p-3 text-xs text-[#8fa06a]">
           <p>Estimasi tile: {{ estimatedTiles.toLocaleString() }}</p>
           <p>Estimasi ukuran: ~{{ estimatedSize }}</p>
+          <p v-if="archiveZoom" class="mt-1">
+            Arsip peta memuat zoom {{ archiveZoom.min }}&ndash;{{ archiveZoom.max }}.
+          </p>
         </div>
       </div>
 
@@ -431,6 +434,16 @@ const miniMapError = ref('');
 const downloadMode = ref('full');
 const selectedOfflineRegion = ref('');
 
+// Rentang zoom yang benar-benar ada di arsip PMTiles, dibaca dari header
+// arsip. Tanpa ini slider menawarkan z13/z14 padahal arsip hanya memuat
+// z8-z12, sehingga estimasi tile meng jauh lebih besar dari kenyataan.
+const archiveZoom = ref(null);
+
+const zoomBounds = computed(() => ({
+  min: archiveZoom.value?.min ?? 6,
+  max: archiveZoom.value?.max ?? 14,
+}));
+
 // Komponen yang ikut dibundel saat peta diunduh untuk offline.
 const includeScaleBar = ref(true);
 const includeNorthArrow = ref(true);
@@ -510,7 +523,10 @@ const currentBBox = computed(() => {
 const estimatedTiles = computed(() => {
   let total = 0;
   const bbox = currentBBox.value;
-  for (let z = offlineZoomMin.value; z <= offlineZoomMax.value; z++) {
+  const zStart = Math.max(offlineZoomMin.value, zoomBounds.value.min);
+  const zEnd = Math.min(offlineZoomMax.value, zoomBounds.value.max);
+
+  for (let z = zStart; z <= zEnd; z++) {
     const xMin = Math.floor(((bbox.west + 180) / 360) * Math.pow(2, z));
     const xMax = Math.ceil(((bbox.east + 180) / 360) * Math.pow(2, z)) - 1;
     const latRadN = (bbox.north * Math.PI) / 180;
@@ -535,6 +551,30 @@ const estimatedSize = computed(() => {
 // Pustaka pmtiles membaca byte arsip langsung dari host tersebut lewat HTTP
 // Range; membuang host membuat permintaan_RANGE mendarat di origin sendiri.
 const pmtilesSourceUrl = computed(() => `pmtiles://${props.mapConfig?.pmtilesUrl ?? ''}`);
+
+/**
+ * Baca header arsip PMTiles untuk mengetahui rentang zoom yang tersedia.
+ *
+ * Header hanya 127 byte dan diambil lewat satu HTTP Range, jadi Murah. Kalau
+ * pembacaan gagal, rentang slider dibiarkan apa adanya: service worker tetap
+ * memotong rentang ke arsip sebelum mengunduh.
+ */
+async function loadArchiveZoomRange() {
+  if (archiveZoom.value || !hasPmtiles.value || !props.mapConfig?.pmtilesUrl) return;
+
+  try {
+    const { PMTiles, FetchSource } = await import('pmtiles');
+    const header = await new PMTiles(new FetchSource(props.mapConfig.pmtilesUrl)).getHeader();
+
+    if (header?.minZoom != null && header?.maxZoom != null) {
+      archiveZoom.value = { min: header.minZoom, max: header.maxZoom };
+      offlineZoomMin.value = Math.min(Math.max(offlineZoomMin.value, header.minZoom), header.maxZoom);
+      offlineZoomMax.value = Math.min(Math.max(offlineZoomMax.value, header.minZoom), header.maxZoom);
+    }
+  } catch {
+    // Header tidak terbaca: biarkan rentang slider, service worker yang memotong.
+  }
+}
 
 // Utility functions
 function formatDistance(meters) {
@@ -1420,7 +1460,15 @@ async function downloadOffline() {
         downloadStatus.value = `${data.status} (${data.downloaded}/${data.total} tile)`;
       }
       if (data.type === 'DOWNLOAD_COMPLETE') {
-        downloadStatus.value = `Selesai! ${data.downloaded} tile berhasil diunduh untuk offline.`;
+        const skipped = data.skipped
+          ? `, ${data.skipped} tile tidak tersedia di arsip`
+          : '';
+        downloadStatus.value =
+          `Selesai! ${data.downloaded} tile berhasil diunduh untuk offline (zoom ${data.zoomMin}-${data.zoomMax}${skipped}).`;
+        downloading.value = false;
+      }
+      if (data.type === 'DOWNLOAD_ERROR') {
+        downloadStatus.value = data.error;
         downloading.value = false;
       }
     };
@@ -1464,6 +1512,12 @@ watch(selectedOfflineRegion, () => {
   if (showMiniMap.value) {
     nextTick().then(() => initMiniMap());
   }
+});
+
+// Rentang zoom arsip dibaca saat modal dibuka, sehingga estimasi tile langsung
+// memakai rentang yang benar-benar ada di arsip.
+watch(showOfflineModal, (open) => {
+  if (open) loadArchiveZoomRange();
 });
 
 onBeforeUnmount(() => {
