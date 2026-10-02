@@ -1,69 +1,59 @@
 ﻿<template>
   <div class="min-h-screen bg-hutan-800 text-krem-100">
-    <header class="sticky top-0 z-30 border-b-2 border-emas-400/50 bg-hutan-800/95 backdrop-blur">
-      <div class="mx-auto flex w-full items-center justify-between px-4 py-3 sm:px-6 lg:px-[50px]">
-        <div class="flex items-center gap-3">
-          <button
-              type="button"
-              class="rounded-lg border-2 p-2 text-emas-400 transition lg:hidden"
-              :class="mobileMenuOpen ? 'border-emas-400 bg-emas-400/10' : 'border-daun-500 hover:bg-daun-500/20'"
-              aria-label="Buka menu navigasi"
-              :aria-expanded="mobileMenuOpen"
-              @click="mobileMenuOpen = !mobileMenuOpen"
-          >
-            <NavIcon :name="mobileMenuOpen ? 'close' : 'menu'" :stroke="2" class="h-5 w-5" />
-          </button>
+    <header class="app-header">
+      <div class="app-header-inner">
+        <button
+            type="button"
+            class="app-header-button lg:hidden"
+            :class="{ 'is-active': mobileMenuOpen }"
+            aria-label="Buka menu navigasi"
+            :aria-expanded="mobileMenuOpen"
+            @click="mobileMenuOpen = !mobileMenuOpen"
+        >
+          <NavIcon :name="mobileMenuOpen ? 'close' : 'menu'" :stroke="2" class="h-5 w-5" />
+        </button>
 
-          <Link href="/dashboard" class="flex items-center gap-3">
-            <span class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-daun-500 bg-hutan-900">
-              <img :src="ambalan?.logo_url || '/images/Logo_Ambalan.png'" alt="Logo Ambalan" class="h-full w-full object-contain" />
-            </span>
-            <span>
-              <span class="block text-sm font-bold text-emas-400">{{ ambalan?.nama || 'Pramuka SMAN 2 Maros' }}</span>
-              <span class="block text-xs font-medium text-lumut-400">Ekosistem Digital Ambalan</span>
-            </span>
-          </Link>
-        </div>
+        <Link href="/dashboard" class="app-header-brand">
+          <span class="app-header-logo h-10 w-10 sm:h-12 sm:w-12">
+            <img :src="ambalan?.logo_url || '/images/Logo_Ambalan.png'" alt="Logo Ambalan" class="h-full w-full object-contain" />
+          </span>
 
-        <div class="flex items-center gap-2 sm:gap-3">
-          <Link
-              href="/notifications"
-              class="relative rounded-lg border-2 border-daun-500 p-2 text-krem-300 transition hover:bg-daun-500/30 hover:text-emas-400"
-              aria-label="Notifikasi"
-          >
+          <span class="min-w-0">
+            <span class="app-header-name">{{ ambalan?.nama || 'Pramuka SMAN 2 Maros' }}</span>
+            <span class="app-header-context">{{ context.current }}</span>
+            <span class="app-header-tagline">Ekosistem Digital Ambalan</span>
+          </span>
+        </Link>
+
+        <nav class="app-header-trail" aria-label="Lokasi halaman">
+          <template v-if="context.parent">
+            <span class="app-header-trail-parent">{{ context.parent }}</span>
+            <NavIcon name="chevronRight" class="app-header-trail-sep h-3.5 w-3.5" />
+          </template>
+          <span class="app-header-trail-current">{{ context.current }}</span>
+        </nav>
+
+        <div class="app-header-actions">
+          <Link href="/notifications" class="app-header-button" :aria-label="notifLabel">
             <NavIcon name="bell" class="h-5 w-5" />
-            <span
-                v-if="unreadNotifications > 0"
-                class="absolute -right-1.5 -top-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-[#ef4419] px-1 text-[10px] font-bold leading-tight text-white"
-            >
+            <span v-if="unreadNotifications > 0" class="app-header-badge" aria-hidden="true">
               {{ unreadNotifications > 99 ? '99+' : unreadNotifications }}
             </span>
           </Link>
 
-          <span class="hidden rounded-full border-2 border-daun-400 bg-hutan-700 px-3 py-1 text-xs font-bold text-emas-400 sm:inline-flex">
-            {{ user?.role }}
-          </span>
-
-          <button
-              v-if="pwaInstallAvailable"
-              type="button"
-              class="rounded-lg border-2 border-emas-400 px-3 py-2 text-xs font-bold text-emas-400 transition hover:bg-emas-400/10"
-              @click="installPwa"
-          >
-            Pasang Aplikasi
-          </button>
-
-          <form method="POST" action="/logout" @submit.prevent="logout">
-            <button class="rounded-lg border-2 border-daun-500 px-3 py-2 text-xs font-bold text-krem-300 transition hover:bg-daun-500/30 hover:text-emas-400">
-              Keluar
-            </button>
-          </form>
+          <AppHeaderUserMenu
+              :user="user"
+              :unread-notifications="unreadNotifications"
+              :pwa-install-available="pwaInstallAvailable"
+              @logout="logout"
+              @install="installPwa"
+          />
         </div>
       </div>
     </header>
 
     <div
-        class="mx-auto grid min-h-[calc(100vh-4.25rem)] w-full transition-[grid-template-columns] duration-300 ease-out lg:px-[50px]"
+        class="app-body mx-auto grid w-full transition-[grid-template-columns] duration-300 ease-out lg:px-[50px]"
         :class="collapsed ? 'lg:grid-cols-[5.25rem_1fr]' : 'lg:grid-cols-[17.5rem_1fr]'"
     >
       <transition
@@ -129,7 +119,7 @@
       </transition>
 
       <aside
-          class="hidden lg:sticky lg:top-[4.25rem] lg:flex lg:h-[calc(100vh-4.25rem)] lg:flex-col lg:overflow-hidden lg:border-r-2 lg:border-daun-400/15 lg:py-5 lg:pr-4"
+          class="app-header-offset app-rail-height hidden lg:sticky lg:flex lg:flex-col lg:overflow-hidden lg:border-r-2 lg:border-daun-400/15 lg:py-5 lg:pr-4"
       >
         <AppSidebar
             v-model:query="query"
@@ -176,6 +166,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
+import AppHeaderUserMenu from '@/Components/AppHeaderUserMenu.vue';
 import AppSidebar from '@/Components/AppSidebar.vue';
 import FlashMessage from '@/Components/FlashMessage.vue';
 import NavIcon from '@/Components/NavIcon.vue';
@@ -187,6 +178,9 @@ import { purgeUserScopedCaches } from '@/ServiceWorker.js';
 const page = usePage();
 const ambalan = computed(() => page.props.ambalan || null);
 const unreadNotifications = computed(() => Number(page.props.unreadNotificationCount ?? 0) || 0);
+const notifLabel = computed(() =>
+    unreadNotifications.value > 0 ? `Notifikasi, ${unreadNotifications.value} belum dibaca` : 'Notifikasi',
+);
 const mobileMenuOpen = ref(false);
 const pwaInstallAvailable = ref(!!window.pwaInstallAvailable);
 
@@ -197,6 +191,7 @@ const {
     sections,
     bottomItems,
     footer,
+    context,
     noResults,
     resultCount,
     toggleCollapsed,

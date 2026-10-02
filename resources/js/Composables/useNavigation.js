@@ -42,6 +42,23 @@ function normalizeText(value) {
         .trim();
 }
 
+/**
+ * Ubah segmen rute menjadi bacaan manusia, mis. `field-guides` menjadi
+ * `Field guides`. Segmen angka (id) dilewati agar judul halaman tidak berubah
+ * menjadi angka saja.
+ */
+function humanizeSegment(segment) {
+    const cleaned = String(segment || '')
+        .replace(/[-_]+/g, ' ')
+        .trim();
+
+    if (!cleaned) {
+        return null;
+    }
+
+    return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
 function readCollapsedPreference() {
     try {
         return window.localStorage.getItem(COLLAPSE_STORAGE_KEY) === '1';
@@ -176,6 +193,48 @@ export function useNavigation(page) {
     const noResults = computed(() => tokens.value.length > 0 && visibleSections.value.length === 0);
     const resultCount = computed(() => visibleSections.value.reduce((total, section) => total + section.items.length, 0));
 
+    const activeEntry = computed(() => sidebarEntries.value.find((entry) => entry.href === activeHref.value) ?? null);
+
+    /**
+     * Konteks halaman untuk header: bagian dan menu yang sedang aktif. Kalau
+     * rute tidak ada di model (halaman turunan yang tak terdaftar, atau rute
+     * luar sidebar), judul diambil dari props lalu dari segmen path terakhir.
+     */
+    const context = computed(() => {
+        if (activeEntry.value) {
+            return {
+                parent: activeEntry.value.sectionLabel,
+                current: activeEntry.value.label,
+                icon: activeEntry.value.icon,
+                source: 'navigation',
+            };
+        }
+
+        const fromProps = readProp(page.props, 'pageTitle') ?? readProp(page.props, 'title');
+
+        if (fromProps) {
+            return { parent: null, current: String(fromProps), icon: null, source: 'props' };
+        }
+
+        const segments = normalizePath(page.url)
+            .split('/')
+            .filter(Boolean);
+
+        for (let index = segments.length - 1; index >= 0; index -= 1) {
+            if (/^\d+$/.test(segments[index])) {
+                continue;
+            }
+
+            const label = humanizeSegment(segments[index]);
+
+            if (label) {
+                return { parent: null, current: label, icon: null, source: 'path' };
+            }
+        }
+
+        return { parent: null, current: 'Beranda', icon: null, source: 'path' };
+    });
+
     const footer = computed(() =>
         resolveSidebarFooter({
             counts: {
@@ -213,6 +272,8 @@ export function useNavigation(page) {
         sections: visibleSections,
         bottomItems,
         footer,
+        context,
+        activeEntry,
         noResults,
         resultCount,
         matchesPath,
