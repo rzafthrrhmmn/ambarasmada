@@ -36,14 +36,33 @@
     </div>
 
     <div class="mb-6">
-      <div ref="scannerRef" id="scannerRef" class="relative mx-auto max-w-sm rounded-xl border-2 border-dashed border-[#6F9435] bg-[#263D26] p-4">
+      <div class="relative mx-auto max-w-sm">
+        <!--
+          Wadah scanner ini sengaja dibiarkan tanpa elemen anak.
+          Html5Qrcode.start() memanggil clearElement() yang mengosongkan
+          innerHTML elemen ini. Kalau ada elemen milik Vue di dalamnya, Vue
+          masih memegang node itu lalu_patch_ gagal ("Cannot read properties of
+          null"), cameraLoading tidak pernah kembali false dan QR tidak pernah
+          terbaca. Semua indikator dipindahkan ke sibling di atas/kanan.
+        -->
+        <div
+          id="scannerRef"
+          ref="scannerRef"
+          class="min-h-[7rem] w-full rounded-xl border-2 border-dashed border-[#6F9435] bg-[#263D26]"
+        ></div>
+
         <div v-if="cameraLoading" class="absolute inset-0 flex items-center justify-center rounded-xl bg-[#263D26]/80">
           <SkeletonLoader variant="card" :lines="1" class="h-6 w-40" />
         </div>
-        <p v-if="!scanning && !cameraError" class="text-center text-xs text-[#8fa06a]">Klik untuk aktifkan kamera</p>
-        <p v-if="cameraError" class="text-center text-xs leading-5 text-[#ef4419]">{{ cameraError }}</p>
-        <p v-if="scanning" class="mt-2 text-center text-xs text-[#8fa06a]">Arahkan kamera ke QR Code sesi</p>
+        <p
+          v-if="!scanning && !cameraError"
+          class="absolute inset-0 flex items-center justify-center px-4 text-center text-xs text-[#8fa06a]"
+        >
+          Klik untuk aktifkan kamera
+        </p>
       </div>
+      <p v-if="cameraError" class="mt-2 text-center text-xs leading-5 text-[#ef4419]">{{ cameraError }}</p>
+      <p v-if="scanning" class="mt-2 text-center text-xs text-[#8fa06a]">Arahkan kamera ke QR Code sesi</p>
       <div class="mt-3 flex justify-center gap-2">
         <button v-if="!scanning" @click="startScan" :disabled="cameraLoading" type="button" class="rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
           <span v-if="cameraLoading">Memulai kamera...</span>
@@ -341,8 +360,9 @@ async function startScan() {
     // Halaman ditutup selagi start() masih menunggu; scanner yang baru dibuat
     // tidak boleh lanjut menyalakan kamera pada elemen yang sudah dilepas.
     if (disposed) {
-      await scanner.clear().catch(() => {});
       html5QrCode.value = null;
+      await scanner.stop?.().catch(() => {});
+      await scanner.clear?.().catch(() => {});
       return;
     }
 
@@ -371,12 +391,24 @@ function useManualToken() {
 }
 
 function stopScan() {
-  if (html5QrCode.value) {
-    html5QrCode.value.clear().catch(() => {});
-    html5QrCode.value = null;
-  }
+  const scanner = html5QrCode.value;
+  html5QrCode.value = null;
+
+  // Status direset sebelum kerja asynchronous apa pun supaya tombol dan
+  // skeleton loader langsung kembali normal.
   scanning.value = false;
   cameraLoading.value = false;
+
+  if (!scanner) return;
+
+  // clear() melempar "Cannot clear while scan is ongoing" kalau scanner masih
+  // berjalan, dan callback decode justru dipanggil saat itu masih berjalan.
+  // stop() lebih dulu, baru clear() untuk mengosongkan wadah.
+  Promise.resolve()
+    .then(() => scanner.stop?.())
+    .catch(() => {})
+    .then(() => scanner.clear?.())
+    .catch(() => {});
 }
 
 /**

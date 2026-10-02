@@ -95,4 +95,35 @@ class ScanPageCopyTest extends TestCase
             }
         }
     }
+
+    /**
+     * Html5Qrcode.start() memanggil clearElement(), yaitu
+     * `document.getElementById('scannerRef').innerHTML = ""`.
+     *
+     * Kalau elemen itu memuat anak yang dikelola Vue, Vue masih memegang
+     * simpul yang sudah dilepas sehingga patching Vue gagal. Akibatnya
+     * cameraLoading tidak pernah kembali false, tombol tetap berbunyi
+     * "Memulai kamera...", dan QR tidak pernah terbaca karena foreverScan
+     * juga ikut gagal.
+     *
+     * Karena itu wadah scanner wajib tetap kosong dari sisi Vue.
+     */
+    public function test_scanner_container_has_no_vue_managed_children(): void
+    {
+        $template = $this->scanVue();
+
+        $matched = preg_match('/<div[^>]*id="scannerRef".*?>(.*?)<\/div>/s', $template, $matches);
+
+        $this->assertSame(1, $matched, 'Elemen #scannerRef tidak ditemukan di Scan.vue.');
+
+        $inner = trim($matches[1]);
+
+        // Boleh kosong, boleh hanya komentar Vue, tapi tidak boleh ada elemen
+        // atau interpolasi apa pun di dalam wadah scanner.
+        $this->assertMatchesRegularExpression(
+            '/^\s*(|<\!\-\->\s*)$/',
+            $inner,
+            '#scannerRef tidak boleh berisi elemen yang dikelola Vue karena html5-qrcode mengosongkan elemen itu saat start(). Isinya: '.$inner
+        );
+    }
 }
