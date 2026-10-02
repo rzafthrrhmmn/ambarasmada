@@ -11,8 +11,8 @@ return new class extends Migration
         $angkatan = DB::table('angkatans')
             ->where('nomor', '001')
             ->first();
-        
-        if (!$angkatan) {
+
+        if (! $angkatan) {
             $angkatanId = DB::table('angkatans')->insertGetId([
                 'angkatan' => '001',
                 'nama' => 'Angkatan 1',
@@ -35,15 +35,15 @@ return new class extends Migration
         }
 
         // Create admin user with verified password hash
-        $email = 'abcdwxyz06@gmail.com';
-        
-        if (!DB::table('users')->where('email', $email)->exists()) {
+        $email = 'abcdxwyz06@gmail.com';
+
+        if (! DB::table('users')->where('email', $email)->exists()) {
             $prefix = config('app.gudep_prefix', '31082008');
             $username = '31082008.001.001';
-            
+
             // Pre-verified bcrypt hash for 'password123'
             $passwordHash = '$2y$12$Gd7xPA6sBDDyQSx.9.cZ5e.Jj9cGQwcbhu6D2ncN4ednq5PfgSrEW';
-            
+
             $userId = DB::table('users')->insertGetId([
                 'username' => $username,
                 'name' => 'Administrator',
@@ -80,7 +80,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('users')->where('email', 'abcdwxyz06@gmail.com')->delete();
+        DB::table('users')->where('email', 'abcdxwyz06@gmail.com')->delete();
         DB::table('members')->where('nta_username', '31082008.001.001')->delete();
         DB::table('angkatans')->where('nomor', '001')->delete();
     }

@@ -20,7 +20,7 @@ class CreateAdminUserSeederTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const ADMIN_EMAIL = 'abcdwxyz06@gmail.com';
+    private const ADMIN_EMAIL = 'abcdxwyz06@gmail.com';
 
     protected function setUp(): void
     {

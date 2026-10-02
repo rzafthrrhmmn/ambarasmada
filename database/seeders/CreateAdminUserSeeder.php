@@ -3,9 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\Ambalan;
+use App\Models\Angkatan;
 use App\Models\Member;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -13,18 +13,19 @@ class CreateAdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        $email = 'abcdwxyz06@gmail.com';
-        
+        $email = 'abcdxwyz06@gmail.com';
+
         if (User::where('email', $email)->exists()) {
             $this->command->info("Admin user with email {$email} already exists.");
+
             return;
         }
 
         $prefix = (string) config('app.gudep_prefix', '31082008');
-        $latestAngkatan = \App\Models\Angkatan::query()
+        $latestAngkatan = Angkatan::query()
             ->where('is_active', true)
             ->where('is_current', true)
-            ->first() ?? \App\Models\Angkatan::query()
+            ->first() ?? Angkatan::query()
             ->where('is_active', true)
             ->orderByDesc('nomor')
             ->first();
@@ -65,11 +66,11 @@ class CreateAdminUserSeeder extends Seeder
             ]);
         }
 
-        $this->command->info("Admin user created successfully!");
+        $this->command->info('Admin user created successfully!');
         $this->command->info("Email: {$email}");
         $this->command->info("NTA: {$nta}");
-        $this->command->info("Password: password123 (please change after login)");
-        $this->command->info("Role: Admin");
-        $this->command->info("Status: approved (email verified)");
+        $this->command->info('Password: password123 (please change after login)');
+        $this->command->info('Role: Admin');
+        $this->command->info('Status: approved (email verified)');
     }
 }

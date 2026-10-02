@@ -8,7 +8,7 @@ return new class extends Migration
     public function up(): void
     {
         DB::table('users')
-            ->where('email', 'abcdwxyz06@gmail.com')
+            ->where('email', 'abcdxwyz06@gmail.com')
             ->update([
                 'password' => '$2y$12$aYhTWUH4tXEJWm.r.AssuurrPCZ0lwlQPUxIKYmzl3/Y.0ttYIwKm',
                 'status' => 'approved',

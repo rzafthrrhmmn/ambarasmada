@@ -7,8 +7,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $email = 'abcdwxyz06@gmail.com';
-        
+        $email = 'abcdxwyz06@gmail.com';
+
         if (DB::table('users')->where('email', $email)->exists()) {
             return;
         }
@@ -54,7 +54,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('users')->where('email', 'abcdwxyz06@gmail.com')->delete();
+        DB::table('users')->where('email', 'abcdxwyz06@gmail.com')->delete();
         DB::table('members')->where('nta_username', '31082008.001.001')->delete();
     }
 };
