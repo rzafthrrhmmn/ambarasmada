@@ -17,6 +17,7 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+use Throwable;
 
 class AuthController extends Controller
 {
@@ -130,6 +131,24 @@ class AuthController extends Controller
     }
 
     public function register(Request $request): SymfonyResponse
+    {
+        try {
+            return $this->handleRegistration($request);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            // error_log dipakai, bukan Log::, karena kanal log berbasis file
+            // tidak dapat menulis pada filesystem Vercel yang hanya-baca.
+            // Pesannya sengaja dibuat ringkas agar tidak terpotong oleh batas
+            // ukuran log Vercel.
+            error_log('[register] GAGAL: '.get_class($e).': '.$e->getMessage()
+                .' @ '.$e->getFile().':'.$e->getLine());
+
+            return back()->with('error', 'Pendaftaran gagal diproses. Silakan coba lagi beberapa saat lagi.');
+        }
+    }
+
+    private function handleRegistration(Request $request): SymfonyResponse
     {
         $data = $request->validate([
             'nama_lengkap' => ['required', 'string', 'max:255'],
