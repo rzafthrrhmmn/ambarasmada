@@ -1057,8 +1057,33 @@ async function initMap() {
       map.value.flyTo({ center: [lng, lat], zoom: 12, duration: 2000 });
     });
 
-    map.value.on('load', () => {
+    // Overlay "Memuat peta..." tidak boleh menggantung selamanya.
+    //
+    // Sebelumnya overlay disembunyikan hanya dari event `load`. Event itu belum
+    // sampai kalau ada satu saja yang masih menggantung: glyph, DEM, atau tile
+    // dari luar yang lambat. Gejala yang terlihat: kanvas tetap bertuliskan
+    // "Memuat peta..." sampai jendela dikecilkan, dan baru hilang saat DevTools
+    // dibuka karena resize memaksa MapLibre menggambar ulang.
+    //
+    // Jadi overlay dilepas oleh siapa saja yang lebih dulu sampai: style selesai
+    // dimuat, peta idle, atau lewat batas waktu. Galat yang sebenarnya tetap
+    // dilaporkan lewat mapError.
+    const clearLoading = () => {
       loading.value = false;
+    };
+
+    map.value.on('styledata', clearLoading);
+    map.value.on('idle', clearLoading);
+
+    setTimeout(() => {
+      if (loading.value) {
+        clearLoading();
+        mapStatus.value = 'Peta dimuat sebagian: sebagian layer belum selesai masuk. Peta tetap bisa dipakai.';
+      }
+    }, 8000);
+
+    map.value.on('load', () => {
+      clearLoading();
       mapError.value = null;
       mapStatus.value = hasPmtiles.value
         ? 'Peta kontur Sulawesi Selatan dimuat. Garis kontur setiap 10 meter elevasi.'
@@ -1072,7 +1097,7 @@ async function initMap() {
     });
 
     map.value.on('error', (e) => {
-      loading.value = false;
+      clearLoading();
       const errorMsg = e.error?.message || 'Kesalahan peta';
       mapStatus.value = `Peringatan: ${errorMsg}`;
       // Error peta harus tetap terlihat di console. Kalau hanya ditulis ke

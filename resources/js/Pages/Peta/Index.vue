@@ -469,14 +469,33 @@ async function initMap() {
     window.addEventListener('online', () => { isOffline.value = false; });
     window.addEventListener('offline', () => { isOffline.value = true; });
 
-    map.value.on('load', () => {
+    // Overlay "Memuat peta..." tidak boleh menggantung selamanya. Event `load`
+    // belum sampai kalau ada glyph, DEM, atau tile luar yang masih menggantung,
+    // dan gejalanya kanvas tetap bertuliskan "Memuat peta..." sampai jendela
+    // dikecilkan. Overlay karena itu dilepas oleh style selesai, peta idle, atau
+    // lewat batas waktu; galat sebenarnya tetap dilaporkan lewat mapError.
+    const clearLoading = () => {
       loading.value = false;
+    };
+
+    map.value.on('styledata', clearLoading);
+    map.value.on('idle', clearLoading);
+
+    setTimeout(() => {
+      if (loading.value) {
+        clearLoading();
+        mapStatus.value = 'Peta dimuat sebagian: sebagian layer belum selesai masuk. Peta tetap bisa dipakai.';
+      }
+    }, 8000);
+
+    map.value.on('load', () => {
+      clearLoading();
       mapError.value = null;
       mapStatus.value = 'Peta kontur Sulawesi dimuat. Garis kontur setiap 10 meter elevasi.';
     });
 
     map.value.on('error', (e) => {
-      loading.value = false;
+      clearLoading();
       const errorMsg = e.error?.message || 'Kesalahan peta';
       mapStatus.value = `Peringatan: ${errorMsg}`;
       // Error peta harus tetap terlihat di console. Kalau hanya ditulis ke

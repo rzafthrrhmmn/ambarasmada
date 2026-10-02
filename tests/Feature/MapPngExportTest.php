@@ -184,4 +184,57 @@ class MapPngExportTest extends TestCase
             );
         }
     }
+
+    public function test_uji_baca_peta_tidak_memakai_readpixels_yang_salah(): void
+    {
+        $module = $this->module();
+
+        // readPixels dengan format 0 bukan gl.RGBA. Panggilan itu tidak melempar
+        // apa pun, hanya menulis "WebGL: INVALID_ENUM: readPixels: invalid
+        // format" ke console, jadi hasil ujinya selalu lulus padahal tidak ada
+        // yang benar-benar dicek.
+        $this->assertStringNotContainsString(
+            'readPixels(',
+            $module,
+            'Uji baca kanvas harus memakai kanvas 2D, bukan readPixels WebGL dengan format yang salah.'
+        );
+
+        $this->assertStringContainsString(
+            'probeCtx.drawImage(canvas, 0, 0, 1, 1);',
+            $module,
+            'Cara mendeteksi kanvas peta yang di-taint CORS: salin ke kanvas 2D lewat drawImage.'
+        );
+
+        $this->assertStringContainsString(
+            'probeCtx.getImageData(0, 0, 1, 1);',
+            $module,
+            'getImageData pada kanvas 2D hasil drawImage melempar SecurityError bila kanvas peta di-taint.'
+        );
+    }
+
+    public function test_overlay_memuat_peta_tidak_bisa_menggantung(): void
+    {
+        foreach ($this->petaPages() as $name => $source) {
+            // Event load belum selalu sampai: glyph, DEM, atau tile luar yang
+            // lambat menahannya, dan gejalanya kanvas tetap bertuliskan
+            // "Memuat peta..." sampai jendela dikecilkan.
+            $this->assertStringContainsString(
+                "map.value.on('styledata', clearLoading);",
+                $source,
+                "Halaman {$name} harus melepas overlay saat style selesai dimuat."
+            );
+
+            $this->assertStringContainsString(
+                "map.value.on('idle', clearLoading);",
+                $source,
+                "Halaman {$name} harus melepas overlay saat peta idle."
+            );
+
+            $this->assertMatchesRegularExpression(
+                '/setTimeout\(\(\) => \{\s*if \(loading\.value\)/',
+                $source,
+                "Halaman {$name} perlu batas waktu supaya overlay tidak menggantung selamanya."
+            );
+        }
+    }
 }

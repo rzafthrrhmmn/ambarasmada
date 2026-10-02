@@ -547,14 +547,21 @@ export async function buildMapPng({
   );
 
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) {
-        resolve(blob);
-        return;
-      }
+    // Kanvas 2D yang sudah di-taint (gambar peta lintas origin) membuat toBlob
+    // melempar SecurityError. Tanpa try di sini pesan errornya hilang dan
+    // pemanggil hanya melihat Promise ditolak tanpa pesan.
+    try {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+          return;
+        }
 
-      reject(new Error('Browser gagal mengubah kanvas menjadi PNG.'));
-    }, 'image/png');
+        reject(new Error('Browser gagal mengubah kanvas menjadi PNG.'));
+      }, 'image/png');
+    } catch {
+      reject(new Error('Area peta tidak bisa dibaca karena dimuat dari domain lain tanpa izin CORS.'));
+    }
   });
 }
 
@@ -621,9 +628,24 @@ export function useMapPngExport() {
 
     try {
       const canvas = map.getCanvas();
-      // Uji baca dulu: canvas yang di-taint CORS akan melempar di sini, bukan
-      // di toBlob, dan pesan errornya tidak menyebut cause sebenarnya.
-      canvas.getContext('webgl2')?.readPixels(0, 0, 1, 1, 0, 0, new Uint8Array(4));
+
+      // Uji baca dulu: kanvas peta yang di-taint CORS tidak boleh masuk PNG.
+      //
+      // Uji ini sengaja memakai kanvas 2D, bukan gl.readPixels. readPixels
+      // dengan format 0 (bukan gl.RGBA) tidak melempar galat, hanya menulis
+      // "WebGL: INVALID_ENUM: readPixels: invalid format" ke console dan
+      // mengembalikan diam-diam, sehingga hasil uji selalu lulus padahal tidak
+      // ada yang dicek. drawImage dari kanvas WebGL tidak melempar; yang
+      // melempar SecurityError adalah getImageData pada kanvas 2D hasil
+      // drawImage itu, karena kanvas ikut menjadi tainted.
+      const probe = document.createElement('canvas');
+      probe.width = 1;
+      probe.height = 1;
+
+      const probeCtx = probe.getContext('2d');
+      probeCtx.drawImage(canvas, 0, 0, 1, 1);
+      probeCtx.getImageData(0, 0, 1, 1);
+
       return { canvas, blocked: false };
     } catch {
       return { canvas: null, blocked: true };
