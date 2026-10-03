@@ -178,15 +178,17 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
     Route::middleware(['role:Admin,Pembina,Pengurus'])->group(function () {
         Route::get('/letters', [LetterController::class, 'index'])->name('letters.index');
         Route::post('/letters', [LetterController::class, 'store'])->name('letters.store')->middleware('throttle:10,1');
+        Route::get('/letters/templates', [LetterController::class, 'templates'])->name('letters.templates');
+        Route::post('/letters/templates', [LetterController::class, 'storeTemplate'])->name('letters.templates.store')->middleware('throttle:5,1');
+        Route::get('/letters/templates/{template}/download', [LetterController::class, 'downloadTemplate'])->name('letters.templates.download');
+        Route::delete('/letters/templates/{template}', [LetterController::class, 'destroyTemplate'])->name('letters.templates.destroy')->middleware('throttle:5,1');
+        Route::post('/letters/preview', [LetterController::class, 'preview'])->name('letters.preview')->middleware('throttle:20,1');
+        Route::get('/letters/{letter}', [LetterController::class, 'show'])->name('letters.show');
         Route::patch('/letters/{letter}', [LetterController::class, 'update'])->name('letters.update')->middleware('throttle:20,1');
         Route::delete('/letters/{letter}', [LetterController::class, 'destroy'])->name('letters.destroy')->middleware('throttle:10,1');
         Route::get('/letters/{letter}/print', [LetterController::class, 'print'])->name('letters.print');
         Route::get('/letters/{letter}/download', [LetterController::class, 'download'])->name('letters.download');
         Route::get('/letters/{letter}/generate', [LetterController::class, 'generate'])->name('letters.generate')->middleware('throttle:20,1');
-        Route::get('/letters/templates', [LetterController::class, 'templates'])->name('letters.templates');
-        Route::post('/letters/templates', [LetterController::class, 'storeTemplate'])->name('letters.templates.store')->middleware('throttle:5,1');
-        Route::delete('/letters/templates/{template}', [LetterController::class, 'destroyTemplate'])->name('letters.templates.destroy')->middleware('throttle:5,1');
-        Route::post('/letters/preview', [LetterController::class, 'preview'])->name('letters.preview')->middleware('throttle:20,1');
     });
 
     Route::middleware(['role:Admin,Pembina,Pengurus'])->group(function () {

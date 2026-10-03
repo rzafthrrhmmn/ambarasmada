@@ -2,44 +2,57 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LetterRequest;
+use App\Http\Requests\LetterTemplateRequest;
 use App\Models\Ambalan;
 use App\Models\AuditLog;
 use App\Models\Letter;
 use App\Models\LetterTemplate;
-use App\Models\Member;
-use App\Models\PengurusPosition;
-use Barryvdh\DomPDF\PDF as DompdfPDF;
-use Carbon\Carbon;
-use Illuminate\Http\BinaryFileResponse;
+use App\Support\Letters\DocxTemplate;
+use App\Support\Letters\LetterValues;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Factory;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
-use Inertia\Response;
+use Inertia\Response as InertiaResponse;
 use PDF;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\PhpWord;
-use PhpOffice\PhpWord\TemplateProcessor;
+use RuntimeException;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+use Throwable;
 
 class LetterController extends Controller
 {
-    public function index(Request $request): Response
+    /** Roles yang boleh mengelola surat dan template. */
+    private const MANAGERS = ['Admin', 'Pembina', 'Pengurus'];
+
+    private const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+    public function __construct(
+        private readonly DocxTemplate $docx,
+        private readonly LetterValues $values,
+    ) {}
+
+    public function index(Request $request): InertiaResponse
     {
         $letters = Letter::query()
             ->with(['ambalan', 'createdBy', 'template'])
-            ->when($request->string('search')->isNotEmpty(), fn ($q, $s) => $q->where('perihal', 'like', "%{$s}%"))
-            ->when($request->string('jenis_surat')->isNotEmpty(), fn ($q, $t) => $q->where('jenis_surat', $t))
+            ->when($request->string('search')->isNotEmpty(), fn ($query, $search) => $query->where('perihal', 'like', "%{$search}%"))
+            ->when($request->string('jenis_surat')->isNotEmpty(), fn ($query, $jenis) => $query->where('jenis_surat', $jenis))
             ->orderByDesc('created_at')
             ->paginate(15)
             ->withQueryString();
 
         return Inertia::render('Letters/Index', [
             'letters' => $letters,
-            'templates' => LetterTemplate::orderByDesc('created_at')->get(),
-            'ambalans' => Ambalan::orderBy('nama')->get(),
+            'templates' => $this->templatesPayload(),
+            'ambalans' => Ambalan::orderBy('nama')->get(['id', 'nama']),
+            'jenisOptions' => ['Masuk', 'Keluar', 'Keputusan'],
             'filters' => [
                 'search' => $request->string('search')->toString(),
                 'jenis_surat' => $request->string('jenis_surat')->toString(),
@@ -47,590 +60,606 @@ class LetterController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function show(Letter $letter): InertiaResponse
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
-        $data = $request->validate([
-            'ambalan_id' => ['nullable', 'exists:ambalans,id'],
-            'nomor_surat' => ['nullable', 'string', 'max:100'],
-            'jenis_surat' => ['required', 'in:Masuk,Keluar,Keputusan'],
-            'perihal' => ['required', 'string', 'max:255'],
-            'isi_surat' => ['nullable', 'string'],
-            'tujuan_pengirim' => ['required', 'string', 'max:150'],
-            'tgl_surat' => ['required', 'date'],
-            'waktu_kegiatan' => ['nullable', 'string', 'max:255'],
-            'lokasi_kegiatan' => ['nullable', 'string', 'max:255'],
-            'file' => ['nullable', 'file', 'max:10240', 'mimetypes:application/pdf,image/jpeg,image/png'],
-            'template_id' => ['nullable', 'exists:letter_templates,id'],
-        ]);
+        $letter->load(['ambalan', 'template', 'createdBy']);
+        $placeholders = $letter->template?->placeholderList() ?? [];
+        $resolved = $this->values->forTemplate($letter, $placeholders, $letter->placeholder_values ?? []);
 
-        $path = null;
-        if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            $this->validateFileContent($file);
-            $path = $file->store('letters', 'public');
-        }
+        return Inertia::render('Letters/Show', [
+            'letter' => $letter,
+            'placeholders' => $placeholders,
+            'resolved' => $resolved['values'],
+            'unfilled' => $resolved['unfilled'],
+            'canGenerate' => $this->canGenerate($letter),
+        ]);
+    }
+
+    public function store(LetterRequest $request): RedirectResponse
+    {
+        $data = $request->letterData();
 
         $letter = Letter::create([
-            'ambalan_id' => $data['ambalan_id'] ?? null,
-            'nomor_surat' => $data['nomor_surat'],
-            'jenis_surat' => $data['jenis_surat'],
-            'perihal' => $data['perihal'],
-            'isi_surat' => $data['isi_surat'] ?? null,
-            'tujuan_pengirim' => $data['tujuan_pengirim'],
-            'tgl_surat' => $data['tgl_surat'],
-            'waktu_kegiatan' => $data['waktu_kegiatan'] ?? null,
-            'lokasi_kegiatan' => $data['lokasi_kegiatan'] ?? null,
-            'file_path' => $path,
-            'template_id' => $data['template_id'] ?? null,
+            ...$data,
+            'file_path' => $this->storeAttachment($request->file('file')),
             'created_by_user_id' => $request->user()->id,
         ]);
 
-        AuditLog::create([
-            'actor_id' => $request->user()->id,
-            'action' => 'letter.created',
-            'entity_type' => Letter::class,
-            'entity_id' => $letter->id,
-            'ip_address' => $request->ip(),
-        ]);
+        $this->log($request, 'letter.created', Letter::class, $letter->id);
 
-        return redirect()->route('letters.index')->with('success', 'Surat berjaya disimpan.');
+        return redirect()->route('letters.index')->with('success', 'Surat berhasil disimpan.');
     }
 
-    public function update(Request $request, Letter $letter): RedirectResponse
+    public function update(LetterRequest $request, Letter $letter): RedirectResponse
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
-        $data = $request->validate([
-            'ambalan_id' => ['nullable', 'exists:ambalans,id'],
-            'nomor_surat' => ['nullable', 'string', 'max:100'],
-            'jenis_surat' => ['required', 'in:Masuk,Keluar,Keputusan'],
-            'perihal' => ['required', 'string', 'max:255'],
-            'isi_surat' => ['nullable', 'string'],
-            'tujuan_pengirim' => ['required', 'string', 'max:150'],
-            'tgl_surat' => ['required', 'date'],
-            'waktu_kegiatan' => ['nullable', 'string', 'max:255'],
-            'lokasi_kegiatan' => ['nullable', 'string', 'max:255'],
-            'file' => ['nullable', 'file', 'max:10240', 'mimetypes:application/pdf,image/jpeg,image/png'],
-            'template_id' => ['nullable', 'exists:letter_templates,id'],
-        ]);
-
+        $data = $request->letterData();
         $path = $letter->file_path;
+
         if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            $this->validateFileContent($file);
-            if ($path) {
-                Storage::disk('public')->delete($path);
-            }
-            $path = $file->store('letters', 'public');
+            $path = $this->storeAttachment($request->file('file'), $path);
         }
 
-        $letter->update([
-            'ambalan_id' => $data['ambalan_id'] ?? null,
-            'nomor_surat' => $data['nomor_surat'],
-            'jenis_surat' => $data['jenis_surat'],
-            'perihal' => $data['perihal'],
-            'isi_surat' => $data['isi_surat'] ?? null,
-            'tujuan_pengirim' => $data['tujuan_pengirim'],
-            'tgl_surat' => $data['tgl_surat'],
-            'waktu_kegiatan' => $data['waktu_kegiatan'] ?? null,
-            'lokasi_kegiatan' => $data['lokasi_kegiatan'] ?? null,
-            'file_path' => $path,
-            'template_id' => $data['template_id'] ?? null,
-        ]);
+        $letter->update([...$data, 'file_path' => $path]);
 
-        AuditLog::create([
-            'actor_id' => $request->user()->id,
-            'action' => 'letter.updated',
-            'entity_type' => Letter::class,
-            'entity_id' => $letter->id,
-            'ip_address' => $request->ip(),
-        ]);
+        $this->log($request, 'letter.updated', Letter::class, $letter->id);
 
-        return redirect()->route('letters.index')->with('success', 'Surat berjaya diperbarui.');
+        return redirect()->route('letters.index')->with('success', 'Surat berhasil diperbarui.');
     }
 
     public function destroy(Request $request, Letter $letter): RedirectResponse
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        $this->authorizeManager($request);
+
         if ($letter->file_path) {
-            Storage::disk('public')->delete($letter->file_path);
+            $this->disk()->delete($letter->file_path);
         }
+
         $letter->delete();
 
-        AuditLog::create([
-            'actor_id' => $request->user()->id,
-            'action' => 'letter.archived',
-            'entity_type' => Letter::class,
-            'entity_id' => $letter->id,
-            'ip_address' => $request->ip(),
-        ]);
+        $this->log($request, 'letter.archived', Letter::class, $letter->id);
 
-        return redirect()->route('letters.index')->with('success', 'Surat berjaya diarsipkan.');
+        return redirect()->route('letters.index')->with('success', 'Surat berhasil diarsipkan.');
     }
 
-    public function download(Letter $letter): BinaryFileResponse
+    /**
+     * Pratinjau surat sebelum disimpan: memakai templat .docx yang dipilih,
+     * atau tata letak bawaan bila surat tidak berpola templat.
+     */
+    public function preview(Request $request): Response
     {
-        abort_unless($letter->file_path, 404, 'Berkas surat tidak ditemukan.');
-
-        $filename = "surat-{$letter->perihal}".($letter->file_path ? '.'.pathinfo($letter->file_path, PATHINFO_EXTENSION) : '.pdf');
-
-        return Storage::disk('public')->download($letter->file_path, $filename);
-    }
-
-    public function print(Letter $letter): Response
-    {
-        return Inertia::render('Letters/Print', [
-            'letter' => $letter,
-        ]);
-    }
-
-    public function generate(Letter $letter, Request $request): \Symfony\Component\HttpFoundation\Response
-    {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
-        $format = $request->input('format', 'pdf');
-
-        if (! $letter->perihal || ! $letter->isi_surat) {
-            return redirect()->back()->with('error', 'Isi surat belum diisi.');
-        }
-
-        $ambalan = $letter->ambalan;
-
-        if (! $ambalan) {
-            return redirect()->back()->with('error', 'Ambalan tidak ditemukan.');
-        }
-
-        if ($format === 'docx') {
-            return $this->generateDocx($letter, $ambalan);
-        }
-
-        return $this->generatePdf($letter, $ambalan);
-    }
-
-    protected function generatePdf(Letter $letter, $ambalan): \Symfony\Component\HttpFoundation\Response
-    {
-        $pdf = $this->renderPdf($letter, $ambalan);
-
-        return $pdf->download("surat-{$letter->perihal}.pdf");
-    }
-
-    protected function renderPdf(Letter $letter, $ambalan): DompdfPDF
-    {
-        $pradana = $this->resolvePradanaNames($letter->ambalan_id);
-
-        $html = view('letters.pdf', array_merge([
-            'letter' => $letter,
-            'ambalan' => $ambalan,
-        ], $pradana))->render();
-
-        return PDF::loadHTML($html)
-            ->setPaper('A4', 'portrait')
-            ->setOptions(['defaultFont' => 'DejaVu Sans', 'isRemoteEnabled' => true]);
-    }
-
-    public function preview(Request $request): \Illuminate\Http\Response
-    {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
-
         $data = $request->validate([
-            'ambalan_id' => ['required', 'exists:ambalans,id'],
+            'ambalan_id' => ['nullable', 'integer', 'exists:ambalans,id'],
             'nomor_surat' => ['nullable', 'string', 'max:100'],
-            'jenis_surat' => ['required', 'in:Masuk,Keluar,Keputusan'],
+            'jenis_surat' => ['nullable', 'string', 'max:50'],
             'perihal' => ['required', 'string', 'max:255'],
-            'isi_surat' => ['nullable', 'string'],
-            'tujuan_pengirim' => ['required', 'string', 'max:150'],
-            'tgl_surat' => ['required', 'date'],
+            'isi_surat' => ['nullable', 'string', 'max:20000'],
+            'tujuan_pengirim' => ['nullable', 'string', 'max:150'],
+            'tgl_surat' => ['nullable', 'date'],
             'waktu_kegiatan' => ['nullable', 'string', 'max:255'],
             'lokasi_kegiatan' => ['nullable', 'string', 'max:255'],
-            'file' => ['nullable', 'file', 'max:10240', 'mimetypes:application/pdf,image/jpeg,image/png'],
-            'template_id' => ['nullable', 'exists:letter_templates,id'],
+            'template_id' => ['nullable', 'integer', 'exists:letter_templates,id'],
+            'placeholder_values' => ['nullable', 'array'],
+            'placeholder_values.*' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $letter = new Letter($data);
-        $ambalan = Ambalan::findOrFail($data['ambalan_id']);
+        $letter = $this->draft($data);
 
-        $pdf = $this->renderPdf($letter, $ambalan);
+        try {
+            [$body, $unfilled] = $this->renderLetter($letter, $data['placeholder_values'] ?? []);
+        } catch (Throwable $exception) {
+            report($exception);
 
-        return response($pdf->output())
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'inline; filename="preview-surat.pdf"');
+            return $this->renderError('Pratinjau gagal: '.$exception->getMessage());
+        }
+
+        return $this->renderResponse('Pratinjau - '.$letter->perihal, $body, $unfilled);
     }
 
-    protected function resolvePradanaNames(?int $ambalanId): array
+    public function print(Letter $letter): InertiaResponse
     {
-        $names = [
-            'nama_pradana_putra' => '-',
-            'nis_pradana_putra' => '-',
-            'nama_pradana_putri' => '-',
-            'nis_pradana_putri' => '-',
-        ];
+        $letter->load(['ambalan', 'template']);
+        [$body, $unfilled] = $this->renderLetter($letter, $letter->placeholder_values ?? []);
 
-        if (! $ambalanId) {
-            return $names;
-        }
-
-        $pradanaPutraPosId = PengurusPosition::where('code', 'pradana_putra')->value('id');
-        $pradanaPutriPosId = PengurusPosition::where('code', 'pradana_putri')->value('id');
-
-        if ($pradanaPutraPosId) {
-            $putra = Member::where('ambalan_id', $ambalanId)
-                ->whereHas('memberPositions', fn ($q) => $q->where('position_id', $pradanaPutraPosId))
-                ->first();
-            if ($putra) {
-                $names['nama_pradana_putra'] = $putra->nama_lengkap;
-                $names['nis_pradana_putra'] = $putra->nta ?? '-';
-            }
-        }
-
-        if ($pradanaPutriPosId) {
-            $putri = Member::where('ambalan_id', $ambalanId)
-                ->whereHas('memberPositions', fn ($q) => $q->where('position_id', $pradanaPutriPosId))
-                ->first();
-            if ($putri) {
-                $names['nama_pradana_putri'] = $putri->nama_lengkap;
-                $names['nis_pradana_putri'] = $putri->nta ?? '-';
-            }
-        }
-
-        return $names;
+        return Inertia::render('Letters/Print', [
+            'letter' => $letter,
+            'body' => $body,
+            'unfilled' => $unfilled,
+        ]);
     }
 
-    protected function resolveTemplateValues(Letter $letter, $ambalan): array
+    /**
+     * Ekspor surat ke .docx (isi templat pengguna) atau .pdf.
+     */
+    public function generate(Request $request, Letter $letter): SymfonyResponse
     {
-        $pradana = $this->resolvePradanaNames($letter->ambalan_id);
+        $this->authorizeManager($request);
+
+        $format = Str::lower($request->query('format', 'pdf'));
+
+        if (! in_array($format, ['docx', 'pdf'], true)) {
+            return $this->generateError('Format tidak dikenal. Gunakan docx atau pdf.');
+        }
+
+        if (! $letter->perihal) {
+            return $this->generateError('Perihal surat belum diisi.');
+        }
+
+        $letter->loadMissing(['ambalan', 'template']);
+
+        try {
+            return $format === 'docx'
+                ? $this->exportDocx($letter)
+                : $this->exportPdf($letter);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return $this->generateError('Ekspor gagal: '.$exception->getMessage());
+        }
+    }
+
+    public function download(Letter $letter): SymfonyResponse
+    {
+        abort_unless($letter->file_path, 404, 'Lampiran surat tidak ditemukan.');
+
+        $extension = pathinfo($letter->file_path, PATHINFO_EXTENSION) ?: 'pdf';
+
+        return $this->disk()->download($letter->file_path, $this->filename($letter, $extension));
+    }
+
+    public function downloadTemplate(Request $request, LetterTemplate $template): SymfonyResponse
+    {
+        $this->authorizeManager($request);
+
+        abort_unless($template->file_path, 404, 'Berkas template tidak ditemukan.');
+
+        $filename = (Str::slug($template->name) ?: 'template').'.docx';
+
+        return $this->disk()->download($template->file_path, $filename, [
+            'Content-Type' => static::DOCX_MIME,
+        ]);
+    }
+
+    public function templates(Request $request): InertiaResponse
+    {
+        $this->authorizeManager($request);
+
+        return Inertia::render('Letters/Templates', [
+            'templates' => LetterTemplate::query()
+                ->with('createdBy')
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(fn (LetterTemplate $template) => [
+                    'id' => $template->id,
+                    'name' => $template->name,
+                    'description' => $template->description,
+                    'placeholders' => $template->placeholderList(),
+                    'fields' => $this->values->formFields($template->placeholderList()),
+                    'download_url' => route('letters.templates.download', $template),
+                    'created_at' => $template->created_at?->toIso8601String(),
+                ]),
+            'catalog' => $this->values->catalog(),
+        ]);
+    }
+
+    public function storeTemplate(LetterTemplateRequest $request): RedirectResponse
+    {
+        $file = $request->file('file');
+        $this->validateDocxContent($file);
+
+        $path = $file->store(config('letters.templates_directory', 'letter-templates'), $this->diskName());
+
+        if (! is_string($path) || $path === '') {
+            return back()->with(
+                'error',
+                'Template gagal disimpan. Penyimpanan '
+                .$this->diskName().' tidak dapat ditulis; periksa konfigurasi LETTERS_DISK.'
+            );
+        }
+
+        $placeholders = $this->readPlaceholders($path);
+
+        if ($placeholders === []) {
+            $this->disk()->delete($path);
+
+            return back()->with(
+                'error',
+                'Template tidak berisi penanda ${perihal}. Tambahkan penanda pada dokumen, contoh ${perihal}, lalu unggah ulang.'
+            );
+        }
+
+        $template = LetterTemplate::create([
+            'name' => $request->string('name')->toString(),
+            'file_path' => $path,
+            'description' => $request->input('description') ?: null,
+            'placeholders' => $placeholders,
+            'created_by_user_id' => $request->user()->id,
+        ]);
+
+        $this->log($request, 'template.created', LetterTemplate::class, $template->id);
+
+        return redirect()
+            ->route('letters.templates')
+            ->with('success', 'Template surat berhasil disimpan dengan '.count($placeholders).' penanda.');
+    }
+
+    public function destroyTemplate(Request $request, LetterTemplate $template): RedirectResponse
+    {
+        $this->authorizeManager($request);
+
+        if ($template->file_path) {
+            $this->disk()->delete($template->file_path);
+        }
+
+        $template->delete();
+
+        $this->log($request, 'template.deleted', LetterTemplate::class, $template->id);
+
+        return redirect()->route('letters.templates')->with('success', 'Template surat berhasil dihapus.');
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function templatesPayload(): array
+    {
+        return LetterTemplate::orderByDesc('created_at')
+            ->get()
+            ->map(fn (LetterTemplate $template) => [
+                'id' => $template->id,
+                'name' => $template->name,
+                'description' => $template->description,
+                'placeholders' => $template->placeholderList(),
+                'fields' => $this->values->formFields($template->placeholderList()),
+                'download_url' => route('letters.templates.download', $template),
+                'created_at' => $template->created_at?->toIso8601String(),
+            ])
+            ->all();
+    }
+
+    /**
+     * Susun isi surat: dari templat .docx bila ada, atau dari tata letak bawaan.
+     *
+     * @param  array<string, mixed>  $extra
+     * @return array{0: string, 1: array<int, string>}
+     */
+    protected function renderLetter(Letter $letter, array $extra = []): array
+    {
+        $placeholders = $letter->template?->placeholders ?? [];
+
+        if ($letter->template && $letter->template->file_path && $placeholders !== []) {
+            $resolved = $this->values->forTemplate($letter, $placeholders, $extra);
+
+            return [
+                $this->docx->toHtml($this->templatePath($letter->template), $resolved['values']),
+                $resolved['unfilled'],
+            ];
+        }
 
         return [
-            'nomor_surat' => $letter->nomor_surat ?? '-',
-            'perihal' => $letter->perihal,
-            'isi_surat' => $letter->isi_surat ?? '',
-            'tujuan_pengirim' => $letter->tujuan_pengirim ?? '-',
-            'tgl_surat' => $letter->tgl_surat ? Carbon::parse($letter->tgl_surat)->translatedFormat('d F Y') : '-',
-            'waktu_kegiatan' => $letter->waktu_kegiatan ?? '-',
-            'lokasi_kegiatan' => $letter->lokasi_kegiatan ?? '-',
-            'nama_ambalan' => $ambalan->nama,
-            'tanggal' => now()->translatedFormat('d F Y'),
-            'jenis_surat' => $letter->jenis_surat ?? '-',
-            'nama_pradana_putra' => $pradana['nama_pradana_putra'],
-            'nis_pradana_putra' => $pradana['nis_pradana_putra'],
-            'nama_pradana_putri' => $pradana['nama_pradana_putri'],
-            'nis_pradana_putri' => $pradana['nis_pradana_putri'],
+            view('letters.default-body', [
+                'letter' => $letter,
+                'ambalan' => $letter->ambalan,
+                'extra' => $extra,
+            ])->render(),
+            [],
         ];
     }
 
-    protected function generateDocx(Letter $letter, $ambalan): \Symfony\Component\HttpFoundation\Response
+    protected function exportDocx(Letter $letter): SymfonyResponse
     {
-        $filename = "surat-{$letter->perihal}.docx";
+        $placeholders = $letter->template?->placeholders ?? [];
 
-        if ($letter->template_id) {
-            $template = $letter->template;
-            if ($template && $template->file_path && preg_match('/\.docx$/i', $template->file_path)) {
-                $templatePath = Storage::disk('public')->path($template->file_path);
-
-                if (! file_exists($templatePath)) {
-                    throw new \RuntimeException("File template tidak ditemukan: {$template->file_path}");
-                }
-
-                $values = $this->resolveTemplateValues($letter, $ambalan);
-
-                return response()->streamDownload(function () use ($templatePath, $values, $filename) {
-                    $this->streamModifiedDocx($templatePath, $values, $filename);
-                }, $filename, [
-                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                    'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-                ]);
-            }
-
-            throw new \RuntimeException('Template tidak valid atau bukan file .docx');
+        if (! $letter->template?->file_path || $placeholders === []) {
+            return $this->exportDocxFromScratch($letter);
         }
 
-        return $this->generateDocxFromScratch($letter, $ambalan, $filename, storage_path("app/public/letters/generated/{$filename}"));
+        $resolved = $this->values->forTemplate($letter, $placeholders, $letter->placeholder_values ?? []);
+        $path = $this->temporaryPath('docx');
+
+        $this->docx->fill($this->templatePath($letter->template), $resolved['values'], $path);
+
+        return response()
+            ->download($path, $this->filename($letter, 'docx'), ['Content-Type' => static::DOCX_MIME])
+            ->deleteFileAfterSend();
     }
 
-    protected function streamModifiedDocx(string $templatePath, array $values, string $filename): void
+    /**
+     * Susun .docx dari nol untuk surat yang tidak memakai templat.
+     */
+    protected function exportDocxFromScratch(Letter $letter): SymfonyResponse
     {
-        $zip = new \ZipArchive;
-        $zip->open($templatePath);
+        $extra = $letter->placeholder_values ?? [];
 
-        $xml = $zip->getFromName('word/document.xml');
-        $modifiedXml = $this->replaceTemplatePlaceholders($xml, $values);
+        $body = view('letters.default-body', [
+            'letter' => $letter,
+            'ambalan' => $letter->ambalan,
+            'extra' => $extra,
+        ])->render();
 
-        $tempFile = tempnam(sys_get_temp_dir(), 'docx_');
-        $newZip = new \ZipArchive;
-        $newZip->open($tempFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
-
-        for ($i = 0; $i < $zip->numFiles; $i++) {
-            $name = $zip->getNameIndex($i);
-            if ($name === 'word/document.xml') {
-                $newZip->addFromString($name, $modifiedXml);
-            } else {
-                $content = $zip->getFromIndex($i);
-                $newZip->addFromString($name, $content === false ? '' : $content);
-            }
-        }
-        $newZip->close();
-        $zip->close();
-
-        readfile($tempFile);
-        unlink($tempFile);
-    }
-
-    protected function replaceTemplatePlaceholders(string $xml, array $values): string
-    {
-        $plainPos = 0;
-        $xmlPosMap = [];
-        $xmlLen = strlen($xml);
-        for ($i = 0; $i < $xmlLen; $i++) {
-            if ($xml[$i] === '<') {
-                while ($i < $xmlLen && $xml[$i] !== '>') {
-                    $i++;
-                }
-            } else {
-                $xmlPosMap[$plainPos] = $i;
-                $plainPos++;
-            }
-        }
-        $xmlPosMap[$plainPos] = $xmlLen;
-
-        $plainText = strip_tags($xml);
-
-        preg_match_all('/\$\{([^}]+)\}/', $plainText, $matches, PREG_OFFSET_CAPTURE);
-
-        $replacements = [];
-        foreach ($matches[0] as $idx => $fullMatch) {
-            $name = $matches[1][$idx][0];
-            $value = $values[$name] ?? null;
-            if ($value === null) {
-                continue;
-            }
-
-            $plainStart = $fullMatch[1];
-            $plainEnd = $plainStart + strlen($fullMatch[0]);
-
-            $xmlStart = null;
-            $xmlEnd = null;
-
-            for ($p = $plainStart; $p >= 0; $p--) {
-                if (isset($xmlPosMap[$p])) {
-                    $xmlStart = $xmlPosMap[$p];
-                    $wOpen = strrpos(substr($xml, 0, $xmlStart), '<w:t');
-                    if ($wOpen !== false) {
-                        $xmlStart = $wOpen;
-                    }
-                    break;
-                }
-            }
-
-            for ($p = $plainEnd - 1; $p <= $plainPos; $p++) {
-                if (isset($xmlPosMap[$p])) {
-                    $xmlEnd = $xmlPosMap[$p] + 1;
-                    $after = substr($xml, $xmlEnd);
-                    if (preg_match('/<\/w:t>/', $after, $closeMatch, PREG_OFFSET_CAPTURE)) {
-                        $xmlEnd += $closeMatch[0][1] + strlen('</w:t>');
-                    }
-                    break;
-                }
-            }
-
-            if ($xmlStart !== null && $xmlEnd !== null) {
-                $replacements[] = [$xmlStart, $xmlEnd, $value];
-            }
-        }
-
-        usort($replacements, fn ($a, $b) => $b[0] - $a[0]);
-
-        foreach ($replacements as [$start, $end, $value]) {
-            $xml = substr($xml, 0, $start).'<w:t>'.$value.'</w:t>'.substr($xml, $end);
-        }
-
-        return $xml;
-    }
-
-    protected function generateDocxFromScratch(Letter $letter, $ambalan, string $filename, string $path): \Symfony\Component\HttpFoundation\Response
-    {
-        $phpWord = new PhpWord;
-        $section = $phpWord->addSection([
+        $document = new PhpWord;
+        $section = $document->addSection([
             'margin_top' => 1000,
             'margin_right' => 1000,
             'margin_bottom' => 1000,
             'margin_left' => 1000,
         ]);
 
-        $styleFont = ['size' => 12, 'name' => 'DejaVu Sans'];
-        $styleTitle = ['size' => 16, 'bold' => true, 'name' => 'DejaVu Sans'];
+        $font = ['name' => 'DejaVu Sans', 'size' => 11];
 
-        $section->addText($ambalan->nama ?? 'Ambalan Pramuka', $styleTitle, ['align' => 'center']);
-        $section->addText('Persuratan Digital', ['size' => 11, 'italic' => true, 'name' => 'DejaVu Sans'], ['align' => 'center']);
-        $section->addText('---', ['size' => 10], ['align' => 'center']);
-
-        $section->addTextBreak(1);
-        $nomor = $letter->nomor_surat ?? '-';
-        $tanggal = $letter->tgl_surat ? Carbon::parse($letter->tgl_surat)->translatedFormat('d F Y') : '-';
-        $tujuan = $letter->tujuan_pengirim ?? '-';
-        $waktu = $letter->waktu_kegiatan ?? null;
-        $lokasi = $letter->lokasi_kegiatan ?? null;
-        $pradana = $this->resolvePradanaNames($letter->ambalan_id);
-
-        $section->addText("Nomor Surat: {$nomor}", $styleFont);
-        $section->addText("Perihal: {$letter->perihal}", $styleFont);
-        $section->addText("Tanggal: {$tanggal}", $styleFont);
-        if ($waktu) {
-            $section->addText("Waktu Kegiatan: {$waktu}", $styleFont);
+        foreach ($this->blocks($body) as $block) {
+            $section->addText($block, $font, ['spaceAfter' => 160]);
         }
-        if ($lokasi) {
-            $section->addText("Lokasi Kegiatan: {$lokasi}", $styleFont);
-        }
-        $section->addText("Tujuan/Pengirim: {$tujuan}", $styleFont);
-        $section->addText("Pradana Putra: {$pradana['nama_pradana_putra']}", $styleFont);
-        $section->addText("NIS Pradana Putra: {$pradana['nis_pradana_putra']}", $styleFont);
-        $section->addText("Pradana Putri: {$pradana['nama_pradana_putri']}", $styleFont);
-        $section->addText("NIS Pradana Putri: {$pradana['nis_pradana_putri']}", $styleFont);
 
-        $section->addTextBreak(2);
-        $section->addText('Isi Surat:', ['size' => 12, 'bold' => true, 'name' => 'DejaVu Sans']);
-        $section->addTextBreak(1);
+        $path = $this->temporaryPath('docx');
+        IOFactory::createWriter($document, 'Word2007')->save($path);
 
-        $paragraphStyle = ['spaceBefore' => 200, 'spaceAfter' => 200];
-        $section->addText($letter->isi_surat, $styleFont, $paragraphStyle);
+        return response()
+            ->download($path, $this->filename($letter, 'docx'), ['Content-Type' => static::DOCX_MIME])
+            ->deleteFileAfterSend();
+    }
 
-        $section->addTextBreak(3);
-        $section->addText('Dikeluarkan pada: '.now()->translatedFormat('d F Y'), $styleFont);
+    protected function exportPdf(Letter $letter): SymfonyResponse
+    {
+        [$body, $unfilled] = $this->renderLetter($letter, $letter->placeholder_values ?? []);
 
-        return response()->streamDownload(function () use ($phpWord) {
-            $writer = IOFactory::createWriter($phpWord, 'Word2007');
-            $writer->save('php://output');
-        }, $filename, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        $pdf = PDF::loadHTML(view('letters.render', [
+            'title' => 'Surat - '.$letter->perihal,
+            'body' => $body,
+            'unfilled' => $unfilled,
+        ])->render())
+            ->setPaper('A4', 'portrait')
+            ->setOptions([
+                'isRemoteEnabled' => false,
+                'isHtml5ParserEnabled' => true,
+                'defaultFont' => 'DejaVu Sans',
+            ]);
+
+        $content = $pdf->output();
+
+        return response($content, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$this->filename($letter, 'pdf').'"',
+            'Content-Length' => (string) strlen($content),
         ]);
     }
 
-    public function templates(Request $request): Response
+    /**
+     * Surat While-dibuat dari isian form, tanpa menyentuh basis data.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function draft(array $data): Letter
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
-        $templates = LetterTemplate::query()
-            ->orderByDesc('created_at')
-            ->get();
-
-        return Inertia::render('Letters/Templates', compact('templates'));
-    }
-
-    public function storeTemplate(Request $request): RedirectResponse
-    {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'file' => ['required', 'file', 'max:10240', 'mimetypes:application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-            'description' => ['nullable', 'string', 'max:500'],
+        $letter = new Letter;
+        $letter->forceFill([
+            'ambalan_id' => $data['ambalan_id'] ?? null,
+            'nomor_surat' => $data['nomor_surat'] ?? null,
+            'jenis_surat' => $data['jenis_surat'] ?? 'Masuk',
+            'perihal' => $data['perihal'],
+            'isi_surat' => $data['isi_surat'] ?? null,
+            'tujuan_pengirim' => $data['tujuan_pengirim'] ?? null,
+            'tgl_surat' => $data['tgl_surat'] ?? null,
+            'waktu_kegiatan' => $data['waktu_kegiatan'] ?? null,
+            'lokasi_kegiatan' => $data['lokasi_kegiatan'] ?? null,
+            'template_id' => $data['template_id'] ?? null,
+            'placeholder_values' => $data['placeholder_values'] ?? [],
         ]);
 
-        $file = $request->file('file');
-        $this->validateFileContent($file);
-        $path = $file->store('letter-templates', 'public');
+        $letter->setRelation('ambalan', isset($data['ambalan_id']) ? Ambalan::find($data['ambalan_id']) : null);
+        $letter->setRelation('template', isset($data['template_id']) ? LetterTemplate::find($data['template_id']) : null);
 
-        // Validate template placeholders
-        $validation = $this->validateTemplatePlaceholders($path);
-        if (! $validation['valid']) {
-            Storage::disk('public')->delete($path);
+        return $letter;
+    }
 
-            return back()->with('error', 'Template tidak valid: '.$validation['message']);
+    protected function renderResponse(string $title, string $body, array $unfilled): Response
+    {
+        return response(view('letters.render', compact('title', 'body', 'unfilled'))->render(), 200, [
+            'Content-Type' => 'text/html; charset=utf-8',
+        ]);
+    }
+
+    protected function renderError(string $message): Response
+    {
+        return response(view('letters.render', [
+            'title' => 'Pratinjau gagal',
+            'body' => '<p class="catatan">'.e($message).'</p>',
+            'unfilled' => [],
+        ])->render(), 422, ['Content-Type' => 'text/html; charset=utf-8']);
+    }
+
+    /**
+     * Ringkasan isi surat dari HTML tata letak bawaan, untuk .docx tanpa templat.
+     *
+     * @return array<int, string>
+     */
+    protected function blocks(string $html): array
+    {
+        $text = html_entity_decode(
+            strip_tags(str_replace(['<br/>', '<br>', '</p>', '</td>'], "\n", $html)),
+            ENT_QUOTES | ENT_XML1,
+            'UTF-8'
+        );
+
+        $blocks = array_values(array_filter(array_map('trim', preg_split('/\n+/', $text) ?: [])));
+
+        return $blocks === [] ? ['-'] : $blocks;
+    }
+
+    protected function canGenerate(Letter $letter): bool
+    {
+        return $letter->perihal !== null && $letter->perihal !== '';
+    }
+
+    protected function templatePath(LetterTemplate $template): string
+    {
+        $path = $this->localPath((string) $template->file_path);
+
+        abort_unless(is_file($path), 422, 'Berkas template tidak ditemukan di penyimpanan.');
+
+        return $path;
+    }
+
+    /**
+     * Disk tempat template dan lampiran disimpan.
+     */
+    protected function disk(): Filesystem
+    {
+        return Storage::disk($this->diskName());
+    }
+
+    protected function diskName(): string
+    {
+        $disk = trim((string) config('letters.disk', ''));
+
+        return $disk !== '' ? $disk : 'public';
+    }
+
+    /**
+     * Path lokal yang bisa dibaca untuk berkas yang disimpan.
+     *
+     * Disk remote (S3 dan sejenisnya) tidak punya path lokal, jadi berkasnya
+     * disalin ke folder sementara lebih dulu. Folder aplikasi hanya-baca di
+     * hosting, jadi folder sementara sistem yang dipakai.
+     *
+     * @return string Path lokal; hapus sendiri setelah selesai dipakai.
+     */
+    protected function localPath(string $storagePath): string
+    {
+        $disk = $this->disk();
+
+        if (! $disk->exists($storagePath)) {
+            abort(422, 'Berkas tidak ditemukan di penyimpanan.');
         }
 
-        $template = LetterTemplate::create([
-            'name' => $data['name'],
-            'file_path' => $path,
-            'description' => $data['description'] ?? null,
-            'created_by_user_id' => $request->user()->id,
-        ]);
+        if ($this->isRemoteDisk()) {
+            $path = $this->temporaryPath('docx');
+            $disk->writeStream($path, fopen($disk->readStream($storagePath), 'r'));
 
-        AuditLog::create([
-            'actor_id' => $request->user()->id,
-            'action' => 'template.created',
-            'entity_type' => LetterTemplate::class,
-            'entity_id' => $template->id,
-            'ip_address' => $request->ip(),
-        ]);
+            return $path;
+        }
 
-        return redirect()->route('letters.templates')->with('success', 'Template surat berhasil disimpan.');
+        return $disk->path($storagePath);
     }
 
-    protected function validateTemplatePlaceholders(string $storagePath): array
+    protected function isRemoteDisk(): bool
     {
-        $requiredPlaceholders = [
-            'nomor_surat', 'perihal', 'isi_surat', 'tujuan_pengirim',
-            'tgl_surat', 'waktu_kegiatan', 'lokasi_kegiatan',
-            'nama_ambalan', 'tanggal', 'jenis_surat',
-            'nama_pradana_putra', 'nis_pradana_putra',
-            'nama_pradana_putri', 'nis_pradana_putri',
-        ];
+        return in_array($this->diskName(), ['s3', 's3v3'], true)
+            || str_starts_with((string) config("filesystems.disks.{$this->diskName()}.driver"), 's3');
+    }
 
+    /**
+     * @return array<int, string>
+     */
+    protected function readPlaceholders(string $storagePath): array
+    {
         try {
-            $templatePath = Storage::disk('public')->path($storagePath);
-            $templateProcessor = new TemplateProcessor($templatePath);
-            $foundPlaceholders = $templateProcessor->getVariables();
+            $path = $this->localPath($storagePath);
 
-            $missing = [];
-            foreach ($requiredPlaceholders as $ph) {
-                if (! in_array($ph, $foundPlaceholders)) {
-                    $missing[] = '${'.$ph.'}';
-                }
-            }
-
-            if ($missing) {
-                return [
-                    'valid' => false,
-                    'message' => 'Placeholder hilang: '.implode(', ', $missing),
-                ];
-            }
-
-            return ['valid' => true, 'message' => ''];
-        } catch (\Exception $e) {
-            return [
-                'valid' => false,
-                'message' => 'Gagal membaca template: '.$e->getMessage(),
-            ];
+            $found = $this->docx->placeholders($path);
+        } catch (Throwable) {
+            return [];
         }
+
+        if (! $this->isRemoteDisk()) {
+            return $found;
+        }
+
+        @unlink($path);
+
+        return $found;
     }
 
-    protected function validateFileContent(UploadedFile $file): void
+    /**
+     * Berkas sementara untuk unduhan. sys_get_temp_dir() dipakai karena
+     * folder aplikasi bisa hanya-baca di hosting (Vercel).
+     */
+    protected function temporaryPath(string $extension): string
     {
-        $allowedMimes = [
+        $directory = sys_get_temp_dir().'/pwa-letters';
+
+        if (! is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        return $directory.'/'.Str::random(40).'.'.$extension;
+    }
+
+    protected function filename(Letter $letter, string $extension): string
+    {
+        $slug = Str::slug($letter->perihal ?: 'surat');
+
+        return ($slug === '' ? 'surat' : $slug).'-'.$letter->id.'.'.$extension;
+    }
+
+    protected function storeAttachment(?UploadedFile $file, ?string $previous = null): ?string
+    {
+        if (! $file) {
+            return $previous;
+        }
+
+        $this->validateAttachmentContent($file);
+
+        if ($previous) {
+            $this->disk()->delete($previous);
+        }
+
+        $path = $file->store(config('letters.attachments_directory', 'letters'), $this->diskName());
+
+        if (! is_string($path) || $path === '') {
+            throw new RuntimeException(
+                'Lampiran gagal disimpan. Penyimpanan '.$this->diskName().' tidak dapat ditulis.'
+            );
+        }
+
+        return $path;
+    }
+
+    protected function validateAttachmentContent(UploadedFile $file): void
+    {
+        $allowed = [
             'application/pdf' => '%PDF',
             'image/jpeg' => "\xFF\xD8\xFF",
             'image/png' => "\x89PNG\r\n\x1A\n",
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'PK\x03\x04',
         ];
 
         $mime = $file->getMimeType();
-        if (! isset($allowedMimes[$mime])) {
-            throw new ValidationException(
-                Factory::make()->make([], [], ['file' => 'Tipe file tidak diizinkan.'])
-            );
-        }
 
-        $header = file_get_contents($file->getRealPath(), false, null, 0, 8);
-        $expectedHeader = $allowedMimes[$mime];
+        abort_unless(isset($allowed[$mime]), 422, 'Lampiran harus berupa PDF atau gambar (JPG/PNG).');
 
-        if (strpos($header, $expectedHeader) !== 0) {
-            throw new ValidationException(
-                Factory::make()->make([], [], ['file' => 'Konten file tidak sesuai dengan tipe yang dideklarasikan.'])
-            );
-        }
+        $header = (string) file_get_contents($file->getRealPath(), false, null, 0, 8);
+
+        abort_if(! str_starts_with($header, $allowed[$mime]), 422, 'Isi berkas tidak sesuai dengan tipe yang diunggah.');
     }
 
-    public function destroyTemplate(LetterTemplate $template): RedirectResponse
+    protected function validateDocxContent(UploadedFile $file): void
     {
-        abort_unless(in_array(request()->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
-        if ($template->file_path) {
-            Storage::disk('public')->delete($template->file_path);
+        $header = (string) file_get_contents($file->getRealPath(), false, null, 0, 4);
+
+        abort_unless(str_starts_with($header, "PK\x03\x04"), 422, 'Berkas template bukan .docx yang valid.');
+    }
+
+    protected function authorizeManager(Request $request): void
+    {
+        abort_unless(in_array($request->user()?->role, self::MANAGERS, true), 403);
+    }
+
+    protected function generateError(string $message): SymfonyResponse
+    {
+        if (request()->expectsJson()) {
+            return response()->json(['message' => $message], 422);
         }
-        $template->delete();
 
+        return redirect()->route('letters.index')->with('error', $message);
+    }
+
+    protected function log(Request $request, string $action, string $entityType, int $entityId): void
+    {
         AuditLog::create([
-            'actor_id' => request()->user()->id,
-            'action' => 'template.deleted',
-            'entity_type' => LetterTemplate::class,
-            'entity_id' => $template->id,
-            'ip_address' => request()->ip(),
+            'actor_id' => $request->user()?->id,
+            'action' => $action,
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
+            'ip_address' => $request->ip(),
         ]);
-
-        return redirect()->route('letters.templates')->with('success', 'Template surat berhasil dihapus.');
     }
 }
