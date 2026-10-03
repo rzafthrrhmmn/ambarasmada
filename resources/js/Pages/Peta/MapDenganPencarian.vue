@@ -564,6 +564,7 @@ import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import { getActiveServiceWorker, SW_PROTOCOL } from '@/ServiceWorker.js';
 import { useMapPngExport } from '@/Composables/useMapPngExport.js';
+import { BASEMAPS, PRINT_BASEMAP, basemapAttribution } from '@/basemaps.js';
 
 const props = defineProps({
   mapConfig: Object,
@@ -635,12 +636,17 @@ const locating = ref(false);
 
 // Basemap
 const basemap = ref('osm');
-const basemapSources = {
-  osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap' },
-  satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, attribution: '© Esri' },
-  terrain: { type: 'raster', tiles: ['https://tile.opentopomap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenTopoMap' },
-  dark: { type: 'raster', tiles: ['https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'], tileSize: 256, attribution: '© Stadia Maps' },
-};
+
+/**
+ * Kredit sumber untuk PNG hasil ekspor.
+ *
+ * Ekspor PNG mengambil salinan kanvas WebGL, sedangkan atribusi MapLibre
+ * digambar sebagai elemen DOM di atas kanvas itu. Elemen DOM tidak ikut
+ * terbaca, jadi PNG harus menulis kreditnya sendiri. Kreditnya harus mengikuti
+ * basemap yang sedang terlihat: berkas yang isinya citra satelit tidak boleh
+ * mencantumkan OpenStreetMap.
+ */
+const sourceCredit = computed(() => `Sumber: ${basemapAttribution(basemap.value)}, PMTiles Kontur Sulsel`);
 
 // Search
 const searchQuery = ref('');
@@ -1062,12 +1068,7 @@ function initMiniMap() {
               // batas wilayah di atas latar kosong, jadi bentuk wilayahnya
               // tidak terbaca. OSM disamakan dengan peta utama supaya yang
               // dipratinjau sama dengan yang akan diunduh.
-              'mini-basemap': {
-                type: 'raster',
-                tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-                tileSize: 256,
-                attribution: '© OpenStreetMap',
-              },
+              'mini-basemap': BASEMAPS.osm,
               'kontur': { type: 'vector', url: pmtilesSourceUrl.value },
               'batas': { type: 'geojson', data: geojsonUrl.value },
               // Source kecamatan dibuat bersyarat supaya preview tetap jalan
@@ -1202,36 +1203,20 @@ async function initMap() {
       ...(hasKecamatanGeojson.value
         ? { 'kecamatan-batas': { type: 'geojson', data: kecamatanGeojsonUrl.value } }
         : {}),
-      'osm-tiles': {
-        type: 'raster',
-        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-        tileSize: 256,
-        attribution: '© OpenStreetMap',
-      },
-      'satellite-tiles': {
-        type: 'raster',
-        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-        tileSize: 256,
-        attribution: '© Esri',
-      },
-      'terrain-tiles': {
-        type: 'raster',
-        tiles: ['https://tile.opentopomap.org/{z}/{x}/{y}.png'],
-        tileSize: 256,
-        attribution: '© OpenTopoMap',
-      },
-      'dark-tiles': {
-        type: 'raster',
-        tiles: ['https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'],
-        tileSize: 256,
-        attribution: '© Stadia Maps',
-      },
+      // Keempat basemap disalin dari definisi tunggal supaya teks atribusi
+      // lisensinya tidak bisa berbeda dari halaman Peta/Index.vue.
+      'osm-tiles': BASEMAPS.osm,
+      'satellite-tiles': BASEMAPS.satellite,
+      'terrain-tiles': BASEMAPS.terrain,
+      'dark-tiles': BASEMAPS.dark,
       'hillshade-tiles': {
         type: 'raster-dem',
-        // Host jamak (tiles.opentopomap.org) menyajikan sertifikat TLS yang
-        // tidak cocok dengan nama hostnya, sehingga browser menolak koneksi
-        // dan layer hillshade tidak pernah punya data. Terrarium di S3
-        // menyajikan DEM yang sama dengan sertifikat yang sah.
+        // DEM diambil dari Terrarium di S3, bukan dari host OpenTopoMap. Bentuk
+        // jamak tiles.opentopomap.org menyajikan sertifikat TLS yang tidak cocok
+        // dengan nama hostnya sehingga browser menolak koneksi dan layer
+        // hillshade tidak pernah punya data; bentuk tunggalnya hanya menyajikan
+        // gambar raster, bukan DEM. Terrarium menyajikan DEM SRTM yang sama
+        // dengan sertifikat yang sah.
         tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
         encoding: 'terrarium',
         tileSize: 256,
@@ -1838,6 +1823,7 @@ async function printMapPng({ area = null, region = null, components = null } = {
   const result = await exportMapPng(map.value, {
     title: `Peta Kontur - ${name}`,
     subtitle: label,
+    sources: sourceCredit.value,
     filename: `peta-kontur-${slugify(name)}.png`,
     ...(region
       ? { region, regionMaxZoom: Number.isFinite(region.maxZoom) ? region.maxZoom : null }
@@ -1953,6 +1939,9 @@ function generatePrintHTML(camera, wilayah = null) {
   // tanpa pernah mendeklarasikan variabelnya, jadi memanggil fungsi ini melempar
   // ReferenceError sebelum HTML-nya sempat ditulis ke jendela cetak.
   const url = geojsonUrl.value;
+  // Halaman cetak memakai OSM dan tidak mengikuti pilihan basemap pengguna,
+  // jadi kreditnya diambil dari definisi basemap yang sama dengan peta utama.
+  const sumberCetak = escapeHtml(`Sumber: ${basemapAttribution('osm')}, PMTiles Kontur Sulsel`);
   // Highlight kecamatan ikut dibawa ke halaman cetak. Variabel ditulis sebagai
   // literal JSON supaya kode id_kec dan URL-nya tidak bisa keluar dari string
   // HTML di dalam <script> ketika wilayah berasal dari data.
@@ -1992,7 +1981,7 @@ function generatePrintHTML(camera, wilayah = null) {
 </div>
 <div class="map-container" id="print-map"></div>
 <div class="footer">
-  <div>Sumber: OpenStreetMap, PMTiles Kontur Sulsel</div>
+  <div>${sumberCetak}</div>
   <div class="legend">
     <div class="legend-item"><span class="legend-color" style="background:#8c510a"></span> Kontur</div>
     <div class="legend-item"><span class="legend-color" style="background:#2563eb; border:1px dashed #2563eb"></span> Batas Kabupaten</div>${hasKecamatanGeojson.value ? `
@@ -2017,7 +2006,7 @@ function generatePrintHTML(camera, wilayah = null) {
         'kontur': { type: 'vector', url: '${pmtilesSourceUrl.value}' },
         'batas': { type: 'geojson', data: '${url}' },
 ${cetakKecamatan}
-        'osm': { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 }
+        'osm': ${JSON.stringify(PRINT_BASEMAP)}
       },
       layers: [
         { id: 'osm', type: 'raster', source: 'osm' },

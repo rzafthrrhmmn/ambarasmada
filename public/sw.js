@@ -121,7 +121,8 @@ const OFFLINE_MAP_HTML = '/offline-map.html';
 // berubah, supaya activate bisa membuang peta lama yang isinya sudah usang.
 // v2: histogram tidak lagi memakai angka elevasi karangan.
 // v3: halaman peta offline menggambar batas kecamatan dan menyorot kecamatan yang diunduh.
-const OFFLINE_MAP_GENERATOR = 'v3';
+// v4: sumber OSM pada halaman offline punya atribusi, jadi paket lama tanpa kredit dibuang.
+const OFFLINE_MAP_GENERATOR = 'v4';
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
@@ -1148,6 +1149,11 @@ const histogramHtml = !layoutOptions.histogram ? '' : (elevStats ? `
                         type: 'raster',
                         tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
                         tileSize: 256,
+                        // Atribusi wajib ada di property source. MapLibre
+                        // menulisnya ke AttributionControl di atas kanvas, jadi
+                        // tanpa property ini tile OSM tampil tanpa kredit sama
+                        // sekali.
+                        attribution: '© OpenStreetMap contributors',
                     }
                 },
                 layers: [

@@ -640,6 +640,12 @@ function drawScaleBar(ctx, x, y, metersPerPx, maxWidthPx) {
  * @param {{west:number,east:number,south:number,north:number}|null} options.bounds
  *   Batas geografis yang persis tertangkap di kotak peta. Tanpa ini grid
  *   koordinat dilewati karena posisinya tidak bisa ditentukan secara jujur.
+ * @param {string} options.sources  Kredit sumber data yang dicetak di kaki
+ *   lembar. Halaman yang memanggil wajib mengirim basemap yang sedang terlihat:
+ *   MapLibre menulis atribusi ke elemen DOM di atas kanvas WebGL, jadi
+ *   elemen itu tidak ikut masuk ke snapshot dan PNG tanpa kredit eksplisit
+ *   menampilkan citra yang tidak dikreditkan. Nilai standarnya hanya berlaku
+ *   untuk Peta/Index, yang cetakannya selalu memakai OSM.
  * @returns {Promise<Blob>}
  */
 export async function buildMapPng({
@@ -655,6 +661,7 @@ export async function buildMapPng({
   components = {},
   elevation = null,
   bounds = null,
+  sources = 'Sumber: © OpenStreetMap contributors, PMTiles Kontur Sulsel',
 } = {}) {
   const width = SHEET_WIDTH;
   const height = SHEET_HEIGHT;
@@ -860,7 +867,7 @@ export async function buildMapPng({
   ctx.fillText('Garis kontur (garis tebal = kontur indeks)', MARGIN + 30, cursorY);
 
   ctx.textAlign = 'right';
-  ctx.fillText('Sumber: OpenStreetMap, PMTiles Kontur Sulsel', width - MARGIN, cursorY);
+  ctx.fillText(sources, width - MARGIN, cursorY);
 
   // Kaki halaman menempel ke tepi bawah lembar, tidak mengikuti cursor, supaya
   // posisinya sama untuk semua wilayah.

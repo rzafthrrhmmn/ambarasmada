@@ -171,10 +171,10 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
-import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import { getActiveServiceWorker, SW_PROTOCOL } from '@/ServiceWorker.js';
 import { useMapPngExport } from '@/Composables/useMapPngExport.js';
+import { BASEMAPS, BASEMAP_LABELS, PRINT_BASEMAP, basemapAttribution } from '@/basemaps.js';
 
 const props = defineProps({
   mapConfig: Object,
@@ -205,6 +205,7 @@ const { isExporting, exportError, exportMapPng } = useMapPngExport();
 async function printMapPng({ silent = false } = {}) {
   const result = await exportMapPng(map.value, {
     title: 'Peta Kontur Sulawesi',
+    sources: sourceCredit.value,
   });
 
   if (result.ok) {
@@ -274,12 +275,16 @@ const locating = ref(false);
 
 // Basemap
 const basemap = ref('osm');
-const basemapSources = {
-  osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap' },
-  satellite: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, attribution: '© Esri' },
-  terrain: { type: 'raster', tiles: ['https://tile.opentopomap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenTopoMap' },
-  dark: { type: 'raster', tiles: ['https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'], tileSize: 256, attribution: '© Stadia Maps' },
-};
+
+/**
+ * Kredit sumber untuk PNG hasil ekspor.
+ *
+ * Ekspor PNG mengambil salinan kanvas WebGL, sedangkan atribusi MapLibre
+ * digambar sebagai elemen DOM di atas kanvas itu. Elemen DOM tidak ikut
+ * terbaca, jadi PNG harus menulis kreditnya sendiri, dan kredit itu harus
+ * mengikuti basemap yang sedang terlihat.
+ */
+const sourceCredit = computed(() => `Sumber: ${basemapAttribution(basemap.value)}, PMTiles Kontur Sulsel`);
 
 // Offline detection
 const isOffline = ref(!navigator.onLine);
@@ -354,36 +359,20 @@ async function initMap() {
             type: 'geojson',
             data: geojsonUrl.value,
           },
-          'osm-tiles': {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '© OpenStreetMap',
-          },
-          'satellite-tiles': {
-            type: 'raster',
-            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-            tileSize: 256,
-            attribution: '© Esri',
-          },
-          'terrain-tiles': {
-            type: 'raster',
-            tiles: ['https://tile.opentopomap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '© OpenTopoMap',
-          },
-          'dark-tiles': {
-            type: 'raster',
-            tiles: ['https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'],
-            tileSize: 256,
-            attribution: '© Stadia Maps',
-          },
+          // Keempat basemap disalin dari definisi tunggal supaya teks
+          // atribusi lisensinya tidak bisa berbeda dari halaman peta utama.
+          'osm-tiles': BASEMAPS.osm,
+          'satellite-tiles': BASEMAPS.satellite,
+          'terrain-tiles': BASEMAPS.terrain,
+          'dark-tiles': BASEMAPS.dark,
           'hillshade-tiles': {
             type: 'raster-dem',
-            // Host jamak (tiles.opentopomap.org) menyajikan sertifikat TLS yang
-            // tidak cocok dengan nama hostnya, sehingga browser menolak
-            // koneksi dan layer hillshade tidak pernah punya data. Terrarium
-            // di S3 menyajikan DEM yang sama dengan sertifikat yang sah.
+            // DEM diambil dari Terrarium di S3, bukan dari host OpenTopoMap.
+            // Bentuk jamak tiles.opentopomap.org menyajikan sertifikat TLS yang
+            // tidak cocok dengan nama hostnya sehingga browser menolak koneksi
+            // dan layer hillshade tidak pernah punya data; bentuk tunggalnya
+            // hanya menyajikan gambar raster, bukan DEM. Terrarium di S3
+            // menyajikan DEM SRTM yang sama dengan sertifikat yang sah.
             tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
             encoding: 'terrarium',
             tileSize: 256,
@@ -575,6 +564,23 @@ function locateUser() {
   );
 }
 
+/**
+ * Escape teks sebelum masuk ke HTML cetakan.
+ *
+ * Atribusi basemap dan nama wilayah berasal dari data, bukan dari string tetap
+ * di dalam template. Tanpa escaping, satu karakter `<` saja sudah cukup untuk
+ * menutup tag dan mengubah isi cetakan.
+ */
+function escapeHtml(text) {
+  return String(text ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[c]);
+}
+
 function printMap() {
   if (!map.value) return;
   const printWindow = window.open('', '_blank');
@@ -583,6 +589,19 @@ function printMap() {
   const bearing = map.value.getBearing();
   const scale = Math.round(156543.03392 * Math.cos(center.lat * Math.PI / 180) / Math.pow(2, zoom));
   const date = new Date().toLocaleString('id-ID');
+  // URL batas kabupaten wajib dideklarasikan di sini. Versi lama menulis
+  // ${url} di dalam template tanpa pernah menyatakannya, sehingga setiap
+  // penekanan tombol Cetak melempar ReferenceError sebelum HTML-nya sempat
+  // ditulis ke jendela cetak. Atribusi basemap ikut diambil dari satu definisi
+  // supaya kredit di kaki cetakan sama dengan yang tampil di layar.
+  // Tag script di dalam template di bawah ditulis apa adanya, hanya penutupnya
+  // yang di-escape memakai garis miring. Versi lama menulis tag script dalam
+  // bentuk entitas HTML, dan browser memperlakukan entitas itu sebagai teks
+  // biasa, bukan tag: parser HTML tidak mengurai ulang isi teks menjadi markup.
+  // Akibatnya seluruh JavaScript cetakan tampil sebagai teks di atas kertas dan
+  // kotak peta terisi kosong.
+  const url = geojsonUrl.value;
+  const sumber = escapeHtml(`Sumber: ${basemapAttribution('osm')}, PMTiles Kontur Sulsel`);
   const html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Peta Kontur Sulawesi - Cetak</title>
 <style>
@@ -604,16 +623,16 @@ function printMap() {
 </div>
 <div class="map-container" id="print-map"></div>
 <div class="footer">
-  <div>Sumber: OpenStreetMap, PMTiles Kontur Sulsel</div>
+  <div>${sumber}</div>
   <div class="legend">
     <div class="legend-item"><span class="legend-color" style="background:#8c510a"></span> Kontur</div>
     <div class="legend-item"><span class="legend-color" style="background:#2563eb; border:1px dashed #2563eb"></span> Batas Kabupaten</div>
   </div>
 </div>
-&lt;script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"&gt;&lt;/script&gt;
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"><\/script>
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-&lt;script src="https://unpkg.com/pmtiles/dist/pmtiles.js"&gt;&lt;/script&gt;
-&lt;script&gt;
+<script src="https://unpkg.com/pmtiles/dist/pmtiles.js"><\/script>
+<script>
   // Build pmtiles dari unpkg hanya tersedia tanpa nomor versi, dan itu IIFE
   // yang mengekspos global 'pmtiles' huruf kecil. new PMTiles.Protocol() akan
   // ReferenceError karena PMTiles tidak terdefinisi.
@@ -626,7 +645,7 @@ function printMap() {
       sources: {
         'kontur': { type: 'vector', url: '${pmtilesSourceUrl.value}' },
         'batas': { type: 'geojson', data: '${url}' },
-        'osm': { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 }
+        'osm': ${JSON.stringify(PRINT_BASEMAP)}
       },
       layers: [
         { id: 'osm', type: 'raster', source: 'osm' },
@@ -643,6 +662,7 @@ function printMap() {
     pitch: ${map.value?.getPitch() || 0},
   });
   map.once('load', () => { window.print(); });
+<\/script>
 </body></html>`;
   printWindow.document.write(html);
   printWindow.document.close();

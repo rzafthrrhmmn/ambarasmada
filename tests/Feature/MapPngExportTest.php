@@ -937,10 +937,14 @@ class MapPngExportTest extends TestCase
         // Preview yang hanya berisi kontur dan batas wilayah di atas latar
         // kosong tidak memberi informasi: pengguna tidak bisa memastikan
         // wilayah yang dipilih memang yang akan diunduh.
+        //
+        // Definisi basemap diambil dari modul bersama supaya teks atribusi
+        // lisensinya tidak bisa berbeda dari peta utama, jadi yang diperiksa di
+        // sini adalah sumbernya tetap ditunjuk, bukan bentuk definisinya.
         $this->assertStringContainsString(
-            "'mini-basemap': {",
+            "'mini-basemap': BASEMAPS.osm,",
             $pencarian,
-            'Preview wilayah harus punya sumber basemap.'
+            'Preview wilayah harus punya sumber basemap dari definisi bersama.'
         );
 
         $this->assertStringContainsString(
