@@ -351,6 +351,102 @@ class MapPngExportTest extends TestCase
         );
     }
 
+    public function test_batas_peta_dibaca_dengan_bentuk_yang_benar(): void
+    {
+        $module = $this->module();
+
+        // LngLatBounds.toArray() mengembalikan [[west, south], [east, north]]:
+        // dua pasang angka, bukan empat angka berurutan. Memecahnya seperti
+        // angka berurutan membuat west berisi pasangan dan east berisi
+        // undefined, sehingga selisihnya NaN dan grid koordinat yang dicentang
+        // pengguna diam-diam tidak pernah muncul di PNG.
+        $this->assertStringNotContainsString(
+            'raw.toArray()',
+            $module,
+            'toArray() LngLatBounds tidak boleh dipakai untuk destructuring empat angka.'
+        );
+
+        foreach (['getWest()', 'getSouth()', 'getEast()', 'getNorth()'] as $accessor) {
+            $this->assertStringContainsString(
+                $accessor,
+                $module,
+                "Batas peta harus dibaca lewat {$accessor}."
+            );
+        }
+    }
+
+    public function test_kanvas_peta_yang_kolaps_tidak_menggagalkan_ekspor(): void
+    {
+        $module = $this->module();
+
+        // Kanvas 0x0 memberi rasio 0/0 = NaN, dan drawImage dengan ukuran NaN
+        // melempar TypeError yang menggagalkan seluruh pembuatan PNG.
+        $this->assertStringContainsString(
+            'if (!canvas || !canvas.width || !canvas.height) {',
+            $module,
+            'Kanvas peta berukuran nol harus dikenali sebelum dipakai.'
+        );
+    }
+
+    public function test_alasan_gagal_png_diteruskan_ke_pemanggil(): void
+    {
+        $module = $this->module();
+
+        // "PNG peta gagal dibuat" tanpa sebabnya tidak bisa ditelusuri: yang
+        // terlihat hanya dua UI yang diam. Alasan asli harus ikut naik.
+        $this->assertStringContainsString(
+            'return { ok: false, blocked: false, error: exportError.value };',
+            $module,
+            'Kegagalan ekspor harus membawa pesan galatnya.'
+        );
+
+        $this->assertStringContainsString(
+            "return { ok: false, error: 'Ada proses cetak PNG lain yang sedang berjalan.' };",
+            $module,
+            'Jalur keluar lebih awal juga harus menjelaskan kenapa gagal.'
+        );
+
+        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+
+        $this->assertStringContainsString(
+            'PNG peta gagal: ${png.error',
+            $pencarian,
+            'Status unduhan harus menyebut alasan gagalnya, bukan hanya "gagal dibuat".'
+        );
+
+        $this->assertStringNotContainsString(
+            "'PNG peta gagal dibuat.'",
+            $pencarian,
+            'Pesan tanpa alasan membuat galat tidak bisa ditelusuri.'
+        );
+    }
+
+    public function test_preview_wilayah_punya_basemap(): void
+    {
+        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+
+        // Preview yang hanya berisi kontur dan batas wilayah di atas latar
+        // kosong tidak memberi informasi: pengguna tidak bisa memastikan
+        // wilayah yang dipilih memang yang akan diunduh.
+        $this->assertStringContainsString(
+            "'mini-basemap': {",
+            $pencarian,
+            'Preview wilayah harus punya sumber basemap.'
+        );
+
+        $this->assertStringContainsString(
+            "{ id: 'mini-basemap-layer', type: 'raster', source: 'mini-basemap' },",
+            $pencarian,
+            'Layer basemap harus digambar lebih dulu supaya kontur menimpanya.'
+        );
+
+        $this->assertLessThan(
+            strpos($pencarian, "'mini-kontur'"),
+            strpos($pencarian, "'mini-basemap-layer'"),
+            'Basemap harus berada di bawah layer kontur, bukan menutupinya.'
+        );
+    }
+
     public function test_service_worker_tidak_membuat_angka_elevasi_palsu(): void
     {
         $sw = file_get_contents(base_path('public/sw.js'));

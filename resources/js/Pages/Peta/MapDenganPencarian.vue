@@ -706,10 +706,21 @@ function initMiniMap() {
           style: {
             version: 8,
             sources: {
+              // Preview tanpa basemap hanya menampilkan garis kontur dan
+              // batas wilayah di atas latar kosong, jadi bentuk wilayahnya
+              // tidak terbaca. OSM disamakan dengan peta utama supaya yang
+              // dipratinjau sama dengan yang akan diunduh.
+              'mini-basemap': {
+                type: 'raster',
+                tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                attribution: '© OpenStreetMap',
+              },
               'kontur': { type: 'vector', url: pmtilesSourceUrl.value },
               'batas': { type: 'geojson', data: geojsonUrl.value },
             },
             layers: [
+              { id: 'mini-basemap-layer', type: 'raster', source: 'mini-basemap' },
               { id: 'mini-kontur', type: 'line', source: 'kontur', 'source-layer': 'kontur',
                 layout: { 'line-join': 'round', 'line-cap': 'round' },
                 paint: { 'line-color': '#8c510a', 'line-width': 0.8 } },
@@ -1611,7 +1622,12 @@ async function downloadOffline() {
         const skipped = data.skipped
           ? `, ${data.skipped} tile tidak tersedia di arsip`
           : '';
-        const pngNote = png.ok ? 'PNG peta tersimpan.' : 'PNG peta gagal dibuat.';
+        // surelyPNGResult di atas sudah membawa alasan gagalnya. Menulis
+        // "PNG peta gagal dibuat" tanpa alasannya membuat galat ini mustahil
+        // ditelusuri karena yang terlihat hanya dua UI yang diam.
+        const pngNote = png.ok
+          ? 'PNG peta tersimpan.'
+          : `PNG peta gagal: ${png.error ?? 'alasan tidak diketahui'}.`;
         downloadStatus.value =
           `Selesai! ${data.downloaded} tile berhasil diunduh untuk offline (zoom ${data.zoomMin}-${data.zoomMax}${skipped}). ${pngNote}`;
         downloading.value = false;

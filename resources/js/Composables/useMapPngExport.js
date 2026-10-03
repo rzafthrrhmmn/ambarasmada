@@ -675,8 +675,10 @@ export async function buildMapPng({
   ctx.fillStyle = '#e5e7eb';
   ctx.fillRect(mapX, mapY, mapWidth, mapHeight);
 
-  if (mapCanvas) {
+  if (mapCanvas && mapCanvas.width > 0 && mapCanvas.height > 0) {
     // Skala kanvas peta agar menutupi kotak tanpa mengubah rasio aspek.
+    // Kanvas 0x0 sengaja dilewati: rasionya 0/0 = NaN, dan drawImage dengan
+    // ukuran NaN melempar TypeError yang menggagalkan seluruh ekspor.
     const sourceRatio = mapCanvas.width / mapCanvas.height;
     const targetRatio = mapWidth / mapHeight;
     let drawWidth;
@@ -864,6 +866,14 @@ export function useMapPngExport() {
     try {
       const canvas = map.getCanvas();
 
+      // Kanvas yang belum pernah digambar (wadah 0x0, misalnya peta di balik
+      // modal yang belum sempat diresize) tidak punya satu pun piksel untuk
+      // disalin. Rasio 0/0 jadi NaN, dan drawImage dengan lebar NaN melempar
+      // TypeError yang menggagalkan seluruh ekspor.
+      if (!canvas || !canvas.width || !canvas.height) {
+        return { canvas: null, blocked: false };
+      }
+
       // Uji baca dulu: kanvas peta yang di-taint CORS tidak boleh masuk PNG.
       //
       // Uji ini sengaja memakai kanvas 2D, bukan gl.readPixels. readPixels
@@ -894,7 +904,7 @@ export function useMapPngExport() {
    */
   async function exportMapPng(map, overrides = {}) {
     if (isExporting.value) {
-      return { ok: false };
+      return { ok: false, error: 'Ada proses cetak PNG lain yang sedang berjalan.' };
     }
 
     isExporting.value = true;
@@ -911,15 +921,24 @@ export function useMapPngExport() {
       // Batas yang benar-benar tertangkap diambil dari peta, bukan dihitung ulang
       // dari pusat dan zoom: snapshot dipotong di tengah supaya memenuhi kotak
       // cetak, jadi hanya peta yang tahu wilayah yang benar-benar terlihat.
+      //
+      // Batas dibaca lewat getWest/getSouth/getEast/getNorth, bukan toArray().
+      // LngLatBounds.toArray() mengembalikan [[west, south], [east, north]],
+      // yaitu dua pasang angka, bukan empat angka berurutan. Memecahnya seperti
+      // angka berurutan membuat west berisi pasangan dan east berisi undefined,
+      // sehingga selisihnya NaN dan grid koordinat diam-diam tidak pernah
+      // digambar padahal penggunanya mencentangnya.
       let bounds = null;
 
       try {
         const raw = map?.getBounds?.();
         if (raw) {
-          const [west, south, east, north] = raw.toArray
-            ? raw.toArray()
-            : [raw.getWest(), raw.getSouth(), raw.getEast(), raw.getNorth()];
-          bounds = { west, south, east, north };
+          bounds = {
+            west: raw.getWest(),
+            south: raw.getSouth(),
+            east: raw.getEast(),
+            north: raw.getNorth(),
+          };
         }
       } catch {
         bounds = null;
@@ -942,10 +961,13 @@ export function useMapPngExport() {
       const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
       triggerPngDownload(blob, filename ?? `peta-kontur-${stamp}.png`);
 
-      return { ok: true, blocked };
+      return { ok: true, blocked, error: null };
     } catch (error) {
+      // Pesan asli harus ikut dikembalikan. Kalau hanya disimpan di
+      // exportError, pemanggil yang tidak punya akses ke ref itu hanya melihat
+      // "gagal" tanpa sebab, sehingga galatnya tidak bisa ditelusuri.
       exportError.value = error?.message ?? 'Gagal membuat PNG peta.';
-      return { ok: false, error: exportError.value };
+      return { ok: false, blocked: false, error: exportError.value };
     } finally {
       isExporting.value = false;
     }
