@@ -1486,9 +1486,15 @@ async function printMapPng({ area = null, components = null } = {}) {
   });
 
   if (result.ok) {
-    mapStatus.value = result.blocked
-      ? 'PNG tersimpan, tetapi area peta tidak ikut karena browser memblokir pembacaan tile.'
-      : `PNG ${name} tersimpan.`;
+    // Peta kosong harus diberitahukan, bukan diam-diam disembunyikan di balik
+    // "PNG tersimpan": yang tersimpan hanya bahan ajar, bukan peta.
+    if (result.mapMissing) {
+      mapStatus.value = `PNG ${name} tersimpan TANPA area peta. ${result.mapProblem ?? ''}`.trim();
+    } else if (result.blocked) {
+      mapStatus.value = 'PNG tersimpan, tetapi area peta tidak ikut karena browser memblokir pembacaan tile.';
+    } else {
+      mapStatus.value = `PNG ${name} tersimpan.`;
+    }
   } else {
     mapStatus.value = exportError.value ?? 'Gagal membuat PNG peta.';
   }
