@@ -783,6 +783,80 @@ class LetterDocxTemplateTest extends TestCase
         return $path;
     }
 
+    /**
+     * Payload yang benar-benar dikirim peramban: JSON dengan header Inertia.
+     *
+     * Pengujian lain memakai post() biasa. Permintaan peramban berbeda di dua hal
+     * yang penting: body-nya JSON (bukan form-encoded), dan setiap save dibaca
+     * oleh middleware throttle. Kegagalan di jalur ini tidak terlihat dari
+     * pengujian lain, padahal itu yang dipakai pengguna.
+     */
+    public function test_simpan_dari_peramban_menerima_formulir_lengkap(): void
+    {
+        $template = $this->storeTemplate();
+        $ambalan = Ambalan::create(['kode' => 'UPT2MAROS', 'nama' => 'Ambalan UPT SMAN 2 Maros']);
+
+        $response = $this->actingAs($this->pengurus)->postJson('/letters', [
+            'ambalan_id' => $ambalan->id,
+            'nomor_surat' => '421.1/045.34/PMR/2026',
+            'jenis_surat' => 'Masuk',
+            'perihal' => 'Undangan Pemateri',
+            'isi_surat' => 'Permohonan Menjadi Pemateri.',
+            'tujuan_pengirim' => 'Kakak Reza Fathurraahman',
+            'tgl_surat' => '2026-03-10',
+            'waktu_kegiatan' => '08.00',
+            'lokasi_kegiatan' => 'UPT SMAN 2 Maros',
+            'template_id' => $template->id,
+            'placeholder_values' => [
+                'nama_pradana_putri' => 'Habibti',
+                'nis_pradana_putri' => '12345',
+                'nama_pradana_putra' => 'Habibi',
+                'nis_pradana_putra' => '12345',
+            ],
+        ], [
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => (string) $this->pengurus->id,
+            'X-Requested-With' => 'XMLHttpRequest',
+            'Referer' => route('letters.index'),
+        ]);
+
+        $this->assertNotSame(
+            422,
+            $response->getStatusCode(),
+            'Server menolak formulir lengkap dari peramban: '.$response->getContent()
+        );
+
+        $this->assertSame(303, $response->getStatusCode());
+
+        $this->assertDatabaseHas('letters', [
+            'perihal' => 'Undangan Pemateri',
+            'tujuan_pengirim' => 'Kakak Reza Fathurraahman',
+            'nomor_surat' => '421.1/045.34/PMR/2026',
+            'template_id' => $template->id,
+        ]);
+    }
+
+    /**
+     * Pratinjau ditampilkan di dalam <iframe> yang sumbernya blob:.
+     *
+     * Tanpa frame-src, CSP memakai default-src 'self' dan memblokir blob:,
+     * sehingga pratinjau selalu kosong di browser walaupun server sudah
+     * mengirim HTML-nya.
+     */
+    public function test_csp_mengizinkan_pratinjau_dalam_iframe(): void
+    {
+        $csp = $this->actingAs($this->pengurus)->get('/letters')->headers->get('Content-Security-Policy');
+
+        $this->assertNotNull($csp, 'Halaman surat harus mengirim Content-Security-Policy.');
+
+        $this->assertMatchesRegularExpression(
+            '/frame-src [^;]*blob:/',
+            $csp,
+            'CSP harus punya frame-src yang memuat blob:, kalau tidak pratinjau diblokir '
+                .'dan browsermenampilkan "Refused to frame ... because it violates ... frame-src".'
+        );
+    }
+
     private function pdfUpload(): UploadedFile
     {
         return UploadedFile::fake()->createWithContent('lampiran.pdf', "%PDF-1.4\nsurat\n%%EOF");

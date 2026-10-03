@@ -61,6 +61,16 @@ class SecurityHeaders
             // keduanya di sini, label dan hillshade gagal dimuat.
             "connect-src 'self' {$viteSources} https://tile.openstreetmap.org https://nominatim.openstreetmap.org https://server.arcgisonline.com https://tile.opentopomap.org https://tiles.stadiamaps.com https://unpkg.com https://fonts.openmaptiles.org https://s3.amazonaws.com https://*.supabase.co {$pmtilesSource}",
             "worker-src 'self' blob:",
+            // Pratinjau surat ditampilkan di dalam <iframe> yang sumbernya
+            // blob: dari hasil balasan /letters/preview. Tanpa frame-src, CSP
+            // memakai default-src 'self' dan memblokirnya, jadi pratinjau
+            // selalu kosong walaupun server sudah mengirim HTML-nya.
+            //
+            // blob: di sini aman: blob URL hanya bisa dibuat oleh skrip
+            // same-origin, jadi isinya tetap dokumen milik aplikasi sendiri,
+            // bukan sumber luar. 'self' tetap dituliskan supaya halaman
+            // normal bisa dibingkai juga.
+            "frame-src 'self' blob:",
             "frame-ancestors 'none'",
             "form-action 'self'",
             "base-uri 'self'",
