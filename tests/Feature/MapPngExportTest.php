@@ -56,6 +56,7 @@ class MapPngExportTest extends TestCase
         $this->assertStringContainsString("'image/png'", $module, 'Kanvas harus dikonversi ke PNG.');
         $this->assertStringContainsString('export function triggerPngDownload(', $module);
     }
+
     public function test_kompas_dan_bar_skala_ada_di_png(): void
     {
         $module = $this->module();
