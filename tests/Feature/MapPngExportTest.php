@@ -133,7 +133,6 @@ class MapPngExportTest extends TestCase
 
         // Tanpa penanda utara, peta hasil cetak tidak bisa dibaca arahnya.
         $this->assertStringContainsString('function drawCompass(', $module);
-        $this->assertStringContainsString("'UTARA'", $module, 'Mata angin harus berlabel jelas.');
 
         foreach (['U', 'T', 'S', 'B'] as $arah) {
             $this->assertStringContainsString(
@@ -143,7 +142,211 @@ class MapPngExportTest extends TestCase
             );
         }
 
+        // Huruf U/T/S/B sudah menyebut arahnya. Label "UTARA" tambahan di bawah
+        // kompas hanya mengulang huruf U dan sempat jatuh di luar area peta.
+        $this->assertStringNotContainsString(
+            "ctx.fillText('UTARA', cx, cy + radius + 16);",
+            $module,
+            'Label UTARA tambahan pernah digambar di luar kotak peta dan mengulang huruf U.'
+        );
+
         $this->assertStringContainsString('function drawScaleBar(', $module);
+    }
+
+    /**
+     * Empat panel di atas peta harus menempati sudut yang berbeda.
+     *
+     * Versi lama menaruh kompas di pojok kanan atas, tempat histogram juga
+     * diletakkan, sehingga histogram tertutup sebagian. Legenda juga memakai
+     * lebar tetap 176 piksel sehingga label terpanjang keluar kotak.
+     */
+    public function test_panel_peta_tidak_saling_menimpa(): void
+    {
+        $module = $this->module();
+
+        // Setiap sudut punya satu pemilik supaya tidak saling menimpa.
+        $this->assertStringContainsString(
+            'topLeft: picked.legend,',
+            $module,
+            'Legenda memiliki pojok kiri atas.'
+        );
+        $this->assertStringContainsString(
+            'topRight: picked.histogram,',
+            $module,
+            'Histogram memiliki pojok kanan atas.'
+        );
+        $this->assertStringContainsString(
+            'bottomLeft: picked.scaleBar,',
+            $module,
+            'Bilah skala memiliki pojok kiri bawah.'
+        );
+        $this->assertStringContainsString(
+            'bottomRight: picked.northArrow,',
+            $module,
+            'Kompas harus pindah ke pojok kanan bawah supaya tidak menimpa histogram.'
+        );
+
+        // Kompas dihitung dari pojok peta, bukan dari lebar kanvas.
+        $this->assertStringNotContainsString(
+            'drawCompass(ctx, width - MARGIN - 56,',
+            $module,
+            'Posisi kompas dihitung dari lebar kanvas, sehingga tidak mengikuti kotak peta.'
+        );
+        $this->assertStringContainsString(
+            'mapX + mapWidth - PANEL.inset - PANEL.compassRadius,',
+            $module,
+            'Kompas harus dihitung dari pojok kanan bawah kotak peta.'
+        );
+
+        // Lebar legenda mengikuti label terpanjang.
+        $this->assertStringNotContainsString(
+            'const width = 176;',
+            $module,
+            'Lebar legenda tetap membuat label terpanjang keluar kotak.'
+        );
+        $this->assertStringContainsString(
+            'Math.max(',
+            $module,
+            'Lebar legenda harus diukur dari label terpanjang.'
+        );
+    }
+
+    /**
+     * Judul panjang harus dipecah, bukan dibiarkan keluar kanvas.
+     *
+     * fillText tidak membungkus teks. Nama wilayah yang panjang keluar dari
+     * kanvas dan hilang begitu PNG disimpan, dan menimpa subjudul berisi
+     * koordinat, zoom, serta skala.
+     */
+    public function test_judul_panjang_dipotong_sesuai_lebar_kanvas(): void
+    {
+        $module = $this->module();
+
+        $this->assertStringNotContainsString(
+            'ctx.fillText(title, MARGIN, cursorY);',
+            $module,
+            'Judul digambar satu baris tanpa dipecah, sehingga judul panjang keluar kanvas.'
+        );
+
+        $this->assertStringContainsString(
+            'const titleLines = wrapText(ctx, title, mapWidth);',
+            $module,
+            'Judul harus dipecah menurut lebar konten.'
+        );
+
+        // Subjudul memuat koordinat, zoom, dan skala sekaligus, jadi bisa panjang.
+        $this->assertStringContainsString(
+            'const subtitleLines = wrapText(ctx, subtitleText, mapWidth);',
+            $module,
+            'Subjudul harus dipecah menurut lebar konten.'
+        );
+
+        // Kursor setelah subjudul harus ikut bertambah sesuai jumlah baris.
+        // Kalau hanya menambah tinggi satu baris, subjudul dua baris menimpa
+        // kotak peta.
+        $this->assertStringContainsString(
+            'cursorY += subtitleLines.length * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;',
+            $module,
+            'Kursor harus menyesuaikan tinggi subjudul yang sebenarnya.'
+        );
+
+        $this->assertStringNotContainsString(
+            'cursorY += 22 + 20;',
+            $module,
+            'Penambahan tetap mengasumsikan subjudul hanya satu baris.'
+        );
+
+        // Tinggi kanvas harus menghitung subjudul dengan cara yang sama.
+        $this->assertStringContainsString(
+            'subtitleLineCount(ctx, subtitle, contentWidth) * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP',
+            $module,
+            'measureHeight harus menghitung tinggi subjudul yang sebenarnya.'
+        );
+
+        // Tinggi kanvas harus ikut menyesuaikan jumlah baris judul.
+        $this->assertStringContainsString(
+            'function titleLineCount(',
+            $module,
+            'Jumlah baris judul harus bisa dihitung untuk penyesuaian tinggi kanvas.'
+        );
+        $this->assertStringContainsString(
+            'titleLineCount(ctx, title, contentWidth) * TITLE_LINE_HEIGHT + TITLE_GAP',
+            $module,
+            'measureHeight harus memperhitungkan tinggi judul yang sebenarnya.'
+        );
+    }
+
+    /**
+     * Grid koordinat harus cocok dengan potongan peta yang benar-benar dicetak.
+     *
+     * Snapshot peta dipotong di tengah supaya memenuhi kotak cetak, jadi hanya
+     * sebagian viewport yang tampil. Versi lama tetap memetakan seluruh batas
+     * viewport ke seluruh kotak, sehingga label 119,7°BT menunjuk ke lokasi yang
+     * salah di atas peta. Pada pengujian browser selisihnya 0,0 piksel.
+     */
+    public function test_grid_koordinat_sesuai_dengan_potongan_peta(): void
+    {
+        $module = $this->module();
+
+        $this->assertStringContainsString(
+            'let visibleBounds = bounds;',
+            $module,
+            'Batas yang dipakai grid harus dimulai dari batas viewport.'
+        );
+
+        $this->assertStringContainsString(
+            'visibleBounds = {',
+            $module,
+            'Batas harus disempitkan mengikuti pemotongan snapshot peta.'
+        );
+
+        $this->assertStringContainsString(
+            'const visibleLon = ((bounds.east - bounds.west) * mapWidth) / drawWidth;',
+            $module,
+            'Panjang bujur yang terlihat harus dihitung dari ukuran gambar yang benar-benar digambar.'
+        );
+
+        $this->assertStringContainsString(
+            'const visibleLat = ((bounds.north - bounds.south) * mapHeight) / drawHeight;',
+            $module,
+            'Panjang lintang yang terlihat harus dihitung dari ukuran gambar yang benar-benar digambar.'
+        );
+
+        $this->assertStringContainsString(
+            'drawGraticule(ctx, { x: mapX, y: mapY, w: mapWidth, h: mapHeight }, visibleBounds, reserved)',
+            $module,
+            'Grid harus memakai batas potongan, bukan batas viewport.'
+        );
+    }
+
+    /**
+     * Label grid tidak boleh jatuh di atas panel atau bilah skala.
+     *
+     * Label bujur secara bawaan ditulis di tepi bawah, tempat bilah skala berada, dan
+     * label lintang di tepi kiri, tempat legenda berada. Keduanya jadi tidak
+     * terbaca.
+     */
+    public function test_label_grid_menghindari_panel_dan_bilah_skala(): void
+    {
+        $module = $this->module();
+
+        $this->assertStringContainsString(
+            '@param {{topLeft:boolean,topRight:boolean,bottomLeft:boolean,bottomRight:boolean}} reserved',
+            $module,
+            'drawGraticule harus tahu sudut mana yang tertutup panel.'
+        );
+
+        $this->assertStringContainsString(
+            "const lonSide = reserved.bottomLeft || reserved.bottomRight ? 'top' : 'bottom';",
+            $module,
+            'Label bujur harus pindah ke tepi atas saat bilah skala memakai tepi bawah.'
+        );
+
+        $this->assertStringContainsString(
+            'const latSide = !reserved.topLeft',
+            $module,
+            'Label lintang harus pindah dari tepi kiri saat legenda menutupinya.'
+        );
     }
 
     public function test_peta_memakai_preserve_drawing_buffer(): void

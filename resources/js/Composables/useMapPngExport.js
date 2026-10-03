@@ -85,6 +85,33 @@ const FONT = "'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
 const MARGIN = 56;
 const MAP_HEIGHT = 560;
 
+/** Baris judul, subjudul, dan jaraknya, dipakai bersama oleh pengukur tinggi dan penggambar. */
+const TITLE_LINE_HEIGHT = 36;
+const TITLE_GAP = 10;
+const SUBTITLE_LINE_HEIGHT = 18;
+const SUBTITLE_GAP = 20;
+
+/**
+ * Ukuran elemen yang digantung di atas area peta.
+ *
+ * Nilai-nilai ini dipakai bersama oleh penggambar dan pengukur tinggi, dan
+ * juga oleh penempatan grid koordinat. Panel-panel ini tidak boleh saling
+ * tumpang tindih: legenda di kiri atas, histogram di kanan atas, kompas di
+ * kanan bawah, dan skala di kiri bawah.
+ *
+ * `legendWidth` sengaja tidak ada: lebar legenda diukur dari label terpanjang
+ * memakai measureText, jadi tidak bisa dipatok di sini.
+ */
+const PANEL = {
+  legendRowHeight: 17,
+  legendHeader: 28,
+  histogramWidth: 220,
+  histogramHeight: 150,
+  compassRadius: 34,
+  scaleBarMaxWidth: 220,
+  inset: 16,
+};
+
 function setFont(ctx, size, weight = '400') {
   ctx.font = `${weight} ${size}px ${FONT}`;
 }
@@ -149,6 +176,32 @@ function drawParagraph(ctx, text, x, y, maxWidth, lineHeight) {
 }
 
 /**
+ * Jumlah baris judul peta.
+ *
+ * Nama wilayah bisa lebih panjang dari lebar kanvas, dan fillText tidak
+ * membungkus teks. Tanpa dipecah, teks keluar kanvas dan hilang begitu file
+ * disimpan, sementara tinggi kanvas tetap dihitung untuk satu baris. Karena itu
+ * jumlah barisnya dipakai lagi oleh measureHeight.
+ */
+function titleLineCount(ctx, title, maxWidth) {
+  setFont(ctx, 30, '700');
+  return wrapText(ctx, title, maxWidth).length;
+}
+
+/**
+ * Jumlah baris subjudul.
+ *
+ * Subjudul memuat koordinat, zoom, dan skala sekaligus, jadi panjangnya
+ * bergantung pada nilai yang sedang dilihat dan tidak bisa dipatok satu baris.
+ * Teks yang dihitung harus persis sama dengan yang digambar, kalau tidak
+ * keduanya menghitung jumlah baris yang berbeda.
+ */
+function subtitleLineCount(ctx, text, maxWidth) {
+  setFont(ctx, 13, '400');
+  return wrapText(ctx, text, maxWidth).length;
+}
+
+/**
  * Gambar mawar kompas yang berputar mengikuti orientasi peta.
  *
  * Mata angin wajib ada di peta hasil cetak: tanpa penanda utara, pembaca
@@ -160,7 +213,9 @@ function drawCompass(ctx, cx, cy, radius, bearing = 0) {
   ctx.translate(cx, cy);
   ctx.rotate((-bearing * Math.PI) / 180);
 
-  // Cincin luar
+  // Cincin luar: latar putih lalu garis tepi, dari satu path yang sama.
+  // Latarnya penting karena penanda utara harus tetap terbaca di atas
+  // basemap gelap dan di atas garis kontur.
   ctx.beginPath();
   ctx.arc(0, 0, radius, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
@@ -199,12 +254,6 @@ function drawCompass(ctx, cx, cy, radius, bearing = 0) {
   }
 
   ctx.restore();
-
-  setFont(ctx, 11, '600');
-  ctx.fillStyle = INK.muted;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('UTARA', cx, cy + radius + 16);
 }
 
 /**
@@ -335,10 +384,16 @@ function niceGridStep(degreesPerPx, targetPx) {
  * seluruh viewport, dan menghitung dari pusat/zoom sendiri akan menghasilkan
  * label yang tidak cocok dengan garisnya.
  *
+ * Label lintang diletakkan di tepi yang tidak dipakai panel mana pun, dan
+ * label bujur di tepi bawah yang tidak dipakai bilah skala. Tanpa itu, label
+ * 119,65°BT bisa jatuh tepat di atas legenda atau histogram dan tidak terbaca.
+ *
  * @param {{x:number,y:number,w:number,h:number}} box
  * @param {{west:number,east:number,south:number,north:number}} bounds
+ * @param {{topLeft:boolean,topRight:boolean,bottomLeft:boolean,bottomRight:boolean}} reserved
+ *   Panel yang menutupi tiap sudut area peta.
  */
-function drawGraticule(ctx, box, bounds) {
+function drawGraticule(ctx, box, bounds, reserved) {
   const spanLon = bounds.east - bounds.west;
   const spanLat = bounds.north - bounds.south;
 
@@ -346,6 +401,20 @@ function drawGraticule(ctx, box, bounds) {
 
   const stepLon = niceGridStep(spanLon / box.w, 110);
   const stepLat = niceGridStep(spanLat / box.h, 110);
+
+  // Sisi label lintang dipilih dari sudut yang bebas. Kalau semua sudut tertutup
+  // panel, label tetap ditulis di tepi kiri supaya kotaknya tidak pernah kosong.
+  const latSide = !reserved.topLeft
+    ? 'left'
+    : !reserved.bottomLeft
+      ? 'bottom'
+      : !reserved.topRight
+        ? 'right'
+        : 'left';
+
+  // Bilah skala menutupi sudut kiri bawah dan kompas sudut kanan bawah, jadi
+  // label bujur pindah ke tepi atas kalau salah satunya aktif.
+  const lonSide = reserved.bottomLeft || reserved.bottomRight ? 'top' : 'bottom';
 
   ctx.save();
   ctx.strokeStyle = 'rgba(31, 41, 55, 0.35)';
@@ -363,8 +432,14 @@ function drawGraticule(ctx, box, bounds) {
     ctx.stroke();
 
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText(formatDegrees(lon, 'lon'), x, box.y + box.h - 4);
+
+    if (lonSide === 'bottom') {
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(formatDegrees(lon, 'lon'), x, box.y + box.h - 4);
+    } else {
+      ctx.textBaseline = 'top';
+      ctx.fillText(formatDegrees(lon, 'lon'), x, box.y + 4);
+    }
   }
 
   for (let lat = Math.ceil(bounds.south / stepLat) * stepLat; lat <= bounds.north; lat += stepLat) {
@@ -375,9 +450,19 @@ function drawGraticule(ctx, box, bounds) {
     ctx.lineTo(box.x + box.w, y);
     ctx.stroke();
 
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText(formatDegrees(lat, 'lat'), box.x + 6, y + 4);
+    if (latSide === 'left') {
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(formatDegrees(lat, 'lat'), box.x + 6, y + 4);
+    } else if (latSide === 'right') {
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillText(formatDegrees(lat, 'lat'), box.x + box.w - 6, y + 4);
+    } else {
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(formatDegrees(lat, 'lat'), box.x + 6, y - 4);
+    }
   }
 
   ctx.setLineDash([]);
@@ -389,6 +474,26 @@ function formatDegrees(value, axis) {
   return axis === 'lon' ? `${text}°BT` : `${text}°LS`;
 }
 
+const LEGEND_ITEMS = [
+  { color: '#8c510a', dash: [], width: 2.4, label: 'Kontur indeks (tebal)' },
+  { color: '#8c510a', dash: [], width: 1, label: 'Garis kontur' },
+  { color: '#2563eb', dash: [5, 3], width: 1.5, label: 'Batas kabupaten' },
+];
+
+/** Lebar tetap panel legenda, termasuk ruang untuk contoh simbol. */
+const LEGEND_LABEL_X = 48;
+
+/**
+ * Tinggi panel legenda.
+ *
+ * Judul memakai baris yang sama dengan isi, jadi tinggi bisa dihitung dari
+ * jumlah item saja. Dihitung di sini supaya penggambar dan penempatan grid
+ * memakai angka yang sama.
+ */
+function legendHeight() {
+  return PANEL.legendHeader + LEGEND_ITEMS.length * PANEL.legendRowHeight + 8;
+}
+
 /**
  * Legenda peta di pojok kiri atas area peta.
  *
@@ -397,16 +502,19 @@ function formatDegrees(value, axis) {
  * cocok dengan yang digambar membuat pembaca salah menafsirkan peta.
  */
 function drawLegend(ctx, x, y) {
-  const items = [
-    { color: '#8c510a', dash: [], width: 2.4, label: 'Kontur indeks (tebal)' },
-    { color: '#8c510a', dash: [], width: 1, label: 'Garis kontur' },
-    { color: '#2563eb', dash: [5, 3], width: 1.5, label: 'Batas kabupaten' },
-  ];
-
   ctx.save();
   setFont(ctx, 12, '700');
-  const width = 176;
-  const height = 24 + items.length * 17;
+
+  // Lebar ikut label terpanjang, bukan angka tetap: label "Kontur indeks
+  // (tebal)" pernah keluar kotak dan menutupi tepi peta.
+  setFont(ctx, 11, '400');
+  const width = Math.ceil(
+    Math.max(
+      ...LEGEND_ITEMS.map((item) => ctx.measureText(item.label).width),
+      ctx.measureText('Legenda').width,
+    ) + LEGEND_LABEL_X + 16,
+  );
+  const height = legendHeight();
   const radius = 8;
 
   ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
@@ -423,8 +531,8 @@ function drawLegend(ctx, x, y) {
   ctx.fillText('Legenda', x + 12, y + 8);
 
   setFont(ctx, 11, '400');
-  items.forEach((item, index) => {
-    const rowY = y + 28 + index * 17;
+  LEGEND_ITEMS.forEach((item, index) => {
+    const rowY = y + 28 + index * PANEL.legendRowHeight;
 
     ctx.strokeStyle = item.color;
     ctx.lineWidth = item.width;
@@ -436,7 +544,7 @@ function drawLegend(ctx, x, y) {
     ctx.setLineDash([]);
 
     ctx.fillStyle = INK.body;
-    ctx.fillText(item.label, x + 48, rowY);
+    ctx.fillText(item.label, x + LEGEND_LABEL_X, rowY);
   });
 
   ctx.restore();
@@ -533,14 +641,20 @@ function drawScaleBar(ctx, x, y, metersPerPx, maxWidthPx) {
   ctx.restore();
 }
 
-/** Hitung tinggi kanvas yang dibutuhkan seluruh isi. */
-function measureHeight(ctx, width) {
+/**
+ * Hitung tinggi kanvas yang dibutuhkan seluruh isi.
+ *
+ * Judul bisa memerlukan lebih dari satu baris kalau namanya panjang, jadi
+ * tinggi kanvas ikut bergantung pada isi judul. Versi lama menambah 46 piksel
+ * tanpa mengukur, sehingga judul panjang menimpa subjudul dan isi di
+ * bawahnya, sementara kanvas tetap sebesar judul satu baris.
+ */
+function measureHeight(ctx, width, title, subtitle) {
   const contentWidth = width - MARGIN * 2;
 
   let height = MARGIN;
-  height += 46; // judul
-  height += 22; // subjudul
-  height += 20;
+  height += titleLineCount(ctx, title, contentWidth) * TITLE_LINE_HEIGHT + TITLE_GAP;
+  height += subtitleLineCount(ctx, subtitle, contentWidth) * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;
   height += MAP_HEIGHT;
   height += 34; // keterangan di bawah peta
   height += 28; // jarak
@@ -562,7 +676,7 @@ function measureHeight(ctx, width) {
     height += 12;
   }
 
-  height += 40; // footer
+  height += 30; // footer
   height += MARGIN;
 
   return Math.ceil(height);
@@ -658,10 +772,18 @@ export async function buildMapPng({
   const width = 1240;
   const scale = 2;
   const picked = { ...DEFAULT_COMPONENTS, ...components };
+  const mapWidth = width - MARGIN * 2;
+  const mapHeight = MAP_HEIGHT;
+  const mapWidthMeters = metersPerPixel(latitude, zoom) * mapWidth;
+
+  // Teks yang benar-benar akan dicetak harus sudah diketahui sebelum kanvas
+  // berukuran apa pun, karena tinggi kanvas bergantung pada jumlah baris judul
+  // dan subjudul.
+  const subtitleText = subtitle || `Lebar area ${distanceLabel(mapWidthMeters)}`;
 
   const probe = document.createElement('canvas').getContext('2d');
   setFont(probe, 15, '400');
-  const height = measureHeight(probe, width);
+  const height = measureHeight(probe, width, title, subtitleText);
 
   const canvas = document.createElement('canvas');
   canvas.width = width * scale;
@@ -670,32 +792,43 @@ export async function buildMapPng({
   const ctx = canvas.getContext('2d');
   ctx.scale(scale, scale);
 
-  const mapWidth = width - MARGIN * 2;
-  const mapHeight = MAP_HEIGHT;
-  const mapWidthMeters = metersPerPixel(latitude, zoom) * mapWidth;
-
   ctx.fillStyle = INK.paper;
   ctx.fillRect(0, 0, width, height);
 
-  // Judul
+  // Judul, dipecah bila panjangnya melebihi lebar konten.
   let cursorY = MARGIN;
   setFont(ctx, 30, '700');
   ctx.fillStyle = INK.title;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText(title, MARGIN, cursorY);
-  cursorY += 46;
+  const titleLines = wrapText(ctx, title, mapWidth);
+  titleLines.forEach((line, index) => {
+    ctx.fillText(line, MARGIN, cursorY + index * TITLE_LINE_HEIGHT);
+  });
+  cursorY += titleLines.length * TITLE_LINE_HEIGHT + TITLE_GAP;
 
   setFont(ctx, 13, '400');
   ctx.fillStyle = INK.muted;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText(subtitle || `Lebar area ${distanceLabel(mapWidthMeters)}`, MARGIN, cursorY);
-  cursorY += 22 + 20;
+  // Subjudul juga dipecah: ia memuat koordinat, zoom, dan skala sekaligus,
+  // sehingga panjangnya bergantung pada nilai yang sedang dilihat.
+  const subtitleLines = wrapText(ctx, subtitleText, mapWidth);
+  subtitleLines.forEach((line, index) => {
+    ctx.fillText(line, MARGIN, cursorY + index * SUBTITLE_LINE_HEIGHT);
+  });
+
+  // Kursor harus ikut bertambah sesuai jumlah baris. Kalau hanya menambah tinggi
+  // satu baris, subjudul dua baris menimpa kotak peta.
+  cursorY += subtitleLines.length * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;
 
   // Area peta
   const mapX = MARGIN;
   const mapY = cursorY;
+
+  // Batas geografis yang benar-benar tertangkap di dalam kotak cetak. Awalnya
+  // sama dengan batas viewport, lalu disempitkan mengikuti pemotongan snapshot.
+  let visibleBounds = bounds;
 
   ctx.save();
   ctx.beginPath();
@@ -729,6 +862,24 @@ export async function buildMapPng({
     }
 
     ctx.drawImage(mapCanvas, offsetX, offsetY, drawWidth, drawHeight);
+
+    // Batas yang benar-benar terlihat di dalam kotak cetak. Snapshot dipotong
+    // di tengah supaya memenuhi kotak, jadi sebagian viewport terbuang keluar,
+    // dan grid koordinat harus memakai potongan yang sama. Kalau tidak, label
+    // 119,65°BT menunjuk ke tempat yang salah di atas peta.
+    if (bounds) {
+      const visibleLon = ((bounds.east - bounds.west) * mapWidth) / drawWidth;
+      const visibleLat = ((bounds.north - bounds.south) * mapHeight) / drawHeight;
+      const centerLon = (bounds.east + bounds.west) / 2;
+      const centerLat = (bounds.north + bounds.south) / 2;
+
+      visibleBounds = {
+        west: centerLon - visibleLon / 2,
+        east: centerLon + visibleLon / 2,
+        south: centerLat - visibleLat / 2,
+        north: centerLat + visibleLat / 2,
+      };
+    }
   } else {
     setFont(ctx, 15, '400');
     ctx.fillStyle = INK.muted;
@@ -743,28 +894,59 @@ export async function buildMapPng({
     );
   }
 
+  // Panel digantung di empat sudut, masing-masing satu pemilik supaya tidak
+  // saling menimpa. Versi lama menaruh kompas di pojok kanan atas, tempat
+  // histogram juga diletakkan, sehingga keduanya bertumpuk dan jam norturya
+  // menutupi sebagian histogram.
+  const reserved = {
+    topLeft: picked.legend,
+    topRight: picked.histogram,
+    bottomLeft: picked.scaleBar,
+    bottomRight: picked.northArrow,
+  };
+
   // Grid koordinat digambar paling awal di atas peta: garisnya yang jadi latar,
   // sementara legenda, histogram, kompas, dan skala menumpuk di atasnya.
-  if (picked.grid && bounds) {
-    drawGraticule(ctx, { x: mapX, y: mapY, w: mapWidth, h: mapHeight }, bounds);
+  if (picked.grid && visibleBounds) {
+    drawGraticule(ctx, { x: mapX, y: mapY, w: mapWidth, h: mapHeight }, visibleBounds, reserved);
   }
 
   if (picked.legend) {
-    drawLegend(ctx, mapX + 16, mapY + 16);
+    drawLegend(ctx, mapX + PANEL.inset, mapY + PANEL.inset);
   }
 
   if (picked.histogram) {
-    drawHistogram(ctx, mapX + mapWidth - 236, mapY + 16, 220, 150, elevation);
+    drawHistogram(
+      ctx,
+      mapX + mapWidth - PANEL.inset - PANEL.histogramWidth,
+      mapY + PANEL.inset,
+      PANEL.histogramWidth,
+      PANEL.histogramHeight,
+      elevation,
+    );
   }
 
-  // Kompas di pojok kanan atas area peta
+  // Kompas di pojok kanan bawah area peta, jauh dari histogram di kanan atas.
   if (picked.northArrow) {
-    drawCompass(ctx, width - MARGIN - 56, mapY + 56, 34, bearing);
+    const compassY = mapY + mapHeight - PANEL.inset - PANEL.compassRadius;
+    drawCompass(
+      ctx,
+      mapX + mapWidth - PANEL.inset - PANEL.compassRadius,
+      compassY,
+      PANEL.compassRadius,
+      bearing,
+    );
   }
 
   // Skala di pojok kiri bawah area peta
   if (picked.scaleBar) {
-    drawScaleBar(ctx, mapX + 24, mapY + mapHeight - 44, metersPerPixel(latitude, zoom), 220);
+    drawScaleBar(
+      ctx,
+      mapX + PANEL.inset + 8,
+      mapY + mapHeight - PANEL.inset - 26,
+      metersPerPixel(latitude, zoom),
+      PANEL.scaleBarMaxWidth,
+    );
   }
 
   ctx.restore();
