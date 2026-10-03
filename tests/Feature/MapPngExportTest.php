@@ -421,6 +421,146 @@ class MapPngExportTest extends TestCase
         );
     }
 
+    /**
+     * Bilah skala harus memilih jarak terbesar yang muat, bukan yang terkecil.
+     *
+     * Kandidat jarak dibaca dari daftar menaik. Versi lama memakai find() pada
+     * daftar itu, jadi yang mengembalikan kandidat PERTAMA yang muat, yaitu
+     * selalu 1 meter: bilahnya setebal 0,03 piksel dan ujungnya menulis "1 m"
+     * padahal peta mencakup ratusan kilometer. Peta kontur tanpa skala yang
+     * berarti tidak layak dipakai sebagai bahan ajar.
+     */
+    public function test_bilah_skala_memilih_jarak_terbesar_yang_muat(): void
+    {
+        $module = $this->module();
+
+        $this->assertStringNotContainsString(
+            'for (const meters of candidates) {',
+            $module,
+            'find() pada daftar menaik selalu mengembalikan jarak terkecil yang muat, yaitu 1 meter.'
+        );
+
+        // Kandidat harus dipindai dari belakang.
+        $this->assertMatchesRegularExpression(
+            '/for \(let i = candidates\.length - 1; i >= 0; i--\)/',
+            $module,
+            'Kandidat jarak bilah skala harus dipindai dari yang terbesar.'
+        );
+
+        // Verifikasi aritmetikanya dengan fungsi yang disalin dari modul.
+        $niceDistance = static function (float $maxMeters, float $maxWidthPx, float $metersPerPx): int {
+            $candidates = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000];
+
+            for ($i = count($candidates) - 1; $i >= 0; $i--) {
+                if ($maxWidthPx >= $candidates[$i] / $metersPerPx) {
+                    return $candidates[$i];
+                }
+            }
+
+            return (int) $maxMeters;
+        };
+
+        // z12 di lintang -5: sekitar 38 meter per piksel, kotak bilah 220 piksel.
+        $metersPerPx = 156543.03392 * cos(-5.15 * M_PI / 180) / 2 ** 12;
+        $meters = $niceDistance(INF, 220, $metersPerPx);
+
+        $this->assertSame(5000, $meters, 'Jarak bilah skala harus 5 km pada z12 lintang -5.');
+        $this->assertGreaterThan(
+            100,
+            $meters / $metersPerPx,
+            'Bilah skala harus lebih dari 100 piksel panjangnya.'
+        );
+
+        // Bilah skala pada peta offline punya aturan yang sama.
+        $sw = file_get_contents(base_path('public/sw.js'));
+        $this->assertIsString($sw);
+        // Kode lama memakai find() pada daftar menaik dan karena itu selalu
+        // memilih 1 meter. Catatan wrongs-nya masih ada di komentar, jadi yang
+        // diperiksa adalah pemanggilan find() itu sendiri sudah hilang.
+        $this->assertStringNotContainsString(
+            'SCALE_STEPS.find(',
+            $sw,
+            'Peta offline memakai kriteria yang sama salahnya: jarak terkecil yang lebih besar dari 1 meter.'
+        );
+        $this->assertStringContainsString(
+            'for (let i = SCALE_STEPS.length - 1; i >= 0; i--) {',
+            $sw,
+            'Bilah skala peta offline harus memilih jarak terbesar yang masih muat.'
+        );
+    }
+
+    /**
+     * Angka skala di subjudul harus benar-benar muncul di PNG.
+     *
+     * exportMapPng menghitung "Skala 1:N" memakai scaleDenominator(), lalu
+     * menaruh seluruh opsi halaman di dalam spread ...pngOptions. Karena itu
+     * subtitle yang dikirim halaman menimpa subjudul tadi: perhitungannya jalan
+     * tanpa galat tapi hasilnya tidak pernah tampil.
+     */
+    public function test_subjudul_skala_tidak_ditimpa_halaman(): void
+    {
+        $module = $this->module();
+
+        $this->assertStringContainsString(
+            'const { subtitle: subtitleOverride, ...restOptions } = pngOptions;',
+            $module,
+            'Subjudul dari halaman harus dipisah dari opsi lain, bukan ikut di-spread.'
+        );
+
+        $this->assertStringContainsString(
+            '`${subtitleOverride} — ${detail}`',
+            $module,
+            'Subjudul halaman harus digabung dengan koordinat, zoom, dan skala.'
+        );
+
+        $this->assertStringNotContainsString(
+            "...pngOptions,\n      });",
+            $module,
+            'Spread opsi mentah akan menimpa subjudul yang sudah menghitung skala.'
+        );
+    }
+
+    /**
+     * Cetak dari tombol 🖨️ harus menghasilkan HTML yang benar-benar jalan.
+     *
+     * Semua tag script dan link ditulis sebagai &lt;script&gt; di dalam template
+     * literal, jadi document.write menulis teks "&lt;script..." ke jendela cetak:
+     * MapLibre tidak pernah dimuat dan peta cetak selalu kosong. Tag penutup
+     * script inline juga tidak pernah ada, sehingga sisa HTML ikut tertelan.
+     */
+    public function test_template_cetak_menghasilkan_html_yang_jalan(): void
+    {
+        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+        $this->assertIsString($pencarian);
+
+        $this->assertStringNotContainsString(
+            '&lt;script',
+            $pencarian,
+            'Tag script yang di-escape menjadi teks tidak pernah dieksekusi, sehingga peta cetak kosong.'
+        );
+
+        $this->assertStringNotContainsString(
+            '&lt;link',
+            $pencarian,
+            'Tag link yang di-escape menjadi teks tidak pernah memuat CSS MapLibre.'
+        );
+
+        // Penutup script inline harus ditulis sebagai <\/script> supaya compiler
+        // SFC tidak menganggap blok script halaman sudah selesai di sana.
+        $this->assertStringContainsString(
+            '<\/script>',
+            $pencarian,
+            'Tag penutup script inline harus di-escape agar tidak menutup blok script SFC.'
+        );
+
+        // ${url} dipakai sebagai sumber batas, jadi variabelnya harus ada.
+        $this->assertStringContainsString(
+            'const url = geojsonUrl.value;',
+            $pencarian,
+            'Template cetak memakai ${url} untuk sumber batas; variabelnya harus dideklarasikan.'
+        );
+    }
+
     public function test_preview_wilayah_punya_basemap(): void
     {
         $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));

@@ -219,6 +219,30 @@ export function metersPerPixel(latitude, zoom) {
 }
 
 /**
+ * Skala peta dalam bentuk 1:N.
+ *
+ * Meter per piksel WebGL memakai definisi 96 DPI yang sama dengan dokumen
+ * HTML/CSS: satu inci layar dianggap 96 piksel. Skala 1:N berarti satu sentimeter
+ * di peta cetak mewakili N sentimeter di dunia nyata, jadi N = meterPerPixel /
+ * (0.0254 / 96).
+ *
+ * Angka ini hanya bermakna kalau ukuran cetaknya diketahui, dan berkas PNG
+ * tidak punya ukuran fisika. Karena itu angkanya ditulis sebagai keterangan
+ * pada subjudul, sementara bilah skala di dalam peta tetap jadi acuan yang
+ * jujur: bilah itu diukur dari piksel dandpi yang sama.
+ *
+ * @param {number} latitude
+ * @param {number} zoom
+ * @returns {number}
+ */
+export function scaleDenominator(latitude, zoom) {
+  const METERS_PER_INCH = 0.0254;
+  const CSS_PIXELS_PER_INCH = 96;
+
+  return metersPerPixel(latitude, zoom) / (METERS_PER_INCH / CSS_PIXELS_PER_INCH);
+}
+
+/**
  * Panjang dunia nyata yang terwakili oleh sejumlah piksel.
  *
  * Dipakai untuk menyatakan berapa luas area yang benar-benar tertangkap. Untuk
@@ -241,7 +265,12 @@ export function distanceLabel(meters) {
 }
 
 /**
- * Pilih jarak "bulat" yang paling muat dalam maxWidth piksel.
+ * Pilih jarak "bulat" terbesar yang masih muat dalam maxWidthPx.
+ *
+ * Kandidat dibaca dari yang terbesar ke terkecil. Versi lama memakai find()
+ * pada daftar menaik, jadi selalu mengembalikan kandidat PERTAMA yang muat,
+ * yaitu 1 meter: bilah skornya setebal 0,03 piksel dan ujungnya menulis
+ * "1 m" padahal peta yang dicetak mencakup ratusan kilometer.
  */
 function niceDistance(maxMeters, maxWidthPx, metersPerPx) {
   const candidates = [
@@ -249,7 +278,8 @@ function niceDistance(maxMeters, maxWidthPx, metersPerPx) {
     100000, 200000, 500000, 1000000, 2000000,
   ];
 
-  for (const meters of candidates) {
+  for (let i = candidates.length - 1; i >= 0; i--) {
+    const meters = candidates[i];
     if (meters / metersPerPx <= maxWidthPx) {
       return meters;
     }
@@ -944,18 +974,25 @@ export function useMapPngExport() {
         bounds = null;
       }
 
+      // Subjudul digabung, bukan ditimpa. Versi lama menaruh seluruh subjudul
+      // di dalam spread ...pngOptions, sehingga subtitle yang dikirim halaman
+      // menimpa bagian ini dan Angka "Skala 1:..." yang sempat dihitung tidak
+      // pernah muncul di PNG mana pun.
+      const detail = `Koordinat tengah ${center.lng.toFixed(4)}, ${center.lat.toFixed(4)} | Zoom ${zoom.toFixed(1)}`
+        + ` | Skala 1:${scaleDenominator(center.lat, zoom).toLocaleString('id-ID')}`;
+      const { subtitle: subtitleOverride, ...restOptions } = pngOptions;
+      const subtitle = subtitleOverride ? `${subtitleOverride} — ${detail}` : detail;
+
       const blob = await buildMapPng({
         mapCanvas: canvas,
         latitude: center.lat,
         longitude: center.lng,
         zoom,
         bearing: map?.getBearing?.() ?? 0,
-        subtitle:
-          `Koordinat tengah ${center.lng.toFixed(4)}, ${center.lat.toFixed(4)} | Zoom ${zoom.toFixed(1)}`
-          + ` | Skala 1:${scaleDenominator(center.lat, zoom).toLocaleString('id-ID')}`,
+        subtitle,
         areaBlocked: blocked,
         bounds,
-        ...pngOptions,
+        ...restOptions,
       });
 
       const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');

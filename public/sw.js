@@ -1164,17 +1164,46 @@ const histogramHtml = !layoutOptions.histogram ? '' : (elevStats ? `
             ${layoutOptions.scaleBar ? `
             const scaleCanvas = document.getElementById('scale-canvas');
             const scaleCtx = scaleCanvas.getContext('2d');
+            const SCALE_STEPS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000];
             function updateScaleBar() {
                 const metersPerPixel = 40075016.686 * Math.cos(map.getCenter().lat * Math.PI / 180) / Math.pow(2, map.getZoom()) / 256;
-                const targetMeters = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000]
-                    .find(m => m * metersPerPixel * 100 > 100) || 100000;
+                if (!isFinite(metersPerPixel) || metersPerPixel <= 0) return;
+
+                // Jarak dibulatkan ke angka "bulat" TERBESAR yang masih muat di
+                // kanvas, jadi kandidat dibaca dari belakang. Versi lama memakai
+                // find(m => m * metersPerPixel * 100 > 100) yang berarti "pilih
+                // jarak terkecil yang lebih besar dari 1 meter di layar": hampir
+                // selalu mengembalikan 1 m, sehingga bilahnya setebal 0,6 piksel
+                // dan tidak pernah terlihat.
+                const maxWidth = 140;
+                let targetMeters = SCALE_STEPS[SCALE_STEPS.length - 1];
+                for (let i = SCALE_STEPS.length - 1; i >= 0; i--) {
+                    if (SCALE_STEPS[i] / metersPerPixel <= maxWidth) {
+                        targetMeters = SCALE_STEPS[i];
+                        break;
+                    }
+                }
                 const px = targetMeters / metersPerPixel;
-                scaleCtx.clearRect(0, 0, 200, 30);
+
+                scaleCtx.clearRect(0, 0, scaleCanvas.width, scaleCanvas.height);
                 scaleCtx.fillStyle = '#fff';
-                scaleCtx.fillRect(0, 10, px, 4);
-                scaleCtx.fillRect(px/2, 6, 2, 12);
+
+                // Bilah berselang-seling, konvensi kartografi umum.
+                const segments = 4;
+                for (let i = 0; i < segments; i++) {
+                    if (i % 2 === 0) scaleCtx.fillRect((px / segments) * i, 8, px / segments, 6);
+                }
+                scaleCtx.strokeStyle = '#fff';
+                scaleCtx.lineWidth = 1;
+                scaleCtx.strokeRect(0, 8, px, 6);
+
                 scaleCtx.font = '10px sans-serif';
-                scaleCtx.fillText(targetMeters >= 1000 ? (targetMeters/1000)+' km' : targetMeters+' m', px + 5, 18);
+                scaleCtx.textAlign = 'left';
+                scaleCtx.textBaseline = 'top';
+                scaleCtx.fillStyle = '#fff';
+                scaleCtx.fillText(targetMeters >= 1000 ? (targetMeters / 1000) + ' km' : targetMeters + ' m', px + 6, 7);
+                scaleCtx.textAlign = 'right';
+                scaleCtx.fillText('0', 0, 17);
             }
             map.on('move', updateScaleBar);
             updateScaleBar();

@@ -38,6 +38,12 @@
         >
           {{ showContourLabels ? 'Sembunyikan Label Kontur' : 'Tampilkan Label Kontur' }}
         </button>
+        <button
+          @click="showElevationLegend = !showElevationLegend"
+          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
+        >
+          {{ showElevationLegend ? 'Sembunyikan Legenda' : 'Tampilkan Legenda' }}
+        </button>
       </div>
     </div>
 
@@ -76,120 +82,176 @@
     <div class="relative overflow-hidden rounded-2xl border-2 border-[#A7B92A]/40 bg-[#263D26] shadow-lg">
       <div ref="mapContainer" class="h-[70vh] w-full min-h-[400px]"></div>
       
-      <!-- Coordinate display on mouse hover -->
-      <div v-if="showCoordinates && mouseCoords" class="absolute bottom-4 left-4 z-20 rounded-lg bg-[#1a1a1a]/90 border border-[#6F9435]/30 px-3 py-1.5 text-xs font-mono text-[#EDD330] pointer-events-none">
+      <!-- Coordinate display on mouse hover.
+           Diletakkan di atas bilah skala bawaan MapLibre di pojok kiri bawah;
+           dua-duanya pernah memakai bottom-4 left-4 dan saling menutupi. -->
+      <div v-if="mouseCoords" class="pointer-events-none absolute bottom-12 left-4 z-20 rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 px-3 py-1.5 font-mono text-xs text-[#EDD330]">
         Lon: {{ mouseCoords.lng.toFixed(6) }}° | Lat: {{ mouseCoords.lat.toFixed(6) }}°
       </div>
 
-      <!-- Scale bar -->
-      <div v-if="showScaleBar" class="absolute bottom-4 left-4 z-20" ref="scaleBarContainer"></div>
-
-      <!-- North arrow -->
-      <div v-if="showNorthArrow" class="absolute top-4 right-4 z-20" ref="northArrowContainer"></div>
-
-      <!-- Elevation legend -->
-      <div v-if="showElevationLegend" class="absolute bottom-4 right-4 z-20" ref="legendContainer"></div>
-
-      <!-- Measurement tool panel -->
-      <div v-if="measurementMode !== 'none'" class="absolute top-4 left-4 z-20 rounded-lg bg-[#1a1a1a]/90 border border-[#6F9435]/30 p-3 text-xs text-[#EDD330] min-w-[200px]">
-        <div class="flex items-center justify-between mb-2">
-          <span class="font-bold">{{ measurementMode === 'distance' ? '📏 Ukur Jarak' : '📐 Ukur Luas' }}</span>
-          <button @click="cancelMeasurement" class="text-[#f87171] hover:underline">Batal</button>
-        </div>
-        <div v-if="measurementPoints.length > 0" class="space-y-1">
-          <div>Titik: {{ measurementPoints.length }}</div>
-          <div v-if="measurementMode === 'distance' && measurementDistance > 0">
-            Jarak: {{ formatDistance(measurementDistance) }}
-          </div>
-          <div v-if="measurementMode === 'area' && measurementArea > 0">
-            Luas: {{ formatArea(measurementArea) }}
-          </div>
-        </div>
-        <button @click="finishMeasurement" class="mt-2 w-full rounded bg-[#A7B92A] px-3 py-1.5 text-xs font-bold text-white">Selesai</button>
-      </div>
-
-      <!-- Search panel -->
-      <div class="absolute top-4 left-4 z-20 flex gap-2" style="max-width: 300px;">
-        <div class="relative flex-1">
-          <input
-            v-model="searchQuery"
-            @keyup.enter="searchPlace"
-            @focus="searchFocused = true"
-            @blur="searchFocused = false"
-            placeholder="Cari tempat atau koordinat (lat, lng)..."
-            class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] pr-10"
-          />
-          <button
-            v-if="searchQuery"
-            @click="searchQuery = ''"
-            class="absolute right-2 top-1/2 -translate-y-1/2 text-[#8fa06a] hover:text-[#EDD330]"
-          >
-            ✕
-          </button>
-        </div>
-        <button
-          @click="searchPlace"
-          :disabled="!searchQuery.trim()"
-          class="rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-3 py-2 text-sm font-bold text-[#A7B92A] transition hover:bg-[#A7B92A]/20 disabled:opacity-50"
-        >
-          Cari
-        </button>
-      </div>
-
-      <!-- Search results dropdown -->
-      <div v-if="searchFocused && searchResults.length > 0" class="absolute top-12 left-4 z-30 w-[300px] rounded-lg border border-[#6F9435] bg-[#263D26] shadow-lg max-h-60 overflow-y-auto">
-        <div v-for="result in searchResults" :key="result.place_id || result.lat + ',' + result.lon" @click="selectSearchResult(result)" class="px-4 py-2 hover:bg-[#335233] cursor-pointer border-b border-[#6F9435]/20 last:border-0">
-          <div class="font-medium text-[#f0ead8]">{{ result.display_name || result.label }}</div>
-          <div class="text-xs text-[#8fa06a]">{{ result.lat }}, {{ result.lon }}</div>
+      <!-- Bilah skala dan kompas memakai kontrol bawaan MapLibre
+           (ScaleControl dan NavigationControl) yang ditambahkan di initMap().
+           Wadah kosong untuk keduanya pernah ada di sini sehingga peta
+           menampilkan dua bilah skala dan satu di antaranya tidak pernah diisi.
+           Legenda elevasi digambar lewat markup supaya Vue yangmemilkinya. -->
+      <div v-if="showElevationLegend" class="absolute bottom-4 right-4 z-20 rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 p-3 text-xs text-[#d4dc9a] min-w-[150px]">
+        <div class="mb-2 font-bold text-[#EDD330]">Legenda Elevasi</div>
+        <div class="space-y-1">
+          <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #8c510a;"></span> Kontur 10m</div>
+          <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #a0522d;"></span> Kontur 50m (Index)</div>
+          <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #cd853f;"></span> Kontur 100m</div>
+          <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #8b4513;"></span> Kontur 500m+</div>
+          <div class="mt-2 flex items-center gap-2 border-t border-[#6F9435]/30 pt-2"><span class="h-1.5 w-6 rounded" style="background: #2563eb;"></span> Batas Kabupaten</div>
         </div>
       </div>
 
-      <!-- GPS locate button -->
+      <!-- GPS locate button.
+           Kontrol GeolocateControl bawaan MapLibre sengaja tidak dipakai supaya
+           tidak ada dua tombol lokasi yang tumpang tindih; locateUser() juga
+           menampilkan popup "Lokasi Anda" dan menulis alasannya ke mapStatus. -->
       <button
         v-if="hasGeolocation"
         @click="locateUser"
         :disabled="locating"
-        class="absolute bottom-4 right-4 z-20 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30 disabled:opacity-50"
+        class="absolute bottom-4 right-14 z-20 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30 disabled:opacity-50"
         title="Lokasi saya"
       >
         {{ locating ? '⟳' : '📍' }}
       </button>
 
-      <!-- Basemap selector -->
-      <div class="absolute top-4 right-4 z-20" style="width: 180px;">
-        <select
-          v-model="basemap"
-          @change="changeBasemap"
-          class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
-        >
-          <option value="osm">🗺️ OpenStreetMap</option>
-          <option value="satellite">🛰️ Satelit</option>
-          <option value="terrain">🏔️ Terrain</option>
-          <option value="dark">🌙 Dark</option>
-        </select>
+      <!-- Panel kiri: penanda offline, pencarian, dan alat ukur.
+           Semuanya dulu ditumpuk di top-4 left-4 sehingga saling menutupi. -->
+      <div class="absolute left-4 top-4 z-20 flex w-[300px] flex-col items-start gap-2">
+        <!-- Offline indicator -->
+        <div v-if="isOffline" class="rounded-lg bg-[#f59e0b]/90 px-3 py-1.5 text-xs font-bold text-white">
+          📴 Mode Offline
+        </div>
+
+        <!-- Search panel -->
+        <div class="flex w-full gap-2">
+          <div class="relative flex-1">
+            <input
+              v-model="searchQuery"
+              @keyup.enter="searchPlace"
+              @focus="searchFocused = true"
+              @blur="searchFocused = false"
+              placeholder="Cari tempat atau koordinat (lat, lng)..."
+              class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] pr-10"
+            />
+            <button
+              v-if="searchQuery"
+              @click="searchQuery = ''"
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-[#8fa06a] hover:text-[#EDD330]"
+            >
+              ✕
+            </button>
+          </div>
+          <button
+            @click="searchPlace"
+            :disabled="!searchQuery.trim()"
+            class="rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-3 py-2 text-sm font-bold text-[#A7B92A] transition hover:bg-[#A7B92A]/20 disabled:opacity-50"
+          >
+            Cari
+          </button>
+        </div>
+
+        <!-- Search results dropdown -->
+        <div v-if="searchFocused && searchResults.length > 0" class="max-h-60 w-full overflow-y-auto rounded-lg border border-[#6F9435] bg-[#263D26] shadow-lg">
+          <div v-for="result in searchResults" :key="result.place_id || result.lat + ',' + result.lon" @click="selectSearchResult(result)" class="cursor-pointer border-b border-[#6F9435]/20 px-4 py-2 last:border-0 hover:bg-[#335233]">
+            <div class="font-medium text-[#f0ead8]">{{ result.display_name || result.label }}</div>
+            <div class="text-xs text-[#8fa06a]">{{ result.lat }}, {{ result.lon }}</div>
+          </div>
+        </div>
+
+        <!-- Measurement tool panel -->
+        <div v-if="measurementMode !== 'none'" class="w-full rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 p-3 text-xs text-[#EDD330]">
+          <div class="mb-2 flex items-center justify-between">
+            <span class="font-bold">{{ measurementMode === 'distance' ? '📏 Ukur Jarak' : '📐 Ukur Luas' }}</span>
+            <button @click="cancelMeasurement" class="text-[#f87171] hover:underline">Batal</button>
+          </div>
+          <div v-if="measurementPoints.length > 0" class="space-y-1">
+            <div>Titik: {{ measurementPoints.length }}</div>
+            <div v-if="measurementMode === 'distance' && measurementDistance > 0">
+              Jarak: {{ formatDistance(measurementDistance) }}
+            </div>
+            <div v-if="measurementMode === 'area' && measurementArea > 0">
+              Luas: {{ formatArea(measurementArea) }}
+            </div>
+          </div>
+          <button @click="finishMeasurement" class="mt-2 w-full rounded bg-[#A7B92A] px-3 py-1.5 text-xs font-bold text-white">Selesai</button>
+        </div>
       </div>
 
-      <!-- Bookmark/save view button -->
-      <button
-        @click="saveBookmark"
-        class="absolute top-4 right-52 z-20 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
-        title="Simpan tampilan"
-      >
-        🔖
-      </button>
+      <!-- Panel kanan: basemap dan alat peta.
+           top-14 memberi ruang untuk NavigationControl bawaan MapLibre yang juga
+           diletakkan di pojok kanan atas. -->
+      <div class="absolute right-4 top-14 z-20 flex flex-col items-end gap-2">
+        <div class="flex items-center gap-2">
+          <!-- Basemap selector -->
+          <select
+            v-model="basemap"
+            @change="changeBasemap"
+            class="w-[180px] rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
+          >
+            <option value="osm">🗺️ OpenStreetMap</option>
+            <option value="satellite">🛰️ Satelit</option>
+            <option value="terrain">🏔️ Terrain</option>
+            <option value="dark">🌙 Dark</option>
+          </select>
 
-      <!-- Print button -->
-      <button
-        @click="printMap"
-        class="absolute top-4 right-96 z-20 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
-        title="Cetak peta"
-      >
-        🖨️
-      </button>
+          <!-- Measurement toggles -->
+          <button
+            @click="startMeasurement('distance')"
+            :disabled="measurementMode !== 'none'"
+            class="rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30 disabled:opacity-50"
+            title="Ukur jarak"
+          >
+            📏
+          </button>
+          <button
+            @click="startMeasurement('area')"
+            :disabled="measurementMode !== 'none'"
+            class="rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30 disabled:opacity-50"
+            title="Ukur luas"
+          >
+            📐
+          </button>
 
-      <!-- Offline indicator -->
-      <div v-if="isOffline" class="absolute top-4 left-4 z-20 rounded-lg bg-[#f59e0b]/90 px-3 py-1.5 text-xs font-bold text-white animate-pulse">
-        📴 Mode Offline
+          <!-- Bookmark/save view button -->
+          <button
+            @click="saveBookmark"
+            class="rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
+            title="Simpan tampilan"
+          >
+            🔖
+          </button>
+
+          <!-- Print button -->
+          <button
+            @click="printMap"
+            class="rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
+            title="Cetak peta"
+          >
+            🖨️
+          </button>
+        </div>
+
+        <!-- Bookmark list -->
+        <div v-if="bookmarks.length > 0" class="max-h-56 w-[280px] overflow-y-auto rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 p-2 text-xs">
+          <p class="mb-1 px-1 font-bold text-[#EDD330]">Tampilan Tersimpan ({{ bookmarks.length }})</p>
+          <div
+            v-for="(bookmark, index) in bookmarks"
+            :key="bookmark.timestamp ?? index"
+            class="flex items-center gap-2 rounded px-1 py-1 hover:bg-[#335233]"
+          >
+            <button @click="goToBookmark(bookmark)" class="flex-1 truncate text-left text-[#f0ead8] hover:text-[#EDD330]" :title="bookmark.name">
+              {{ bookmark.name }}
+            </button>
+            <button @click="deleteBookmark(index)" class="shrink-0 text-[#f87171] hover:underline" title="Hapus bookmark">
+              ✕
+            </button>
+          </div>
+        </div>
       </div>
 
       <div
@@ -409,9 +471,6 @@ const props = defineProps({
 const page = usePage();
 const mapContainer = ref(null);
 const miniMapContainer = ref(null);
-const scaleBarContainer = ref(null);
-const northArrowContainer = ref(null);
-const legendContainer = ref(null);
 const map = ref(null);
 const miniMap = ref(null);
 
@@ -454,11 +513,10 @@ const includeLegend = ref(true);
 const includeHistogram = ref(true);
 const includeGrid = ref(true);
 
-// Map controls state
-const showScaleBar = ref(true);
-const showNorthArrow = ref(true);
+// Map controls state.
+// Bilah skala dan kompas memakai kontrol bawaan MapLibre, jadi tidak ada
+// state untuk keduanya; legenda dan readout koordinat dikendalikan di sini.
 const showElevationLegend = ref(true);
-const showCoordinates = ref(true);
 const mouseCoords = ref(null);
 const hasGeolocation = ref(false);
 const locating = ref(false);
@@ -482,9 +540,6 @@ const measurementMode = ref('none'); // 'none', 'distance', 'area'
 const measurementPoints = ref([]);
 const measurementDistance = ref(0);
 const measurementArea = ref(0);
-const measurementSource = ref(null);
-const measurementLineLayer = ref(null);
-const measurementFillLayer = ref(null);
 
 // Bookmarks
 const bookmarks = ref([]);
@@ -680,8 +735,6 @@ function clearSelection() {
   mapStatus.value = 'Peta dikembalikan ke tampilan Sulawesi Selatan.';
 }
 
-let miniMapWatch = null;
-
 function initMiniMap() {
   if (!miniMapContainer.value || !selectedOfflineRegionData.value || !hasPmtiles.value) return;
   if (miniMap.value) {
@@ -762,7 +815,7 @@ async function initMap() {
   if (!mapContainer.value) return;
 
   try {
-    const { Map, addProtocol, Popup, ScaleControl, NavigationControl, GeolocateControl, GLYPHS_URL } = await import('../../maplibre');
+    const { Map, addProtocol, Popup, ScaleControl, NavigationControl, GLYPHS_URL } = await import('../../maplibre');
 
     // Source kontur hanya boleh dibuat bila file PMTiles benar-benar ada.
     // Kalau tidak, basemap dan batas kabupaten tetap bisa digambar.
@@ -979,34 +1032,23 @@ async function initMap() {
       maxZoom: 14,
     });
 
-    // Add scale bar
-    if (showScaleBar.value) {
-      const scale = new ScaleControl({ maxWidth: 200, unit: 'metric' });
-      map.value.addControl(scale, 'bottom-left');
-    }
+    // Bilah skala dan kompas. Keduanya kontrol bawaan MapLibre, bukan wadah kosong:
+    // versi lama pernah membuat wadah sendiri dengan ref yang tidak pernah diisi
+    // sambil tetap menambahkan ScaleControl, jadi peta menampilkan dua bilah
+    // skala dan satu di antaranya tidak pernah berisi apa pun.
+    map.value.addControl(new ScaleControl({ maxWidth: 200, unit: 'metric' }), 'bottom-left');
+    map.value.addControl(new NavigationControl({ showCompass: true, showZoom: false }), 'top-right');
 
-    // Add north arrow (navigation control with compass)
-    if (showNorthArrow.value) {
-      const nav = new NavigationControl({ showCompass: true, showZoom: false });
-      map.value.addControl(nav, 'top-right');
-    }
-
-    // Add geolocate control
+    // Kontrol lokasi bawaan tidak dipakai: tombol 📍 di template memanggil
+    // locateUser() yang juga menampilkan popup "Lokasi Anda" dan menulis
+    // alasannya ke mapStatus bila lokasi ditolak.
     if ('geolocation' in navigator) {
       hasGeolocation.value = true;
-      const geolocate = new GeolocateControl({
-        positionOptions: { enableHighAccuracy: true },
-        trackUserLocation: true,
-        showAccuracyCircle: true,
-      });
-      map.value.addControl(geolocate, 'bottom-right');
     }
 
     // Mouse move - coordinate display
     map.value.on('mousemove', (e) => {
-      if (showCoordinates.value) {
-        mouseCoords.value = { lng: e.lngLat.lng, lat: e.lngLat.lat };
-      }
+      mouseCoords.value = { lng: e.lngLat.lng, lat: e.lngLat.lat };
     });
 
     map.value.on('mouseleave', () => {
@@ -1090,9 +1132,6 @@ async function initMap() {
         ? 'Peta kontur Sulawesi Selatan dimuat. Garis kontur setiap 10 meter elevasi.'
         : 'Peta dasar dan batas kabupaten dimuat. Garis kontur belum tersedia karena file PMTiles tidak ada di server.';
 
-      // Initialize elevation legend
-      initElevationLegend();
-
       // Restore bookmarks from localStorage
       loadBookmarks();
     });
@@ -1114,24 +1153,6 @@ async function initMap() {
     mapError.value = `Gagal memuat peta: ${error.message}`;
     console.error('Map initialization error:', error);
   }
-}
-
-// Elevation legend
-function initElevationLegend() {
-  if (!legendContainer.value || !showElevationLegend.value) return;
-  const legend = document.createElement('div');
-  legend.className = 'rounded-lg bg-[#1a1a1a]/90 border border-[#6F9435]/30 p-3 text-xs text-[#d4dc9a] min-w-[150px]';
-  legend.innerHTML = `
-    <div class="font-bold text-[#EDD330] mb-2">Legenda Elevasi</div>
-    <div class="space-y-1">
-      <div class="flex items-center gap-2"><span class="w-6 h-1.5 rounded" style="background: #8c510a;"></span> Kontur 10m</div>
-      <div class="flex items-center gap-2"><span class="w-6 h-1.5 rounded" style="background: #a0522d;"></span> Kontur 50m (Index)</div>
-      <div class="flex items-center gap-2"><span class="w-6 h-1.5 rounded" style="background: #cd853f;"></span> Kontur 100m</div>
-      <div class="flex items-center gap-2"><span class="w-6 h-1.5 rounded" style="background: #8b4513;"></span> Kontur 500m+</div>
-      <div class="flex items-center gap-2 mt-2 pt-2 border-t border-[#6F9435]/30"><span class="w-6 h-1.5 rounded" style="background: #2563eb; border: 1px dashed #2563eb;"></span> Batas Kabupaten</div>
-    </div>
-  `;
-  legendContainer.value.appendChild(legend);
 }
 
 // Toggle hillshade
@@ -1254,20 +1275,68 @@ async function selectSearchResult(result) {
 }
 
 // Measurement tools
+const MEASURE_SOURCE = 'measurement';
+const MEASURE_LINE_LAYER = 'measurement-line';
+const MEASURE_FILL_LAYER = 'measurement-fill';
+
+/**
+ * Siapkan sumber dan layer pengukuran.
+ *
+ * Versi lama hanya menambahkan sumber GeoJSON tanpa satu pun layer, jadi
+ * although datanya benar, tidak ada yang tergambar. FeatureCollection kosong
+ * maupun LineString tanpa layer hanya diam di dalam peta.
+ *
+ * addSource/addLayer hanya boleh dipanggil setelah style selesai dimuat, jadi
+ * pemanggil harus siap menunggu event 'load'.
+ */
+function ensureMeasurementLayers() {
+  if (!map.value || !map.value.loaded()) return false;
+
+  if (!map.value.getSource(MEASURE_SOURCE)) {
+    map.value.addSource(MEASURE_SOURCE, {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+    });
+  }
+
+  if (!map.value.getLayer(MEASURE_FILL_LAYER)) {
+    map.value.addLayer({
+      id: MEASURE_FILL_LAYER,
+      type: 'fill',
+      source: MEASURE_SOURCE,
+      filter: ['==', '$type', 'Polygon'],
+      paint: { 'fill-color': '#EDD330', 'fill-opacity': 0.2 },
+    });
+  }
+
+  if (!map.value.getLayer(MEASURE_LINE_LAYER)) {
+    map.value.addLayer({
+      id: MEASURE_LINE_LAYER,
+      type: 'line',
+      source: MEASURE_SOURCE,
+      filter: ['==', '$type', 'LineString'],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#EDD330', 'line-width': 2.5 },
+    });
+  }
+
+  return true;
+}
+
 function startMeasurement(mode) {
-  if (!map.value) return;
+  if (!map.value || measurementMode.value === mode) return;
+
+  if (!ensureMeasurementLayers()) {
+    map.value.once('load', () => startMeasurement(mode));
+    mapStatus.value = 'Menyiapkan alat ukur...';
+    return;
+  }
+
   measurementMode.value = mode;
   measurementPoints.value = [];
   measurementDistance.value = 0;
   measurementArea.value = 0;
 
-  // Create measurement source if not exists
-  if (!map.value.getSource('measurement')) {
-    map.value.addSource('measurement', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-  }
-  measurementSource.value = map.value.getSource('measurement');
-
-  // Add click handler
   map.value.on('click', onMeasureClick);
   map.value.getCanvas().style.cursor = 'crosshair';
   mapStatus.value = mode === 'distance' ? 'Klik untuk menambah titik ukur jarak' : 'Klik untuk menambah titik ukur luas';
@@ -1280,64 +1349,74 @@ function onMeasureClick(e) {
 }
 
 function updateMeasurement() {
-  if (!map.value || !measurementSource.value) return;
-  const coords = measurementPoints.value;
-  if (coords.length === 0) return;
+  const source = ensureMeasurementLayers() ? map.value?.getSource(MEASURE_SOURCE) : null;
+  if (!source) return;
 
-  // Update line
-  const lineFeature = {
-    type: 'Feature',
-    geometry: { type: 'LineString', coordinates: coords },
-    properties: {},
-  };
-  measurementSource.value.setData({
-    type: 'FeatureCollection',
-    features: [lineFeature],
-  });
+  const coords = measurementPoints.value;
+  const features = [];
+
+  if (measurementMode.value === 'area' && coords.length >= 3) {
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Polygon', coordinates: [[...coords, coords[0]]] },
+      properties: {},
+    });
+  }
+
+  if (coords.length >= 2) {
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: coords },
+      properties: {},
+    });
+  }
+
+  source.setData({ type: 'FeatureCollection', features });
 
   if (measurementMode.value === 'distance' && coords.length >= 2) {
     let total = 0;
     for (let i = 1; i < coords.length; i++) {
-      total += calculateDistance(coords[i-1], coords[i]);
+      total += calculateDistance(coords[i - 1], coords[i]);
     }
     measurementDistance.value = total;
   } else if (measurementMode.value === 'area' && coords.length >= 3) {
-    // Close polygon
-    const closedCoords = [...coords, coords[0]];
-    measurementArea.value = calculateArea(closedCoords);
+    measurementArea.value = calculateArea([...coords, coords[0]]);
   }
 }
 
-function cancelMeasurement() {
-  if (!map.value) return;
+/** Kosongkan layer pengukuran dan lepaskan penangkap klik. */
+function resetMeasurement() {
   measurementMode.value = 'none';
   measurementPoints.value = [];
   measurementDistance.value = 0;
   measurementArea.value = 0;
-  if (measurementSource.value) {
-    measurementSource.value.setData({ type: 'FeatureCollection', features: [] });
+
+  const source = map.value?.getSource(MEASURE_SOURCE);
+  if (source) {
+    source.setData({ type: 'FeatureCollection', features: [] });
   }
-  map.value.off('click', onMeasureClick);
-  map.value.getCanvas().style.cursor = '';
+
+  map.value?.off?.('click', onMeasureClick);
+  if (map.value) map.value.getCanvas().style.cursor = '';
+}
+
+function cancelMeasurement() {
+  if (!map.value) return;
+  resetMeasurement();
   mapStatus.value = 'Pengukuran dibatalkan';
 }
 
 function finishMeasurement() {
   if (!map.value) return;
+
   const mode = measurementMode.value;
   const dist = measurementDistance.value;
   const area = measurementArea.value;
-  measurementMode.value = 'none';
-  measurementPoints.value = [];
-  measurementDistance.value = 0;
-  measurementArea.value = 0;
-  if (measurementSource.value) {
-    measurementSource.value.setData({ type: 'FeatureCollection', features: [] });
-  }
-  map.value.off('click', onMeasureClick);
-  map.value.getCanvas().style.cursor = '';
-  mapStatus.value = mode === 'distance' 
-    ? `Jarak: ${formatDistance(dist)}` 
+
+  resetMeasurement();
+
+  mapStatus.value = mode === 'distance'
+    ? `Jarak: ${formatDistance(dist)}`
     : `Luas: ${formatArea(area)}`;
 }
 
@@ -1446,22 +1525,44 @@ function whenMapIdle(timeoutMs = 6000) {
 // Print layout
 function printMap() {
   if (!map.value) return;
-  // Create a print-friendly version
+
   const printWindow = window.open('', '_blank');
-  const center = map.value.getCenter();
-  const zoom = map.value.getZoom();
-  const bearing = map.value.getBearing();
-  const html = generatePrintHTML(center, zoom, bearing);
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+
+  // Popup bisa ditolak. Versi lama langsung menulis ke printWindow.document
+  // sehingga galatnya hilang tanpa jejak dan tombolnya terasa tidak berfungsi.
+  if (!printWindow) {
+    mapStatus.value = 'Jendela cetak diblokir browser. Izinkan pop-up untuk situs ini lalu ulangi.';
+    return;
+  }
+
+  try {
+    const center = map.value.getCenter();
+    const zoom = map.value.getZoom();
+    const bearing = map.value.getBearing();
+    const pitch = map.value.getPitch();
+
+    printWindow.document.open();
+    printWindow.document.write(generatePrintHTML(center, zoom, bearing, pitch));
+    printWindow.document.close();
+    printWindow.focus();
+  } catch (error) {
+    printWindow.close();
+    mapStatus.value = `Gagal menyiapkan halaman cetak: ${error.message}`;
+  }
 }
 
-function generatePrintHTML(center, zoom, bearing) {
+function generatePrintHTML(center, zoom, bearing, pitch = 0) {
   const title = 'Peta Kontur Sulawesi Selatan';
   const date = new Date().toLocaleString('id-ID');
   const scale = Math.round(156543.03392 * Math.cos(center.lat * Math.PI / 180) / Math.pow(2, zoom));
+  // batas kabupaten dari mapConfig. Versi lama menulis ${url} di dalam template
+  // tanpa pernah mendeklarasikan variabelnya, jadi memanggil fungsi ini melempar
+  // ReferenceError sebelum HTML-nya sempat ditulis ke jendela cetak.
+  const url = geojsonUrl.value;
+  // Versi MapLibre harus sama dengan EXTERNAL_LIBS di public/sw.js. Cetak lewat
+  // 4.7.1 sedangkan peta offline dan cache service worker memakai 3.6.2, sehingga
+  // salinan cetaknya tidak pernah ada di cache dan gagal dimuat saat offline.
+  const maplibreVersion = '3.6.2';
   return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>${title} - Cetak</title>
 <style>
@@ -1489,10 +1590,10 @@ function generatePrintHTML(center, zoom, bearing) {
     <div class="legend-item"><span class="legend-color" style="background:#2563eb; border:1px dashed #2563eb"></span> Batas Kabupaten</div>
   </div>
 </div>
-&lt;script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"&gt;&lt;/script&gt;
-<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-&lt;script src="https://unpkg.com/pmtiles/dist/pmtiles.js"&gt;&lt;/script&gt;
-&lt;script&gt;
+<script src="https://unpkg.com/maplibre-gl@${maplibreVersion}/dist/maplibre-gl.js"><\/script>
+<link href="https://unpkg.com/maplibre-gl@${maplibreVersion}/dist/maplibre-gl.css" rel="stylesheet" />
+<script src="https://unpkg.com/pmtiles/dist/pmtiles.js"><\/script>
+<script>
   // Build pmtiles dari unpkg hanya tersedia tanpa nomor versi, dan itu IIFE
   // yang mengekspos global 'pmtiles' huruf kecil. new PMTiles.Protocol() akan
   // ReferenceError karena PMTiles tidak terdefinisi.
@@ -1519,9 +1620,10 @@ function generatePrintHTML(center, zoom, bearing) {
     center: [${center.lng}, ${center.lat}],
     zoom: ${zoom},
     bearing: ${bearing},
-    pitch: ${map.value?.getPitch() || 0},
+    pitch: ${pitch},
   });
   map.once('load', () => { window.print(); });
+<\/script>
 </body></html>`;
 }
 

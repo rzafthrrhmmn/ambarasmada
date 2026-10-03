@@ -319,4 +319,181 @@ class OfflineTileLookupTest extends TestCase
             'sw.js tidak boleh dilayani dari HTTP cache, kalau tidak salinan lama tidak pernah tergantikan.'
         );
     }
+
+    /**
+     * Alat ukur dan bookmark harus bisa dipakai, bukan hanya ada di kode.
+     *
+     * startMeasurement() dan goToBookmark() tidak pernah dipanggil dari template,
+     * jadi panel pengukuran tidak pernah muncul dan tampilan yang disimpan lewat
+     * tombol 🔖 tidak pernah bisa dimuat lagi. Kode pengukuran juga hanya
+     * menambahkan sumber GeoJSON tanpa layer, sehingga tidak ada yang tergambar.
+     */
+    public function test_alat_ukur_dan_bookmark_bisa_dipakai(): void
+    {
+        $pencarian = $this->pencarian();
+
+        foreach (["startMeasurement('distance')", "startMeasurement('area')"] as $call) {
+            $this->assertStringContainsString(
+                $call,
+                $pencarian,
+                "Tombol alat ukur harus memanggil {$call}; tanpa itu panel pengukuran tidak pernah muncul."
+            );
+        }
+
+        $this->assertStringContainsString(
+            '@click="goToBookmark(bookmark)"',
+            $pencarian,
+            'Bookmark yang disimpan harus punya tombol untuk kembali ke tampilan itu.'
+        );
+
+        $this->assertStringContainsString(
+            'v-for="(bookmark, index) in bookmarks"',
+            $pencarian,
+            'Bookmark perlu daftar di UI; sebelumnya hanya bisa disimpan, tidak pernah dibuka lagi.'
+        );
+
+        foreach (["const MEASURE_LINE_LAYER = 'measurement-line';", "const MEASURE_FILL_LAYER = 'measurement-fill';"] as $declaration) {
+            $this->assertStringContainsString(
+                $declaration,
+                $pencarian,
+                'Pengukuran harus punya layer; sumber GeoJSON kosong tidak akan terlihat.'
+            );
+        }
+
+        $this->assertStringContainsString(
+            "addLayer({\n      id: MEASURE_LINE_LAYER,",
+            $pencarian,
+            'Layer garis harus benar-benar ditambahkan ke peta.'
+        );
+
+        $this->assertStringContainsString(
+            "addLayer({\n      id: MEASURE_FILL_LAYER,",
+            $pencarian,
+            'Layer isi dibutuhkan supaya mode luas punya bentuk, bukan hanya garis.'
+        );
+
+        $this->assertStringContainsString(
+            "geometry: { type: 'Polygon', coordinates: [[...coords, coords[0]]] }",
+            $pencarian,
+            'Mode luas harus mengirim Polygon, bukan hanya LineString.'
+        );
+    }
+
+    /**
+     * Peta tidak boleh menampilkan kontrol ganda.
+     *
+     * Template pernah menyediakan wadah untuk bilah skala dan kompas sendiri
+     * dengan ref yang tidak pernah diisi, sementara initMap() juga menambahkan
+     * ScaleControl dan NavigationControl. Hasilnya dua bilah skala, dan yang
+     * di pojok kiri bawah selalu kosong. Kontrol lokasi punya masalah serupa.
+     */
+    public function test_kontrol_peta_tidak_ganda(): void
+    {
+        $pencarian = $this->pencarian();
+
+        $this->assertStringNotContainsString(
+            'ref="scaleBarContainer"',
+            $pencarian,
+            'Wadah skala kosong membuat peta menampilkan dua bilah skala.'
+        );
+
+        $this->assertStringNotContainsString(
+            'ref="northArrowContainer"',
+            $pencarian,
+            'Wadah kompas kosong membuat peta menampilkan kompas dua kali.'
+        );
+
+        $this->assertStringContainsString(
+            'new ScaleControl({ maxWidth: 200, unit: \'metric\' })',
+            $pencarian,
+            'Skala harus memakai ScaleControl bawaan MapLibre.'
+        );
+
+        $this->assertStringContainsString(
+            'new NavigationControl({ showCompass: true, showZoom: false })',
+            $pencarian,
+            'Kompas harus memakai NavigationControl bawaan MapLibre.'
+        );
+
+        $this->assertStringNotContainsString(
+            'GeolocateControl(',
+            $pencarian,
+            'Tombol lokasi di template sudah memanggil locateUser(); kontrol bawaan akan membuat dua tombol lokasi.'
+        );
+    }
+
+    /**
+     * Legenda harusnya milik Vue, bukan DOM yang disuntik dari script.
+     *
+     * initElevationLegend() menulis innerHTML ke dalam elemen yang dimiliki Vue,
+     * sehingga re-render berikutnya dapat menghapus isinya, dan legenda tidak
+     * pernah bisa disembunyikan karena tidak ada tombolnya.
+     */
+    public function test_legenda_elevasi_jadi_markup_vue(): void
+    {
+        $pencarian = $this->pencarian();
+
+        $this->assertStringNotContainsString(
+            'function initElevationLegend(',
+            $pencarian,
+            'Legenda harus ditulis sebagai markup supaya Vue yang memilikinya.'
+        );
+
+        $this->assertStringNotContainsString(
+            'ref="legendContainer"',
+            $pencarian,
+            'Ref yang diisi manual bisa terhapus oleh re-render Vue.'
+        );
+
+        $this->assertStringContainsString(
+            '@click="showElevationLegend = !showElevationLegend"',
+            $pencarian,
+            'Legenda harus bisa disembunyikan dan ditampilkan lagi.'
+        );
+    }
+
+    /**
+     * Overlay peta tidak boleh menumpuk di koordinat yang sama.
+     *
+     * Pencarian, panel pengukuran, dan penanda offline semuanya memakai
+     * top-4 left-4 sehingga saling menutupi. Dua tombol juga memakai
+     * right-52 yang tidak ada di skala spasi Tailwind, jadi tombolnya tidak
+     * dapat offset sama sekali dan menimpa pemilih basemap.
+     */
+    public function test_overlay_peta_tidak_menumpuk(): void
+    {
+        $pencarian = $this->pencarian();
+
+        $this->assertSame(
+            1,
+            substr_count($pencarian, 'absolute left-4 top-4'),
+            'Hanya satu panel yang boleh menempati pojok kiri atas.'
+        );
+
+        $this->assertSame(
+            0,
+            substr_count($pencarian, 'right-52'),
+            'right-52 bukan kelas Tailwind yang ada, jadi tombolnya tidak dapat offset.'
+        );
+
+        $this->assertSame(
+            0,
+            substr_count($pencarian, 'right-96'),
+            'right-96 menjauhkan tombol cetak dari tombol lain tanpa alasan.'
+        );
+
+        $this->assertStringNotContainsString(
+            'absolute bottom-4 left-4',
+            $pencarian,
+            'Readout koordinat dan bilah skala MapLibre sama-sama di pojok kiri bawah.'
+        );
+    }
+
+    private function pencarian(): string
+    {
+        $source = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+        $this->assertIsString($source, 'Tidak bisa membaca resources/js/Pages/Peta/MapDenganPencarian.vue.');
+
+        return $source;
+    }
 }
