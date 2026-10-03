@@ -1594,6 +1594,122 @@ function mapContentRatio(canvas) {
   return (ink / (data.length / 4)) * 100;
 }
 
+/**
+ * Tunggu peta selesai memuat tile dan selesai menggambar.
+ *
+ * Dipakai setelah kamera dipindahkan: tanpa jeda ini snapshot bisa diambil
+ * ketika tile wilayah baru belum selesai dimuat, sehingga peta hasil unduhan
+ * ada lubuk putih di tempat yang seharusnya daratan.
+ *
+ * Batas waktunya penting supaya peta yang macet tidak menggantung unduhan.
+ */
+function waitForMapIdle(map, timeoutMs = 6000) {
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      map?.off?.('idle', finish);
+      resolve();
+    };
+
+    map?.once?.('idle', finish);
+    setTimeout(finish, timeoutMs);
+  });
+}
+
+/**
+ * Margin yang disisakan di sekeliling wilayah agar peta tidak menempel ke tepi.
+ *
+ * Marginnya sebagian dari ukuran kanvas, bukan angka tetap, karena panel
+ * legenda, histogram, kompas, dan skala digambar di atas sudut peta. Tanpa
+ * margin, sudut wilayah yang justru paling penting justru tertutup panel.
+ * Padding dibatasi 26% supaya wilayah kecil tidak menyusut jadi titik.
+ */
+function regionPadding(map) {
+  const canvas = map?.getCanvas?.();
+  const width = canvas?.width ?? 0;
+  const height = canvas?.height ?? 0;
+
+  if (!(width > 0) || !(height > 0)) {
+    return { top: 24, bottom: 24, left: 24, right: 24 };
+  }
+
+  const edge = Math.round(Math.min(width, height) * 0.06);
+  const limit = (value) => Math.min(value, Math.round((width * 0.26)));
+
+  return {
+    top: edge,
+    bottom: edge,
+    left: limit(Math.round(width * 0.14)),
+    right: limit(Math.round(width * 0.1)),
+  };
+}
+
+/**
+ * Arahkan peta ke satu wilayah, lalu kembalikan cara mengembalikan kamera lama.
+ *
+ * Ini sumber utama bug "preview benar, hasil unduhan salah": snapshot PNG diambil
+ * dari kanvas peta yang sedang tampil, jadi wilayah yang benar-benar ikut
+ * tercetak adalah viewport pengguna, bukan wilayah yang dipilih di dialog.
+ * Memusatkan kamera saja tidak cukup karena zoomnya juga harus muat seluruh
+ * wilayah; karena itu dipakai fitBounds dan bukan jumpTo dengan zoom tetap.
+ *
+ * Kamera lama dikembalikan setelah snapshot diambil supaya pandangan pengguna
+ * tidak berubah gara-gara ia mengunduh peta.
+ *
+ * @param {object} map
+ * @param {{west:number,south:number,east:number,north:number}} region
+ * @param {number} [maxZoom]  Batas zoom paket offline, dipakai sebagai pengaman
+ *   supaya wilayah kecil tidak diperbesar melebihi isi arsip.
+ * @returns {Promise<() => void>} Fungsi pemulih kamera.
+ */
+async function frameRegion(map, region, maxZoom) {
+  const previous = {
+    center: map.getCenter(),
+    zoom: map.getZoom(),
+    bearing: map.getBearing(),
+    pitch: map.getPitch(),
+  };
+
+  const restore = () => {
+    try {
+      map.jumpTo(previous);
+    } catch {
+      // Peta yang sudah dibuang tidak bisa dipulihkan; tidak ada yang perlu
+      // dikembalikan ke pengguna karena halaman sudah tidak aktif.
+    }
+  };
+
+  try {
+    map.fitBounds(
+      [
+        [region.south, region.west],
+        [region.north, region.east],
+      ],
+      {
+        padding: regionPadding(map),
+        bearing: 0,
+        pitch: 0,
+        // Tanpa animasi: yang dikejar adalah snapshot yang benar, dan animasi
+        // hanya menambah waktu tunggu tanpa mengubah hasilnya.
+        animate: false,
+        duration: 0,
+        ...(Number.isFinite(maxZoom) ? { maxZoom } : {}),
+      },
+    );
+  } catch {
+    // Peta tanpa fitBounds yang bisa dipakai. Kamera dibiarkan apa adanya dan
+    // snapshot tetap diambil, supaya pengguna tetap mendapat berkas.
+    return () => {};
+  }
+
+  await waitForMapIdle(map);
+
+  return restore;
+}
+
 export function useMapPngExport() {
   const isExporting = ref(false);
   const exportError = ref(null);
@@ -1709,6 +1825,11 @@ export function useMapPngExport() {
   /**
    * Cetak peta + bahan ajar kontur menjadi PNG lalu unduh otomatis.
    *
+   * `region` membuat snapshot mengikuti wilayah yang dipilih pengguna di dialog
+   * unduhan, bukan viewport yang sedang terlihat. Tanpa itu, peta mini di dialog
+   * benar-benar menampilkan seluruh wilayah sementara berkas PNG-nya berisi
+   * potongan yang kebetulan sedang dilihat.
+   *
    * @returns {Promise<{ ok: boolean, blocked?: boolean, error?: string|null, mapMissing?: boolean }>}
    */
   async function exportMapPng(map, overrides = {}) {
@@ -1719,8 +1840,19 @@ export function useMapPngExport() {
     isExporting.value = true;
     exportError.value = null;
 
-    // `filename` bukan opsi gambar, jadi dipisah sebelum diteruskan.
-    const { filename, ...pngOptions } = overrides;
+    // `filename`, `region`, dan `regionMaxZoom` bukan opsi gambar, jadi
+    // dipisah sebelum diteruskan ke buildMapPng.
+    const { filename, region = null, regionMaxZoom = null, ...pngOptions } = overrides;
+
+    // Kamera diarahkan ke wilayah lebih dulu, baru dibaca. Semua angka yang
+    // dipakai berikutnya (pusat, zoom, batas, skala) diambil dari kamera yang
+    // sudah sesuai wilayah, sehingga judul, bilah skala, dan grid koordinat
+    // cocok dengan isi gambarnya.
+    let restoreCamera = null;
+
+    if (region && map?.fitBounds) {
+      restoreCamera = await frameRegion(map, region, regionMaxZoom);
+    }
 
     try {
       const center = map?.getCenter?.() ?? { lat: 0, lng: 0 };
@@ -1789,6 +1921,10 @@ export function useMapPngExport() {
       exportError.value = error?.message ?? 'Gagal membuat PNG peta.';
       return { ok: false, blocked: false, error: exportError.value };
     } finally {
+      // Kamera dikembalikan walau cetak gagal. Kalau tidak, satu unduhan yang
+      // bermasalah cukup untuk membuat peta utama tersesat ke wilayah lain dan
+      // pengguna mengira tampilan itu memang pilihan mereka.
+      restoreCamera?.();
       isExporting.value = false;
     }
   }

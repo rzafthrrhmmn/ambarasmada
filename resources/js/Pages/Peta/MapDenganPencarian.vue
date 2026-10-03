@@ -1495,11 +1495,13 @@ function deleteBookmark(index) {
  *
  * `area` menentukan judul dan nama berkas, supaya PNG yang diunduh sama dengan
  * wilayah yang dipilih pengguna di dialog unduhan, bukan dengan viewport yang
- * kebetulan sedang terlihat.
+ * kebetulan sedang terlihat. `region` menentukan isi peta di dalam PNG itu:
+ * snapshot diambil setelah kamera disesuaikan ke wilayah tersebut, lalu kamera
+ * dikembalikan seperti semula.
  *
- * @param {{area?: {name: string, label: string}, components?: object}} options
+ * @param {{area?: {name: string, label: string}, region?: object, components?: object}} options
  */
-async function printMapPng({ area = null, components = null } = {}) {
+async function printMapPng({ area = null, region = null, components = null } = {}) {
   if (!map.value) return { ok: false };
 
   const selected = selectedKabData.value;
@@ -1511,6 +1513,9 @@ async function printMapPng({ area = null, components = null } = {}) {
     title: `Peta Kontur - ${name}`,
     subtitle: label,
     filename: `peta-kontur-${slugify(name)}.png`,
+    ...(region
+      ? { region, regionMaxZoom: Number.isFinite(region.maxZoom) ? region.maxZoom : null }
+      : {}),
     ...(components ? { components } : {}),
   });
 
@@ -1539,22 +1544,6 @@ function slugify(text) {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'peta';
-}
-
-/** Tunggu peta selesai menggambar, dengan batas waktu supaya tidak menggantung. */
-function whenMapIdle(timeoutMs = 6000) {
-  return new Promise((resolve) => {
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      map.value?.off?.('idle', finish);
-      resolve();
-    };
-
-    map.value?.once?.('idle', finish);
-    setTimeout(finish, timeoutMs);
-  });
 }
 
 // Print layout
@@ -1698,21 +1687,14 @@ async function downloadOffline() {
 
   downloadStatus.value = `Menyiapkan PNG peta ${areaName}...`;
 
-  // 1. Peta pindah ke wilayah yang dipilih supaya PNG berisi daerah itu, bukan
-  //   kebetulan sedang terlihat. jumpTo dipakai, bukan flyTo: animasi tidak ada
-  //   artinya untuk berkas yang akan langsung dicetak.
-  if (map.value) {
-    map.value.jumpTo({
-      center: [(bbox.west + bbox.east) / 2, (bbox.south + bbox.north) / 2],
-      zoom: offlineZoomMax.value,
-      bearing: 0,
-      pitch: 0,
-    });
-    await whenMapIdle();
-  }
-
+  // 1. Peta diarahkan ke wilayah yang dipilih supaya PNG berisi daerah itu,
+  //   bukan kebetulan sedang terlihat. Penyesuaian kamera, pengambilan snapshot,
+  //   dan pemulihan kamera dilakukan useMapPngExport. Versi lama hanya memusatkan
+  //   peta pada zoom tetap, jadi preview di dialog menampilkan seluruh wilayah
+  //   sementara PNG-nya hanya berisi potongan kecil di tengahnya.
   const png = await printMapPng({
     area: { name: areaName, label: areaLabel },
+    region: { ...bbox, maxZoom: offlineZoomMax.value },
     components,
   });
 

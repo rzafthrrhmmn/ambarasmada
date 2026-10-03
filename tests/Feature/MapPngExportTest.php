@@ -713,10 +713,20 @@ class MapPngExportTest extends TestCase
             'PNG harus dicetak sebelum paket tile diminta; kalau dibalik, berkas berisi viewport terakhir.'
         );
 
-        $this->assertMatchesRegularExpression(
-            "/jumpTo\(\{[\s\S]{0,400}?whenMapIdle\(\)[\s\S]{0,400}?printMapPng\(\{/",
+        // Penyesuaian kamera tidak lagi dilakukan halaman ini. Dulu halaman
+        // menggeser peta sendiri dengan jumpTo dan menunggu whenMapIdle, dan
+        // itulah yang membuat PNG berisi potongan viewport, bukan wilayah yang
+        // dipilih. Sekarang halaman cukup meneruskan batas wilayah.
+        $this->assertStringNotContainsString(
+            'whenMapIdle',
             $pencarian,
-            'Peta harus digeser ke wilayah yang dipilih sebelum PNG dicetak.'
+            'Penunggu peta idle sudah pindah ke useMapPngExport yang juga memulihkan kamera.'
+        );
+
+        $this->assertMatchesRegularExpression(
+            "/const png = await printMapPng\(\{[\s\S]{0,300}?region:[\s\S]{0,200}?components,[\s\S]{0,80}?\}\);/",
+            $pencarian,
+            'printMapPng harus menerima wilayah yang dipilih dan pilihan komponen sekaligus.'
         );
 
         $this->assertStringContainsString(
@@ -1034,6 +1044,79 @@ class MapPngExportTest extends TestCase
             strpos($pencarian, "'mini-kontur'"),
             strpos($pencarian, "'mini-basemap-layer'"),
             'Basemap harus berada di bawah layer kontur, bukan menutupinya.'
+        );
+    }
+
+    /**
+     * PNG harus berisi wilayah yang dipilih, bukan potongan yang sedang terlihat.
+     *
+     * Dua-duanya sudah pernah benar atau salahnya secara terpisah, sehingga
+     * preview di dialog terlihat meyakinkan sementara berkasnya tidak sesuai.
+     *
+     * Penyebabnya: snapshot diambil dari kanvas peta yang sedang tampil, jadi
+     * wilayah yang ikut tercetak adalah viewport pengguna. Memusatkan kamera saja
+     * tidak menolong, karena zoomnya juga harus muat seluruh wilayah. Versi lama
+     * memakai jumpTo dengan zoom paket offline yang tetap, sehingga untuk satu
+     * kabupaten PNG hanya berisi potongan kecil di tengah wilayah itu.
+     */
+    public function test_png_mengikuti_wilayah_yang_dipilih_bukan_viewport(): void
+    {
+        $module = $this->module();
+        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+
+        // Penyesuaian kamera harus pakai fitBounds, satu-satunya cara MapLibre
+        // yang memperhitungkan ukuran wadah dan rasio aspek sekaligus.
+        $this->assertStringContainsString(
+            'map.fitBounds(',
+            $module,
+            'Ekspor harus memakai fitBounds supaya seluruh wilayah muat dalam satu frame.'
+        );
+
+        $this->assertStringContainsString(
+            'async function frameRegion(',
+            $module,
+            'Penyesuaian kamera harus terpusat supaya kedua halaman peta memakai cara yang sama.'
+        );
+
+        // Kamera lama harus dikembalikan, kalau tidak satu unduhan membuat
+        // tampilan peta pengguna tersesat ke wilayah lain.
+        $this->assertStringContainsString(
+            'restoreCamera?.();',
+            $module,
+            'Kamera peta harus dipulihkan setelah snapshot diambil.'
+        );
+
+        $this->assertStringContainsString(
+            'map.jumpTo(previous);',
+            $module,
+            'Pemulihan kamera harus memakai jumpTo supaya tidak memicu animasi.'
+        );
+
+        // Angka pada PNG harus dibaca setelah kamera diarahkan, kalau tidak
+        // subjudul dan bilah skala menyebut wilayah yang tidak ada di gambar.
+        $this->assertLessThan(
+            strpos($module, 'const center = map?.getCenter?.()'),
+            strpos($module, 'restoreCamera = await frameRegion('),
+            'Kamera harus diarahkan ke wilayah sebelum pusat dan zoom dibaca.'
+        );
+
+        // Halaman tidak boleh lagi menggeser peta sendiri dengan zoom tetap.
+        $this->assertStringNotContainsString(
+            'zoom: offlineZoomMax.value,',
+            $pencarian,
+            'Zoom paket offline tidak bisa dipakai untuk membingkai wilayah; inilah bug preview benar tapi PNG salah.'
+        );
+
+        $this->assertStringContainsString(
+            'region: { ...bbox',
+            $pencarian,
+            'Unduhan per-daerah harus meneruskan batas wilayah ke ekspor PNG.'
+        );
+
+        $this->assertStringContainsString(
+            'regionMaxZoom:',
+            $pencarian,
+            'Batas zoom paket harus diteruskan sebagai pengaman fitBounds.'
         );
     }
 
