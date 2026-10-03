@@ -328,9 +328,9 @@ class MapPngExportTest extends TestCase
             'Posisi kompas dihitung dari lebar kanvas, sehingga tidak mengikuti kotak peta.'
         );
         $this->assertStringContainsString(
-            'mapX + mapWidth - PANEL.inset - PANEL.compassRadius,',
+            'areaRect.x + areaRect.w - PANEL.inset - PANEL.compassRadius,',
             $module,
-            'Kompas harus dihitung dari pojok kanan bawah kotak peta.'
+            'Kompas harus dihitung dari pojok kanan bawah gambar peta.'
         );
 
         // Lebar legenda mengikuti label terpanjang.
@@ -412,45 +412,100 @@ class MapPngExportTest extends TestCase
     }
 
     /**
-     * Grid koordinat harus cocok dengan potongan peta yang benar-benar dicetak.
+     * Snapshot peta tidak boleh dipotong saat dicetak.
      *
-     * Snapshot peta dipotong di tengah supaya memenuhi kotak cetak, jadi hanya
-     * sebagian viewport yang tampil. Versi lama tetap memetakan seluruh batas
-     * viewport ke seluruh kotak, sehingga label 119,7°BT menunjuk ke lokasi yang
-     * salah di atas peta. Pada pengujian browser selisihnya 0,0 piksel.
+     * Versi lama memakai "cover": snapshot diperbesar sampai menutupi kotak
+     * cetak 1128x560 dan bagian yang lebih dipotong di tengah. Karena rasio
+     * jendela yang sedang dipakai hampir selalu lebih tinggi dari 2:1, hampir
+     * setiap unduhan kehilangan bagian atas dan bawah wilayah yang sedang
+     * dilihat, lalu sisanya diperbesar. Akibatnya peta hasil unduhan terlihat
+     * ter-zoom dan wilayah seperti Kabupaten Maros tidak tampil utuh.
+     *
+     * Sekarang tinggi kotak mengikuti rasio snapshot dan gambar diletakkan
+     * dengan "contain", jadi tidak ada satu pun bagian yang terpotong.
      */
-    public function test_grid_koordinat_sesuai_dengan_potongan_peta(): void
+    public function test_peta_tidak_dipotong_saat_dicetak(): void
     {
         $module = $this->module();
 
         $this->assertStringContainsString(
-            'let visibleBounds = bounds;',
+            'function fitContain(',
             $module,
-            'Batas yang dipakai grid harus dimulai dari batas viewport.'
+            'Penempatan snapshot harus memakai fitContain yang tidak memotong.'
         );
 
+        // Rumus "cover" yang memotong bagian tengah tidak boleh kembali.
+        foreach (['drawWidth', 'drawHeight', 'offsetX', 'offsetY'] as $variabel) {
+            $this->assertStringNotContainsString(
+                "const {$variabel}",
+                $module,
+                "Variabel pemotong '{$variabel}' masih ada, sehingga snapshot dipotong di tengah lagi."
+            );
+        }
+
         $this->assertStringContainsString(
+            'const placement = fitContain(mapCanvas.width, mapCanvas.height, mapX, mapY, mapWidth, mapHeight);',
+            $module,
+            'Snapshot harus ditempatkan memakai fitContain().'
+        );
+
+        // Batas yang digambar tetap batas viewport, karena tidak ada lagi yang
+        // terbuang keluar. Menghitung ulang batas dari potongan hanya akan
+        // menyusun ulang pemotongan yang baru saja dihapus.
+        $this->assertStringContainsString(
+            'const visibleBounds = bounds;',
+            $module,
+            'Grid koordinat harus memakai batas viewport apa adanya.'
+        );
+        $this->assertStringNotContainsString(
             'visibleBounds = {',
             $module,
-            'Batas harus disempitkan mengikuti pemotongan snapshot peta.'
+            'Batas masih disempitkan mengikuti pemotongan yang sudah tidak ada.'
+        );
+
+        // Grid dan panel digambar di atas gambar peta, bukan di atas kotak cetak,
+        // supaya tidak berdiri di atas pita abu-abu saat snapshot tertahan
+        // oleh batas MIN/MAX.
+        $this->assertStringContainsString(
+            'drawGraticule(ctx, areaRect, visibleBounds, reserved)',
+            $module,
+            'Grid koordinat harus memakai area gambar peta.'
+        );
+        $this->assertStringContainsString(
+            'areaRect = placement;',
+            $module,
+            'Area gambar peta harus memakai hasil penempatan snapshot.'
+        );
+    }
+
+    /**
+     * Tinggi kotak peta harus mengikuti rasio snapshot.
+     *
+     * Kalau tinggi tetap dipatok sementara snapshot memakai rasio lain, kode
+     * akan dipaksa kembali memotong gambar agar memenuhi kotak, dan masalah
+     * peta ter-zoom muncul lagi.
+     */
+    public function test_tinggi_kotak_peta_mengikuti_rasio_snapshot(): void
+    {
+        $module = $this->module();
+
+        $this->assertStringNotContainsString(
+            'const MAP_HEIGHT =',
+            $module,
+            'Tinggi kotak peta masih dipatok satu angka untuk semua kondisi.'
         );
 
         $this->assertStringContainsString(
-            'const visibleLon = ((bounds.east - bounds.west) * mapWidth) / drawWidth;',
+            'function mapAreaHeight(',
             $module,
-            'Panjang bujur yang terlihat harus dihitung dari ukuran gambar yang benar-benar digambar.'
+            'Tinggi kotak peta harus dihitung dari rasio snapshot.'
         );
 
-        $this->assertStringContainsString(
-            'const visibleLat = ((bounds.north - bounds.south) * mapHeight) / drawHeight;',
-            $module,
-            'Panjang lintang yang terlihat harus dihitung dari ukuran gambar yang benar-benar digambar.'
-        );
-
-        $this->assertStringContainsString(
-            'drawGraticule(ctx, { x: mapX, y: mapY, w: mapWidth, h: mapHeight }, visibleBounds, reserved)',
-            $module,
-            'Grid harus memakai batas potongan, bukan batas viewport.'
+        // Pengukur tinggi dan penggambar memakai fungsi yang sama.
+        $this->assertSame(
+            2,
+            preg_match_all('/mapAreaHeight\(mapCanvas, \w+\);/', $module),
+            'measureHeight dan buildMapPng harus sama-sama memakai mapAreaHeight().'
         );
     }
 

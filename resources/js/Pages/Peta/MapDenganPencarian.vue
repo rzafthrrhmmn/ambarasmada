@@ -79,13 +79,15 @@
       </div>
     </div>
 
-    <div class="relative overflow-hidden rounded-2xl border-2 border-[#A7B92A]/40 bg-[#263D26] shadow-lg">
+    <div class="peta-shell relative overflow-hidden rounded-2xl border-2 border-[#A7B92A]/40 bg-[#263D26] shadow-lg">
       <div ref="mapContainer" class="h-[70vh] w-full min-h-[400px]"></div>
-      
+
       <!-- Coordinate display on mouse hover.
            Diletakkan di atas bilah skala bawaan MapLibre di pojok kiri bawah;
-           dua-duanya pernah memakai bottom-4 left-4 dan saling menutupi. -->
-      <div v-if="mouseCoords" class="pointer-events-none absolute bottom-12 left-4 z-20 rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 px-3 py-1.5 font-mono text-xs text-[#EDD330]">
+           dua-duanya pernah memakai bottom-4 left-4 dan saling menutupi.
+           Lebarnya dibatasi supaya tidak menabrak tumpukan pojok kanan bawah
+           pada layar sempit. -->
+      <div v-if="mouseCoords" class="peta-panel pointer-events-none absolute bottom-12 left-3 max-w-[min(260px,calc(100%-13rem))] rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 px-3 py-1.5 font-mono text-xs text-[#EDD330] shadow-lg backdrop-blur-sm">
         Lon: {{ mouseCoords.lng.toFixed(6) }}° | Lat: {{ mouseCoords.lat.toFixed(6) }}°
       </div>
 
@@ -94,36 +96,59 @@
            Wadah kosong untuk keduanya pernah ada di sini sehingga peta
            menampilkan dua bilah skala dan satu di antaranya tidak pernah diisi.
            Legenda elevasi digambar lewat markup supaya Vue yangmemilkinya. -->
-      <div v-if="showElevationLegend" class="absolute bottom-4 right-4 z-20 rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 p-3 text-xs text-[#d4dc9a] min-w-[150px]">
-        <div class="mb-2 font-bold text-[#EDD330]">Legenda Elevasi</div>
-        <div class="space-y-1">
-          <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #8c510a;"></span> Kontur 10m</div>
-          <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #a0522d;"></span> Kontur 50m (Index)</div>
-          <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #cd853f;"></span> Kontur 100m</div>
-          <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #8b4513;"></span> Kontur 500m+</div>
-          <div class="mt-2 flex items-center gap-2 border-t border-[#6F9435]/30 pt-2"><span class="h-1.5 w-6 rounded" style="background: #2563eb;"></span> Batas Kabupaten</div>
+
+      <!-- Pojok kanan bawah: legenda elevasi dan tombol lokasi saya.
+           Keduanya ditumpuk dalam satu wadah flex column. Sebelumnya legenda
+           dipatok bottom-4 right-4 dengan lebar lebih dari 150 piksel, sementara
+           tombol GPS dipatok bottom-4 right-14 (56 piksel), sehingga tombol GPS
+           berdiri tepat di atas legenda. -->
+      <div class="absolute bottom-3 right-3 z-20 flex flex-col items-end gap-2">
+        <div
+          v-if="showElevationLegend"
+          class="rounded-lg border border-[#6F9435]/40 bg-[#1a1a1a]/90 p-3 text-xs text-[#d4dc9a] shadow-lg backdrop-blur-sm min-w-[150px]"
+        >
+          <div class="mb-2 flex items-center gap-1.5 font-bold text-[#EDD330]">
+            <span aria-hidden="true">📶</span>
+            Legenda Elevasi
+          </div>
+          <div class="space-y-1">
+            <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #8c510a;"></span> Kontur 10m</div>
+            <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #a0522d;"></span> Kontur 50m (Index)</div>
+            <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #cd853f;"></span> Kontur 100m</div>
+            <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #8b4513;"></span> Kontur 500m+</div>
+            <div class="mt-2 flex items-center gap-2 border-t border-[#6F9435]/30 pt-2"><span class="h-1.5 w-6 rounded" style="background: #2563eb;"></span> Batas Kabupaten</div>
+          </div>
+        </div>
+
+        <!-- GPS locate button.
+             Kontrol GeolocateControl bawaan MapLibre sengaja tidak dipakai supaya
+             tidak ada dua tombol lokasi yang tumpang tindih; locateUser() juga
+             menampilkan popup "Lokasi Anda" dan menulis alasannya ke mapStatus. -->
+        <div
+          v-if="hasGeolocation"
+          class="rounded-lg border-2 border-[#6F9435]/50 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95 disabled:opacity-50"
+        >
+          <button
+            @click="locateUser"
+            :disabled="locating"
+            class="flex items-center gap-1.5 disabled:cursor-not-allowed"
+            title="Lokasi saya"
+          >
+            <span aria-hidden="true">{{ locating ? '⟳' : '📍' }}</span>
+            <span class="text-xs">{{ locating ? 'Mencari...' : 'Lokasi saya' }}</span>
+          </button>
         </div>
       </div>
 
-      <!-- GPS locate button.
-           Kontrol GeolocateControl bawaan MapLibre sengaja tidak dipakai supaya
-           tidak ada dua tombol lokasi yang tumpang tindih; locateUser() juga
-           menampilkan popup "Lokasi Anda" dan menulis alasannya ke mapStatus. -->
-      <button
-        v-if="hasGeolocation"
-        @click="locateUser"
-        :disabled="locating"
-        class="absolute bottom-4 right-14 z-20 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30 disabled:opacity-50"
-        title="Lokasi saya"
-      >
-        {{ locating ? '⟳' : '📍' }}
-      </button>
-
-      <!-- Panel kiri: penanda offline, pencarian, dan alat ukur.
-           Semuanya dulu ditumpuk di top-4 left-4 sehingga saling menutupi. -->
-      <div class="absolute left-4 top-4 z-20 flex w-[300px] flex-col items-start gap-2">
+      <!-- Lapisan atas: panel kiri dan alat kanan atas.
+           Keduanya hidup di satu wadah flex yang boleh membungkus baris.
+           Sebelumnya masing-masing dipatok ke pojoknya sendiri, sehingga pada
+           layar sempit panel kiri menimpa alat kanan. pr-12 menyisakan ruang
+           untuk NavigationControl di pojok kanan atas. -->
+      <div class="peta-panel absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2 pr-12">
+      <div class="flex w-[min(300px,100%)] flex-col items-start gap-2" data-nama="PanelKiri">
         <!-- Offline indicator -->
-        <div v-if="isOffline" class="rounded-lg bg-[#f59e0b]/90 px-3 py-1.5 text-xs font-bold text-white">
+        <div v-if="isOffline" class="rounded-lg bg-[#f59e0b]/90 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
           📴 Mode Offline
         </div>
 
@@ -182,16 +207,18 @@
         </div>
       </div>
 
-      <!-- Panel kanan: basemap dan alat peta.
-           top-14 memberi ruang untuk NavigationControl bawaan MapLibre yang juga
-           diletakkan di pojok kanan atas. -->
-      <div class="absolute right-4 top-14 z-20 flex flex-col items-end gap-2">
-        <div class="flex items-center gap-2">
+      <!-- Alat kanan atas: basemap, alat ukur, bookmark, dan cetak.
+           Berada di dalam wadah lapisan atas yang sama dengan panel kiri,
+           jadi keduanya tidak mungkin bertumpuk. -->
+      <div class="flex flex-col items-end gap-2" data-nama="AlatKananAtas">
+        <div class="flex flex-wrap items-center justify-end gap-2">
           <!-- Basemap selector -->
+          <label class="sr-only" for="peta-basemap-cari">Pilih basemap</label>
           <select
+            id="peta-basemap-cari"
             v-model="basemap"
             @change="changeBasemap"
-            class="w-[180px] rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
+            class="w-[168px] rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm text-[#f0ead8] shadow-lg backdrop-blur-sm outline-none focus:border-[#EDD330]"
           >
             <option value="osm">🗺️ OpenStreetMap</option>
             <option value="satellite">🛰️ Satelit</option>
@@ -203,41 +230,42 @@
           <button
             @click="startMeasurement('distance')"
             :disabled="measurementMode !== 'none'"
-            class="rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30 disabled:opacity-50"
+            class="rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95 disabled:opacity-50"
             title="Ukur jarak"
           >
-            📏
+            <span aria-hidden="true">📏</span>
           </button>
           <button
             @click="startMeasurement('area')"
             :disabled="measurementMode !== 'none'"
-            class="rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30 disabled:opacity-50"
+            class="rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95 disabled:opacity-50"
             title="Ukur luas"
           >
-            📐
+            <span aria-hidden="true">📐</span>
           </button>
 
           <!-- Bookmark/save view button -->
           <button
             @click="saveBookmark"
-            class="rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
+            class="rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95"
             title="Simpan tampilan"
           >
-            🔖
+            <span aria-hidden="true">🔖</span>
           </button>
 
           <!-- Print button -->
           <button
             @click="printMap"
-            class="rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
+            class="inline-flex items-center gap-1.5 rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95"
             title="Cetak peta"
           >
-            🖨️
+            <span aria-hidden="true">🖨️</span>
+            <span class="text-xs">Cetak</span>
           </button>
         </div>
 
         <!-- Bookmark list -->
-        <div v-if="bookmarks.length > 0" class="max-h-56 w-[280px] overflow-y-auto rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 p-2 text-xs">
+        <div v-if="bookmarks.length > 0" class="max-h-56 w-[min(280px,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 p-2 text-xs shadow-lg backdrop-blur-sm">
           <p class="mb-1 px-1 font-bold text-[#EDD330]">Tampilan Tersimpan ({{ bookmarks.length }})</p>
           <div
             v-for="(bookmark, index) in bookmarks"
@@ -253,18 +281,19 @@
           </div>
         </div>
       </div>
+      </div>
 
       <div
         v-if="!hasPmtiles"
-        class="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-lg border border-[#EDD330]/50 bg-[#263D26]/95 px-4 py-2 text-center shadow-lg"
+        class="peta-panel absolute bottom-16 left-1/2 -translate-x-1/2 rounded-lg border border-[#EDD330]/50 bg-[#263D26]/95 px-4 py-2 text-center shadow-lg backdrop-blur-sm"
       >
         <p class="text-xs font-bold text-[#EDD330]">Garis kontur belum tersedia</p>
         <p class="mt-0.5 text-[11px] text-[#8fa06a]">File PMTiles tidak ada di server. Peta dasar dan batas kabupaten tetap dapat dipakai.</p>
       </div>
-      <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/70">
+      <div v-if="loading" class="absolute inset-0 z-30 flex items-center justify-center bg-[#263D26]/70 backdrop-blur-sm">
         <p class="text-lg font-bold text-[#EDD330]">Memuat peta...</p>
       </div>
-      <div v-if="mapError" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/90">
+      <div v-if="mapError" class="absolute inset-0 z-30 flex items-center justify-center bg-[#263D26]/90 backdrop-blur-sm">
         <div class="text-center p-6">
           <p class="text-2xl font-bold text-[#f87171]">Gagal Memuat Peta</p>
           <p class="mt-2 text-sm text-[#8fa06a]">{{ mapError }}</p>
@@ -347,7 +376,7 @@
           <label class="text-xs font-medium text-[#d4dc9a]">Preview Wilayah</label>
           <span v-if="selectedOfflineRegionData" class="text-xs text-[#EDD330]">{{ selectedOfflineRegionData.nama_kab }}</span>
         </div>
-        <div ref="miniMapContainer" class="h-[200px] w-full rounded-lg overflow-hidden border border-[#6F9435]/30 relative">
+        <div ref="miniMapContainer" class="peta-shell h-[200px] w-full rounded-lg overflow-hidden border border-[#6F9435]/30 relative">
           <div v-if="miniMapLoading" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/90">
             <p class="text-sm text-[#8fa06a]">Memuat preview...</p>
           </div>

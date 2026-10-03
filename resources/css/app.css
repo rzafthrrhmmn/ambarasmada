@@ -457,3 +457,71 @@
         scroll-behavior: auto !important;
     }
 }
+
+/*
+ * Peta.
+ *
+ * Kontrol bawaan MapLibre memakai gaya putih bawaan yang kontras dengan
+ * halaman yang gelap, dan posisinya menimpa panel yang kita taruh di pojok
+ * yang sama. Dua hal itu yang membuat tombol-tombol peta saling menumpuk.
+ *
+ * Pojok kanan atas tidak dipakai lewat offset tetap. Panel atas kami sudah
+ * satu wadah flex yang membungkus baris dan menyisakan ruang NavigationControl
+ * lewat pr-12, jadi posisinya selalu selaras dengan kontrol bawaan.
+ *
+ * Semua aturan di bawah bergantung pada kelas .peta-shell pada wadah peta,
+ * jadi tidak memengaruhi halaman lain yang memakai MapLibre.
+ */
+.peta-shell .maplibregl-ctrl-top-left,
+.peta-shell .maplibregl-ctrl-top-right,
+.peta-shell .maplibregl-ctrl-bottom-left,
+.peta-shell .maplibregl-ctrl-bottom-right {
+    z-index: 5;
+}
+
+/* Tombol dan kotak kontrol mengikuti palet halaman: hijau tua, garis hijau,
+ * emas untuk keadaan aktif. */
+.peta-shell .maplibregl-ctrl-group {
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.45);
+}
+
+.peta-shell .maplibregl-ctrl-group button {
+    background-color: #263d26;
+    border-bottom: 1px solid rgb(111 148 53 / 0.4);
+}
+
+.peta-shell .maplibregl-ctrl-group button:hover {
+    background-color: #335233;
+}
+
+.peta-shell .maplibregl-ctrl-group button.maplibregl-ctrl-active {
+    background-color: rgb(237 211 48 / 0.25);
+}
+
+/* Bilah skala bawaan memakai teks hitam di atas garis putih. Di atas basemap
+ * gelap keduanya tidak terbaca, jadi latar dan warnanya dibalik. */
+.peta-shell .maplibregl-ctrl-scale {
+    background-color: rgb(26 26 26 / 0.85);
+    border-color: #9ca3af;
+    color: #f0ead8;
+    border-radius: 0.375rem;
+    padding: 0.125rem 0.375rem;
+}
+
+/* Atribut dan logo MapLibre tetap boleh tampil, hanya dirapikan agar tidak
+ * menabrak panel di pojok kiri bawah. */
+.peta-shell .maplibregl-ctrl-attrib {
+    background-color: rgb(26 26 26 / 0.8);
+    color: #d4dc9a;
+}
+
+.peta-shell .maplibregl-ctrl-attrib a {
+    color: #d4dc9a;
+}
+
+/* Panel dan tombol yang kita taruh sendiri berada di atas kontrol bawaan. */
+.peta-shell .peta-panel {
+    z-index: 20;
+}

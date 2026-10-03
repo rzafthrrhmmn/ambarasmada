@@ -103,7 +103,67 @@ export const MAP_COMPLETENESS = [
 
 const FONT = "'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
 const MARGIN = 56;
-const MAP_HEIGHT = 560;
+/**
+ * Tinggi kotak peta di lembar cetak.
+ *
+ * Tinggi tidak dipatok satu angka karena snapshot peta punya rasio aspek
+ * sendiri, yaitu rasio jendela yang sedang dipakai pengguna. Kalau tinggi
+ * dipatok, snapshot harus dipotong di tengah supaya memenuhi kotak, dan
+ * potongan itulah yang membuat peta hasil unduhan tampak ter-zoom: bagian atas
+ * dan bawah wilayah yang sedang dilihat hilang, lalu sisanya diperbesar.
+ *
+ * Tinggi dihitung dari rasio snapshot supaya seluruh isi snapshot ikut tercetak
+ * apa adanya. Batas MIN dan MAX hanya menjaga supaya lembar tidak jadi
+ * terlalu pendek atau terlalu tinggi; di luar batas itu snapshot placed dengan
+ * cara "contain" (lihat fitContain) sehingga tidak ada yang terpotong.
+ */
+const MAP_MIN_HEIGHT = 420;
+const MAP_MAX_HEIGHT = 820;
+
+/** Rasio yang dipakai ketika tidak ada snapshot peta, supaya sheet tetap utuh. */
+const MAP_DEFAULT_RATIO = 1.8;
+
+/**
+ * Tinggi kotak peta untuk lebar konten tertentu.
+ *
+ * Dipakai measureHeight dan buildMapPng supaya tinggi kanvas dan tinggi kotak
+ * yang benar-benar digambar selalu sama.
+ */
+function mapAreaHeight(mapCanvas, contentWidth) {
+  const usable = mapCanvas && mapCanvas.width > 0 && mapCanvas.height > 0;
+  const ratio = usable ? mapCanvas.width / mapCanvas.height : MAP_DEFAULT_RATIO;
+  const ideal = contentWidth / ratio;
+
+  return Math.round(Math.min(Math.max(ideal, MAP_MIN_HEIGHT), MAP_MAX_HEIGHT));
+}
+
+/**
+ * Tempatkan snapshot di dalam kotak peta tanpa memotong bagian mana pun.
+ *
+ * Selalu memakai rasio kedua sumbu yang sama, sehingga gambar tidak pernah
+ * teregang. Kalau rasionya tidak sama dengan kotak, sisanya dibiarkan sebagai
+ * latar abu-abu danSnapshot dipusatkan.
+ *
+ * Karena tidak ada yang dipotong, batas geografis yang benar-benar terlihat
+ * tetap sama dengan batas viewport, jadi grid koordinat tidak perlu dihitung
+ * ulang.
+ */
+function fitContain(sourceWidth, sourceHeight, boxX, boxY, boxWidth, boxHeight) {
+  if (!(sourceWidth > 0 && sourceHeight > 0)) {
+    return { x: boxX, y: boxY, w: boxWidth, h: boxHeight };
+  }
+
+  const scale = Math.min(boxWidth / sourceWidth, boxHeight / sourceHeight);
+  const w = sourceWidth * scale;
+  const h = sourceHeight * scale;
+
+  return {
+    x: boxX + (boxWidth - w) / 2,
+    y: boxY + (boxHeight - h) / 2,
+    w,
+    h,
+  };
+}
 
 /**
  * Ukuran kotak sketsa tiap butir bahan ajar.
@@ -1095,15 +1155,19 @@ function drawGrid(ctx, x, y, width, height) {
  * tinggi kanvas ikut bergantung pada isi judul. Versi lama menambah 46 piksel
  * tanpa mengukur, sehingga judul panjang menimpa subjudul dan isi di
  * bawahnya, sementara kanvas tetap sebesar judul satu baris.
+ *
+ * Snapshot peta ikut diteruskan karena tinggi kotak peta dihitung dari rasio
+ * aspect-nya. Tanpa itu, kanvas bisa lebih pendek daripada isi dan bagian
+ * bawah terpotong.
  */
-function measureHeight(ctx, width, title, subtitle) {
+function measureHeight(ctx, width, title, subtitle, mapCanvas) {
   const contentWidth = width - MARGIN * 2;
   const textWidth = contentWidth - ITEM_VISUAL_WIDTH - ITEM_VISUAL_GAP;
 
   let height = MARGIN;
   height += titleLineCount(ctx, title, contentWidth) * TITLE_LINE_HEIGHT + TITLE_GAP;
   height += subtitleLineCount(ctx, subtitle, contentWidth) * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;
-  height += MAP_HEIGHT;
+  height += mapAreaHeight(mapCanvas, contentWidth);
   height += 34; // keterangan di bawah peta
   height += 28; // jarak
 
@@ -1249,8 +1313,8 @@ export async function buildMapPng({
   const width = 1240;
   const scale = 2;
   const picked = { ...DEFAULT_COMPONENTS, ...components };
-  const mapWidth = width - MARGIN * 2;
-  const mapHeight = MAP_HEIGHT;
+const mapWidth = width - MARGIN * 2;
+const mapHeight = mapAreaHeight(mapCanvas, mapWidth);
   const mapWidthMeters = metersPerPixel(latitude, zoom) * mapWidth;
 
   // Teks yang benar-benar akan dicetak harus sudah diketahui sebelum kanvas
@@ -1260,7 +1324,7 @@ export async function buildMapPng({
 
   const probe = document.createElement('canvas').getContext('2d');
   setFont(probe, 15, '400');
-  const height = measureHeight(probe, width, title, subtitleText);
+  const height = measureHeight(probe, width, title, subtitleText, mapCanvas);
 
   const canvas = document.createElement('canvas');
   canvas.width = width * scale;
@@ -1303,9 +1367,12 @@ export async function buildMapPng({
   const mapX = MARGIN;
   const mapY = cursorY;
 
-  // Batas geografis yang benar-benar tertangkap di dalam kotak cetak. Awalnya
-  // sama dengan batas viewport, lalu disempitkan mengikuti pemotongan snapshot.
-  let visibleBounds = bounds;
+  // Batas geografis yang benar-benar tertangkap di dalam kotak cetak.
+  // Snapshot tidak lagi dipotong, jadi batas yang digambar sama persis dengan
+  // batas viewport: tidak ada wilayah yang hilang, dan grid koordinat tidak
+  // perlu dihitung ulang dari potongan.
+  const visibleBounds = bounds;
+  let areaRect = { x: mapX, y: mapY, w: mapWidth, h: mapHeight };
 
   ctx.save();
   ctx.beginPath();
@@ -1316,47 +1383,17 @@ export async function buildMapPng({
   ctx.fillRect(mapX, mapY, mapWidth, mapHeight);
 
   if (mapCanvas && mapCanvas.width > 0 && mapCanvas.height > 0) {
-    // Skala kanvas peta agar menutupi kotak tanpa mengubah rasio aspek.
-    // Kanvas 0x0 sengaja dilewati: rasionya 0/0 = NaN, dan drawImage dengan
-    // ukuran NaN melempar TypeError yang menggagalkan seluruh ekspor.
-    const sourceRatio = mapCanvas.width / mapCanvas.height;
-    const targetRatio = mapWidth / mapHeight;
-    let drawWidth;
-    let drawHeight;
-    let offsetX;
-    let offsetY;
+    // Seluruh snapshot diletakkan di dalam kotak tanpa dipotong. Versi lama
+    // memakai "cover": snapshot diperbesar sampai menutupi kotak, lalu
+    // dipotong di tengah. Itulah yang membuat peta hasil unduhan tampak
+    // ter-zoom dan sebagian wilayah tidak ikut tercetak.
+    const placement = fitContain(mapCanvas.width, mapCanvas.height, mapX, mapY, mapWidth, mapHeight);
+    ctx.drawImage(mapCanvas, placement.x, placement.y, placement.w, placement.h);
 
-    if (sourceRatio > targetRatio) {
-      drawHeight = mapHeight;
-      drawWidth = mapHeight * sourceRatio;
-      offsetX = mapX - (drawWidth - mapWidth) / 2;
-      offsetY = mapY;
-    } else {
-      drawWidth = mapWidth;
-      drawHeight = drawWidth / sourceRatio;
-      offsetX = mapX;
-      offsetY = mapY - (drawHeight - mapHeight) / 2;
-    }
-
-    ctx.drawImage(mapCanvas, offsetX, offsetY, drawWidth, drawHeight);
-
-    // Batas yang benar-benar terlihat di dalam kotak cetak. Snapshot dipotong
-    // di tengah supaya memenuhi kotak, jadi sebagian viewport terbuang keluar,
-    // dan grid koordinat harus memakai potongan yang sama. Kalau tidak, label
-    // 119,65°BT menunjuk ke tempat yang salah di atas peta.
-    if (bounds) {
-      const visibleLon = ((bounds.east - bounds.west) * mapWidth) / drawWidth;
-      const visibleLat = ((bounds.north - bounds.south) * mapHeight) / drawHeight;
-      const centerLon = (bounds.east + bounds.west) / 2;
-      const centerLat = (bounds.north + bounds.south) / 2;
-
-      visibleBounds = {
-        west: centerLon - visibleLon / 2,
-        east: centerLon + visibleLon / 2,
-        south: centerLat - visibleLat / 2,
-        north: centerLat + visibleLat / 2,
-      };
-    }
+    // Panel dan grid digambar di atas gambar peta, bukan di atas seluruh kotak.
+    // Kalau snapshot tertahan oleh batas MIN/MAX, sisanya jadi pita abu-abu dan
+    // panel tidak boleh berdiri di sana karena tidak ada peta di bawahnya.
+    areaRect = placement;
   } else {
     // Kotak peta kosong harus menjelaskan dirinya. Isi abu-abu polos tanpa
     // keterangan pernah membuat pengguna mengira peta ikut tercetak padahal
@@ -1393,20 +1430,21 @@ export async function buildMapPng({
   };
 
   // Grid koordinat digambar paling awal di atas peta: garisnya yang jadi latar,
-  // sementara legenda, histogram, kompas, dan skala menumpuk di atasnya.
+  // sementara legenda, histogram, kompas, dan skala menumpuk di atasnya. Semua
+  // memakai areaRect, yaitu gambar peta yang benar-benar ada, bukan kotak cetaknya.
   if (picked.grid && visibleBounds) {
-    drawGraticule(ctx, { x: mapX, y: mapY, w: mapWidth, h: mapHeight }, visibleBounds, reserved);
+    drawGraticule(ctx, areaRect, visibleBounds, reserved);
   }
 
   if (picked.legend) {
-    drawLegend(ctx, mapX + PANEL.inset, mapY + PANEL.inset);
+    drawLegend(ctx, areaRect.x + PANEL.inset, areaRect.y + PANEL.inset);
   }
 
   if (picked.histogram) {
     drawHistogram(
       ctx,
-      mapX + mapWidth - PANEL.inset - PANEL.histogramWidth,
-      mapY + PANEL.inset,
+      areaRect.x + areaRect.w - PANEL.inset - PANEL.histogramWidth,
+      areaRect.y + PANEL.inset,
       PANEL.histogramWidth,
       PANEL.histogramHeight,
       elevation,
@@ -1415,11 +1453,10 @@ export async function buildMapPng({
 
   // Kompas di pojok kanan bawah area peta, jauh dari histogram di kanan atas.
   if (picked.northArrow) {
-    const compassY = mapY + mapHeight - PANEL.inset - PANEL.compassRadius;
     drawCompass(
       ctx,
-      mapX + mapWidth - PANEL.inset - PANEL.compassRadius,
-      compassY,
+      areaRect.x + areaRect.w - PANEL.inset - PANEL.compassRadius,
+      areaRect.y + areaRect.h - PANEL.inset - PANEL.compassRadius,
       PANEL.compassRadius,
       bearing,
     );
@@ -1429,8 +1466,8 @@ export async function buildMapPng({
   if (picked.scaleBar) {
     drawScaleBar(
       ctx,
-      mapX + PANEL.inset + 8,
-      mapY + mapHeight - PANEL.inset - 26,
+      areaRect.x + PANEL.inset + 8,
+      areaRect.y + areaRect.h - PANEL.inset - 26,
       metersPerPixel(latitude, zoom),
       PANEL.scaleBarMaxWidth,
     );

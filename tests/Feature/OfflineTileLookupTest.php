@@ -455,45 +455,70 @@ class OfflineTileLookupTest extends TestCase
     /**
      * Overlay peta tidak boleh menumpuk di koordinat yang sama.
      *
-     * Pencarian, panel pengukuran, dan penanda offline semuanya memakai
+     * Pencarian, panel pengukuran, dan penanda offline dulu ditumpuk di
      * top-4 left-4 sehingga saling menutupi. Dua tombol juga memakai
      * right-52 yang tidak ada di skala spasi Tailwind, jadi tombolnya tidak
      * dapat offset sama sekali dan menimpa pemilih basemap.
+     *
+     * Aturannya sekarang lebih ketat: seluruh overlay atas tidak lagi dipatok
+     * ke pojoknya sendiri, melainkan berbagi satu wadah flex yang boleh
+     * membungkus baris. Jadi tidak boleh ada lagi kelas absolute per-pojok
+     * di lapisan atas, dan wadah itu harus menyisakan ruang untuk
+     * NavigationControl bawaan MapLibre di pojok kanan atas.
      */
     public function test_overlay_peta_tidak_menumpuk(): void
     {
-        $pencarian = $this->pencarian();
+        foreach (['MapDenganPencarian', 'Index'] as $halaman) {
+            $sumber = $this->halamanPeta($halaman);
 
-        $this->assertSame(
-            1,
-            substr_count($pencarian, 'absolute left-4 top-4'),
-            'Hanya satu panel yang boleh menempati pojok kiri atas.'
-        );
+            $this->assertSame(
+                1,
+                substr_count($sumber, 'absolute inset-x-3 top-3 flex flex-wrap'),
+                "{$halaman}: lapisan atas harus satu wadah flex yang boleh membungkus baris."
+            );
 
-        $this->assertSame(
-            0,
-            substr_count($pencarian, 'right-52'),
-            'right-52 bukan kelas Tailwind yang ada, jadi tombolnya tidak dapat offset.'
-        );
+            $this->assertSame(
+                0,
+                substr_count($sumber, 'absolute left-3 top-3') + substr_count($sumber, 'absolute left-4 top-4'),
+                "{$halaman}: jangan patok panel kiri atas sendiri, ia harus anak dari wadah lapisan atas."
+            );
 
-        $this->assertSame(
-            0,
-            substr_count($pencarian, 'right-96'),
-            'right-96 menjauhkan tombol cetak dari tombol lain tanpa alasan.'
-        );
+            $this->assertStringContainsString(
+                'pr-12',
+                $sumber,
+                "{$halaman}: wadah lapisan atas harus menyisakan ruang untuk NavigationControl pojok kanan atas."
+            );
 
-        $this->assertStringNotContainsString(
-            'absolute bottom-4 left-4',
-            $pencarian,
-            'Readout koordinat dan bilah skala MapLibre sama-sama di pojok kiri bawah.'
-        );
+            $this->assertSame(
+                0,
+                substr_count($sumber, 'peta-panel-kontrol'),
+                "{$halaman}: offset top terpisah membuat lapisan atas menumpuk lagi."
+            );
+
+            $this->assertSame(
+                0,
+                substr_count($sumber, 'right-52') + substr_count($sumber, 'right-96'),
+                "{$halaman}: right-52 bukan kelas Tailwind yang ada dan right-96 menggeser tombol tanpa alasan."
+            );
+
+            $this->assertStringNotContainsString(
+                'absolute bottom-4 left-4',
+                $sumber,
+                "{$halaman}: readout koordinat dan bilah skala MapLibre sama-sama di pojok kiri bawah."
+            );
+        }
+    }
+
+    private function halamanPeta(string $halaman): string
+    {
+        $source = file_get_contents(base_path("resources/js/Pages/Peta/{$halaman}.vue"));
+        $this->assertIsString($source, "Tidak bisa membaca resources/js/Pages/Peta/{$halaman}.vue.");
+
+        return $source;
     }
 
     private function pencarian(): string
     {
-        $source = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
-        $this->assertIsString($source, 'Tidak bisa membaca resources/js/Pages/Peta/MapDenganPencarian.vue.');
-
-        return $source;
+        return $this->halamanPeta('MapDenganPencarian');
     }
 }

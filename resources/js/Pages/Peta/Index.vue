@@ -29,63 +29,92 @@
       </div>
     </div>
 
-    <div class="relative overflow-hidden rounded-2xl border-2 border-[#A7B92A]/40 bg-[#263D26] shadow-lg">
+    <div class="peta-shell relative overflow-hidden rounded-2xl border-2 border-[#A7B92A]/40 bg-[#263D26] shadow-lg">
       <div ref="mapContainer" class="h-[70vh] w-full min-h-[400px]"></div>
 
-      <!-- Coordinate display on mouse hover -->
-      <div v-if="showCoordinates && mouseCoords" class="absolute bottom-4 left-4 z-20 rounded-lg bg-[#1a1a1a]/90 border border-[#6F9435]/30 px-3 py-1.5 text-xs font-mono text-[#EDD330] pointer-events-none">
+      <!-- Coordinate display on mouse hover.
+           Diletakkan di atas bilah skala bawaan MapLibre di pojok kiri bawah.
+           Kedua-duanya pernah memakai bottom-4 left-4 sehingga readout
+           menutupi angka skala tepat di atasnya. Lebarnya dibatasi supaya
+           tidak menabrak tumpukan pojok kanan bawah pada layar sempit. -->
+      <div
+        v-if="showCoordinates && mouseCoords"
+        class="peta-panel pointer-events-none absolute bottom-12 left-3 max-w-[min(260px,calc(100%-13rem))] rounded-lg bg-[#1a1a1a]/90 border border-[#6F9435]/30 px-3 py-1.5 text-xs font-mono text-[#EDD330] shadow-lg backdrop-blur-sm"
+      >
         Lon: {{ mouseCoords.lng.toFixed(6) }}° | Lat: {{ mouseCoords.lat.toFixed(6) }}°
       </div>
 
-      <!-- GPS locate button -->
-      <button
-        v-if="hasGeolocation"
-        @click="locateUser"
-        :disabled="locating"
-        class="absolute bottom-4 right-4 z-20 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30 disabled:opacity-50"
-        title="Lokasi saya"
-      >
-        {{ locating ? '⟳' : '📍' }}
-      </button>
-
-      <!-- Basemap selector -->
-      <div class="absolute top-4 right-4 z-20" style="width: 180px;">
-        <select
-          v-model="basemap"
-          @change="changeBasemap"
-          class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
+      <!-- Alat pojok kanan bawah: tombol lokasi saya.
+           Legenda elevasi juga memakai pojok ini, jadi keduanya ditumpuk dalam
+           satu wadah flex column. Sebelumnya legenda dipatok right-4 dan tombol
+           GPS right-14;.right-14 = 56 piksel, sedangkan lebarnya lebih dari
+           150 piksel, sehingga tombol GPS berdiri tepat di atas legenda. -->
+      <div class="absolute bottom-3 right-3 z-20 flex flex-col items-end gap-2">
+        <div
+          v-if="hasGeolocation"
+          class="rounded-lg border-2 border-[#6F9435]/50 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95 disabled:opacity-50"
         >
-          <option value="osm">🗺️ OpenStreetMap</option>
-          <option value="satellite">🛰️ Satelit</option>
-          <option value="terrain">🏔️ Terrain</option>
-          <option value="dark">🌙 Dark</option>
-        </select>
+          <button
+            @click="locateUser"
+            :disabled="locating"
+            class="flex items-center gap-1.5 disabled:cursor-not-allowed"
+            title="Lokasi saya"
+          >
+            <span aria-hidden="true">{{ locating ? '⟳' : '📍' }}</span>
+            <span class="text-xs">{{ locating ? 'Mencari...' : 'Lokasi saya' }}</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Print button -->
-      <button
-        @click="printMap"
-        class="absolute top-4 right-52 z-20 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
-        title="Cetak peta"
-      >
-        🖨️
-      </button>
+      <!-- Lapisan atas: lencana offline, panel kiri, dan alat kanan atas.
+           Ketiganya hidup di satu wadah flex yang boleh membungkus baris.
+           Sebelumnya panel kiri dan alat kanan atas dipatok ke pojok yang
+           masing-masing, sehingga pada layar sempit keduanya saling menimpa.
+           pr-12 menyisakan ruang untuk NavigationControl di pojok kanan atas. -->
+      <div class="peta-panel absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2 pr-12">
+        <div
+          v-if="isOffline"
+          class="rounded-lg bg-[#f59e0b]/90 px-3 py-1.5 text-xs font-bold text-white shadow-lg"
+          data-nama="LencanaOffline"
+        >
+          📴 Mode Offline
+        </div>
 
-      <!-- Offline indicator -->
-      <div v-if="isOffline" class="absolute top-4 left-4 z-20 rounded-lg bg-[#f59e0b]/90 px-3 py-1.5 text-xs font-bold text-white animate-pulse">
-        📴 Mode Offline
+        <div class="flex flex-wrap items-start justify-end gap-2" data-nama="AlatKananAtas">
+          <label class="sr-only" for="peta-basemap">Pilih basemap</label>
+          <select
+            id="peta-basemap"
+            v-model="basemap"
+            @change="changeBasemap"
+            class="w-[168px] rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm text-[#f0ead8] shadow-lg backdrop-blur-sm outline-none focus:border-[#EDD330]"
+          >
+            <option value="osm">🗺️ OpenStreetMap</option>
+            <option value="satellite">🛰️ Satelit</option>
+            <option value="terrain">🏔️ Terrain</option>
+            <option value="dark">🌙 Dark</option>
+          </select>
+
+          <button
+            @click="printMap"
+            class="inline-flex items-center gap-1.5 rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95"
+            title="Cetak peta"
+          >
+            <span aria-hidden="true">🖨️</span>
+            <span class="text-xs">Cetak</span>
+          </button>
+        </div>
       </div>
 
-      <div v-if="!hasPmtiles" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/90">
+      <div v-if="!hasPmtiles" class="absolute inset-0 z-30 flex items-center justify-center bg-[#263D26]/90 backdrop-blur-sm">
         <div class="text-center p-6">
           <p class="text-2xl font-bold text-[#EDD330]">Peta Belum Tersedia</p>
           <p class="mt-2 text-sm text-[#8fa06a]">File PMTiles belum diunggah ke server.</p>
         </div>
       </div>
-      <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/70">
+      <div v-if="loading" class="absolute inset-0 z-30 flex items-center justify-center bg-[#263D26]/70 backdrop-blur-sm">
         <p class="text-lg font-bold text-[#EDD330]">Memuat peta...</p>
       </div>
-      <div v-if="mapError" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/90">
+      <div v-if="mapError" class="absolute inset-0 z-30 flex items-center justify-center bg-[#263D26]/90 backdrop-blur-sm">
         <div class="text-center p-6">
           <p class="text-2xl font-bold text-[#f87171]">Gagal Memuat Peta</p>
           <p class="mt-2 text-sm text-[#8fa06a]">{{ mapError }}</p>
@@ -296,7 +325,7 @@ async function initMap() {
   loading.value = true;
 
   try {
-    const { Map, addProtocol, ScaleControl, NavigationControl, GeolocateControl, GLYPHS_URL } = await import('../../maplibre');
+    const { Map, addProtocol, ScaleControl, NavigationControl, GLYPHS_URL } = await import('../../maplibre');
     const { Protocol } = await import('pmtiles');
 
     const protocol = new Protocol();
@@ -446,15 +475,12 @@ async function initMap() {
     const nav = new NavigationControl({ showCompass: true, showZoom: false });
     map.value.addControl(nav, 'top-right');
 
-    // Add geolocate control
+    // GeolocateControl bawaan MapLibre sengaja tidak ditambahkan. Tombol lokasi
+    // sendiri sudah ada di pojok kanan bawah, dan memakai locateUser() yang juga
+    // menulis alasannya ke mapStatus. Kalau keduanya dipasang, pojok itu berisi
+    // dua tombol lokasi yang saling menutupi.
     if ('geolocation' in navigator) {
       hasGeolocation.value = true;
-      const geolocate = new GeolocateControl({
-        positionOptions: { enableHighAccuracy: true },
-        trackUserLocation: true,
-        showAccuracyCircle: true,
-      });
-      map.value.addControl(geolocate, 'bottom-right');
     }
 
     // Mouse move - coordinate display
