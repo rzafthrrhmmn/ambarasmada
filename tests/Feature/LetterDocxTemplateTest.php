@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\PhpWord;
+use RuntimeException;
 use Tests\TestCase;
 use ZipArchive;
 
@@ -89,6 +90,72 @@ class LetterDocxTemplateTest extends TestCase
         $this->actingAs($this->pengurus)
             ->get(route('letters.templates.download', $template))
             ->assertOk();
+    }
+
+    /**
+     * Disk S3 tidak punya berkas lokal, jadi isinya harus disalin ke folder
+     * sementara dulu. Salinan itu tidak bisa dibuat dengan menulis stream ke
+     * disk (yang menulis ke storage, bukan ke berkas lokal) dan tidak boleh
+     * tertinggal di folder sementara setelah permintaan selesai.
+     */
+    public function test_template_di_disk_s3_lokal_dibaca_lewat_salinan_sementara(): void
+    {
+        Storage::fake('s3');
+        config(['letters.disk' => 's3']);
+
+        $this->actingAs($this->pengurus)
+            ->post('/letters/templates', ['name' => 'Surat S3', 'file' => $this->templateFile()])
+            ->assertSessionHas('success');
+
+        $template = LetterTemplate::firstOrFail();
+        $this->assertNotEmpty($template->placeholderList(), 'Penanda harus terbaca dari disk s3.');
+
+        $letter = $this->storeLetter($template);
+        $before = $this->temporaryCopies();
+
+        $this->actingAs($this->pengurus)
+            ->postJson('/letters/preview', [
+                'jenis_surat' => 'Keputusan',
+                'perihal' => 'Pengangkatan Pradana',
+                'tgl_surat' => '2026-10-01',
+                'tujuan_pengirim' => 'UPT SMAN 2 Maros',
+                'template_id' => $template->id,
+                'placeholder_values' => $this->placeholderValues(),
+            ])
+            ->assertOk()
+            ->assertSee('Ahmad Fauzi');
+
+        $this->assertSame(
+            $before,
+            $this->temporaryCopies(),
+            'Salinan lokal dari disk remote harus dihapus setelah pratinjau selesai.'
+        );
+
+        $this->actingAs($this->pengurus)->get("/letters/{$letter->id}/print")->assertOk();
+
+        $this->assertSame(
+            $before,
+            $this->temporaryCopies(),
+            'Salinan lokal dari disk remote harus dihapus setelah halaman cetak selesai.'
+        );
+
+        $this->assertStringContainsString(
+            '421.1/045.34/PMR/2026',
+            $this->docxText($this->exportDocx($letter)),
+            'Template dari disk s3 tidak terisi saat ekspor .docx.'
+        );
+    }
+
+    /** Berkas .docx di dalam folder sementara sebelum pengujian. */
+    private function temporaryCopies(): array
+    {
+        $directory = sys_get_temp_dir().'/pwa-letters';
+
+        if (! is_dir($directory)) {
+            return [];
+        }
+
+        return array_values(array_diff(scandir($directory) ?: [], ['.', '..']));
     }
 
     /**
@@ -225,6 +292,34 @@ class LetterDocxTemplateTest extends TestCase
                 ->has('ambalans')
                 ->has('jenisOptions')
             );
+    }
+
+    /**
+     * Penanda yang sudah punya kolom di formulir utama tidak boleh dibuat
+     * isian ganda, dan penanda bebas harus tetap punya isian. Daftar ini
+     * menentukan isi formulir di peramban, jadi harus berasal dari server.
+     */
+    public function test_penanda_yang_sudah_punya_kolom_ditandai_sebagai_core(): void
+    {
+        $this->storeTemplate();
+
+        $core = ['nomor_surat', 'perihal', 'isi_surat', 'tujuan_pengirim', 'tgl_surat', 'nama_ambalan', 'tanggal'];
+        $extra = ['nama_pradana_putra', 'nis_pradana_putra', 'nisn_pradana_putra', 'nip_pembina', 'kode_kegiatan'];
+
+        $this->actingAs($this->pengurus)
+            ->get('/letters')
+            ->assertOk()
+            ->assertInertia(function ($page) use ($core, $extra) {
+                foreach ($core as $name) {
+                    $page->where("templates.0.fields.{$name}.core", true);
+                }
+
+                foreach ($extra as $name) {
+                    $page->where("templates.0.fields.{$name}.core", false);
+                }
+
+                return $page;
+            });
     }
 
     public function test_pratinjau_mengisi_penanda_dari_form(): void
@@ -476,8 +571,200 @@ class LetterDocxTemplateTest extends TestCase
                 ->component('Letters/Print')
                 ->where('letter.id', $letter->id)
                 ->has('body')
+                ->where('problem', null)
             )
             ->assertSee('Ahmad Fauzi');
+    }
+
+    /**
+     * Berkas template bisa hilang, misalnya karena disk sementara di hosting.
+     * Halaman cetak harus tetap terbuka dengan penjelasan, bukan error 422.
+     */
+    public function test_halaman_cetak_tetap_terbuka_saat_berkas_template_hilang(): void
+    {
+        $template = $this->storeTemplate();
+        $letter = $this->storeLetter($template);
+
+        Storage::disk('public')->delete($template->file_path);
+
+        $this->actingAs($this->pengurus)
+            ->get("/letters/{$letter->id}/print")
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Letters/Print')
+                ->where('letter.id', $letter->id)
+                ->has('problem')
+            );
+    }
+
+    /**
+     * Ekspor tetap gagal dengan pesan yang jelas, bukan dokumen diam-diam
+     * memakai tata letak bawaan yang berbeda dari template.
+     */
+    public function test_ekspor_gagal_dengan_pesan_saat_berkas_template_hilang(): void
+    {
+        $template = $this->storeTemplate();
+        $letter = $this->storeLetter($template);
+
+        Storage::disk('public')->delete($template->file_path);
+
+        $this->actingAs($this->pengurus)
+            ->get("/letters/{$letter->id}/generate?format=docx")
+            ->assertRedirect(route('letters.index'))
+            ->assertSessionHas('error');
+    }
+
+    public function test_pratinjau_menyampaikan_alasan_gagal(): void
+    {
+        $template = $this->storeTemplate();
+
+        Storage::disk('public')->delete($template->file_path);
+
+        $this->actingAs($this->pengurus)
+            ->postJson('/letters/preview', [
+                'jenis_surat' => 'Keputusan',
+                'perihal' => 'Pengangkatan Pradana',
+                'tgl_surat' => '2026-10-01',
+                'template_id' => $template->id,
+            ])
+            ->assertStatus(422)
+            ->assertJsonStructure(['message']);
+    }
+
+    /**
+     * Lampiran yang sudah hilang tidak boleh membuat unduhan gagal jadi 500.
+     */
+    public function test_unduhan_lampiran_yang_hilang_menghasilkan_404(): void
+    {
+        $letter = $this->storeLetter(null, ['file' => $this->pdfUpload()]);
+
+        $this->actingAs($this->pengurus)
+            ->get("/letters/{$letter->id}/download")
+            ->assertOk();
+
+        Storage::disk('public')->delete($letter->file_path);
+
+        $this->actingAs($this->pengurus)
+            ->get("/letters/{$letter->id}/download")
+            ->assertNotFound();
+    }
+
+    /**
+     * Lampiran lama baru dihapus setelah record berhasil ditulis. Kalau
+     * penulisan basis data gagal, lampiran lama harus tetap ada supaya
+     * pengguna tidak kehilangan berkas lamanya.
+     */
+    public function test_lampiran_lama_tetap_ada_saat_penyimpanan_gagal(): void
+    {
+        $letter = $this->storeLetter(null, ['file' => $this->pdfUpload()]);
+        $previous = $letter->file_path;
+
+        Storage::disk('public')->assertExists($previous);
+
+        Letter::updating(function (): void {
+            throw new RuntimeException('kegagalan basis data');
+        });
+
+        try {
+            $this->actingAs($this->pengurus)
+                ->patch("/letters/{$letter->id}", $this->letterPayload(null, [
+                    'perihal' => 'Perihal Baru',
+                    'file' => $this->pdfUpload(),
+                ]))
+                ->assertStatus(303)
+                ->assertSessionHas('error');
+        } finally {
+            Letter::flushEventListeners();
+        }
+
+        Storage::disk('public')->assertExists($previous);
+        $this->assertSame('Pengangkatan Pradana', $letter->fresh()->perihal);
+        $this->assertSame(
+            1,
+            count(Storage::disk('public')->files('letters')),
+            'Lampiran baru dari percobaan yang gagal tidak boleh tertinggal.'
+        );
+    }
+
+    public function test_mengganti_lampiran_menghapus_berkas_lama(): void
+    {
+        $letter = $this->storeLetter(null, ['file' => $this->pdfUpload()]);
+        $previous = $letter->file_path;
+
+        $this->actingAs($this->pengurus)
+            ->patch("/letters/{$letter->id}", $this->letterPayload(null, ['file' => $this->pdfUpload()]))
+            ->assertStatus(303);
+
+        Storage::disk('public')->assertMissing($previous);
+        Storage::disk('public')->assertExists($letter->fresh()->file_path);
+    }
+
+    /**
+     * Query string datang dari peramban, jadi larik pada parameter pencarian
+     * tidak boleh membuat halaman error 500.
+     */
+    public function test_pencarian_dengan_larik_tidak_membuat_halaman_rusak(): void
+    {
+        $this->storeLetter(null);
+
+        $this->actingAs($this->pengurus)
+            ->get('/letters?search[]=surat&jenis_surat[]=Masuk')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Letters/Index')->where('filters.search', ''));
+    }
+
+    public function test_tanda_persen_search_dipakai_sebagai_teks_biasa(): void
+    {
+        $letter = $this->storeLetter(null);
+
+        $this->actingAs($this->pengurus)
+            ->get('/letters?search=%25')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('letters.data', fn ($data) => count($data) === 0));
+
+        $this->actingAs($this->pengurus)
+            ->get('/letters?search='.$letter->perihal)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('letters.data', fn ($data) => count($data) === 1));
+    }
+
+    /**
+     * Template yang tidak bisa dibaca harus ditolak dengan pesan yang tepat,
+     * bukan dianggap template tanpa penanda. Berkas korup tidak boleh membuat
+     * server galat 500.
+     */
+    public function test_template_arsip_rusak_ditolak_dengan_pesan_terpisah(): void
+    {
+        $this->actingAs($this->pengurus)
+            ->post('/letters/templates', [
+                'name' => 'Rusak',
+                'file' => $this->docxUpload($this->corruptDocument()),
+            ])
+            ->assertStatus(303)
+            ->assertSessionHas('error');
+
+        $this->assertSame(0, LetterTemplate::count());
+        $this->assertEmpty(Storage::disk('public')->files('letter-templates'));
+    }
+
+    /**
+     * Dokumen .docx yang ekornya dipotong: kepala arkibnya masih ada, jadi
+     * berkas lolos pemeriksaan magic bytes, tapi ZipArchive tidak bisa membukanya.
+     */
+    private function corruptDocument(): string
+    {
+        $valid = $this->templateDocument();
+        $content = (string) file_get_contents($valid);
+        $path = $this->tempPath('docx');
+
+        file_put_contents($path, substr($content, 0, strlen($content) - 64).str_repeat('0', 64));
+
+        return $path;
+    }
+
+    private function pdfUpload(): UploadedFile
+    {
+        return UploadedFile::fake()->createWithContent('lampiran.pdf', "%PDF-1.4\nsurat\n%%EOF");
     }
 
     public function test_template_bisa_dihapus_tanpa_menghapus_surat(): void

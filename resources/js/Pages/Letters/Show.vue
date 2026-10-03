@@ -76,19 +76,27 @@
       </div>
 
       <div class="mt-6 flex flex-wrap gap-2 border-t border-[#6F9435]/40 pt-4">
+        <!--
+          Atribut disabled tidak berlaku pada <a>, jadi tautan yang tidak bisa
+          dipakai kehilangan href dan diberi kelas pointer-events-none.
+        -->
         <a
-          :href="`/letters/${letter.id}/generate?format=docx`"
+          :href="canGenerate ? `/letters/${letter.id}/generate?format=docx` : undefined"
           data-test="btn-docx"
-          :disabled="!canGenerate"
-          class="inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          :aria-disabled="!canGenerate"
+          :tabindex="canGenerate ? undefined : -1"
+          class="inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white"
+          :class="canGenerate ? '' : 'pointer-events-none cursor-not-allowed opacity-50'"
         >
           Ekspor DOCX
         </a>
         <a
-          :href="`/letters/${letter.id}/generate?format=pdf`"
+          :href="canGenerate ? `/letters/${letter.id}/generate?format=pdf` : undefined"
           data-test="btn-pdf"
-          :disabled="!canGenerate"
-          class="inline-flex items-center rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#A7B92A] disabled:opacity-50"
+          :aria-disabled="!canGenerate"
+          :tabindex="canGenerate ? undefined : -1"
+          class="inline-flex items-center rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#A7B92A]"
+          :class="canGenerate ? '' : 'pointer-events-none cursor-not-allowed opacity-50'"
         >
           Ekspor PDF
         </a>
@@ -105,6 +113,9 @@
         >
           Unduh lampiran
         </a>
+        <p v-if="!canGenerate" class="w-full text-xs text-[#ef4419]">
+          Perihal surat belum diisi, jadi ekspor belum bisa dilakukan.
+        </p>
       </div>
     </div>
   </AppLayout>

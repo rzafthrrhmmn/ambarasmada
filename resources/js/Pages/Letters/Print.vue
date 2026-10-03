@@ -30,6 +30,10 @@
         </div>
       </div>
 
+      <p v-if="problem" class="mb-3 rounded-lg border border-[#ef4419]/60 p-3 text-xs text-[#ef4419]" data-test="peringatan-template">
+        {{ problem }}
+      </p>
+
       <p v-if="unfilled.length" class="mb-3 rounded-lg border border-[#ef4419]/60 p-3 text-xs text-[#ef4419]">
         Penanda template belum diisi: {{ unfilled.join(', ') }}
       </p>
@@ -54,6 +58,7 @@ defineProps({
   letter: { type: Object, required: true },
   body: { type: String, default: '' },
   unfilled: { type: Array, default: () => [] },
+  problem: { type: String, default: null },
 });
 
 function printPage() {

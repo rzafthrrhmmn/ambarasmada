@@ -270,7 +270,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Field from '@/Components/FormField.vue';
@@ -302,6 +302,12 @@ const filters = reactive({
   jenis_surat: props.filters?.jenis_surat ?? '',
 });
 
+/** Filter yang sudah dikirim ke server, supaya tidak ada permintaan ulang. */
+let appliedFilters = { ...filters };
+
+/** Tipe diketik pada kolom pencarian akan menumpuk permintaan. */
+let filterTimer = null;
+
 const ambalanOptions = computed(() => [{ value: null, label: 'Tanpa ambalan' }, ...props.ambalans.map((a) => ({ value: a.id, label: a.nama }))]);
 
 const form = useForm({
@@ -327,55 +333,27 @@ const selectedTemplate = computed(() => props.templates.find((tpl) => tpl.id ===
 
 /**
  * Penanda template yang belum punya kolom inti di form, ditulis sebagai isian
- * tambahan. Kolom inti (nomor, perihal, isi, dan seterusnya) sudah punya
- * isian sendiri di bagian 2.
+ * tambahan. Daftar penanda inti disimpan di server (LetterValues) dan dikirim
+ * sebagai penanda "core", jadi halaman ini tidak perlu daftar sendiri yang
+ * bisa berbeda dengan bawaan nama kolom.
  */
-const CORE_PLACEHOLDERS = [
-  'nomor_surat',
-  'jenis_surat',
-  'perihal',
-  'isi_surat',
-  'tujuan_pengirim',
-  'tgl_surat',
-  'waktu_kegiatan',
-  'lokasi_kegiatan',
-  'nama_ambalan',
-  'tanggal',
-  'hari',
-  'bulan',
-  'tahun',
-];
-
-const ALIASES = {
-  nomor: 'nomor_surat',
-  no_surat: 'nomor_surat',
-  hal: 'perihal',
-  isi: 'isi_surat',
-  badan_surat: 'isi_surat',
-  tujuan: 'tujuan_pengirim',
-  penerima: 'tujuan_pengirim',
-  tanggal_surat: 'tgl_surat',
-  tgl: 'tgl_surat',
-  waktu: 'waktu_kegiatan',
-  lokasi: 'lokasi_kegiatan',
-  ambalan: 'nama_ambalan',
-  nama_anggota: 'nama_pradana_putra',
-  jenis: 'jenis_surat',
-};
-
 const extraFields = computed(() => {
   if (!selectedTemplate.value) {
     return [];
   }
 
   return selectedTemplate.value.placeholders
-    .filter((name) => !CORE_PLACEHOLDERS.includes(canonical(name)))
-    .map((name) => ({
-      name,
-      label: selectedTemplate.value.fields?.[name]?.label ?? humanize(name),
-      type: selectedTemplate.value.fields?.[name]?.type ?? 'text',
-      placeholder: selectedTemplate.value.fields?.[name]?.type === 'textarea' ? 'Isi beberapa baris' : '',
-    }));
+    .filter((name) => !selectedTemplate.value.fields?.[name]?.core)
+    .map((name) => {
+      const field = selectedTemplate.value.fields?.[name];
+
+      return {
+        name,
+        label: field?.label ?? humanize(name),
+        type: field?.type ?? 'text',
+        placeholder: field?.type === 'textarea' ? 'Isi beberapa baris' : '',
+      };
+    });
 });
 
 watch(
@@ -400,27 +378,42 @@ watch(
 );
 
 watch(filters, (value) => {
-  router.get(
-    '/letters',
-    { search: value.search || undefined, jenis_surat: value.jenis_surat || undefined },
-    { preserveState: true, replace: true }
-  );
+  window.clearTimeout(filterTimer);
+  filterTimer = window.setTimeout(() => {
+    if (value.search === appliedFilters.search && value.jenis_surat === appliedFilters.jenis_surat) {
+      return;
+    }
+
+    appliedFilters = { search: value.search, jenis_surat: value.jenis_surat };
+
+    router.get(
+      '/letters',
+      { search: value.search || undefined, jenis_surat: value.jenis_surat || undefined },
+      { preserveState: true, replace: true }
+    );
+  }, 350);
 });
+
+onBeforeUnmount(() => window.clearTimeout(filterTimer));
 
 function openCreate() {
   editItem.value = null;
   form.reset();
+  form.clearErrors();
   form.ambalan_id = null;
   form.jenis_surat = 'Masuk';
   form.tgl_surat = today();
   form.template_id = null;
   form.placeholder_values = {};
+  submitError.value = '';
   clearExtras();
   showLetter.value = true;
 }
 
 function openEdit(item) {
   editItem.value = item;
+  form.reset();
+  form.clearErrors();
   form.ambalan_id = item.ambalan_id ?? null;
   form.nomor_surat = item.nomor_surat ?? '';
   form.jenis_surat = item.jenis_surat ?? 'Masuk';
@@ -433,6 +426,7 @@ function openEdit(item) {
   form.template_id = item.template_id ?? null;
   form.file = null;
   form.placeholder_values = { ...(item.placeholder_values ?? {}) };
+  submitError.value = '';
   clearExtras();
   showLetter.value = true;
 }
@@ -520,7 +514,7 @@ function previewLetter() {
       const text = await response.text();
 
       if (!response.ok) {
-        throw new Error(extractMessage(text, 'Pratinjau gagal. Periksa kembali isian surat.'));
+        throw new Error(previewErrorMessage(response.status, text));
       }
 
       previewUrl.value = URL.createObjectURL(new Blob([text], { type: 'text/html' }));
@@ -530,6 +524,18 @@ function previewLetter() {
       previewError.value = error.message;
       previewLoading.value = false;
     });
+}
+
+function previewErrorMessage(status, text) {
+  if (status === 419) {
+    return 'Sesi halaman sudah kedaluwarsa. Muat ulang halaman, lalu buka pratinjau lagi.';
+  }
+
+  if (status === 429) {
+    return 'Terlalu banyak permintaan pratinjau. Tunggu sebentar sebelum mencoba lagi.';
+  }
+
+  return extractMessage(text, 'Pratinjau gagal. Periksa kembali isian surat.');
 }
 
 function closePreview() {
@@ -561,11 +567,6 @@ function confirmDelete(item) {
   }
 }
 
-function canonical(name) {
-  const key = String(name).toLowerCase().replace(/[\s-]+/g, '_');
-  return ALIASES[key] ?? key;
-}
-
 function humanize(name) {
   return String(name)
     .replace(/[_-]+/g, ' ')
@@ -580,17 +581,34 @@ function badgeClass(jenis) {
   return 'bg-[#EDD330]/20 text-[#EDD330]';
 }
 
+/**
+ * Tanggal hari ini menurut waktu lokal peramban.
+ *
+ * toISOString() memakai UTC, jadi sebelum pukul 07.00 WITA tanggal yang
+ * dipakai sebagai bawaan tanggal surat sudah maju satu hari.
+ */
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+
+  return `${now.getFullYear()}-${month}-${day}`;
 }
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
 }
 
+/**
+ * Token CSRF diambil dari meta tag, sama seperti OfflineQueue.js.
+ *
+ * Cookie XSRF-TOKEN disimpan dalam bentuk terenkripsi oleh EncryptCookies,
+ * jadi nilainya tidak sama dengan token di sesi dan tidak bisa dipakai
+ * langsung sebagai header X-CSRF-TOKEN (permintaan jadi ditolak 419).
+ */
 function csrfToken() {
-  const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : '';
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  return meta ? meta.getAttribute('content') : '';
 }
 
 function extractMessage(text, fallback) {
@@ -598,7 +616,21 @@ function extractMessage(text, fallback) {
     const payload = JSON.parse(text);
     return payload.message || Object.values(payload.errors ?? {})[0]?.[0] || fallback;
   } catch {
-    return fallback;
+    return htmlMessage(text) || fallback;
   }
+}
+
+/** Pesan galat dari halaman pratinjau server, misal "Pratinjau gagal: ...". */
+function htmlMessage(html) {
+  const match = String(html).match(/<p class="catatan">([\s\S]*?)<\/p>/i);
+
+  if (!match) {
+    return '';
+  }
+
+  return match[1]
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 </script>

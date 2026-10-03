@@ -23,7 +23,12 @@ class LetterTemplateRequest extends FormRequest
                 'required',
                 'file',
                 'max:10240',
-                'mimes:docx',
+                // Aturan "mimes" menebak tipe dari isi berkas dan melempar
+                // galat kalau tipenya tidak dikenal. Berkas .docx yang rusak
+                // justru memicu galat 500 di sini, jadi jenis berkas dicek dari
+                // ekstensi yang diunggah dan dari tipe yang dilaporkan server.
+                // Isi berkasnya diperiksa terpisah oleh validateDocxContent().
+                'extensions:docx',
                 'mimetypes:application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/zip,application/octet-stream',
             ],
         ];
@@ -37,7 +42,8 @@ class LetterTemplateRequest extends FormRequest
         return [
             'name.required' => 'Nama template wajib diisi.',
             'file.required' => 'Berkas template .docx wajib diunggah.',
-            'file.mimes' => 'Template harus berupa berkas .docx.',
+            'file.extensions' => 'Template harus berupa berkas .docx.',
+            'file.mimetypes' => 'Template harus berupa berkas .docx.',
             'file.max' => 'Ukuran template maksimal 10 MB.',
         ];
     }

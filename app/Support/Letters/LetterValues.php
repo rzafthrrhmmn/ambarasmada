@@ -20,7 +20,12 @@ use Illuminate\Support\Str;
 class LetterValues
 {
     /**
-     * Penanda inti yang punya kolom sendiri di form.
+     * Penanda yang sudah punya kolom sendiri di formulir surat, jadi tidak
+     * perlu isian tambahan.
+     *
+     * Daftar ini adalah satu-satunya sumber kebenaran. Halaman persuratan
+     * memakai penandaan "core" yang dikirim bersama template untuk menentukan
+     * isian mana yang perlu ditampilkan, bukan daftar sendiri di peramban.
      *
      * @var array<int, string>
      */
@@ -33,6 +38,11 @@ class LetterValues
         'tgl_surat',
         'waktu_kegiatan',
         'lokasi_kegiatan',
+        'nama_ambalan',
+        'tanggal',
+        'hari',
+        'bulan',
+        'tahun',
     ];
 
     /**
@@ -199,6 +209,10 @@ class LetterValues
      * Penanda baku dan penanda identitas punya label siap pakai, sisanya
      * dibuat dari nama penanda supaya templat bebas tetap bisa diisi lewat form.
      *
+     * Penanda yang penandanya "core" true sudah punya kolom sendiri di
+     * formulir surat, jadi halaman persuratan tidak membuat isian tambahan
+     * untuknya.
+     *
      * @param  array<int, string>  $placeholders
      * @return array<string, array{key: string, label: string, type: string, core: bool}>
      */
@@ -215,7 +229,7 @@ class LetterValues
                 'key' => $key,
                 'label' => $label,
                 'type' => $type,
-                'core' => $type !== 'text',
+                'core' => in_array($key, self::CORE_PLACEHOLDERS, true),
             ];
         }
 

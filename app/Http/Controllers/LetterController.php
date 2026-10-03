@@ -33,6 +33,14 @@ class LetterController extends Controller
 
     private const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
+    /**
+     * Salinan lokal dari berkas yang tersimpan di disk remote. Dibersihkan
+     * setelah permintaan selesai supaya folder sementara tidak menumpuk.
+     *
+     * @var array<int, string>
+     */
+    private array $temporaryCopies = [];
+
     public function __construct(
         private readonly DocxTemplate $docx,
         private readonly LetterValues $values,
@@ -40,10 +48,13 @@ class LetterController extends Controller
 
     public function index(Request $request): InertiaResponse
     {
+        $search = $this->stringInput($request, 'search');
+        $jenis = $this->stringInput($request, 'jenis_surat');
+
         $letters = Letter::query()
             ->with(['ambalan', 'createdBy', 'template'])
-            ->when($request->string('search')->isNotEmpty(), fn ($query, $search) => $query->where('perihal', 'like', "%{$search}%"))
-            ->when($request->string('jenis_surat')->isNotEmpty(), fn ($query, $jenis) => $query->where('jenis_surat', $jenis))
+            ->when($search !== '', fn ($query) => $query->where('perihal', 'like', '%'.$this->escapeLike($search).'%'))
+            ->when($jenis !== '', fn ($query) => $query->where('jenis_surat', $jenis))
             ->orderByDesc('created_at')
             ->paginate(15)
             ->withQueryString();
@@ -54,8 +65,8 @@ class LetterController extends Controller
             'ambalans' => Ambalan::orderBy('nama')->get(['id', 'nama']),
             'jenisOptions' => ['Masuk', 'Keluar', 'Keputusan'],
             'filters' => [
-                'search' => $request->string('search')->toString(),
-                'jenis_surat' => $request->string('jenis_surat')->toString(),
+                'search' => $search,
+                'jenis_surat' => $jenis,
             ],
         ]);
     }
@@ -78,12 +89,23 @@ class LetterController extends Controller
     public function store(LetterRequest $request): RedirectResponse
     {
         $data = $request->letterData();
+        $path = $this->storeAttachment($request->file('file'));
 
-        $letter = Letter::create([
-            ...$data,
-            'file_path' => $this->storeAttachment($request->file('file')),
-            'created_by_user_id' => $request->user()->id,
-        ]);
+        try {
+            $letter = Letter::create([
+                ...$data,
+                'file_path' => $path,
+                'created_by_user_id' => $request->user()->id,
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            if ($path !== null) {
+                $this->deleteStored($path);
+            }
+
+            return $this->redirectTo($request, 'letters.index', 'Surat gagal disimpan karena kesalahan basis data. Silakan coba lagi.', 'error');
+        }
 
         $this->log($request, 'letter.created', Letter::class, $letter->id);
 
@@ -93,13 +115,30 @@ class LetterController extends Controller
     public function update(LetterRequest $request, Letter $letter): RedirectResponse
     {
         $data = $request->letterData();
-        $path = $letter->file_path;
+        $previous = $letter->file_path;
+        $path = $previous;
 
         if ($request->hasFile('file')) {
-            $path = $this->storeAttachment($request->file('file'), $path);
+            $path = $this->storeAttachment($request->file('file'));
         }
 
-        $letter->update([...$data, 'file_path' => $path]);
+        try {
+            $letter->update([...$data, 'file_path' => $path]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            if ($path !== $previous && $path !== null) {
+                $this->deleteStored($path);
+            }
+
+            return $this->redirectTo($request, 'letters.index', 'Surat gagal diperbarui karena kesalahan basis data. Silakan coba lagi.', 'error');
+        }
+
+        // Lampiran lama baru dihapus setelah record berhasil ditulis, jadi
+        // kegagalan simpan tidak ikut menghilangkan berkas yang masih dirujuk.
+        if ($previous !== null && $previous !== $path) {
+            $this->deleteStored($previous);
+        }
 
         $this->log($request, 'letter.updated', Letter::class, $letter->id);
 
@@ -141,29 +180,48 @@ class LetterController extends Controller
             'placeholder_values' => ['nullable', 'array'],
             'placeholder_values.*' => ['nullable', 'string', 'max:2000'],
         ]);
-
         $letter = $this->draft($data);
 
         try {
             [$body, $unfilled] = $this->renderLetter($letter, $data['placeholder_values'] ?? []);
+
+            return $this->renderResponse('Pratinjau - '.$letter->perihal, $body, $unfilled);
         } catch (Throwable $exception) {
             report($exception);
 
             return $this->renderError('Pratinjau gagal: '.$exception->getMessage());
+        } finally {
+            $this->cleanupTemporaryCopies();
         }
-
-        return $this->renderResponse('Pratinjau - '.$letter->perihal, $body, $unfilled);
     }
 
     public function print(Letter $letter): InertiaResponse
     {
         $letter->load(['ambalan', 'template']);
-        [$body, $unfilled] = $this->renderLetter($letter, $letter->placeholder_values ?? []);
+
+        try {
+            [$body, $unfilled] = $this->renderLetter($letter, $letter->placeholder_values ?? []);
+            $problem = null;
+        } catch (Throwable $exception) {
+            report($exception);
+
+            // Template hilang (misalnya karena disk sementara di hosting) tidak
+            // boleh membuat halaman cetak error 422. Isi tetap ditampilkan
+            // dari tata letak bawaan supaya surat masih bisa dibaca, tapi
+            // pengguna diberi tahu hasilnya belum tentu sama dengan ekspor.
+            $body = $this->defaultBody($letter, $letter->placeholder_values ?? []);
+            $unfilled = [];
+            $problem = 'Template surat tidak dapat dibaca ('.$exception->getMessage().'). '
+                .'Isi di bawah memakai tata letak bawaan, jadi belum tentu sama dengan berkas hasil ekspor.';
+        } finally {
+            $this->cleanupTemporaryCopies();
+        }
 
         return Inertia::render('Letters/Print', [
             'letter' => $letter,
             'body' => $body,
             'unfilled' => $unfilled,
+            'problem' => $problem,
         ]);
     }
 
@@ -194,6 +252,8 @@ class LetterController extends Controller
             report($exception);
 
             return $this->generateError('Ekspor gagal: '.$exception->getMessage());
+        } finally {
+            $this->cleanupTemporaryCopies();
         }
     }
 
@@ -203,6 +263,10 @@ class LetterController extends Controller
 
         $extension = pathinfo($letter->file_path, PATHINFO_EXTENSION) ?: 'pdf';
 
+        // Berkas lampiran bisa hilang, misalnya karena disk sementara di
+        // hosting. Tanpa pengecekan ini, unduhan gagal jadi 500.
+        abort_unless($this->disk()->exists($letter->file_path), 404, 'Berkas lampiran tidak ada di penyimpanan.');
+
         return $this->disk()->download($letter->file_path, $this->filename($letter, $extension));
     }
 
@@ -211,6 +275,7 @@ class LetterController extends Controller
         $this->authorizeManager($request);
 
         abort_unless($template->file_path, 404, 'Berkas template tidak ditemukan.');
+        abort_unless($this->disk()->exists($template->file_path), 404, 'Berkas template tidak ada di penyimpanan.');
 
         $filename = (Str::slug($template->name) ?: 'template').'.docx';
 
@@ -250,31 +315,61 @@ class LetterController extends Controller
         $path = $file->store(config('letters.templates_directory', 'letter-templates'), $this->diskName());
 
         if (! is_string($path) || $path === '') {
-            return back()->with(
-                'error',
+            return $this->redirectTo(
+                $request,
+                'letters.templates',
                 'Template gagal disimpan. Penyimpanan '
-                .$this->diskName().' tidak dapat ditulis; periksa konfigurasi LETTERS_DISK.'
+                .$this->diskName().' tidak dapat ditulis; periksa konfigurasi LETTERS_DISK.',
+                'error'
             );
         }
 
-        $placeholders = $this->readPlaceholders($path);
+        try {
+            $placeholders = $this->readPlaceholders($path);
+        } catch (Throwable $exception) {
+            report($exception);
+            $this->deleteStored($path);
+
+            return $this->redirectTo(
+                $request,
+                'letters.templates',
+                'Template tidak dapat dibaca. Pastikan berkas .docx tidak rusak dan dibuat dengan Microsoft Word.',
+                'error'
+            );
+        } finally {
+            $this->cleanupTemporaryCopies();
+        }
 
         if ($placeholders === []) {
             $this->deleteStored($path);
 
-            return back()->with(
-                'error',
-                'Template tidak berisi penanda ${perihal}. Tambahkan penanda pada dokumen, contoh ${perihal}, lalu unggah ulang.'
+            return $this->redirectTo(
+                $request,
+                'letters.templates',
+                'Template tidak berisi penanda ${perihal}. Tambahkan penanda pada dokumen, contoh ${perihal}, lalu unggah ulang.',
+                'error'
             );
         }
 
-        $template = LetterTemplate::create([
-            'name' => $request->string('name')->toString(),
-            'file_path' => $path,
-            'description' => $request->input('description') ?: null,
-            'placeholders' => $placeholders,
-            'created_by_user_id' => $request->user()->id,
-        ]);
+        try {
+            $template = LetterTemplate::create([
+                'name' => $request->string('name')->toString(),
+                'file_path' => $path,
+                'description' => $request->input('description') ?: null,
+                'placeholders' => $placeholders,
+                'created_by_user_id' => $request->user()->id,
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+            $this->deleteStored($path);
+
+            return $this->redirectTo(
+                $request,
+                'letters.templates',
+                'Template gagal disimpan karena kesalahan basis data. Silakan coba lagi.',
+                'error'
+            );
+        }
 
         $this->log($request, 'template.created', LetterTemplate::class, $template->id);
 
@@ -327,7 +422,7 @@ class LetterController extends Controller
      */
     protected function renderLetter(Letter $letter, array $extra = []): array
     {
-        $placeholders = $letter->template?->placeholders ?? [];
+        $placeholders = $letter->template?->placeholderList() ?? [];
 
         if ($letter->template && $letter->template->file_path && $placeholders !== []) {
             $resolved = $this->values->forTemplate($letter, $placeholders, $extra);
@@ -338,19 +433,27 @@ class LetterController extends Controller
             ];
         }
 
-        return [
-            view('letters.default-body', [
-                'letter' => $letter,
-                'ambalan' => $letter->ambalan,
-                'extra' => $extra,
-            ])->render(),
-            [],
-        ];
+        return [$this->defaultBody($letter, $extra), []];
+    }
+
+    /**
+     * Isi surat dari tata letak bawaan, dipakai saat surat tidak berpola
+     * templat dan saat templatnya tidak bisa dibaca.
+     *
+     * @param  array<string, mixed>  $extra
+     */
+    protected function defaultBody(Letter $letter, array $extra = []): string
+    {
+        return view('letters.default-body', [
+            'letter' => $letter,
+            'ambalan' => $letter->ambalan,
+            'extra' => $extra,
+        ])->render();
     }
 
     protected function exportDocx(Letter $letter): SymfonyResponse
     {
-        $placeholders = $letter->template?->placeholders ?? [];
+        $placeholders = $letter->template?->placeholderList() ?? [];
 
         if (! $letter->template?->file_path || $placeholders === []) {
             return $this->exportDocxFromScratch($letter);
@@ -372,12 +475,7 @@ class LetterController extends Controller
     protected function exportDocxFromScratch(Letter $letter): SymfonyResponse
     {
         $extra = $letter->placeholder_values ?? [];
-
-        $body = view('letters.default-body', [
-            'letter' => $letter,
-            'ambalan' => $letter->ambalan,
-            'extra' => $extra,
-        ])->render();
+        $body = $this->defaultBody($letter, $extra);
 
         $document = new PhpWord;
         $section = $document->addSection([
@@ -463,6 +561,12 @@ class LetterController extends Controller
 
     protected function renderError(string $message): Response
     {
+        // Permintaan JSON (misalnya dari pemeriksa halaman) harus menerima
+        // pesan yang sama supaya alasannya tidak hilang di balik halaman error.
+        if (request()->expectsJson()) {
+            return response(['message' => $message], 422);
+        }
+
         return response(view('letters.render', [
             'title' => 'Pratinjau gagal',
             'body' => '<p class="catatan">'.e($message).'</p>',
@@ -495,11 +599,11 @@ class LetterController extends Controller
      * peramban mengulang permintaan dengan metode yang sama, dan halaman
      * dirender dua kali.
      */
-    protected function redirectTo(Request $request, string $route, string $message): RedirectResponse
+    protected function redirectTo(Request $request, string $route, string $message, string $level = 'success'): RedirectResponse
     {
         $status = in_array($request->method(), ['POST', 'PATCH', 'DELETE'], true) ? 303 : 302;
 
-        return redirect()->route($route, [], $status)->with('success', $message);
+        return redirect()->route($route, [], $status)->with($level, $message);
     }
 
     /**
@@ -577,9 +681,10 @@ class LetterController extends Controller
      *
      * Disk remote (S3 dan sejenisnya) tidak punya path lokal, jadi berkasnya
      * disalin ke folder sementara lebih dulu. Folder aplikasi hanya-baca di
-     * hosting, jadi folder sementara sistem yang dipakai.
+     * hosting, jadi folder sementara sistem yang dipakai. Salinan lokal
+     * dihapus lagi oleh cleanupTemporaryCopies().
      *
-     * @return string Path lokal; hapus sendiri setelah selesai dipakai.
+     * @return string Path lokal.
      */
     protected function localPath(string $storagePath): string
     {
@@ -589,14 +694,46 @@ class LetterController extends Controller
             abort(422, 'Berkas tidak ditemukan di penyimpanan.');
         }
 
-        if ($this->isRemoteDisk()) {
-            $path = $this->temporaryPath('docx');
-            $disk->writeStream($path, fopen($disk->readStream($storagePath), 'r'));
-
-            return $path;
+        if (! $this->isRemoteDisk()) {
+            return $disk->path($storagePath);
         }
 
-        return $disk->path($storagePath);
+        $path = $this->temporaryPath('docx');
+        $source = $disk->readStream($storagePath);
+
+        if (! is_resource($source)) {
+            abort(422, 'Berkas tidak dapat dibaca dari penyimpanan.');
+        }
+
+        $target = @fopen($path, 'wb');
+
+        if (! is_resource($target)) {
+            fclose($source);
+
+            abort(422, 'Folder sementara tidak dapat ditulis.');
+        }
+
+        $copied = stream_copy_to_stream($source, $target);
+        fclose($source);
+        fclose($target);
+
+        abort_if($copied === false, 422, 'Berkas tidak dapat disalin ke folder sementara.');
+
+        $this->temporaryCopies[] = $path;
+
+        return $path;
+    }
+
+    /**
+     * Hapus salinan lokal dari berkas yang diambil dari disk remote.
+     */
+    protected function cleanupTemporaryCopies(): void
+    {
+        foreach ($this->temporaryCopies as $path) {
+            @unlink($path);
+        }
+
+        $this->temporaryCopies = [];
     }
 
     protected function isRemoteDisk(): bool
@@ -610,21 +747,7 @@ class LetterController extends Controller
      */
     protected function readPlaceholders(string $storagePath): array
     {
-        try {
-            $path = $this->localPath($storagePath);
-
-            $found = $this->docx->placeholders($path);
-        } catch (Throwable) {
-            return [];
-        }
-
-        if (! $this->isRemoteDisk()) {
-            return $found;
-        }
-
-        @unlink($path);
-
-        return $found;
+        return $this->docx->placeholders($this->localPath($storagePath));
     }
 
     /**
@@ -649,17 +772,17 @@ class LetterController extends Controller
         return ($slug === '' ? 'surat' : $slug).'-'.$letter->id.'.'.$extension;
     }
 
-    protected function storeAttachment(?UploadedFile $file, ?string $previous = null): ?string
+    /**
+     * Simpan lampiran surat. Lampiran sebelumnya tidak dihapus di sini supaya
+     * kegagalan penyimpanan tidak ikut menghilangkan berkas lama.
+     */
+    protected function storeAttachment(?UploadedFile $file): ?string
     {
         if (! $file) {
-            return $previous;
+            return null;
         }
 
         $this->validateAttachmentContent($file);
-
-        if ($previous) {
-            $this->deleteStored($previous);
-        }
 
         $path = $file->store(config('letters.attachments_directory', 'letters'), $this->diskName());
 
@@ -670,6 +793,26 @@ class LetterController extends Controller
         }
 
         return $path;
+    }
+
+    /**
+     * Nilai teks dari query string. Input larik (?search[]=x) dianggap kosong
+     * supaya tidak membuat halaman error 500.
+     */
+    protected function stringInput(Request $request, string $key): string
+    {
+        $value = $request->input($key);
+
+        return is_string($value) ? trim($value) : '';
+    }
+
+    /**
+     * Karakter wildcard SQL LIKE pada isian pengguna diperlakukan sebagai teks
+     * biasa, jadi "%" tidak membuat semua baris ikut cocok.
+     */
+    protected function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $value);
     }
 
     protected function validateAttachmentContent(UploadedFile $file): void
