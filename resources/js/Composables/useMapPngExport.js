@@ -28,121 +28,46 @@ const INK = {
   south: '#374151',
 };
 
-/**
- * Isi bahan ajar yang ikut dicetak pada PNG.
- *
- * Dipisah dari kode gambar supaya teksnya mudah dibaca dan proofread tanpa
- * harus menelusuri perintah fillText. Halaman cetak (printMap) tidak memakai
- * daftar ini: hasil cetaknya hanya peta, tanpa bahan ajar.
- *
- * Setiap butir membawa `draw`: gambar sketsa kecil komponen itu. Daftar teks
- * saja memaksa pembaca membandingkan penjelasan dengan peta yang sedang
- * dilihat di layar atau di atas kertas, padahal keduanya tidak pernah berada
- * di tempat yang sama. Sketsa yang diletakkan di kiri butir membuat tiap
- * komponen punya bentuk yang bisa diingat, bukan sekadar nama.
- *
- * Penjelasan sengaja dibuat satu sampai dua baris. Bahannya untuk dipakai
- * mengulang di kelas, bukan untuk dibaca sendiri; uraian panjang hanya membuat
- * PNG setinggi banyak halaman tanpa menambah apa yang perlu dihafal.
- */
-export const CONTOUR_COMPONENTS = [
-  {
-    title: 'Garis Kontur',
-    text: 'Garis imajiner yang menghubungkan titik-titik dengan ketinggian sama dari permukaan laut.',
-    draw: drawGarisKontur,
-  },
-  {
-    title: 'Nilai Kontur',
-    text: 'Angka pada garis kontur yang menunjukkan besarnya elevasi, biasanya dalam satuan meter.',
-    draw: drawNilaiKontur,
-  },
-  {
-    title: 'Interval Kontur',
-    text: 'Jarak vertikal yang konstan antara dua garis kontur yang berurutan.',
-    draw: drawIntervalKontur,
-  },
-  {
-    title: 'Garis Kontur Indeks',
-    text: 'Garis kontur yang digambar lebih tebal setiap kelipatan interval tertentu agar mudah dibaca.',
-    draw: drawKonturIndeks,
-  },
-  {
-    title: 'Indikator Relief & Kenampakan Medan',
-    text: 'Kerapatan garis menggambarkan bentuk lahan: lereng landai renggang, lereng curam rapat, lembah membentuk V ke hulu, bukit melingkar.',
-    draw: drawRelief,
-  },
-];
-
-export const MAP_COMPLETENESS = [
-  {
-    title: 'Judul Peta',
-    text: 'Menunjukkan identitas atau nama wilayah yang dipetakan.',
-    draw: drawJudulPeta,
-  },
-  {
-    title: 'Skala Peta',
-    text: 'Perbandingan jarak pada peta dengan jarak sebenarnya di lapangan.',
-    draw: drawSkalaPeta,
-  },
-  {
-    title: 'Arah Utara / Orientasi',
-    text: 'Tanda panah yang menunjukkan arah utara geografis.',
-    draw: drawArahUtara,
-  },
-  {
-    title: 'Legenda / Keterangan',
-    text: 'Penjelasan mengenai simbol-simbol lain yang ada di dalam peta.',
-    draw: drawLegenda,
-  },
-  {
-    title: 'Grid Koordinat',
-    text: 'Garis bujur dan lintang atau UTM untuk menentukan posisi titik pada peta.',
-    draw: drawGrid,
-  },
-];
-
 const FONT = "'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
-const MARGIN = 56;
+
 /**
- * Tinggi kotak peta di lembar cetak.
+ * Ukuran lembar cetak.
  *
- * Tinggi tidak dipatok satu angka karena snapshot peta punya rasio aspek
- * sendiri, yaitu rasio jendela yang sedang dipakai pengguna. Kalau tinggi
- * dipatok, snapshot harus dipotong di tengah supaya memenuhi kotak, dan
- * potongan itulah yang membuat peta hasil unduhan tampak ter-zoom: bagian atas
- * dan bawah wilayah yang sedang dilihat hilang, lalu sisanya diperbesar.
+ * Dipatok landscape dan tidak lagi mengikuti isi. Versi lama mengukur tinggi
+ * dari jumlah teks bahan ajar, jadi lembarnya jadi tinggi seperti halaman web:
+ * peta tinggal jadi pita tipis di bagian atas, dan wilayah yang dipilih terlihat
+ * kecil sampai sulit dibaca.
  *
- * Tinggi dihitung dari rasio snapshot supaya seluruh isi snapshot ikut tercetak
- * apa adanya. Batas MIN dan MAX hanya menjaga supaya lembar tidak jadi
- * terlalu pendek atau terlalu tinggi; di luar batas itu snapshot placed dengan
- * cara "contain" (lihat fitContain) sehingga tidak ada yang terpotong.
+ * Sekarang isinya cuma peta, jadi ukuran halaman adalah pilihan format, bukan
+ * hasil pengukuran. 16:10 cukup lebar untuk satu wilayah kabupaten, dan tidak
+ * memaksa pemakai memutar kertas saat dicetak.
  */
-const MAP_MIN_HEIGHT = 420;
+const SHEET_WIDTH = 1600;
+const SHEET_HEIGHT = 1000;
+
+const MARGIN = 48;
+
+/**
+ * Batas tinggi area peta.
+ *
+ * Batas atas menjaga judul dan keterangan sumber tetap muat di lembar
+ * landscape. Batas bawah cuma jaring pengaman: kalau judulnya luar biasa
+ * panjang, area peta tidak boleh habis lalu judul menimpa peta.
+ */
+const MAP_MIN_HEIGHT = 260;
 const MAP_MAX_HEIGHT = 820;
 
-/** Rasio yang dipakai ketika tidak ada snapshot peta, supaya sheet tetap utuh. */
-const MAP_DEFAULT_RATIO = 1.8;
-
-/**
- * Tinggi kotak peta untuk lebar konten tertentu.
- *
- * Dipakai measureHeight dan buildMapPng supaya tinggi kanvas dan tinggi kotak
- * yang benar-benar digambar selalu sama.
- */
-function mapAreaHeight(mapCanvas, contentWidth) {
-  const usable = mapCanvas && mapCanvas.width > 0 && mapCanvas.height > 0;
-  const ratio = usable ? mapCanvas.width / mapCanvas.height : MAP_DEFAULT_RATIO;
-  const ideal = contentWidth / ratio;
-
-  return Math.round(Math.min(Math.max(ideal, MAP_MIN_HEIGHT), MAP_MAX_HEIGHT));
-}
+/** Keterangan sumber di bawah peta, termasuk jaraknya dari area peta. */
+const FOOTER_GAP = 12;
+const FOOTER_HEIGHT = 18;
 
 /**
  * Tempatkan snapshot di dalam kotak peta tanpa memotong bagian mana pun.
  *
  * Selalu memakai rasio kedua sumbu yang sama, sehingga gambar tidak pernah
- * teregang. Kalau rasionya tidak sama dengan kotak, sisanya dibiarkan sebagai
- * latar abu-abu danSnapshot dipusatkan.
+ * teregang dan tidak ada bagian peta yang hilang. Kalau rasionya tidak sama
+ * dengan kotak, sisanya dibiarkan sebagai latar abu-abu dan snapshot
+ * dipusatkan.
  *
  * Karena tidak ada yang dipotong, batas geografis yang benar-benar terlihat
  * tetap sama dengan batas viewport, jadi grid koordinat tidak perlu dihitung
@@ -165,22 +90,11 @@ function fitContain(sourceWidth, sourceHeight, boxX, boxY, boxWidth, boxHeight) 
   };
 }
 
-/**
- * Ukuran kotak sketsa tiap butir bahan ajar.
- *
- * Sketsa selalu setinggi ITEM_VISUAL_HEIGHT; teks di sebelahnya boleh lebih
- * pendek atau lebih panjang. Tinggi baris memakai yang paling besar di antara
- * keduanya supaya gambar dan teks tidak saling menimpa.
- */
-const ITEM_VISUAL_WIDTH = 118;
-const ITEM_VISUAL_HEIGHT = 82;
-const ITEM_VISUAL_GAP = 16;
-
 /** Baris judul, subjudul, dan jaraknya, dipakai bersama oleh pengukur tinggi dan penggambar. */
-const TITLE_LINE_HEIGHT = 36;
-const TITLE_GAP = 10;
-const SUBTITLE_LINE_HEIGHT = 18;
-const SUBTITLE_GAP = 20;
+const TITLE_LINE_HEIGHT = 38;
+const TITLE_GAP = 8;
+const SUBTITLE_LINE_HEIGHT = 20;
+const SUBTITLE_GAP = 18;
 
 /**
  * Ukuran elemen yang digantung di atas area peta.
@@ -254,42 +168,6 @@ function wrapText(ctx, text, maxWidth) {
   }
 
   return lines.length ? lines : [''];
-}
-
-function drawParagraph(ctx, text, x, y, maxWidth, lineHeight) {
-  const lines = wrapText(ctx, text, maxWidth);
-
-  lines.forEach((line, index) => {
-    ctx.fillText(line, x, y + index * lineHeight);
-  });
-
-  return y + lines.length * lineHeight;
-}
-
-/**
- * Jumlah baris judul peta.
- *
- * Nama wilayah bisa lebih panjang dari lebar kanvas, dan fillText tidak
- * membungkus teks. Tanpa dipecah, teks keluar kanvas dan hilang begitu file
- * disimpan, sementara tinggi kanvas tetap dihitung untuk satu baris. Karena itu
- * jumlah barisnya dipakai lagi oleh measureHeight.
- */
-function titleLineCount(ctx, title, maxWidth) {
-  setFont(ctx, 30, '700');
-  return wrapText(ctx, title, maxWidth).length;
-}
-
-/**
- * Jumlah baris subjudul.
- *
- * Subjudul memuat koordinat, zoom, dan skala sekaligus, jadi panjangnya
- * bergantung pada nilai yang sedang dilihat dan tidak bisa dipatok satu baris.
- * Teks yang dihitung harus persis sama dengan yang digambar, kalau tidak
- * keduanya menghitung jumlah baris yang berbeda.
- */
-function subtitleLineCount(ctx, text, maxWidth) {
-  setFont(ctx, 13, '400');
-  return wrapText(ctx, text, maxWidth).length;
 }
 
 /**
@@ -733,548 +611,16 @@ function drawScaleBar(ctx, x, y, metersPerPx, maxWidthPx) {
 }
 
 /**
- * Bingkai kotak sketsa bahan ajar.
+* Susun PNG cetak peta pada lembar landscape.
  *
- * Latar diisi dan garis tepi dibuat di sini supaya sepuluh sketsa berikut
- * tidak mengulang hal yang sama dan kelihatan seragam di halaman.
- */
-function beginThumb(ctx, x, y, width, height) {
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(x, y, width, height);
-  ctx.fillStyle = '#faf7f2';
-  ctx.fill();
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = INK.rule;
-  ctx.stroke();
-  ctx.clip();
-  return { x, y, width, height };
-}
-
-/** Titik tengah kotak sketsa, dipakai sketsa yang menggambar dari tengah. */
-function thumbCenter(box) {
-  return { cx: box.x + box.width / 2, cy: box.y + box.height / 2 };
-}
-
-/**
- * Menggambar label kecil di dalam kotak sketsa.
- *
- * Label menggambar sendiri posisinya karena tiap sketsa punya tinggi yang
- * berbeda; yang sama di antaranya hanyalah ukuran, warna, dan perataan.
- */
-function thumbLabel(ctx, text, cx, y) {
-  setFont(ctx, 10, '600');
-  ctx.fillStyle = INK.muted;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(text, cx, y);
-}
-
-/**
- * Garis kontur: beberapa garis tertutup yang mengelilingi satu bukit.
- *
- * Hanya garis, tanpa arsiran, karena yang dimaksud komponen ini adalah garis
- * imajiner itu sendiri, bukan bentuk lahan yang dilingkarinya.
- */
-function drawGarisKontur(ctx, x, y, width, height) {
-  const box = beginThumb(ctx, x, y, width, height);
-  const { cx, cy } = thumbCenter(box);
-
-  ctx.strokeStyle = INK.accent;
-  ctx.lineWidth = 1.8;
-  ctx.lineJoin = 'round';
-
-  for (const scale of [0.82, 0.58, 0.34]) {
-    const rx = (box.width * 0.38) * scale;
-    const ry = (box.height * 0.34) * scale;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  thumbLabel(ctx, 'ketinggian sama', cx, box.y + box.height - 11);
-  ctx.restore();
-}
-
-/**
- * Nilai kontur: satu garis kontur dengan celah kecil dan angka di dalamnya.
- *
- * Celahnya disengaja supaya angka terbaca sebagai label yang berdiri sendiri,
- * bukan sekadar tulisan yang menumpuk di atas garis.
- */
-function drawNilaiKontur(ctx, x, y, width, height) {
-  const box = beginThumb(ctx, x, y, width, height);
-  const { cx, cy } = thumbCenter(box);
-  const rx = box.width * 0.4;
-  const ry = box.height * 0.36;
-
-  ctx.strokeStyle = INK.accent;
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  // Elips dipisah jadi dua busur supaya ada celah di kiri untuk angka.
-  ctx.ellipse(cx, cy, rx, ry, 0, -Math.PI * 0.62, Math.PI * 0.62);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, rx, ry, 0, Math.PI * 0.86, Math.PI * 1.86);
-  ctx.stroke();
-
-  // Kotak putih di belakang angka supaya garis tidak melintas di bawahnya.
-  ctx.fillStyle = '#faf7f2';
-  ctx.fillRect(cx - 21, cy - 8, 42, 16);
-  setFont(ctx, 13, '700');
-  ctx.fillStyle = INK.title;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('120', cx, cy);
-
-  thumbLabel(ctx, 'elevasi (m)', cx, box.y + box.height - 11);
-  ctx.restore();
-}
-
-/**
- * Interval kontur: dua garis berurutan dengan panah ganda di antaranya.
- *
- * Angka di panah menyatakan selisih ketinggian yang diukur tegak lurus kedua
- * garis, bukan jarak mendatar di layar.
- */
-function drawIntervalKontur(ctx, x, y, width, height) {
-  const box = beginThumb(ctx, x, y, width, height);
-  const { cx, cy } = thumbCenter(box);
-  const top = cy - 18;
-  const bottom = cy + 14;
-  const lineLeft = box.x + 16;
-  const lineRight = box.x + box.width - 16;
-
-  ctx.strokeStyle = INK.accent;
-  ctx.lineWidth = 2;
-  for (const lineY of [top, bottom]) {
-    ctx.beginPath();
-    ctx.moveTo(lineLeft, lineY);
-    ctx.lineTo(lineRight, lineY);
-    ctx.stroke();
-  }
-
-  // Garis bantu vertikal: batas diukur dari satu garis ke garis berikutnya.
-  ctx.strokeStyle = INK.frame;
-  ctx.lineWidth = 1;
-  ctx.setLineDash([3, 3]);
-  ctx.beginPath();
-  ctx.moveTo(cx, top);
-  ctx.lineTo(cx, bottom);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Kepala panah di kedua ujung garis bantu.
-  ctx.strokeStyle = INK.title;
-  ctx.lineWidth = 1.2;
-  for (const [tipY, dir] of [[top, 1], [bottom, -1]]) {
-    ctx.beginPath();
-    ctx.moveTo(cx, tipY);
-    ctx.lineTo(cx, tipY + 8 * dir);
-    ctx.moveTo(cx - 4, tipY + 4 * dir);
-    ctx.lineTo(cx, tipY + 8 * dir);
-    ctx.lineTo(cx + 4, tipY + 4 * dir);
-    ctx.stroke();
-  }
-
-  ctx.fillStyle = '#faf7f2';
-  ctx.fillRect(cx + 6, cy - 9, 30, 18);
-  setFont(ctx, 11, '700');
-  ctx.fillStyle = INK.title;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('10 m', cx + 6, cy - 1);
-
-  ctx.restore();
-}
-
-/**
- * Garis kontur indeks: garis sama tebal, tapi setiap kelipatan yang satu
- * digambar lebih tebal.
- */
-function drawKonturIndeks(ctx, x, y, width, height) {
-  const box = beginThumb(ctx, x, y, width, height);
-  const { cx } = thumbCenter(box);
-  const startY = box.y + 14;
-  const endY = box.y + box.height - 22;
-  const left = box.x + 14;
-  const right = box.x + box.width - 14;
-
-  for (let i = 0; i < 5; i += 1) {
-    const lineY = startY + ((endY - startY) * i) / 4;
-    const isIndex = i % 2 === 0;
-    ctx.strokeStyle = isIndex ? INK.title : INK.accent;
-    ctx.lineWidth = isIndex ? 2.4 : 1.3;
-    ctx.beginPath();
-    ctx.moveTo(left, lineY);
-    ctx.lineTo(right, lineY);
-    ctx.stroke();
-  }
-
-  thumbLabel(ctx, 'tebal = indeks', cx, box.y + box.height - 11);
-  ctx.restore();
-}
-
-/**
- * Relief dan kenampakan medan: dua kenampakan yang paling sering dipelajari.
- *
- * Kiri lembah (garis membentuk V dengan ujung tumpul menunjuk ke hulu), kanan
- * bukit (garis melingkar makin ke tengah). Menggambar keduanya berdampingan
- * menunjukkan bahwa pola garis berbeda untuk bentuk lahan yang berbeda.
- */
-function drawRelief(ctx, x, y, width, height) {
-  const box = beginThumb(ctx, x, y, width, height);
-  const midX = box.x + box.width / 2;
-
-  // Garis pemisah kedua contoh.
-  ctx.strokeStyle = INK.rule;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(midX, box.y + 10);
-  ctx.lineTo(midX, box.y + box.height - 20);
-  ctx.stroke();
-
-  // Lembah: garis kontur membentuk V, ujung tumpul menunjuk ke atas (hulu).
-  ctx.strokeStyle = INK.accent;
-  ctx.lineWidth = 1.5;
-  ctx.lineJoin = 'round';
-  for (let i = 0; i < 3; i += 1) {
-    const spread = 12 + i * 9;
-    const apexY = box.y + box.height / 2 + 8 - i * 2;
-    ctx.beginPath();
-    ctx.moveTo(midX - box.width / 4 - 6 + i * 2, apexY + spread * 0.55);
-    ctx.quadraticCurveTo(midX - box.width / 4, apexY - 4, midX - box.width / 4 + 6 - i * 2, apexY + spread * 0.55);
-    ctx.stroke();
-  }
-
-  // Bukit: garis melingkar, makin rapat ke puncak.
-  for (const scale of [0.85, 0.58, 0.32]) {
-    ctx.beginPath();
-    ctx.ellipse(midX + box.width / 4, box.y + box.height / 2, box.width * 0.19 * scale, box.height * 0.26 * scale, 0, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  thumbLabel(ctx, 'lembah', box.x + box.width * 0.27, box.y + box.height - 10);
-  thumbLabel(ctx, 'bukit', box.x + box.width * 0.75, box.y + box.height - 10);
-  ctx.restore();
-}
-
-/**
- * Judul peta: kotak berisi baris tebal di atas dan baris tipis di bawahnya.
- *
- * Baris tebal mewakili nama wilayah, baris tipis mewakili keterangan tambahan
- * seperti wilayah administrative dan nilai interval kontur.
- */
-function drawJudulPeta(ctx, x, y, width, height) {
-  const box = beginThumb(ctx, x, y, width, height);
-  const left = box.x + 12;
-  const right = box.x + box.width - 12;
-  const top = box.y + 16;
-
-  ctx.fillStyle = INK.title;
-  ctx.fillRect(left, top, (right - left) * 0.78, 6);
-
-  ctx.fillStyle = INK.muted;
-  ctx.fillRect(left, top + 13, (right - left) * 0.5, 3);
-  ctx.fillRect(left, top + 20, (right - left) * 0.62, 3);
-
-  ctx.fillStyle = INK.rule;
-  ctx.fillRect(left, box.y + box.height - 20, right - left, 1);
-
-  thumbLabel(ctx, 'nama wilayah', box.x + box.width / 2, box.y + box.height - 9);
-  ctx.restore();
-}
-
-/**
- * Skala peta: bilah bersegmen dengan angka di kedua ujungnya.
- *
- * Bentuk bersegmen disengaja: skala yang membagi jarak jadi beberapa bagian
- * enak dibaca, sedangkan satu garis panjang tidak.
- */
-function drawSkalaPeta(ctx, x, y, width, height) {
-  const box = beginThumb(ctx, x, y, width, height);
-  const left = box.x + 14;
-  const right = box.x + box.width - 14;
-  const barY = box.y + box.height / 2 - 10;
-  const barWidth = right - left;
-  const segments = 4;
-  const segmentWidth = barWidth / segments;
-
-  for (let i = 0; i < segments; i += 1) {
-    ctx.fillStyle = i % 2 === 0 ? INK.title : INK.paper;
-    ctx.fillRect(left + i * segmentWidth, barY, segmentWidth, 8);
-  }
-
-  ctx.strokeStyle = INK.title;
-  ctx.lineWidth = 1;
-  ctx.strokeRect(left, barY, barWidth, 8);
-
-  setFont(ctx, 9, '600');
-  ctx.fillStyle = INK.muted;
-  ctx.textBaseline = 'top';
-  ctx.textAlign = 'center';
-  for (let i = 0; i <= segments; i += 1) {
-    ctx.fillText(String(i * 5), left + i * segmentWidth, barY + 11);
-  }
-
-  thumbLabel(ctx, 'km', box.x + box.width / 2, box.y + box.height - 9);
-  ctx.restore();
-}
-
-/**
- * Arah utara: mawar kompas sederhana dengan jarum utara menyala.
- *
- * Bentuknya lebih kecil dari mawar kompas peta utama supaya tidak bersaing,
- * tapi tetap memakai kode warna yang sama: utara merah, arah lain netral.
- */
-function drawArahUtara(ctx, x, y, width, height) {
-  const box = beginThumb(ctx, x, y, width, height);
-  const { cx, cy } = thumbCenter(box);
-  const radius = Math.min(box.width, box.height) * 0.34;
-
-  ctx.strokeStyle = INK.frame;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Jarum utara: segitiga panjang ke atas dan pendek ke bawah.
-  ctx.fillStyle = INK.north;
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - radius * 0.78);
-  ctx.lineTo(cx - radius * 0.2, cy + radius * 0.2);
-  ctx.lineTo(cx + radius * 0.2, cy + radius * 0.2);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = INK.south;
-  ctx.beginPath();
-  ctx.moveTo(cx, cy + radius * 0.5);
-  ctx.lineTo(cx - radius * 0.18, cy - radius * 0.05);
-  ctx.lineTo(cx + radius * 0.18, cy - radius * 0.05);
-  ctx.closePath();
-  ctx.fill();
-
-  setFont(ctx, 9, '700');
-  ctx.fillStyle = INK.north;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('U', cx, cy - radius - 7);
-
-  ctx.restore();
-}
-
-/**
- * Legenda: kotak dengan dua baris, tiap baris pasangan simbol dan keterangan.
- *
- * Baris pertama memakai garis (simbol garis kontur), baris kedua memakai
- * kotak kecil terisi (simbol bangunan atau kawasan), supaya jelas bahwa setiap
- * baris adalah pasangan simbol dan keterangan.
- */
-function drawLegenda(ctx, x, y, width, height) {
-  const box = beginThumb(ctx, x, y, width, height);
-  const left = box.x + 12;
-  const sampleX = left;
-  const textX = left + 26;
-  const right = box.x + box.width - 10;
-
-  for (let i = 0; i < 2; i += 1) {
-    const rowY = box.y + 22 + i * 20;
-
-    if (i === 0) {
-      ctx.strokeStyle = INK.accent;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(sampleX, rowY);
-      ctx.lineTo(sampleX + 18, rowY);
-      ctx.stroke();
-    } else {
-      ctx.fillStyle = INK.accent;
-      ctx.fillRect(sampleX, rowY - 4, 9, 8);
-    }
-
-    ctx.fillStyle = INK.body;
-    ctx.fillRect(textX, rowY - 2, Math.min((right - textX) * (i === 0 ? 0.72 : 0.54), 1e9), 3);
-  }
-
-  thumbLabel(ctx, 'simbol + keterangan', box.x + box.width / 2, box.y + box.height - 12);
-  ctx.restore();
-}
-
-/**
- * Grid koordinat: kotak terisi garis bujur dan lintang berpersilangan, dengan
- * satu titik penanda di perpotongan tertentu.
- *
- * Label bujur dan lintang sengaja kecil: di bahan ajar yang diperkecil, yang
- * penting pola persilangan dan titik penanda, bukan angka yang presisi.
- */
-function drawGrid(ctx, x, y, width, height) {
-  const box = beginThumb(ctx, x, y, width, height);
-  const left = box.x + 14;
-  const right = box.x + box.width - 14;
-  const top = box.y + 14;
-  const bottom = box.y + box.height - 22;
-  const cells = 4;
-  const cellWidth = (right - left) / cells;
-  const cellHeight = (bottom - top) / cells;
-
-  ctx.strokeStyle = INK.frame;
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= cells; i += 1) {
-    ctx.beginPath();
-    ctx.moveTo(left + i * cellWidth, top);
-    ctx.lineTo(left + i * cellWidth, bottom);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(left, top + i * cellHeight);
-    ctx.lineTo(right, top + i * cellHeight);
-    ctx.stroke();
-  }
-
-  // Perpotongan yang ditandai, dengan cincin supaya tetap terlihat di atas garis.
-  const markX = left + cellWidth * 2;
-  const markY = top + cellHeight * 2;
-  ctx.fillStyle = INK.paper;
-  ctx.beginPath();
-  ctx.arc(markX, markY, 5.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = INK.accent;
-  ctx.beginPath();
-  ctx.arc(markX, markY, 3.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  thumbLabel(ctx, 'bujur & lintang', box.x + box.width / 2, box.y + box.height - 10);
-  ctx.restore();
-}
-
-/**
- * Hitung tinggi kanvas yang dibutuhkan seluruh isi.
- *
- * Judul bisa memerlukan lebih dari satu baris kalau namanya panjang, jadi
- * tinggi kanvas ikut bergantung pada isi judul. Versi lama menambah 46 piksel
- * tanpa mengukur, sehingga judul panjang menimpa subjudul dan isi di
- * bawahnya, sementara kanvas tetap sebesar judul satu baris.
- *
- * Snapshot peta ikut diteruskan karena tinggi kotak peta dihitung dari rasio
- * aspect-nya. Tanpa itu, kanvas bisa lebih pendek daripada isi dan bagian
- * bawah terpotong.
- */
-function measureHeight(ctx, width, title, subtitle, mapCanvas) {
-  const contentWidth = width - MARGIN * 2;
-  const textWidth = contentWidth - ITEM_VISUAL_WIDTH - ITEM_VISUAL_GAP;
-
-  let height = MARGIN;
-  height += titleLineCount(ctx, title, contentWidth) * TITLE_LINE_HEIGHT + TITLE_GAP;
-  height += subtitleLineCount(ctx, subtitle, contentWidth) * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;
-  height += mapAreaHeight(mapCanvas, contentWidth);
-  height += 34; // keterangan di bawah peta
-  height += 28; // jarak
-
-  setFont(ctx, 15, '400');
-
-  for (const section of teachingSections()) {
-    // drawSection memakai 24 piksel untuk garis bawah judul bagian dan 12 lagi
-    // ke butir pertama. Keduanya dihitung di sini dengan angka yang sama.
-    height += 24 + 12;
-
-    for (const item of section.items) {
-      height += itemRowHeight(ctx, item, textWidth);
-    }
-
-    height += 12; // jarak ke bagian berikutnya
-  }
-
-  height += 30; // footer
-  height += MARGIN;
-
-  return Math.ceil(height);
-}
-
-/**
- * Dua bagian bahan ajar, dalam urutan yang dicetak.
- *
- * Disatukan supaya measureHeight dan buildMapPng memakai daftar bagian yang
- * sama. Kalau salah satu ditambah dan yang lain tidak, tinggi kanvas tidak
- * lagi cocok dengan isinya.
- */
-function teachingSections() {
-  return [
-    { heading: 'Komponen Utama Peta Kontur', items: CONTOUR_COMPONENTS },
-    { heading: 'Kelengkapan Umum Peta (Pendukung)', items: MAP_COMPLETENESS },
-  ];
-}
-
-/**
- * Tinggi satu baris bahan ajar.
- *
- * Dipakai measureHeight dan drawSection supaya keduanya menghitung tinggi yang
- * sama. Kalau dipisah, gambar dan tinggi kanvas bisa berbeda dan isi pada
- * bagian bawah terpotong.
- */
-function itemRowHeight(ctx, item, textWidth) {
-  const textHeight = 20 + wrapText(ctx, item.text, textWidth).length * 19;
-  return Math.max(ITEM_VISUAL_HEIGHT, textHeight) + 14;
-}
-
-function drawSection(ctx, heading, items, x, y, contentWidth) {
-  const textWidth = contentWidth - ITEM_VISUAL_WIDTH - ITEM_VISUAL_GAP;
-  const textX = x + ITEM_VISUAL_WIDTH + ITEM_VISUAL_GAP;
-
-  setFont(ctx, 17, '700');
-  ctx.fillStyle = INK.accent;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  ctx.fillText(heading, x, y);
-
-  const underlineY = y + 24;
-  ctx.strokeStyle = INK.accent;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(x, underlineY);
-  ctx.lineTo(x + 84, underlineY);
-  ctx.stroke();
-
-  let cursorY = underlineY + 12;
-  setFont(ctx, 15, '400');
-
-  items.forEach((item) => {
-    // Sketsa diletakkan di kiri dengan lebar tetap, judul dan penjelasannya
-    // di sebelah kanannya. Lebar kolom teks dihitung sekali di luar loop
-    // supaya semua butir sejajar dan tidak bergeser sendiri.
-    item.draw(ctx, x, cursorY, ITEM_VISUAL_WIDTH, ITEM_VISUAL_HEIGHT);
-
-    // Judul dan deskripsi digambar sebagai dua baris terpisah, bukan satu
-    // paragraf dengan potongan tebal di tengah. Bentuk kanvas tidak punya
-    // alur teks multi-gaya seperti DOM, jadi menyisipkan tebal di tengah paragraf
-    // berarti mengukur setiap potongan secara manual; tata letak dua baris
-    // menghasilkan hal yang sama tanpa pengukuran per-potongan.
-    setFont(ctx, 15, '700');
-    ctx.fillStyle = INK.title;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText(item.title, textX, cursorY);
-
-    setFont(ctx, 15, '400');
-    ctx.fillStyle = INK.body;
-    const bodyLines = wrapText(ctx, item.text, textWidth);
-    bodyLines.forEach((line, index) => {
-      ctx.fillText(line, textX, cursorY + 20 + index * 19);
-    });
-
-    cursorY += itemRowHeight(ctx, item, textWidth);
-  });
-
-  return cursorY;
-}
-
-/**
- * Susun PNG cetak peta lengkap dengan bahan ajarnya.
+ * Isi lembar sekarang hanya peta: judul, peta, keterangan, dan kaki halaman.
+ * Daftar uraian komponen peta kontur yang dulu dicetak di bawah peta sudah
+ * dihapus karena ia membuat lembar tinggi dan peta mengecil.
  *
  * @param {object} options
  * @param {HTMLCanvasElement|null} options.mapCanvas  Snapshot peta. Null berarti
- *  area peta tidak bisa dibaca (lihat captureMapCanvas di bawah) dan hanya bahan ajar
- *   yang dicetak.
+ *   area peta tidak bisa dibaca (lihat captureMapCanvas di bawah) dan lembar
+ *   tetap dicetak dengan keterangan bahwa petanya tidak terbaca.
  * @param {number} options.latitude
  * @param {number} options.longitude
  * @param {number} options.zoom
@@ -1310,21 +656,37 @@ export async function buildMapPng({
   elevation = null,
   bounds = null,
 } = {}) {
-  const width = 1240;
+  const width = SHEET_WIDTH;
+  const height = SHEET_HEIGHT;
   const scale = 2;
   const picked = { ...DEFAULT_COMPONENTS, ...components };
-const mapWidth = width - MARGIN * 2;
-const mapHeight = mapAreaHeight(mapCanvas, mapWidth);
+  const mapWidth = width - MARGIN * 2;
   const mapWidthMeters = metersPerPixel(latitude, zoom) * mapWidth;
 
   // Teks yang benar-benar akan dicetak harus sudah diketahui sebelum kanvas
-  // berukuran apa pun, karena tinggi kanvas bergantung pada jumlah baris judul
-  // dan subjudul.
+  // digambar, karena tinggi area peta bergantung pada jumlah baris judul dan
+  // subjudul.
   const subtitleText = subtitle || `Lebar area ${distanceLabel(mapWidthMeters)}`;
 
   const probe = document.createElement('canvas').getContext('2d');
-  setFont(probe, 15, '400');
-  const height = measureHeight(probe, width, title, subtitleText, mapCanvas);
+
+  // Tinggi area peta = sisa lembar setelah judul, subjudul, dan kaki halaman.
+  // Lembarnya sendiri tetap landscape: kalau judulnya butuh ruang lebih, yang
+  // mengecil adalah peta, bukan halaman. Itu membuat format keluar konsisten
+  // untuk semua wilayah, yang justru tidak bisa dijamin kalau tinggi lembar
+  // ikut berubah-ubah.
+  const headerHeight = (() => {
+    setFont(probe, 32, '700');
+    const titleLines = wrapText(probe, title, mapWidth).length;
+    setFont(probe, 14, '400');
+    const subtitleLines = wrapText(probe, subtitleText, mapWidth).length;
+
+    return titleLines * TITLE_LINE_HEIGHT + TITLE_GAP
+      + subtitleLines * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;
+  })();
+
+  const available = height - MARGIN * 2 - headerHeight - FOOTER_GAP - FOOTER_HEIGHT;
+  const mapHeight = Math.round(Math.min(Math.max(available, MAP_MIN_HEIGHT), MAP_MAX_HEIGHT));
 
   const canvas = document.createElement('canvas');
   canvas.width = width * scale;
@@ -1338,7 +700,7 @@ const mapHeight = mapAreaHeight(mapCanvas, mapWidth);
 
   // Judul, dipecah bila panjangnya melebihi lebar konten.
   let cursorY = MARGIN;
-  setFont(ctx, 30, '700');
+  setFont(ctx, 32, '700');
   ctx.fillStyle = INK.title;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
@@ -1348,7 +710,7 @@ const mapHeight = mapAreaHeight(mapCanvas, mapWidth);
   });
   cursorY += titleLines.length * TITLE_LINE_HEIGHT + TITLE_GAP;
 
-  setFont(ctx, 13, '400');
+  setFont(ctx, 14, '400');
   ctx.fillStyle = INK.muted;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
@@ -1480,8 +842,12 @@ const mapHeight = mapAreaHeight(mapCanvas, mapWidth);
   ctx.lineWidth = 1.5;
   ctx.strokeRect(mapX, mapY, mapWidth, mapHeight);
 
-  // Keterangan sumber dan legenda
-  cursorY = mapY + mapHeight + 10;
+  // Keterangan sumber dan kaki halaman.
+  //
+  // Tidak ada lagi daftar uraian komponen peta kontur di bawah peta. Uraian itu
+  // cocok untuk lembar handout, tapi di sini ia hanya memperpanjang halaman dan
+  // membuat peta mengecil sampai wilayah yang dipilih sulit dibaca.
+  cursorY = mapY + mapHeight + FOOTER_GAP;
   setFont(ctx, 12, '400');
   ctx.fillStyle = INK.muted;
   ctx.textAlign = 'left';
@@ -1496,22 +862,16 @@ const mapHeight = mapAreaHeight(mapCanvas, mapWidth);
   ctx.textAlign = 'right';
   ctx.fillText('Sumber: OpenStreetMap, PMTiles Kontur Sulsel', width - MARGIN, cursorY);
 
-  cursorY += 34;
-
-  const contentWidth = width - MARGIN * 2;
-
-  for (const section of teachingSections()) {
-    cursorY = drawSection(ctx, section.heading, section.items, MARGIN, cursorY, contentWidth);
-  }
-
-  // Footer
+  // Kaki halaman menempel ke tepi bawah lembar, tidak mengikuti cursor, supaya
+  // posisinya sama untuk semua wilayah.
   setFont(ctx, 11, '400');
   ctx.fillStyle = INK.muted;
   ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
   ctx.fillText(
     `Dicetak pada ${new Date().toLocaleString('id-ID')} dari AMBARA - Sistem Digital Ambalan UPT SMAN 2 Maros`,
     MARGIN,
-    cursorY + 14,
+    height - MARGIN * 0.5,
   );
 
   return new Promise((resolve, reject) => {

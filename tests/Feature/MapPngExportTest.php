@@ -48,40 +48,6 @@ class MapPngExportTest extends TestCase
         ];
     }
 
-    /**
-     * Komponen utama peta kontur beserta penjelasannya.
-     *
-     * Dipisah dari kelengkapan umum karena keduanya punya daftar berbeda;
-     * digabung dalam satu assertion membuat pesan kegagalan tidak jelas
-     * butir mana yang hilang.
-     *
-     * @return array<int, array{0: string, 1: string}>
-     */
-    private function expectedComponents(): array
-    {
-        return [
-            ['Garis Kontur', 'Garis imajiner yang menghubungkan titik-titik dengan ketinggian sama dari permukaan laut.'],
-            ['Nilai Kontur', 'Angka pada garis kontur yang menunjukkan besarnya elevasi, biasanya dalam satuan meter.'],
-            ['Interval Kontur', 'Jarak vertikal yang konstan antara dua garis kontur yang berurutan.'],
-            ['Garis Kontur Indeks', 'Garis kontur yang digambar lebih tebal setiap kelipatan interval tertentu agar mudah dibaca.'],
-            ['Indikator Relief & Kenampakan Medan', 'Kerapatan garis menggambarkan bentuk lahan: lereng landai renggang, lereng curam rapat, lembah membentuk V ke hulu, bukit melingkar.'],
-        ];
-    }
-
-    /**
-     * @return array<int, array{0: string, 1: string}>
-     */
-    private function expectedCompleteness(): array
-    {
-        return [
-            ['Judul Peta', 'Menunjukkan identitas atau nama wilayah yang dipetakan.'],
-            ['Skala Peta', 'Perbandingan jarak pada peta dengan jarak sebenarnya di lapangan.'],
-            ['Arah Utara / Orientasi', 'Tanda panah yang menunjukkan arah utara geografis.'],
-            ['Legenda / Keterangan', 'Penjelasan mengenai simbol-simbol lain yang ada di dalam peta.'],
-            ['Grid Koordinat', 'Garis bujur dan lintang atau UTM untuk menentukan posisi titik pada peta.'],
-        ];
-    }
-
     public function test_modul_ekspor_berkas_png(): void
     {
         $module = $this->module();
@@ -90,178 +56,6 @@ class MapPngExportTest extends TestCase
         $this->assertStringContainsString("'image/png'", $module, 'Kanvas harus dikonversi ke PNG.');
         $this->assertStringContainsString('export function triggerPngDownload(', $module);
     }
-
-    public function test_komponen_utama_peta_kontur_lengkap(): void
-    {
-        $module = $this->module();
-
-        foreach ($this->expectedComponents() as [$title, $text]) {
-            $this->assertStringContainsString(
-                $title,
-                $module,
-                "Judul komponen \"{$title}\" hilang dari bahan ajar."
-            );
-            $this->assertStringContainsString(
-                $text,
-                $module,
-                "Penjelasan komponen \"{$title}\" hilang dari bahan ajar."
-            );
-        }
-    }
-
-    public function test_kelengkapan_umum_peta_lengkap(): void
-    {
-        $module = $this->module();
-
-        foreach ($this->expectedCompleteness() as [$title, $text]) {
-            $this->assertStringContainsString(
-                $title,
-                $module,
-                "Judul kelengkapan \"{$title}\" hilang dari bahan ajar."
-            );
-            $this->assertStringContainsString(
-                $text,
-                $module,
-                "Penjelasan kelengkapan \"{$title}\" hilang dari bahan ajar."
-            );
-        }
-    }
-
-    /**
-     * Tiap butir bahan ajar harus punya sketsa gambarnya sendiri.
-     *
-     * Daftar teks tanpa gambar membuat pembaca harus membandingkan penjelasan
-     * dengan peta yang sedang dilihat; keduanya tidak pernah berada di tempat
-     * yang sama. Yang dijaga di sini adalah keberadaan handler draw pada setiap
-     * butir, fungsi gambarnya benar-benar ada, dan digambar pada baris dengan
-     * lebar kolom yang tetap supaya tidak saling menimpa.
-     */
-    public function test_setiap_butir_bahan_ajar_punya_sketsa(): void
-    {
-        $module = $this->module();
-
-        $expectedDrawers = [
-            'Garis Kontur' => 'drawGarisKontur',
-            'Nilai Kontur' => 'drawNilaiKontur',
-            'Interval Kontur' => 'drawIntervalKontur',
-            'Garis Kontur Indeks' => 'drawKonturIndeks',
-            'Indikator Relief & Kenampakan Medan' => 'drawRelief',
-            'Judul Peta' => 'drawJudulPeta',
-            'Skala Peta' => 'drawSkalaPeta',
-            'Arah Utara / Orientasi' => 'drawArahUtara',
-            'Legenda / Keterangan' => 'drawLegenda',
-            'Grid Koordinat' => 'drawGrid',
-        ];
-
-        foreach ($expectedDrawers as $title => $drawer) {
-            $this->assertMatchesRegularExpression(
-                "/title: '".preg_quote($title, '/')."',\s*\n\s*text: '[^']+',\s*\n\s*draw: {$drawer},/",
-                $module,
-                "Butir \"{$title}\" tidak memasang handler gambar {$drawer}."
-            );
-
-            $this->assertStringContainsString(
-                "function {$drawer}(",
-                $module,
-                "Fungsi gambar {$drawer} untuk \"{$title}\" tidak ada di modul."
-            );
-        }
-
-        // Tiap handler harus benar-benar menggambar, bukan hanya mengembalikan
-        // nilai. Fungsi kosong akan lolos dari pemeriksaan di atas.
-        foreach (array_values($expectedDrawers) as $drawer) {
-            $body = $this->functionBody($module, $drawer);
-
-            $this->assertNotSame('', $body, "Badan fungsi {$drawer} tidak terbaca.");
-            $this->assertStringContainsString(
-                'ctx.',
-                $body,
-                "Fungsi {$drawer} tidak menggambar apa pun."
-            );
-            $this->assertStringContainsString(
-                'beginThumb(',
-                $body,
-                "Fungsi {$drawer} tidak memakai bingkai bersama beginThumb()."
-            );
-        }
-    }
-
-    /**
-     * Ambil isi fungsi dari sumber JavaScript dengan pencocokan kurung kurawal.
-     *
-     * Regex biasa tidak bisa memisahkan badan fungsi karena isinya sendiri
-     * banyak kurung kurawal, misalnya destructuring. Tanpa pemisah yang benar,
-     * pemeriksaan "fungsi ini benar-benar menggambar" hanya akan membaca satu
-     * baris pertama dan selalu lolos.
-     */
-    private function functionBody(string $module, string $name): string
-    {
-        $start = strpos($module, "function {$name}(");
-
-        if ($start === false) {
-            return '';
-        }
-
-        $open = strpos($module, '{', $start);
-
-        if ($open === false) {
-            return '';
-        }
-
-        $depth = 0;
-        $length = strlen($module);
-
-        for ($i = $open; $i < $length; $i += 1) {
-            if ($module[$i] === '{') {
-                $depth += 1;
-            } elseif ($module[$i] === '}') {
-                $depth -= 1;
-
-                if ($depth === 0) {
-                    return substr($module, $open + 1, $i - $open - 1);
-                }
-            }
-        }
-
-        return '';
-    }
-
-    /**
-     * Lebar kolom sketsa dan teks harus dihitung dari lebar konten yang sama.
-     *
-     * measureHeight dan drawSection memakai rumus yang sama. Kalau hanya salah
-     * satu yang memperbarui, kanvas jadi lebih pendek dari isinya dan bagian
-     * bawah bahan ajar terpotong tanpa ada pesan error.
-     */
-    public function test_tinggi_baris_bahan_ajar_dihitung_sama_di_ukur_dan_gambar(): void
-    {
-        $module = $this->module();
-
-        $this->assertStringContainsString('function itemRowHeight(', $module);
-        $this->assertStringContainsString('function teachingSections(', $module);
-
-        // Keduanya harus memakai tinggi baris yang sama, bukan menghitung
-        // sendiri. Ekpresi diakhiri titik koma supaya definisi funksinya,
-        // yang tidak diikuti titik koma, tidak ikut terhitung.
-        $this->assertSame(
-            2,
-            preg_match_all('/itemRowHeight\(ctx, item, textWidth\);/', $module),
-            'measureHeight dan drawSection harus sama-sama memakai itemRowHeight().'
-        );
-
-        $this->assertSame(
-            2,
-            preg_match_all('/for \(const section of teachingSections\(\)\)/', $module),
-            'measureHeight dan buildMapPng harus sama-sama memakai teachingSections().'
-        );
-
-        // Lebar kolom teks diturunkan sekali dari lebar sketsa dan jaraknya.
-        $this->assertStringContainsString(
-            'const textWidth = contentWidth - ITEM_VISUAL_WIDTH - ITEM_VISUAL_GAP;',
-            $module
-        );
-    }
-
     public function test_kompas_dan_bar_skala_ada_di_png(): void
     {
         $module = $this->module();
@@ -391,23 +185,32 @@ class MapPngExportTest extends TestCase
             'Penambahan tetap mengasumsikan subjudul hanya satu baris.'
         );
 
-        // Tinggi kanvas harus menghitung subjudul dengan cara yang sama.
+        // Tinggi area peta harus dihitung dari jumlah baris yang sebenarnya,
+        // bukan diasumsikan satu baris. Kalau tidak, judul panjang membuat
+        // subjudul menimpa peta.
         $this->assertStringContainsString(
-            'subtitleLineCount(ctx, subtitle, contentWidth) * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP',
+            'const titleLines = wrapText(probe, title, mapWidth).length;',
             $module,
-            'measureHeight harus menghitung tinggi subjudul yang sebenarnya.'
+            'Tinggi area peta harus memakai jumlah baris judul yang sebenarnya.'
+        );
+        $this->assertStringContainsString(
+            'const subtitleLines = wrapText(probe, subtitleText, mapWidth).length;',
+            $module,
+            'Tinggi area peta harus memakai jumlah baris subjudul yang sebenarnya.'
         );
 
-        // Tinggi kanvas harus ikut menyesuaikan jumlah baris judul.
+        // Tinggi peta dan tinggi kanvas harus berasal dari perhitungan yang sama.
+        // Kalau tidak, yang diukur dan yang digambar berbeda dan isi bagian
+        // bawah terpotong.
         $this->assertStringContainsString(
-            'function titleLineCount(',
+            'const available = height - MARGIN * 2 - headerHeight - FOOTER_GAP - FOOTER_HEIGHT;',
             $module,
-            'Jumlah baris judul harus bisa dihitung untuk penyesuaian tinggi kanvas.'
+            'Tinggi area peta harus dihitung dari sisa lembar, bukan dari isi teks.'
         );
         $this->assertStringContainsString(
-            'titleLineCount(ctx, title, contentWidth) * TITLE_LINE_HEIGHT + TITLE_GAP',
+            'const mapHeight = Math.round(Math.min(Math.max(available, MAP_MIN_HEIGHT), MAP_MAX_HEIGHT));',
             $module,
-            'measureHeight harus memperhitungkan tinggi judul yang sebenarnya.'
+            'Tinggi area peta harus dibatasi supaya judul dan kaki halaman tetap muat.'
         );
     }
 
@@ -479,33 +282,87 @@ class MapPngExportTest extends TestCase
     }
 
     /**
-     * Tinggi kotak peta harus mengikuti rasio snapshot.
+     * Lembar cetak harus landscape dan tidak boleh ikut memanjang.
      *
-     * Kalau tinggi tetap dipatok sementara snapshot memakai rasio lain, kode
-     * akan dipaksa kembali memotong gambar agar memenuhi kotak, dan masalah
-     * peta ter-zoom muncul lagi.
+     * Tinggi lembar dulu diukur dari isi, termasuk daftar uraian komponen peta
+     * kontur. Akibatnya keluarannya seperti kolom web: peta tinggal jadi pita
+     * tipis di bagian atas, wilayah yang dipilih terlihat kecil, dan printer
+     * harus memutar kertas. Sekarang ukuran lembar adalah pilihan format, bukan
+     * hasil pengukuran, sehingga setiap wilayah keluar dengan format sama.
      */
-    public function test_tinggi_kotak_peta_mengikuti_rasio_snapshot(): void
+    public function test_lembar_cetak_landscape_dan_tidak_ikut_memanjang(): void
     {
         $module = $this->module();
 
-        $this->assertStringNotContainsString(
-            'const MAP_HEIGHT =',
+        // Lebar lebih besar dari tinggi: itu definisi landscape yang dipakai
+        // di sini, dan tidak boleh berubah diam-diam.
+        $this->assertMatchesRegularExpression(
+            '/const SHEET_WIDTH = (\d+);/',
             $module,
-            'Tinggi kotak peta masih dipatok satu angka untuk semua kondisi.'
+            'Lebar lembar harus berupa konstanta yang bisa diperiksa.'
+        );
+        $this->assertMatchesRegularExpression(
+            '/const SHEET_HEIGHT = (\d+);/',
+            $module,
+            'Tinggi lembar harus berupa konstanta yang bisa diperiksa.'
         );
 
+        preg_match('/const SHEET_WIDTH = (\d+);/', $module, $lebar);
+        preg_match('/const SHEET_HEIGHT = (\d+);/', $module, $tinggi);
+        $this->assertGreaterThan(
+            (int) $tinggi[1],
+            (int) $lebar[1],
+            'Lembar harus landscape: lebar lebih besar dari tinggi.'
+        );
+
+        // Tinggi kanvas harus diambil dari konstanta lembar, bukan dihitung
+        // dari isi. Kalau dihitung dari isi, format keluar tidak seragam.
         $this->assertStringContainsString(
-            'function mapAreaHeight(',
+            'const height = SHEET_HEIGHT;',
             $module,
-            'Tinggi kotak peta harus dihitung dari rasio snapshot.'
+            'Tinggi kanvas harus memakai tinggi lembar yang dipatok.'
         );
 
-        // Pengukur tinggi dan penggambar memakai fungsi yang sama.
-        $this->assertSame(
-            2,
-            preg_match_all('/mapAreaHeight\(mapCanvas, \w+\);/', $module),
-            'measureHeight dan buildMapPng harus sama-sama memakai mapAreaHeight().'
+        // Kode lama yang mengukur isi tidak boleh kembali.
+        $this->assertStringNotContainsString(
+            'function measureHeight(',
+            $module,
+            'Pengukur tinggi berbasis isi akan membuat format keluar berubah-ubah.'
+        );
+    }
+
+    /**
+     * PNG hanya berisi peta, bukan daftar uraian komponen peta kontur.
+     *
+     * Uraian itu cocok untuk lembar handout, tapi di sini ia membuat halaman
+     * panjang dan peta mengecil sampai wilayah yang dipilih tidak terbaca.
+     */
+    public function test_png_tidak_mencetak_uraian_komponen_peta_kontur(): void
+    {
+        $module = $this->module();
+
+        foreach (['Komponen Utama Peta Kontur', 'Kelengkapan Umum Peta'] as $judul) {
+            $this->assertStringNotContainsString(
+                $judul,
+                $module,
+                "Bagian '{$judul}' tidak lagi dicetak pada PNG."
+            );
+        }
+
+        // Kode gambar bagian itu harus hilang, bukan hanya disobatkan.
+        foreach (['drawSection(', 'teachingSections(', 'CONTOUR_COMPONENTS', 'MAP_COMPLETENESS'] as $simbol) {
+            $this->assertStringNotContainsString(
+                $simbol,
+                $module,
+                "Fungsi atau data '{$simbol}' masih ada padahal tidak lagi dipakai."
+            );
+        }
+
+        // Yang tetap dicetak: peta dan keterangan sumbernya.
+        $this->assertStringContainsString(
+            'Garis kontur (garis tebal = kontur indeks)',
+            $module,
+            'Keterangan sumber peta harus tetap ada.'
         );
     }
 
