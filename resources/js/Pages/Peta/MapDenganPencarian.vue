@@ -296,15 +296,18 @@
             <span aria-hidden="true">🔖</span>
           </button>
 
-          <!-- Print button -->
-          <button
-            @click="printMap"
-            class="inline-flex items-center gap-1.5 rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95"
-            title="Cetak peta"
-          >
-            <span aria-hidden="true">🖨️</span>
-            <span class="text-xs">Cetak</span>
-          </button>
+<!-- Print button. Mencetak PNG isi kanvas persis seperti yang sedang
+tampil, bukan membuka jendela cetak terpisah dan bukan memakai wilayah
+yang kebetulan sedang dipilih di dropdown. -->
+<button
+@click="printMapPng({ matchViewport: true })"
+:disabled="isExporting"
+class="inline-flex items-center gap-1.5 rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95 disabled:cursor-not-allowed disabled:opacity-50"
+title="Cetak PNG peta yang sedang terlihat"
+>
+<span aria-hidden="true">🖨️</span>
+<span class="text-xs">{{ isExporting ? 'Menyiapkan...' : 'Cetak' }}</span>
+</button>
         </div>
 
         <!-- Bookmark list -->
@@ -1902,18 +1905,28 @@ function deleteBookmark(index) {
  *
  * @param {{area?: {name: string, label: string}, region?: object, components?: object}} options
  */
-async function printMapPng({ area = null, region = null, components = null } = {}) {
+async function printMapPng({ area = null, region = null, components = null, matchViewport = false } = {}) {
   if (!map.value) return { ok: false };
 
   const wilayah = selectedWilayah.value;
-  const name = area?.name ?? wilayah?.name ?? 'Peta Kontur Sulawesi Selatan';
-  const label = area?.label ?? wilayah?.label ?? 'Provinsi Sulawesi Selatan';
+
+  // matchViewport menang atas wilayah yang sedang dipilih. Tombol Cetak
+  // promise isinya sama dengan yang terlihat di kanvas utama, jadi kalau
+  // ada kabupaten yang dipilih, isinya tetap bukan kabupaten itu.
+  const fallbackName = matchViewport ? 'Tampilan Saat Ini' : wilayah?.name ?? 'Peta Kontur Sulawesi Selatan';
+  const fallbackLabel = matchViewport
+    ? 'Wilayah yang sedang terlihat di peta'
+    : wilayah?.label ?? 'Provinsi Sulawesi Selatan';
+
+  const name = area?.name ?? fallbackName;
+  const label = area?.label ?? fallbackLabel;
 
   const result = await exportMapPng(map.value, {
     title: `Peta Kontur - ${name}`,
     subtitle: label,
     sources: sourceCredit.value,
     filename: `peta-kontur-${slugify(name)}.png`,
+    ...(matchViewport ? { matchViewport: true } : {}),
     ...(region
       ? { region, regionMaxZoom: Number.isFinite(region.maxZoom) ? region.maxZoom : null }
       : {}),
@@ -2089,6 +2102,12 @@ function generatePrintHTML(camera, wilayah = null) {
   maplibregl.addProtocol('pmtiles', protocol.tile);
   const map = new maplibregl.Map({
     container: 'print-map',
+    // Wajib, bukan sekadar langkah export PNG. Tanpa preserveDrawingBuffer
+    // browser boleh membuang buffer WebGL begitu frame selesai digambar, dan
+    // halaman cetak yang mengambil tangkapan layar lalu menampilkan kotak kosong
+    // padahal petanya sudah termuat. Gejalanya persis seperti peta yang tidak
+    // dimuat: PDF-nya hanya berisi header.
+    preserveDrawingBuffer: true,
     style: {
       version: 8,
       sources: {
@@ -2112,7 +2131,33 @@ ${cetakKecamatanLayers}
     bearing: ${bearing},
     pitch: ${pitch},
   });
-  map.once('load', () => { window.print(); });
+  // Menunggu 'idle', bukan 'load'.
+  //
+  // 'load' hanya berarti style sudah terurai dan frame pertama selesai
+  // digambar; tile raster dan vektor biasanya masih turun saat itu.
+  // window.print() yang dipanggil pada 'load' membuka dialog cetak saat kanvas
+  // masih kosong, jadi PDF hasil "Simpan sebagai PDF" hanya berisi header
+  // tanpa peta.
+  //
+  // 'idle' baru datang setelah semua tile selesai dimuat dan digambar. Penge-nya
+  // diletakkan sebelum map.once-nya, bukan sesudah, karena peta yang sudah
+  // selesai lebih dulu tidak akan pernah memancarkan 'idle' lagi.
+  let printed = false;
+  const cetakSekarang = () => {
+    if (printed) return;
+    printed = true;
+
+    // Dua frame supaya frame terakhir benar-benar sudah terkomposisi ke halaman
+    // sebelum dialog cetak mengambil tangkapan layarnya.
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+  };
+
+  map.once('idle', cetakSekarang);
+
+  // 'idle' tidak pernah datang kalau satu sumber menggantung. Dialog cetak yang
+  // tidak pernah muncul lebih buruk daripada peta yang tercetak sebelum semua
+  // tile masuk, jadi ada batas waktunya.
+  setTimeout(cetakSekarang, 15000);
 <\/script>
 </body></html>`;
 }

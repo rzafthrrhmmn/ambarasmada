@@ -187,11 +187,19 @@ class PetaKecamatanDropdownTest extends TestCase
         );
 
         // Ekspor PNG memakai nama wilayah yang sama supaya berkas dan judulnya
-        // tidak berbeda isi.
+        // tidak berbeda isi. matchViewport dipakai tombol Cetak dan sengaja
+        // menimpanya, karena isinya yang dicetak adalah yang terlihat di layar,
+        // bukan wilayah yang kebetulan sedang dipilih.
         $this->assertStringContainsString(
-            'const name = area?.name ?? wilayah?.name ?? \'Peta Kontur Sulawesi Selatan\';',
+            'const fallbackName = matchViewport ? \'Tampilan Saat Ini\' : wilayah?.name ?? \'Peta Kontur Sulawesi Selatan\';',
             $source,
             'Ekspor PNG harus memakai nama wilayah terpilih sebagai judul dan nama berkas.'
+        );
+
+        $this->assertStringContainsString(
+            'const name = area?.name ?? fallbackName;',
+            $source,
+            'Nama berkas dan judul PNG harus memakai nama wilayah yang sudah dipilih fallback.'
         );
     }
 

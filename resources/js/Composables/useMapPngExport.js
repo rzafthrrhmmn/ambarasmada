@@ -1081,8 +1081,21 @@ function waitForMapIdle(map, timeoutMs = 6000) {
  * legenda, histogram, kompas, dan skala digambar di atas sudut peta. Tanpa
  * margin, sudut wilayah yang justru paling penting justru tertutup panel.
  * Padding dibatasi 26% supaya wilayah kecil tidak menyusut jadi titik.
+ *
+ * Padding bisa dimatikan untuk ekspor yang harus meniru apa yang sedang terlihat
+ * di layar. Marginnya berguna untuk wilayah yang dipilih, karena panel legenda,
+ * histogram, kompas, dan skala menumpuk di sudut peta sehingga sudut wilayah
+ * tertutup panel. UntukPotret layar yang sedang tampil, margin justru membuat
+ * berkasnya berbeda dari layar, padahal itu justru yang diminta pemakainya.
+ *
+ * @param {object} map
+ * @param {boolean} [enabled=true]
  */
-function regionPadding(map) {
+function regionPadding(map, enabled = true) {
+  if (!enabled) {
+    return { top: 0, bottom: 0, left: 0, right: 0 };
+  }
+
   const canvas = map?.getCanvas?.();
   const width = canvas?.width ?? 0;
   const height = canvas?.height ?? 0;
@@ -1103,6 +1116,36 @@ function regionPadding(map) {
 }
 
 /**
+ * Batas geografis yang sedang terlihat di kanvas peta.
+ *
+ * Dipakai untuk dua hal: menyamakan isi PNG dengan isi layar, dan menuliskan
+ * grid koordinat. Harus dibaca sebelum kanvas diubah ukurannya, karena luas
+ * yang terlihat ikut berubah begitu ukuran kanvas berubah.
+ *
+ * @param {object} map
+ * @returns {{west:number,south:number,east:number,north:number}|null}
+ */
+function visibleRegion(map) {
+  try {
+    const raw = map?.getBounds?.();
+
+    if (!raw) {
+      return null;
+    }
+
+    return {
+      west: raw.getWest(),
+      south: raw.getSouth(),
+      east: raw.getEast(),
+      north: raw.getNorth(),
+    };
+  } catch {
+    // Peta yang belum selesai diukur tidak punya batas yang bisa dipercaya.
+    return null;
+  }
+}
+
+/**
  * Arahkan peta ke satu wilayah, lalu kembalikan cara mengembalikan kamera lama.
  *
  * Ini sumber utama bug "preview benar, hasil unduhan salah": snapshot PNG diambil
@@ -1118,9 +1161,11 @@ function regionPadding(map) {
  * @param {{west:number,south:number,east:number,north:number}} region
  * @param {number} [maxZoom]  Batas zoom paket offline, dipakai sebagai pengaman
  *   supaya wilayah kecil tidak diperbesar melebihi isi arsip.
+ * @param {{ pad?: boolean }} [options]  `pad: false` memakai area peta tanpa
+ *   margin, supaya luas yang tercetak persis sama dengan yang terlihat di layar.
  * @returns {Promise<() => void>} Fungsi pemulih kamera.
  */
-async function frameRegion(map, region, maxZoom) {
+async function frameRegion(map, region, maxZoom, options = {}) {
   const previous = {
     center: map.getCenter(),
     zoom: map.getZoom(),
@@ -1149,7 +1194,7 @@ async function frameRegion(map, region, maxZoom) {
         [region.east, region.north],
       ],
       {
-        padding: regionPadding(map),
+        padding: regionPadding(map, options.pad !== false),
         bearing: 0,
         pitch: 0,
         // Tanpa animasi: yang dikejar adalah snapshot yang benar, dan animasi
@@ -1411,6 +1456,14 @@ export function useMapPngExport() {
    * benar-benar menampilkan seluruh wilayah sementara berkas PNG-nya berisi
    * potongan yang kebetulan sedang dilihat.
    *
+   * `matchViewport: true` menulis isi kanvas persis seperti yang tampil, dengan
+   * luas yang sama dan tanpa margin. Dipakai tombol Cetak. Batas yang sedang
+   * terlihat dibaca lebih dulu, sebelum ukuran kanvas diubah untuk resolusi
+   * ekspor, karena luas yang tampil ikut berubah begitu ukuran kanvas berubah.
+   * Di layar yang sudah landscape luasnya sama persis; di layar berpotret
+   * pertahankan hasil landscape, jadi isinya sedikit lebih luas ke arah
+   * kiri dan kanan, tidak pernah lebih sempit.
+   *
    * @returns {Promise<{ ok: boolean, blocked?: boolean, error?: string|null, mapMissing?: boolean }>}
    */
   async function exportMapPng(map, overrides = {}) {
@@ -1421,10 +1474,28 @@ export function useMapPngExport() {
     isExporting.value = true;
     exportError.value = null;
 
-    // `filename`, `region`, dan `regionMaxZoom` bukan opsi gambar, jadi
-    // dipisah sebelum diteruskan ke buildMapPng.
-    const { filename, region = null, regionMaxZoom = null, ...pngOptions } = overrides;
+    // `filename`, `region`, `regionMaxZoom`, dan `matchViewport` bukan opsi gambar,
+    // jadi dipisah sebelum diteruskan ke buildMapPng.
+    const {
+      filename,
+      region = null,
+      regionMaxZoom = null,
+      matchViewport = false,
+      ...pngOptions
+    } = overrides;
     const { subtitle: subtitleOverride, ...restOptions } = pngOptions;
+
+    // Luas yang sedang terlihat harus dibaca SEBELUM kanvas diubah ukurannya.
+    // Ukuran kanvas ikut menentukan berapa luas yang tampil, jadi batas yang
+    // dibaca sesudahnya sudah menunjuk ke wilayah yang berbeda.
+    //
+    // matchViewport dipakai tombol Cetak: isinya harus sama dengan yang terlihat
+    // di layar, bukan wilayah yang dipilih di dropdown dan bukan seluruh
+    // Sulawesi. Dipakai bersama pad: false supaya area petanya persis sebesar
+    // yang di layar, tanpa margin yang biasanya dipakai supaya panel cetakan
+    // tidak menutupi sudut wilayah.
+    const viewportRegion = matchViewport ? visibleRegion(map) : null;
+    const targetRegion = region ?? viewportRegion;
 
     // Rasio sisi kotak peta di lembar harus diketahui lebih dulu, karena kanvas
     // peta disiapkan supaya ikut rasio itu. Subjudul yang dipakai untuk
@@ -1447,8 +1518,16 @@ export function useMapPngExport() {
         let restoreCamera = null;
         let framingProblem = null;
 
-        if (region && map?.fitBounds) {
-          const framing = await frameRegion(map, region, regionMaxZoom);
+        if (targetRegion && map?.fitBounds) {
+          // Batas zoom paket offline hanya berlaku untuk wilayah yang dipilih.
+          // Untuk tampilan yang sedang terlihat, zoom yang sedang dipakai
+          // justru harus dipertahankan.
+          const framing = await frameRegion(
+            map,
+            targetRegion,
+            region ? regionMaxZoom : null,
+            { pad: !matchViewport },
+          );
           restoreCamera = framing.restore;
           framingProblem = framing.framed ? null : framing.reason;
         }
@@ -1462,28 +1541,16 @@ export function useMapPngExport() {
           // ulang dari pusat dan zoom: hanya peta yang tahu wilayah yang benar-
           // benar terlihat pada kanvas yang sedang direkam.
           //
-          // Batas dibaca lewat getWest/getSouth/getEast/getNorth, bukan
-          // toArray(). LngLatBounds.toArray() mengembalikan
-          // [[west, south], [east, north]], yaitu dua pasang angka, bukan
-          // empat angka berurutan. Memecahnya seperti angka berurutan membuat
-          // west berisi pasangan dan east berisi undefined, sehingga
-          // selisihnya NaN dan grid koordinat diam-diam tidak pernah digambar
-          // padahal penggunanya mencentangnya.
-          let bounds = null;
-
-          try {
-            const raw = map?.getBounds?.();
-            if (raw) {
-              bounds = {
-                west: raw.getWest(),
-                south: raw.getSouth(),
-                east: raw.getEast(),
-                north: raw.getNorth(),
-              };
-            }
-          } catch {
-            bounds = null;
-          }
+          // Pembacaannya memakai helper yang sama dengan pembacaan batas untuk
+          // matchViewport, jadi tidak ada dua cara berbeda untuk hal yang
+          // mestinya sama. Helper itu juga yang menjaga agar batas dibaca lewat
+          // getWest/getSouth/getEast/getNorth, bukan toArray(): LngLatBounds
+          // .toArray() mengembalikan [[west, south], [east, north]], yaitu dua
+          // pasang angka, bukan empat angka berurutan. Memecahnya seperti angka
+          // berurutan membuat west berisi pasangan dan east berisi undefined,
+          // sehingga selisihnya NaN dan grid koordinat diam-diam tidak pernah
+          // digambar padahal penggunanya mencentangnya.
+          const bounds = visibleRegion(map);
 
           // Subjudul digabung, bukan ditimpa. Versi lama menaruh seluruh
           // subjudul di dalam spread ...pngOptions, sehingga subtitle yang

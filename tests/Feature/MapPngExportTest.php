@@ -1217,4 +1217,130 @@ class MapPngExportTest extends TestCase
             'Batas kanvas peta utama harus ditulis eksplisit, bukan mengandalkan bawaan.'
         );
     }
+
+    /**
+     * Tombol Cetak harus menulis PNG isi kanvas utama, persis seperti yang tampil.
+     *
+     * Sebelumnya tombol ini membuka jendela cetak terpisah dengan peta MapLibre
+     * kedua, yang isinya viewport saat jendela dibuka, bukan yang ada di layar.
+     */
+    public function test_tombol_cetak_mencetak_png_dari_kanvas_utama(): void
+    {
+        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+        $module = $this->module();
+
+        $this->assertStringContainsString(
+            '@click="printMapPng({ matchViewport: true })"',
+            $pencarian,
+            'Tombol Cetak harus mencetak PNG kanvas utama, bukan membuka jendela cetak.'
+        );
+
+        $this->assertStringNotContainsString(
+            '@click="printMap"',
+            $pencarian,
+            'Tombol Cetak tidak boleh lagi membuka jendela cetak terpisah.'
+        );
+
+        // Batas yang sedang terlihat harus dibaca sebelum ukuran kanvas diubah
+        // untuk resolusi ekspor. Kalau dibaca belakangan, luas yang dirujuk
+        // menunjuk ke wilayah yang tidak sedang terlihat.
+        $this->assertStringContainsString(
+            'const viewportRegion = matchViewport ? visibleRegion(map) : null;',
+            $module,
+            'Luas yang sedang terlihat harus dibaca dari peta, bukan dihitung dari kamera.'
+        );
+
+        $this->assertStringContainsString(
+            'const targetRegion = region ?? viewportRegion;',
+            $module,
+            'Wilayah yang dibingkai harus memakai pilihan pengguna, atau tampilan layar bila tidak ada.'
+        );
+    }
+
+    /**
+     * Ekspor tampilan layar tidak boleh memakai margin wilayah.
+     *
+     * Margin itu gunanya supaya panel legenda, histogram, kompas, dan skala tidak
+     * menutupi sudut wilayah. Untuk tampilan yang sedang terlihat, margin membuat
+     * berkasnya berbeda dari layar, padahal itu yang diminta tombol Cetak.
+     */
+    public function test_ekspor_tampilan_layar_tanpa_margin_wilayah(): void
+    {
+        $module = $this->module();
+
+        $this->assertStringContainsString(
+            'function regionPadding(map, enabled = true)',
+            $module,
+            'Margin wilayah harus bisa dimatikan.'
+        );
+
+        $this->assertStringContainsString(
+            '{ pad: !matchViewport },',
+            $module,
+            'Ekspor tampilan layar harus membingkai tanpa margin.'
+        );
+
+        $this->assertStringContainsString(
+            'padding: regionPadding(map, options.pad !== false),',
+            $module,
+            'frameRegion harus menghormati pilihan margin dari pemanggil.'
+        );
+
+        // Batas zoom paket offline hanya untuk wilayah yang dipilih. Tampilan
+        // yang sedang terlihat harus memakai zoom yang sedang dipakai pengguna.
+        $this->assertStringContainsString(
+            'region ? regionMaxZoom : null,',
+            $module,
+            'Batas zoom arsip tidak boleh ikut membatasi ekspor tampilan layar.'
+        );
+    }
+
+    /**
+     * PDF hasil "Simpan sebagai PDF" dari halaman cetak tidak boleh kehilangan peta.
+     *
+     * Dua hal membuat gejalanya sama persis, jadi keduanya harus dijaga:
+     *
+     * 1. window.print() yang dipanggil pada event 'load'. Event itu hanya
+     *    berarti style terurai dan frame pertama selesai digambar; tile-nya
+     *    biasanya masih turun, jadi dialog cetak terbuka saat kanvas kosong.
+     * 2. Peta cetakan tanpa preserveDrawingBuffer. Browser boleh membuang
+     *    buffer WebGL sebelum halaman dicetak, dan yang tampil adalah kotak
+     *    kosong padahal petanya sudah termuat.
+     */
+    public function test_halaman_cetak_tidak_mencetak_pdf_tanpa_peta(): void
+    {
+        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+
+        $this->assertStringContainsString(
+            "map.once('idle', cetakSekarang);",
+            $pencarian,
+            'Dialog cetak harus menunggu idle, yaitu semua tile selesai, bukan hanya load.'
+        );
+
+        $this->assertStringNotContainsString(
+            "map.once('load', () => { window.print(); });",
+            $pencarian,
+            'Menunggu load membuat dialog cetak terbuka sebelum tile selesai.'
+        );
+
+        $this->assertStringContainsString(
+            'preserveDrawingBuffer: true,',
+            $pencarian,
+            'Peta cetakan harus memakai preserveDrawingBuffer supaya buffer WebGL tidak dibuang.'
+        );
+
+        // 'idle' bisa tidak pernah datang kalau satu sumber menggantung, jadi
+        // dialog cetaknya tetap harus muncul.
+        $this->assertStringContainsString(
+            'setTimeout(cetakSekarang, 15000);',
+            $pencarian,
+            'Cetak perlu batas waktu supaya dialog tetap muncul kalau idle tidak datang.'
+        );
+
+        $this->assertStringContainsString(
+            'if (printed) return;',
+            $pencarian,
+            'Cetak hanya boleh berjalan sekali walau idle dan batas waktunya sama-sama datang.'
+        );
+    }
 }
