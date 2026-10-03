@@ -425,6 +425,32 @@ class LetterController extends Controller
         $placeholders = $letter->template?->placeholderList() ?? [];
 
         if ($letter->template && $letter->template->file_path && $placeholders !== []) {
+            // Template yang barisnya masih ada tapi berkasnya hilang sering
+            // terjadi: template lama diunggah saat templat ini masih disimpan
+            // di disk lokal hosting, sedangkan disk lokal itu hilang setiap kali
+            // aplikasi dipasang ulang. Versi lama memanggil templatePath()
+            // langsung, sehingga satu template yang hilang membuat pratinjau
+            // gagal seluruhnya dengan 422 padahal suratnya sendiri tidak
+            // bermasalah.
+            //
+            // Jalur cetak sudah lama memakai tata letak bawaan sebagai
+            // gantinya, jadi pratinjau sekarang ikut memakai cara yang sama:
+            // surat tetap bisa dilihat, dan alasannya ditulis sebagai catatan.
+            if (! $this->templateFileExists($letter->template)) {
+                report(new RuntimeException(sprintf(
+                    'Berkas template "%s" tidak ada di disk %s; tata letak bawaan dipakai sebagai gantinya.',
+                    (string) $letter->template->file_path,
+                    $this->diskName(),
+                )));
+
+                $body = $this->defaultBody($letter, $extra)
+                    .'<p class="catatan">Template "'.e((string) $letter->template->name).'"'
+                    .' tidak ada di penyimpanan, jadi pratinjau ini memakai tata letak bawaan. '
+                    .'Unggah ulang berkasnya lewat halaman Template Surat.</p>';
+
+                return [$body, []];
+            }
+
             $resolved = $this->values->forTemplate($letter, $placeholders, $extra);
 
             return [
@@ -659,6 +685,32 @@ class LetterController extends Controller
         abort_unless(is_file($path), 422, 'Berkas template tidak ditemukan di penyimpanan.');
 
         return $path;
+    }
+
+    /**
+     * Apakah berkas template masih ada di disk, tanpa memunculkan galat.
+     *
+     * Pemeriksaannya tidak melempar HTTP 422 seperti templatePath(), karena
+     * pemanggilnya butuh memutuskan sendiri: memakai tata letak bawaan lalu
+     * memberi tahu pengguna, bukan menggagalkan seluruh permintaan.
+     */
+    protected function templateFileExists(LetterTemplate $template): bool
+    {
+        $storagePath = (string) $template->file_path;
+
+        if ($storagePath === '') {
+            return false;
+        }
+
+        try {
+            return $this->disk()->exists($storagePath);
+        } catch (Throwable) {
+            // Disk yang tidak bisa dijangkau dianggap tidak punya berkas.
+            // Pemanggil sudah punya jalur cadangan, jadi lebih baik memakai
+            // tata letak bawaan daripada membiarkan galatnya merambat ke
+            // pemanggil berikutnya.
+            return false;
+        }
     }
 
     /**

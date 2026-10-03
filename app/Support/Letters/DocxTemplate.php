@@ -223,7 +223,11 @@ class DocxTemplate
     protected function open(string $path): ZipArchive
     {
         if (! is_file($path)) {
-            throw new RuntimeException("Berkas templat tidak ditemukan: {$path}");
+            throw new RuntimeException(
+                "Berkas templat tidak ditemukan di sistem berkas: {$path}. "
+                .'Bila templat disimpan di disk remote (S3), unduh dulu ke folder '
+                .'sementara karena kelas ini hanya membaca berkas lokal.'
+            );
         }
 
         $zip = new ZipArchive;

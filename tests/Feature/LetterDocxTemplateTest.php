@@ -614,21 +614,42 @@ class LetterDocxTemplateTest extends TestCase
             ->assertSessionHas('error');
     }
 
-    public function test_pratinjau_menyampaikan_alasan_gagal(): void
+    /**
+     * Template yang berkasnya hilang tidak boleh membuat pratinjau gagal
+     * seluruhnya.
+     *
+     * Ini keadaan yang nyata di produksi: template lama diunggah saat templat
+     * masih disimpan di disk lokal hosting, dan berkas itu hilang ketika
+     * aplikasi dipasang ulang. Satu template yang hilang tidak boleh membuat
+     * semua surat gagal dipratinjau.
+     *
+     * Yang dijaga di sini tetap alasan yang disampaikan ke pengguna, tapi
+     * sekarang lewat catatan pada pratinjau yang berhasil, bukan lewat 422.
+     * Ekspor .docx tetap gagal keras karena berkas keluaran akan berbeda dari
+     * template yang dipilih; itu diuji terpisah.
+     */
+    public function test_pratinjau_tetap_berhasil_dan_menyampaikan_alasan_saat_berkas_template_hilang(): void
     {
         $template = $this->storeTemplate();
 
         Storage::disk('public')->delete($template->file_path);
 
-        $this->actingAs($this->pengurus)
+        $response = $this->actingAs($this->pengurus)
             ->postJson('/letters/preview', [
                 'jenis_surat' => 'Keputusan',
                 'perihal' => 'Pengangkatan Pradana',
                 'tgl_surat' => '2026-10-01',
                 'template_id' => $template->id,
             ])
-            ->assertStatus(422)
-            ->assertJsonStructure(['message']);
+            ->assertOk();
+
+        $html = $response->getContent();
+
+        // Isi surat tetap terlihat, jadi pengguna tidak kehilangan hasil kerja.
+        $this->assertStringContainsString('Pengangkatan Pradana', $html);
+
+        // Alasan kenapa template tidak dipakai harus tertulis di halaman.
+        $this->assertStringContainsString('tidak ada di penyimpanan', $html);
     }
 
     /**
