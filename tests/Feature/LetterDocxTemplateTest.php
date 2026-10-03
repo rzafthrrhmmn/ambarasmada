@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia as Assert;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\PhpWord;
 use Tests\TestCase;
@@ -131,6 +132,39 @@ class LetterDocxTemplateTest extends TestCase
             ->assertSessionHas('success');
 
         $this->assertSoftDeleted('letter_templates', ['id' => $template->id]);
+    }
+
+    /**
+     * Folder sementara di Vercel hilang tiap kali fungsi dinyalakan ulang, jadi
+     * halaman template harus memperingatkan sebelum berkasnya hilang.
+     */
+    public function test_halaman_template_memperingatkan_disk_sementara(): void
+    {
+        config([
+            'letters.disk' => 'sementara',
+            'filesystems.disks.sementara' => ['driver' => 'local', 'root' => '/tmp/storage/app/public', 'throw' => false],
+        ]);
+        Storage::fake('sementara');
+
+        $this->actingAs($this->pengurus)
+            ->get('/letters/templates')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('storage.disk', 'sementara')
+                ->where('storage.persistent', false)
+                ->where('storage.writable', true)
+            );
+    }
+
+    public function test_halaman_template_tanpa_peringatan_untuk_disk_yawet(): void
+    {
+        $this->actingAs($this->pengurus)
+            ->get('/letters/templates')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('storage.disk', 'public')
+                ->where('storage.persistent', true)
+            );
     }
 
     public function test_template_yang_diunggah_penandanya_terdeteksi(): void

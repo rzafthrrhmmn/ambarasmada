@@ -26,6 +26,24 @@
       </div>
     </div>
 
+    <div
+      v-if="storage && (!storage.persistent || !storage.writable)"
+      class="mb-6 rounded-2xl border border-[#EDD330]/70 bg-[#EDD330]/10 p-4"
+      data-test="peringatan-penyimpanan"
+    >
+      <p class="text-sm font-bold text-[#EDD330]">Penyimpanan template belum siap</p>
+      <p v-if="!storage.writable" class="mt-1 text-xs text-[#f0ead8]">
+        Disk <code class="rounded bg-[#263D26] px-1">{{ storage.disk }}</code> tidak bisa ditulis,
+        jadi template dan lampiran tidak akan tersimpan. Periksa izin folder atau kredensial storage.
+      </p>
+      <p v-else-if="!storage.persistent" class="mt-1 text-xs text-[#f0ead8]">
+        Disk <code class="rounded bg-[#263D26] px-1">{{ storage.disk }}</code> menyimpan berkas di
+        folder sementara. Berkas akan hilang setiap kali server dinyalakan ulang atau di-deploy ulang.
+        Isi <code class="rounded bg-[#263D26] px-1">LETTERS_DISK=s3</code> beserta kunci S3 Supabase
+        supaya template tersimpan permanen.
+      </p>
+    </div>
+
     <div class="mb-6 rounded-2xl border border-[#6F9435] bg-[#335233] p-5">
       <p class="text-sm font-bold text-[#EDD330]">Cara memakai template</p>
       <ol class="mt-2 list-decimal space-y-1 pl-5 text-xs text-[#8fa06a]">
@@ -136,6 +154,7 @@ import Modal from '@/Components/Modal.vue';
 defineProps({
   templates: { type: Array, default: () => [] },
   catalog: { type: Object, default: () => ({}) },
+  storage: { type: Object, default: () => ({}) },
 });
 
 const showCreate = ref(false);

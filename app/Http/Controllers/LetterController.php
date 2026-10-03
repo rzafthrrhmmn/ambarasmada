@@ -238,6 +238,7 @@ class LetterController extends Controller
                     'created_at' => $template->created_at?->toIso8601String(),
                 ]),
             'catalog' => $this->values->catalog(),
+            'storage' => $this->storageStatus(),
         ]);
     }
 
@@ -499,6 +500,47 @@ class LetterController extends Controller
         $status = in_array($request->method(), ['POST', 'PATCH', 'DELETE'], true) ? 303 : 302;
 
         return redirect()->route($route, [], $status)->with('success', $message);
+    }
+
+    /**
+     * Ringkasan kondisi penyimpanan template dan lampiran.
+     *
+     * Folder /tmp di Vercel hilang setiap kali fungsi dinyalakan ulang, jadi
+     * berkas yang tersimpan di sana tidak bertahan. Kondisi ini ditampilkan di
+     * halaman template supaya masalahnya terlihat, bukan baru terasa setelah
+     * berkas hilang.
+     *
+     * @return array{disk: string, persistent: bool, writable: bool}
+     */
+    protected function storageStatus(): array
+    {
+        $config = (array) config('filesystems.disks.'.$this->diskName(), []);
+        $root = (string) ($config['root'] ?? '');
+        $remote = $this->isRemoteDisk();
+
+        $ephemeral = ! $remote
+            && (str_starts_with($root, '/tmp') || preg_match('#(^|[\\/])tmp[\\/]#i', $root) === 1);
+
+        $writable = true;
+
+        try {
+            $probe = config('letters.templates_directory', 'letter-templates').'/.storage-check';
+            $this->disk()->put($probe, 'cek');
+
+            if (! $this->disk()->exists($probe)) {
+                $writable = false;
+            }
+
+            $this->disk()->delete($probe);
+        } catch (Throwable) {
+            $writable = false;
+        }
+
+        return [
+            'disk' => $this->diskName(),
+            'persistent' => ! $ephemeral,
+            'writable' => $writable,
+        ];
     }
 
     protected function canGenerate(Letter $letter): bool
