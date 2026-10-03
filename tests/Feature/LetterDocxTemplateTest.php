@@ -90,6 +90,49 @@ class LetterDocxTemplateTest extends TestCase
             ->assertOk();
     }
 
+    /**
+     * Inertia meminta 303 untuk POST/PATCH/DELETE supaya peramban mengikuti
+     * dengan GET. Kalau 302, halaman dirender dua kali dengan metode yang sama.
+     */
+    public function test_redirect_setelah_tulis_memakai_303(): void
+    {
+        $template = $this->storeTemplate();
+
+        $this->actingAs($this->pengurus)
+            ->post('/letters/templates', ['name' => 'Template Baru', 'file' => $this->templateFile()])
+            ->assertStatus(303);
+
+        $this->storeLetter($template);
+
+        $this->actingAs($this->pengurus)
+            ->post('/letters', $this->letterPayload($template->id))
+            ->assertStatus(303);
+
+        $letter = Letter::firstOrFail();
+
+        $this->actingAs($this->pengurus)
+            ->delete("/letters/{$letter->id}")
+            ->assertStatus(303);
+    }
+
+    /**
+     * Template tetap bisa dihapus walau berkasnya tidak ada atau penyimpanannya
+     * bermasalah, dan kegagalan menulis audit tidak membatalkan aksi pengguna.
+     */
+    public function test_hapus_template_tetap_berhasil_walau_gagal_akses_berkas(): void
+    {
+        $template = $this->storeTemplate();
+
+        Storage::disk('public')->delete($template->file_path);
+
+        $this->actingAs($this->pengurus)
+            ->delete("/letters/templates/{$template->id}")
+            ->assertRedirect(route('letters.templates'))
+            ->assertSessionHas('success');
+
+        $this->assertSoftDeleted('letter_templates', ['id' => $template->id]);
+    }
+
     public function test_template_yang_diunggah_penandanya_terdeteksi(): void
     {
         $this->actingAs($this->pengurus)

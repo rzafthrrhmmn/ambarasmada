@@ -87,7 +87,7 @@ class LetterController extends Controller
 
         $this->log($request, 'letter.created', Letter::class, $letter->id);
 
-        return redirect()->route('letters.index')->with('success', 'Surat berhasil disimpan.');
+        return $this->redirectTo($request, 'letters.index', 'Surat berhasil disimpan.');
     }
 
     public function update(LetterRequest $request, Letter $letter): RedirectResponse
@@ -103,7 +103,7 @@ class LetterController extends Controller
 
         $this->log($request, 'letter.updated', Letter::class, $letter->id);
 
-        return redirect()->route('letters.index')->with('success', 'Surat berhasil diperbarui.');
+        return $this->redirectTo($request, 'letters.index', 'Surat berhasil diperbarui.');
     }
 
     public function destroy(Request $request, Letter $letter): RedirectResponse
@@ -111,14 +111,14 @@ class LetterController extends Controller
         $this->authorizeManager($request);
 
         if ($letter->file_path) {
-            $this->disk()->delete($letter->file_path);
+            $this->deleteStored($letter->file_path);
         }
 
         $letter->delete();
 
         $this->log($request, 'letter.archived', Letter::class, $letter->id);
 
-        return redirect()->route('letters.index')->with('success', 'Surat berhasil diarsipkan.');
+        return $this->redirectTo($request, 'letters.index', 'Surat berhasil diarsipkan.');
     }
 
     /**
@@ -259,7 +259,7 @@ class LetterController extends Controller
         $placeholders = $this->readPlaceholders($path);
 
         if ($placeholders === []) {
-            $this->disk()->delete($path);
+            $this->deleteStored($path);
 
             return back()->with(
                 'error',
@@ -277,9 +277,11 @@ class LetterController extends Controller
 
         $this->log($request, 'template.created', LetterTemplate::class, $template->id);
 
-        return redirect()
-            ->route('letters.templates')
-            ->with('success', 'Template surat berhasil disimpan dengan '.count($placeholders).' penanda.');
+        return $this->redirectTo(
+            $request,
+            'letters.templates',
+            'Template surat berhasil disimpan dengan '.count($placeholders).' penanda.'
+        );
     }
 
     public function destroyTemplate(Request $request, LetterTemplate $template): RedirectResponse
@@ -287,14 +289,14 @@ class LetterController extends Controller
         $this->authorizeManager($request);
 
         if ($template->file_path) {
-            $this->disk()->delete($template->file_path);
+            $this->deleteStored($template->file_path);
         }
 
         $template->delete();
 
         $this->log($request, 'template.deleted', LetterTemplate::class, $template->id);
 
-        return redirect()->route('letters.templates')->with('success', 'Template surat berhasil dihapus.');
+        return $this->redirectTo($request, 'letters.templates', 'Template surat berhasil dihapus.');
     }
 
     /**
@@ -485,6 +487,20 @@ class LetterController extends Controller
         return $blocks === [] ? ['-'] : $blocks;
     }
 
+    /**
+     * Redirect setelah Inertia mengirim POST/PATCH/DELETE.
+     *
+     * Inertia meminta 303 supaya peramban mengikuti dengan GET. Kalau 302,
+     * peramban mengulang permintaan dengan metode yang sama, dan halaman
+     * dirender dua kali.
+     */
+    protected function redirectTo(Request $request, string $route, string $message): RedirectResponse
+    {
+        $status = in_array($request->method(), ['POST', 'PATCH', 'DELETE'], true) ? 303 : 302;
+
+        return redirect()->route($route, [], $status)->with('success', $message);
+    }
+
     protected function canGenerate(Letter $letter): bool
     {
         return $letter->perihal !== null && $letter->perihal !== '';
@@ -600,7 +616,7 @@ class LetterController extends Controller
         $this->validateAttachmentContent($file);
 
         if ($previous) {
-            $this->disk()->delete($previous);
+            $this->deleteStored($previous);
         }
 
         $path = $file->store(config('letters.attachments_directory', 'letters'), $this->diskName());
@@ -652,14 +668,35 @@ class LetterController extends Controller
         return redirect()->route('letters.index')->with('error', $message);
     }
 
+    /**
+     * Catat jejak audit. Kegagalan menulis audit tidak boleh membatalkan aksi
+     * pengguna, jadi error ditelan dan hanya dilaporkan.
+     */
     protected function log(Request $request, string $action, string $entityType, int $entityId): void
     {
-        AuditLog::create([
-            'actor_id' => $request->user()?->id,
-            'action' => $action,
-            'entity_type' => $entityType,
-            'entity_id' => $entityId,
-            'ip_address' => $request->ip(),
-        ]);
+        try {
+            AuditLog::create([
+                'actor_id' => $request->user()?->id,
+                'action' => $action,
+                'entity_type' => $entityType,
+                'entity_id' => $entityId,
+                'ip_address' => $request->ip(),
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+    }
+
+    /**
+     * Hapus berkas dari disk. Template dan lampiran tetap bisa dihapus walau
+     * berkasnya hilang atau penyimpanannya sedang bermasalah.
+     */
+    protected function deleteStored(string $storagePath): void
+    {
+        try {
+            $this->disk()->delete($storagePath);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 }
