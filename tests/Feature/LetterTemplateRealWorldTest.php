@@ -227,15 +227,22 @@ class LetterTemplateRealWorldTest extends TestCase
     }
 
     /**
-     * Tulis berkas hasil uji. Berkas lama dihapus dulu karena Windows menahan
-     * berkas yang baru saja dibaca arsip .docx.
+     * Tulis berkas hasil uji. Windows menahan berkas yang baru saja dibaca
+     * arsip .docx, jadi hapus berkali-kali dulu. Kalau masih terkunci, simpan
+     * dengan nama cadangan daripada menggagalkan pengujian.
      */
     private function artifact(string $name, string $content): void
     {
         $path = $this->outputDir.'/'.$name;
 
         if (is_file($path)) {
-            unlink($path);
+            for ($attempt = 0; $attempt < 5 && ! @unlink($path); $attempt++) {
+                usleep(200_000);
+            }
+
+            if (is_file($path)) {
+                $path = $this->outputDir.'/'.substr($name, 0, -5).'-'.uniqid().substr($name, -5);
+            }
         }
 
         file_put_contents($path, $content);

@@ -29,7 +29,7 @@
     <div class="mb-6 rounded-2xl border border-[#6F9435] bg-[#335233] p-5">
       <p class="text-sm font-bold text-[#EDD330]">Cara memakai template</p>
       <ol class="mt-2 list-decimal space-y-1 pl-5 text-xs text-[#8fa06a]">
-        <li>Buka dokumen di Microsoft Word, lalu sisipkan penanda di bagian yang akan berubah, contoh <code class="text-[#d4dc9a]">{{ '{' }}{{ '{' }}perihal{{ '}' }}{{ '}' }}</code>.</li>
+        <li>Buka dokumen di Microsoft Word, lalu sisipkan penanda di bagian yang akan berubah, contoh <code class="text-[#d4dc9a]">${perihal}</code>.</li>
         <li>Unggah berkas .docx di bawah. Penanda dideteksi otomatis dan disimpan bersama template.</li>
         <li>Saat membuat surat, form otomatis memuat isian untuk setiap penanda yang belum punya kolom di form utama.</li>
         <li>Pratinjau, lalu ekspor sebagai .docx (mengisi template aslinya) atau .pdf.</li>
@@ -41,7 +41,7 @@
             v-for="(label, key) in catalog"
             :key="key"
             class="rounded bg-[#263D26] px-1.5 py-0.5 text-[10px] text-[#8fa06a]"
-          >{{ '{' }}{{ '{' }}{{ key }}{{ '}' }}{{ '}' }} &mdash; {{ label }}</code>
+          >${key} &mdash; {{ label }}</code>
         </div>
       </div>
     </div>
@@ -68,7 +68,7 @@
             v-for="name in template.placeholders"
             :key="name"
             class="rounded bg-[#263D26] px-1.5 py-0.5 text-[10px] text-[#d4dc9a]"
-          >{{ '{' }}{{ '{' }}{{ name }}{{ '}' }}{{ '}' }}</code>
+          >${name}</code>
         </div>
         <p v-else class="mt-3 rounded-lg border border-[#ef4419]/60 p-2 text-xs text-[#ef4419]">
           Template ini tidak memiliki penanda, jadi akan memakai tata letak bawaan.

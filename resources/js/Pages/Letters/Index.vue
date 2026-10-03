@@ -91,6 +91,13 @@
 
     <Modal v-if="showLetter && can('letters.manage')" :title="editItem ? 'Edit surat' : 'Surat baru'" @close="reset">
       <form @submit.prevent="submitForm" class="grid gap-4">
+        <p
+          v-if="submitError"
+          class="rounded-lg border border-[#ef4419]/70 bg-[#ef4419]/10 p-3 text-xs text-[#ef4419]"
+        >
+          {{ submitError }}
+        </p>
+
         <section class="rounded-xl border border-[#6F9435]/60 bg-[#263D26] p-4">
           <p class="mb-3 text-xs font-bold uppercase tracking-wide text-[#EDD330]">1. Template</p>
           <label class="block">
@@ -116,7 +123,7 @@
                 v-for="name in selectedTemplate.placeholders"
                 :key="name"
                 class="rounded bg-[#335233] px-1.5 py-0.5 text-[10px] text-[#d4dc9a]"
-              >{{ '{' }}{{ '{' }}{{ name }}{{ '}' }}{{ '}' }}</code>
+              >${name}</code>
             </div>
           </div>
           <p v-else class="mt-3 text-xs text-[#8fa06a]">
@@ -169,7 +176,7 @@
         <section v-if="extraFields.length" class="rounded-xl border border-[#6F9435]/60 bg-[#263D26] p-4">
           <p class="mb-1 text-xs font-bold uppercase tracking-wide text-[#EDD330]">3. Data penanda template</p>
           <p class="mb-3 text-[11px] text-[#8fa06a]">
-            Isian di bawah dibaca dari penanda {{ '${' }}{{ '{' }}nama_field{{ '}' }}{{ '}' }} pada template. Nilai disimpan pada surat, bukan pada data anggota.
+            Isian di bawah dibaca dari penanda <code class="text-[#EDD330]">${nama_field}</code> pada template. Nilai disimpan pada surat, bukan pada data anggota.
           </p>
           <div class="grid gap-3 sm:grid-cols-2">
             <Field
@@ -222,9 +229,9 @@
     <Modal v-if="showTemplate && can('letters.templates.manage')" title="Unggah template surat" @close="closeTemplate">
       <form @submit.prevent="submitTemplate" class="grid gap-3">
         <p class="rounded-lg border border-[#6F9435]/60 bg-[#263D26] p-3 text-xs text-[#8fa06a]">
-          Berkas .docx boleh memuat penanda <code class="text-[#EDD330]">{{ '${' }}{{ '{' }}perihal{{ '}' }}{{ '}' }}</code>,
-          <code class="text-[#EDD330]">{{ '${' }}{{ '{' }}isi_surat{{ '}' }}{{ '}' }}</code>,
-          <code class="text-[#EDD330]">{{ '${' }}{{ '{' }}nama_pradana_putra{{ '}' }}{{ '}' }}</code>, dan(setia placeholder
+          Berkas .docx boleh memuat penanda <code class="text-[#EDD330]">${perihal}</code>,
+          <code class="text-[#EDD330]">${isi_surat}</code>,
+          <code class="text-[#EDD330]">${nama_pradana_putra}</code>, dan setiap placeholder
           yang Anda buat sendiri. Penanda boleh berada di body, kop, maupun footer.
         </p>
         <label class="block">
@@ -288,6 +295,7 @@ const editItem = ref(null);
 const previewUrl = ref('');
 const previewLoading = ref(false);
 const previewError = ref('');
+const submitError = ref('');
 
 const filters = reactive({
   search: props.filters?.search ?? '',
@@ -450,14 +458,21 @@ function clearExtras() {
 
 function submitForm() {
   form.placeholder_values = { ...extraValues };
+  submitError.value = '';
 
   const options = {
     onSuccess: () => {
       reset();
     },
-    onError: () => {
-      if (!form.errors.perihal) {
-        form.setError('perihal', 'Perihal surat wajib diisi.');
+    // Error validasi tampil per-field. Kalau tidak ada satu pun field yang
+    // salah, berarti permintaan ditolak server (429 terlalu sering mencoba,
+    // 419 token kedaluwarsa, atau 500 kesalahan server).
+    onError: (errors) => {
+      if (!Object.keys(errors ?? {}).length) {
+        submitError.value =
+          'Surat gagal disimpan karena server menolak permintaan. Penyebab paling sering: '
+          + 'terlalu banyak percobaan menyimpan dalam waktu singkat. Tunggu sebentar lalu coba lagi, '
+          + 'atau periksa log aplikasi.';
       }
     },
   };

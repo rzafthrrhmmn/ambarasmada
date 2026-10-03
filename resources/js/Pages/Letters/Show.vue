@@ -62,7 +62,7 @@
               :key="name"
               class="flex items-baseline gap-2 text-xs"
             >
-              <code class="shrink-0 text-[10px] text-[#8fa06a]">{{ '{' }}{{ '{' }}{{ name }}{{ '}' }}{{ '}' }}</code>
+              <code class="shrink-0 text-[10px] text-[#8fa06a]">${name}</code>
               <span :class="unfilled.includes(name) ? 'text-[#ef4419]' : 'text-[#f0ead8]'">
                 {{ resolved[name] ?? '-' }}
                 <span v-if="unfilled.includes(name)" class="text-[10px]">(belum diisi)</span>
