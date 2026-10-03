@@ -38,6 +38,7 @@ const STATIC_ASSETS = [
 
 const GEOJSON_ASSETS = [
     '/storage/maps/batas_kabupaten_sulsel.geojson',
+    '/storage/maps/batas_kecamatan_sulsel.geojson',
 ];
 
 const MAP_LIBRARIES = [
@@ -119,7 +120,8 @@ const OFFLINE_MAP_HTML = '/offline-map.html';
 // Versi generator halaman peta offline. Dinaikkan setiap kali isi halaman
 // berubah, supaya activate bisa membuang peta lama yang isinya sudah usang.
 // v2: histogram tidak lagi memakai angka elevasi karangan.
-const OFFLINE_MAP_GENERATOR = 'v2';
+// v3: halaman peta offline menggambar batas kecamatan dan menyorot kecamatan yang diunduh.
+const OFFLINE_MAP_GENERATOR = 'v3';
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
@@ -470,7 +472,7 @@ self.addEventListener('message', (event) => {
     }
 
     if (event.data?.type === 'DOWNLOAD_OFFLINE_TILES') {
-        const { bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName, protocol } = event.data;
+        const { bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName, protocol, kecamatanGeojsonUrl, highlightKecId } = event.data;
         const port = event.ports[0];
 
         // Halaman yang lebih baru talking ke worker lama (atau sebaliknya) tidak
@@ -485,11 +487,11 @@ self.addEventListener('message', (event) => {
             return;
         }
 
-        event.waitUntil(handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName));
+        event.waitUntil(handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName, kecamatanGeojsonUrl, highlightKecId));
     }
 });
 
-async function handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName) {
+async function handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName, kecamatanGeojsonUrl, highlightKecId) {
     function send(message) {
         port.postMessage({ protocol: SW_PROTOCOL, ...message });
     }
@@ -570,7 +572,7 @@ async function handleOfflineDownload(port, bbox, zoomMin, zoomMax, pmtilesUrl, g
 
         if (layoutOptions) {
             sendProgress('Membuat layout peta offline...', downloadedTiles, tileQueue.length);
-            await generateOfflineMapHTML(db, bbox, effMin, effMax, geojsonUrl, layoutOptions, areaName);
+            await generateOfflineMapHTML(db, bbox, effMin, effMax, geojsonUrl, layoutOptions, areaName, kecamatanGeojsonUrl, highlightKecId);
         }
 
         sendProgress('Selesai', downloadedTiles, tileQueue.length);
@@ -887,7 +889,7 @@ function findTile(entries, tileId) {
     return null;
 }
 
-async function generateOfflineMapHTML(db, bbox, zoomMin, zoomMax, geojsonUrl, layoutOptions, areaName) {
+async function generateOfflineMapHTML(db, bbox, zoomMin, zoomMax, geojsonUrl, layoutOptions, areaName, kecamatanGeojsonUrl, highlightKecId) {
     const centerLon = (bbox.west + bbox.east) / 2;
     const centerLat = (bbox.south + bbox.north) / 2;
     const centerZoom = Math.floor((zoomMin + zoomMax) / 2);
@@ -907,6 +909,11 @@ async function generateOfflineMapHTML(db, bbox, zoomMin, zoomMax, geojsonUrl, la
         layoutOptions,
         elevStats,
         tileCount: await getTileCount(db),
+        // Batas kecamatan ikut dibawa ke halaman offline. URL-nya ditulis
+        // sebagai literal JSON supaya karakter kutip di dalam string tidak
+        // bisa menutup blok <script> lebih awal.
+        kecamatanGeojsonUrl: kecamatanGeojsonUrl ? JSON.stringify(kecamatanGeojsonUrl) : null,
+        highlightKecId: highlightKecId ? JSON.stringify(highlightKecId) : null,
     });
 
     // Store the HTML for offline access
@@ -993,7 +1000,7 @@ async function getTileCount(db) {
     });
 }
 
-function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, bbox, areaName, geojsonUrl, layoutOptions, elevStats, tileCount }) {
+function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, bbox, areaName, geojsonUrl, layoutOptions, elevStats, tileCount, kecamatanGeojsonUrl, highlightKecId }) {
     const scaleBarHtml = layoutOptions.scaleBar ? `
         <div id="scale-bar" class="map-control scale-bar" style="bottom: 20px; left: 20px;">
             <canvas id="scale-canvas" width="200" height="30"></canvas>
@@ -1132,7 +1139,11 @@ const histogramHtml = !layoutOptions.histogram ? '' : (elevStats ? `
                     'batas': {
                         type: 'geojson',
                         data: '${geojsonUrl}',
-                    },
+                    },${kecamatanGeojsonUrl ? `
+                    'kecamatan': {
+                        type: 'geojson',
+                        data: ${kecamatanGeojsonUrl},
+                    },` : ''}
                     'osm': {
                         type: 'raster',
                         tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
@@ -1147,7 +1158,14 @@ const histogramHtml = !layoutOptions.histogram ? '' : (elevStats ? `
                             'line-color': '#8c510a',
                             'line-width': ['case', ['==', ['%', ['get', 'ELEV'], 50], 0], 1.8, 0.8]
                         }
-                    },
+                    },${kecamatanGeojsonUrl ? `
+                    { id: 'kecamatan', type: 'line', source: 'kecamatan',
+                        paint: { 'line-color': '#0f766e', 'line-width': 0.6, 'line-opacity': 0.7 }
+                    },${highlightKecId ? `
+                    { id: 'kecamatan-highlight', type: 'fill', source: 'kecamatan',
+                        filter: ['==', ['get', 'id_kec'], ${highlightKecId}],
+                        paint: { 'fill-color': '#EDD330', 'fill-opacity': 0.25 }
+                    },` : ''}` : ''}
                     { id: 'batas', type: 'line', source: 'batas',
                         paint: { 'line-color': '#2563eb', 'line-width': 1.5, 'line-dasharray': [2, 2] }
                     }

@@ -48,9 +48,10 @@
     </div>
 
     <div class="mb-4 rounded-xl border-2 border-[#A7B92A]/40 bg-[#335233] p-4">
-      <label class="block text-xs font-medium text-[#d4dc9a] mb-2">Cari Kabupaten</label>
-      <div class="flex gap-2">
+      <label for="peta-kabupaten" class="block text-xs font-medium text-[#d4dc9a] mb-2">Cari Kabupaten</label>
+      <div class="flex flex-col gap-2 sm:flex-row">
         <select
+          id="peta-kabupaten"
           v-model="selectedKabupaten"
           @change="onKabupatenSelect"
           class="flex-1 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-2.5 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
@@ -64,18 +65,60 @@
             {{ kab.nama_kab }}
           </option>
         </select>
-        <button
-          v-if="selectedKabupaten"
-          @click="clearSelection"
-          class="rounded-lg border-2 border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/30"
+
+        <!-- Dropdown kecamatan mengikuti kabupaten yang dipilih. Daftar seluruh
+             Sulawesi hampir 313 nama dan hampir semuanya di luar kabupaten
+             aktif, jadi yang ditampilkan selalu daftar milik kabupaten
+             terpilih saja. -->
+        <select
+          id="peta-kecamatan"
+          v-model="selectedKecamatan"
+          @change="onKecamatanSelect"
+          :disabled="!selectedKabupaten"
+          class="flex-1 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-2.5 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Hapus
-        </button>
+          <option value="">
+            {{ selectedKabupaten ? '-- Pilih Kecamatan --' : '-- Pilih Kabupaten dulu --' }}
+          </option>
+          <option
+            v-for="kec in kecamatanOptions"
+            :key="kec.id_kec"
+            :value="kec.id_kec"
+          >
+            {{ kec.nama_kec }}
+          </option>
+        </select>
+
+        <div class="flex shrink-0 gap-2">
+          <button
+            v-if="selectedKabupaten"
+            @click="printWilayah"
+            class="rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-3 py-2 text-xs font-bold text-[#A7B92A] transition hover:bg-[#A7B92A]/20"
+            :title="`Cetak PNG wilayah yang dipilih: ${selectedWilayah?.label ?? ''}`"
+          >
+            Cetak PNG
+          </button>
+          <button
+            v-if="selectedKabupaten"
+            @click="clearSelection"
+            class="rounded-lg border-2 border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/30"
+          >
+            Hapus
+          </button>
+        </div>
       </div>
       <div v-if="selectedKabData" class="mt-2 flex flex-wrap gap-3 text-xs text-[#8fa06a]">
         <span>Kabupaten: <strong class="text-[#EDD330]">{{ selectedKabData.nama_kab }}</strong></span>
+        <span v-if="selectedKecData">
+          Kecamatan:
+          <strong class="text-[#EDD330]">{{ selectedKecData.nama_kec }}</strong>
+          <span class="text-[#8fa06a]">({{ selectedKecData.id_kec }})</span>
+        </span>
         <span>ID: {{ selectedKabData.id_kab }}</span>
-        <span v-if="selectedKabData.bbox">BBox: {{ selectedKabData.bbox.join(', ') }}</span>
+        <span v-if="selectedWilayahBBox">BBox: {{ selectedWilayahBBox.join(', ') }}</span>
+        <span v-if="selectedKabupaten && !selectedKecamatan">
+          {{ kecamatanOptions.length }} kecamatan di {{ selectedKabData.nama_kab }}
+        </span>
       </div>
     </div>
 
@@ -343,7 +386,7 @@
             <div class="relative rounded-lg border-2 border-[#6F9435] bg-[#263D26] p-4 text-center transition-all peer-checked:border-[#A7B92A] peer-checked:bg-[#A7B92A]/10 peer-checked:ring-2 peer-checked:ring-[#A7B92A]/20">
               <div class="text-lg font-bold text-[#EDD330]">📍</div>
               <div class="mt-1 text-sm font-semibold text-[#f0ead8]">Satu Daerah</div>
-              <div class="mt-1 text-xs text-[#8fa06a]">Pilih kabupaten/kota</div>
+              <div class="mt-1 text-xs text-[#8fa06a]">Pilih kabupaten/kota, lalu kecamatan</div>
             </div>
           </label>
         </div>
@@ -351,8 +394,9 @@
 
       <!-- Region Selection (when region mode) -->
       <div v-if="downloadMode === 'region'" class="rounded-lg border border-[#6F9435]/30 bg-[#335233] p-4">
-        <label class="block text-xs font-medium text-[#d4dc9a] mb-2">Pilih Kabupaten/Kota</label>
+        <label for="unduh-kabupaten" class="block text-xs font-medium text-[#d4dc9a] mb-2">Pilih Kabupaten/Kota</label>
         <select
+          id="unduh-kabupaten"
           v-model="selectedOfflineRegion"
           class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-2.5 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
         >
@@ -365,8 +409,37 @@
             {{ kab.nama_kab }}
           </option>
         </select>
-        <div v-if="selectedOfflineRegion" class="mt-2 text-xs text-[#8fa06a]">
-          Area: {{ selectedOfflineRegionData?.nama_kab }} ({{ selectedOfflineRegionData?.id_kab }})
+
+        <!-- Unduhan bisa dibatasi sampai satu kecamatan. Tanpa ini paket tile
+             selalu memuat seluruh kabupaten padahal yang dibutuhkan peta satu
+             kecamatan. -->
+        <label for="unduh-kecamatan" class="mt-3 block text-xs font-medium text-[#d4dc9a] mb-2">
+          Pilih Kecamatan <span class="text-[#8fa06a]">(opsional)</span>
+        </label>
+        <select
+          id="unduh-kecamatan"
+          v-model="selectedOfflineKecamatan"
+          :disabled="!selectedOfflineRegion"
+          class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-2.5 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <option value="">
+            {{ selectedOfflineRegion ? '-- Semua Kecamatan --' : '-- Pilih Kabupaten dulu --' }}
+          </option>
+          <option
+            v-for="kec in offlineKecamatanOptions"
+            :key="kec.id_kec"
+            :value="kec.id_kec"
+          >
+            {{ kec.nama_kec }}
+          </option>
+        </select>
+
+        <div v-if="selectedOfflineWilayah" class="mt-2 text-xs text-[#8fa06a]">
+          Area: {{ selectedOfflineWilayah.label }}
+          <span class="text-[#EDD330]">({{ selectedOfflineWilayah.kode }})</span>
+          <span v-if="selectedOfflineKecData && !selectedOfflineKecData.bbox" class="mt-1 block text-[#EDD330]">
+            Kecamatan ini belum punya batas sendiri, paket tile mengikuti seluruh kabupaten.
+          </span>
         </div>
       </div>
 
@@ -374,7 +447,7 @@
       <div v-if="showMiniMap" class="rounded-lg border border-[#6F9435]/30 bg-[#263D26] p-3">
         <div class="flex items-center justify-between mb-2">
           <label class="text-xs font-medium text-[#d4dc9a]">Preview Wilayah</label>
-          <span v-if="selectedOfflineRegionData" class="text-xs text-[#EDD330]">{{ selectedOfflineRegionData.nama_kab }}</span>
+          <span v-if="selectedOfflineWilayah" class="text-xs text-[#EDD330]">{{ selectedOfflineWilayah.name }}</span>
         </div>
         <div ref="miniMapContainer" class="peta-shell h-[200px] w-full rounded-lg overflow-hidden border border-[#6F9435]/30 relative">
           <div v-if="miniMapLoading" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/90">
@@ -517,13 +590,23 @@ const mapStatus = ref('');
 const offlineZoomMin = ref(8);
 const offlineZoomMax = ref(14);
 const selectedKabupaten = ref('');
+
+// Kecamatan hanya bermakna kalau kabupatennya sudah dipilih. Reset-nya
+// dilakukan di handler yang memang mengubah tampilan peta, bukan lewat
+// watch, supaya tidak ada dua sumber kebenaran untuk pilihan ini.
+const selectedKecamatan = ref('');
 const miniMapLoading = ref(false);
 const miniMapError = ref('');
 
 // Mode unduh peta offline: 'full' untuk seluruh Sulawesi Selatan,
-// 'region' untuk satu kabupaten/kota.
+// 'region' untuk satu kabupaten/kota, atau satu kecamatan di dalamnya.
 const downloadMode = ref('full');
 const selectedOfflineRegion = ref('');
+
+// Pilihan kecamatan pada dialog unduhan sengaja terpisah dari peta utama.
+// Satu dialog boleh mengunduh wilayah yang berbeda dari yang sedang terlihat,
+// jadi keduanya tidak boleh berbagi state.
+const selectedOfflineKecamatan = ref('');
 
 // Rentang zoom yang benar-benar ada di arsip PMTiles, dibaca dari header
 // arsip. Tanpa ini slider menawarkan z13/z14 padahal arsip hanya memuat
@@ -587,6 +670,19 @@ const geojsonUrl = computed(() => {
   return url;
 });
 
+// Batas kecamatan bersifat opsional. Kalau berkasnya tidak ada, layer
+// kecamatan sengaja tidak dibuat sama sekali: peta utama, peta mini, dan
+// cetakan lalu kembali seperti sebelum batas kecamatan ditambahkan.
+const hasKecamatanGeojson = computed(() => props.mapConfig?.hasKecamatanGeojson ?? false);
+
+const kecamatanGeojsonUrl = computed(() => {
+  const url = props.mapConfig?.kecamatanGeojsonUrl ?? '/storage/maps/batas_kecamatan_sulsel.geojson';
+  if (url.startsWith('http')) {
+    return url.replace(/^https?:\/\/[^\/]+/, '');
+  }
+  return url;
+});
+
 const selectedKabData = computed(() => {
   return kabupatens.value.find((k) => k.id_kab === selectedKabupaten.value) ?? null;
 });
@@ -595,13 +691,84 @@ const selectedOfflineRegionData = computed(() => {
   return kabupatens.value.find((k) => k.id_kab === selectedOfflineRegion.value) ?? null;
 });
 
+/** Daftar kecamatan untuk-dialog unduhan, mengikuti kabupaten yang dipilih. */
+const offlineKecamatanOptions = computed(() => selectedOfflineRegionData.value?.kecamatans ?? []);
+
+const selectedOfflineKecData = computed(() => {
+  return offlineKecamatanOptions.value.find((k) => k.id_kec === selectedOfflineKecamatan.value) ?? null;
+});
+
+// Daftar kecamatan milik kabupaten yang sedang dipilih. Kabupaten tanpa
+// daftar menghasilkan daftar kosong, sehingga dropdown kedua tidak pernah
+// menawarkan opsi yang bukan bagian dari kabupaten aktif.
+const kecamatanOptions = computed(() => selectedKabData.value?.kecamatans ?? []);
+
+const selectedKecData = computed(() => {
+  return kecamatanOptions.value.find((k) => k.id_kec === selectedKecamatan.value) ?? null;
+});
+
+/**
+ * Batas wilayah yang sedang dipilih: milik kecamatan kalau ada, kalau tidak
+ * milik kabupaten.
+ *
+ * Sebelas dari 313 kecamatan belum punya batas sendiri karena lahir lebih baru
+ * dari sumber batas yang dipakai. Fallback ke bbox kabupaten membuat
+ * kecamatannya tetap bisa dicetak, hanya cakupannya mengikuti seluruh kabupaten.
+ */
+function bboxOf(wilayah, fallback) {
+  if (Array.isArray(wilayah?.bbox) && wilayah.bbox.length === 4) return wilayah.bbox;
+  return Array.isArray(fallback?.bbox) && fallback.bbox.length === 4 ? fallback.bbox : null;
+}
+
+/**
+ * Rancang nama, kode, dan batas satu wilayah pilihan.
+ *
+ * Dua tempat butuh bentuk yang sama: peta utama untuk cetak, dan dialog unduhan
+ * untuk paket tile offline. Bentuknya disatukan di sini supaya nama berkas PNG
+ * dan halaman peta offline tidak pernah memakai rumusan berbeda untuk wilayah yang
+ * sama.
+ */
+function wilayahInfo(kabupaten, kecamatan) {
+  if (!kabupaten) return null;
+
+  if (!kecamatan) {
+    return {
+      name: kabupaten.nama_kab,
+      label: `Kabupaten ${kabupaten.nama_kab}`,
+      kode: kabupaten.id_kab,
+      bbox: bboxOf(kabupaten, null),
+      namaKab: kabupaten.nama_kab,
+      namaKec: null,
+    };
+  }
+
+  return {
+    name: `${kecamatan.nama_kec}, ${kabupaten.nama_kab}`,
+    label: `Kecamatan ${kecamatan.nama_kec}, Kabupaten ${kabupaten.nama_kab}`,
+    kode: kecamatan.id_kec,
+    bbox: bboxOf(kecamatan, kabupaten),
+    namaKab: kabupaten.nama_kab,
+    namaKec: kecamatan.nama_kec,
+  };
+}
+
+const selectedWilayah = computed(() => wilayahInfo(selectedKabData.value, selectedKecData.value));
+
+const selectedWilayahBBox = computed(() => selectedWilayah.value?.bbox ?? null);
+
+const selectedOfflineWilayah = computed(() =>
+  wilayahInfo(selectedOfflineRegionData.value, selectedOfflineKecData.value)
+);
+
 // Peta mini hanya tampil setelah mode "satu daerah" aktif dan kabupaten/kota
 // sudah dipilih, sehingga watch(showMiniMap) bisa membuat dan membuang peta.
 const showMiniMap = computed(() => downloadMode.value === 'region' && selectedOfflineRegion.value !== '');
 
+// Cakupan unduhan. Mode "satu daerah" memakai batas wilayah yang dipilih di
+// dialog: batas kecamatannya kalau ada, kalau tidak batas kabupatennya.
 const currentBBox = computed(() => {
-  if (downloadMode.value === 'region' && selectedOfflineRegionData.value?.bbox) {
-    const [west, south, east, north] = selectedOfflineRegionData.value.bbox;
+  if (downloadMode.value === 'region' && selectedOfflineWilayah.value?.bbox) {
+    const [west, south, east, north] = selectedOfflineWilayah.value.bbox;
     return { west, east, south, north };
   }
   return boundingBox.value;
@@ -739,7 +906,48 @@ function highlightKabupaten(idKab) {
   }
 }
 
+/**
+ * Sorot batas kecamatan yang dipilih.
+ *
+ * Layer kecamatan dibuat hanya kalau berkas geojsonnya tersedia, jadi fungsi
+ * ini tidak boleh melempar galat saat layer-nya tidak ada. Filter kosong
+ * ('id_kec' sama dengan string kosong) sengaja dipakai sebagai kondisi "tidak
+ * ada yang tersorot", karena tidak ada nilai id_kec yang kosong di data.
+ *
+ * Highlight yang sama diberikan pada dua layer: pengisi area dan garis tepi.
+ * Kalau hanya garis yang disorot, isi kecamatan_selected tampak sama dengan
+ * tetangganya dan highlight-nya tidak terbaca.
+ */
+function highlightKecamatan(idKec) {
+  if (!map.value) return;
+
+  const apply = (target) => {
+    target.setFilter('kecamatan-highlight', ['==', ['get', 'id_kec'], idKec ?? '']);
+    target.setFilter('kecamatan-highlight-line', ['==', ['get', 'id_kec'], idKec ?? '']);
+  };
+
+  if (map.value.getLayer('kecamatan-highlight')) {
+    apply(map.value);
+    return;
+  }
+
+  // Layer belum siap. Menunggu 'load' hanya membantu ketika peta sedang
+  // dimuat; kalau peta sudah selesai dimuat tanpa layer ini (berkas geojson
+  // tidak ada), callback-nya tidak akan pernah jalan dan highlight dilewati.
+  if (!map.value.loaded()) return;
+
+  map.value.once('load', () => {
+    if (map.value?.getLayer('kecamatan-highlight')) apply(map.value);
+  });
+}
+
 function onKabupatenSelect() {
+  // Kecamatan milik kabupaten sebelumnya harus dibuang lebih dulu. Kalau tidak,
+  // pilihan lama masih tertahan di state dan tidak lagi ada di daftar yang
+  // baru, sehingga selectedKecData bernilai null padahal layarnya masih
+  // menampilkan nama kecamatan yang tidak berlaku.
+  selectedKecamatan.value = '';
+
   const kab = selectedKabData.value;
   if (!map.value || !kab || !kab.bbox) return;
 
@@ -749,12 +957,71 @@ function onKabupatenSelect() {
     { padding: 40, duration: 2000 }
   );
   highlightKabupaten(kab.id_kab);
+  // Kabupaten yang baru dipilih tidak mewarisi sorotan kecamatan sebelumnya.
+  highlightKecamatan('');
   mapStatus.value = `Menampilkan ${kab.nama_kab} (BBox: ${kab.bbox.join(', ')})`;
+}
+
+/**
+ * Ambil peta ke kecamatan yang dipilih.
+ *
+ * Kecamatan memakai bbox sendiri supaya bingkai dan cetakannya mengikuti
+ * kecamatan, bukan seluruh kabupaten. Kecamatan tanpa bbox memakai bbox
+ * kabupaten sehingga tombol cetak tetap menghasilkan peta yang benar.
+ */
+function onKecamatanSelect() {
+  const kec = selectedKecData.value;
+  const kab = selectedKabData.value;
+  if (!map.value || !kec || !kab) return;
+
+  const bbox = selectedWilayahBBox.value;
+  if (!bbox) return;
+
+  const [west, south, east, north] = bbox;
+  map.value.fitBounds(
+    [[west, south], [east, north]],
+    { padding: 40, duration: 2000 }
+  );
+  highlightKabupaten(kab.id_kab);
+  // Sebelas kecamatan belum punya batas sendiri, jadi tidak ada yang bisa
+  // disorot untuk mereka. Filter kosong dipakai untuk membatalkan sorotan
+  // sebelumnya, dan status di bawah menjelaskan kenapa sorotan tidak muncul.
+  highlightKecamatan(kec.id_kec);
+
+  mapStatus.value = Array.isArray(kec.bbox)
+    ? `Menampilkan Kecamatan ${kec.nama_kec} (${kec.id_kec}) di ${kab.nama_kab} (BBox: ${bbox.join(', ')})`
+    : `Kecamatan ${kec.nama_kec} (${kec.id_kec}) di ${kab.nama_kab} belum punya batas sendiri, peta menampilkan seluruh kabupaten.`;
+}
+
+/** Cetak wilayah pilihan, atau seluruh Sulawesi Selatan kalau belum ada pilihan. */
+async function printWilayah() {
+  const wilayah = selectedWilayah.value;
+  if (!wilayah) {
+    mapStatus.value = 'Pilih kabupaten atau kecamatan lebih dulu supaya peta dicetak sesuai wilayah yang dimaksud.';
+    return;
+  }
+
+  const bbox = selectedWilayahBBox.value;
+  if (!bbox) return;
+
+  await printMapPng({
+    area: { name: wilayah.name, label: wilayah.label },
+    region: { west: bbox[0], south: bbox[1], east: bbox[2], north: bbox[3], maxZoom: 14 },
+    components: {
+      scaleBar: includeScaleBar.value,
+      northArrow: includeNorthArrow.value,
+      legend: includeLegend.value,
+      histogram: includeHistogram.value,
+      grid: includeGrid.value,
+    },
+  });
 }
 
 function clearSelection() {
   selectedKabupaten.value = '';
+  selectedKecamatan.value = '';
   highlightKabupaten('');
+  highlightKecamatan('');
   if (map.value) {
     map.value.fitBounds(
       [[boundingBox.value.west, boundingBox.value.south], [boundingBox.value.east, boundingBox.value.north]],
@@ -765,14 +1032,17 @@ function clearSelection() {
 }
 
 function initMiniMap() {
-  if (!miniMapContainer.value || !selectedOfflineRegionData.value || !hasPmtiles.value) return;
+  // Preview mengikuti wilayah yang dipilih di dialog, bukan hanya kabupatennya.
+  // Kalau hanya kabupaten yang dipakai, preview untuk kecamatan yang lebih kecil
+  // akan menampilkan potongan yang jauh lebih luas daripada yang diunduh.
+  const wilayah = selectedOfflineWilayah.value;
+  if (!miniMapContainer.value || !wilayah?.bbox || !hasPmtiles.value) return;
   if (miniMap.value) {
     miniMap.value.remove();
     miniMap.value = null;
   }
 
-  const kab = selectedOfflineRegionData.value;
-  const [west, south, east, north] = kab.bbox;
+  const [west, south, east, north] = wilayah.bbox;
 
   miniMapLoading.value = true;
   miniMapError.value = '';
@@ -800,12 +1070,28 @@ function initMiniMap() {
               },
               'kontur': { type: 'vector', url: pmtilesSourceUrl.value },
               'batas': { type: 'geojson', data: geojsonUrl.value },
+              // Source kecamatan dibuat bersyarat supaya preview tetap jalan
+              // di pemasangan yang belum punya berkas batas kecamatan.
+              ...(hasKecamatanGeojson.value
+                ? { 'kecamatan': { type: 'geojson', data: kecamatanGeojsonUrl.value } }
+                : {}),
             },
             layers: [
               { id: 'mini-basemap-layer', type: 'raster', source: 'mini-basemap' },
               { id: 'mini-kontur', type: 'line', source: 'kontur', 'source-layer': 'kontur',
                 layout: { 'line-join': 'round', 'line-cap': 'round' },
                 paint: { 'line-color': '#8c510a', 'line-width': 0.8 } },
+              ...(hasKecamatanGeojson.value
+                ? [{ id: 'mini-kecamatan', type: 'line', source: 'kecamatan',
+                    paint: { 'line-color': '#0f766e', 'line-width': 0.6, 'line-opacity': 0.7 } }]
+                : []),
+              // Isi wilayah yang diunduh disorot supaya preview menunjukkan
+              // tepat apa yang akan diterima pengguna, bukan hanya kotanya.
+              ...(hasKecamatanGeojson.value && wilayah.namaKec
+                ? [{ id: 'mini-kecamatan-highlight', type: 'fill', source: 'kecamatan',
+                    filter: ['==', ['get', 'id_kec'], wilayah.kode],
+                    paint: { 'fill-color': '#EDD330', 'fill-opacity': 0.25 } }]
+                : []),
               { id: 'mini-batas', type: 'line', source: 'batas',
                 paint: { 'line-color': '#2563eb', 'line-width': 1, 'line-dasharray': [1, 1] } },
             ],
@@ -817,13 +1103,11 @@ function initMiniMap() {
 
         miniMap.value.on('load', () => {
           miniMapLoading.value = false;
-          // Fit to the region's bbox for better preview
-          if (miniMap.value && kab.bbox) {
-            miniMap.value.fitBounds(
-              [[kab.bbox[0], kab.bbox[1]], [kab.bbox[2], kab.bbox[3]]],
-              { padding: 20, duration: 1000 }
-            );
-          }
+          // Fit to the selected region's bbox for better preview
+          miniMap.value?.fitBounds(
+            [[west, south], [east, north]],
+            { padding: 20, duration: 1000 }
+          );
         });
 
         miniMap.value.on('error', (e) => {
@@ -912,6 +1196,12 @@ async function initMap() {
         type: 'geojson',
         data: geojsonUrl.value,
       },
+      // Batas kecamatan hanya perlu ada kalau berkasnya benar-benar tersedia.
+      // MapLibre menolak style yang memakai source yang gagal dimuat, jadi
+      // source-nya dibuat bersyarat, bukan selalu dideklarasikan.
+      ...(hasKecamatanGeojson.value
+        ? { 'kecamatan-batas': { type: 'geojson', data: kecamatanGeojsonUrl.value } }
+        : {}),
       'osm-tiles': {
         type: 'raster',
         tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
@@ -989,6 +1279,43 @@ async function initMap() {
         },
       },
       ...konturLayers,
+      // Batas kecamatan digambar di atas garis kontur tapi di bawah garis batas
+      // kabupaten, supaya yang terlihat paling depan tetap batas wilayah yang
+      // sedang disorot.
+      ...(hasKecamatanGeojson.value
+        ? [
+            {
+              id: 'kecamatan-batas',
+              type: 'line',
+              source: 'kecamatan-batas',
+              paint: {
+                'line-color': '#0f766e',
+                'line-width': 0.6,
+                'line-opacity': 0.7,
+              },
+            },
+            {
+              id: 'kecamatan-highlight',
+              type: 'fill',
+              source: 'kecamatan-batas',
+              filter: ['==', ['get', 'id_kec'], ''],
+              paint: {
+                'fill-color': '#EDD330',
+                'fill-opacity': 0.25,
+              },
+            },
+            {
+              id: 'kecamatan-highlight-line',
+              type: 'line',
+              source: 'kecamatan-batas',
+              filter: ['==', ['get', 'id_kec'], ''],
+              paint: {
+                'line-color': '#A7B92B',
+                'line-width': 2.5,
+              },
+            },
+          ]
+        : []),
       {
         id: 'kabupaten-border',
         type: 'line',
@@ -1504,10 +1831,9 @@ function deleteBookmark(index) {
 async function printMapPng({ area = null, region = null, components = null } = {}) {
   if (!map.value) return { ok: false };
 
-  const selected = selectedKabData.value;
-  const name = area?.name ?? selected?.nama_kab ?? 'Peta Kontur Sulawesi Selatan';
-  const label = area?.label
-    ?? (selected ? `Kabupaten ${selected.nama_kab}` : 'Provinsi Sulawesi Selatan');
+  const wilayah = selectedWilayah.value;
+  const name = area?.name ?? wilayah?.name ?? 'Peta Kontur Sulawesi Selatan';
+  const label = area?.label ?? wilayah?.label ?? 'Provinsi Sulawesi Selatan';
 
   const result = await exportMapPng(map.value, {
     title: `Peta Kontur - ${name}`,
@@ -1559,18 +1885,37 @@ function printMap() {
   // Popup bisa ditolak. Versi lama langsung menulis ke printWindow.document
   // sehingga galatnya hilang tanpa jejak dan tombolnya terasa tidak berfungsi.
   if (!printWindow) {
-    mapStatus.value = 'Jendela cetak diblokir browser. Izinkan pop-up untuk situs ini lalu ulangi.';
+    mapStatus.value = 'Jendela diblokir browser. Izinkan pop-up untuk situs ini lalu ulangi.';
     return;
   }
 
   try {
-    const center = map.value.getCenter();
-    const zoom = map.value.getZoom();
-    const bearing = map.value.getBearing();
-    const pitch = map.value.getPitch();
+    // Kalau ada wilayah yang dipilih, cetak mengikuti wilayah itu dan bukan
+    // kamera yang sedang terlihat. Setelah wilayah dipilih lalu digeser atau
+    // di-zoom sendiri, cetakan tetap memakai extent pilihan sehingga judul di
+    // atas peta tidak berbohong soal isi peta.
+    const wilayah = selectedWilayah.value;
+    const bbox = selectedWilayahBBox.value;
+
+    let camera = {
+      center: map.value.getCenter(),
+      zoom: map.value.getZoom(),
+      bearing: map.value.getBearing(),
+      pitch: map.value.getPitch(),
+    };
+
+    if (wilayah && bbox) {
+      const regionCamera = map.value.cameraForBounds(
+        [[bbox[0], bbox[1]], [bbox[2], bbox[3]]],
+        { padding: 40 }
+      );
+      if (regionCamera) {
+        camera = { ...regionCamera, pitch: 0 };
+      }
+    }
 
     printWindow.document.open();
-    printWindow.document.write(generatePrintHTML(center, zoom, bearing, pitch));
+    printWindow.document.write(generatePrintHTML(camera, wilayah));
     printWindow.document.close();
     printWindow.focus();
   } catch (error) {
@@ -1579,20 +1924,54 @@ function printMap() {
   }
 }
 
-function generatePrintHTML(center, zoom, bearing, pitch = 0) {
-  const title = 'Peta Kontur Sulawesi Selatan';
+/** Nama wilayah berasal dari data, jadi tetap harus di-escape sebelum masuk HTML. */
+function escapeHtml(text) {
+  return String(text ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[c]);
+}
+
+function generatePrintHTML(camera, wilayah = null) {
+  const center = camera.center;
+  const zoom = camera.zoom;
+  const bearing = camera.bearing ?? 0;
+  const pitch = camera.pitch ?? 0;
+
+  const title = wilayah
+    ? `Peta Kontur - ${wilayah.name}`
+    : 'Peta Kontur Sulawesi Selatan';
+  const wilayahBaris = wilayah
+    ? `<p>Wilayah: <strong>${escapeHtml(wilayah.label)}</strong> | Kode wilayah: ${escapeHtml(wilayah.kode)}</p>`
+    : '';
   const date = new Date().toLocaleString('id-ID');
   const scale = Math.round(156543.03392 * Math.cos(center.lat * Math.PI / 180) / Math.pow(2, zoom));
   // batas kabupaten dari mapConfig. Versi lama menulis ${url} di dalam template
   // tanpa pernah mendeklarasikan variabelnya, jadi memanggil fungsi ini melempar
   // ReferenceError sebelum HTML-nya sempat ditulis ke jendela cetak.
   const url = geojsonUrl.value;
+  // Highlight kecamatan ikut dibawa ke halaman cetak. Variabel ditulis sebagai
+  // literal JSON supaya kode id_kec dan URL-nya tidak bisa keluar dari string
+  // HTML di dalam <script> ketika wilayah berasal dari data.
+  const cetakKecamatan = hasKecamatanGeojson.value
+    ? `        'kecamatan': { type: 'geojson', data: ${JSON.stringify(kecamatanGeojsonUrl.value)} },`
+    : '';
+  const cetakKecamatanLayers = hasKecamatanGeojson.value
+    ? `        { id: 'kecamatan', type: 'line', source: 'kecamatan', paint: { 'line-color': '#0f766e', 'line-width': 0.6, 'line-opacity': 0.7 } },${
+        wilayah?.namaKec
+          ? `        { id: 'kecamatan-highlight', type: 'fill', source: 'kecamatan', filter: ['==', ['get', 'id_kec'], ${JSON.stringify(wilayah.kode)}], paint: { 'fill-color': '#EDD330', 'fill-opacity': 0.25 } },`
+          : ''
+      }`
+    : '';
   // Versi MapLibre harus sama dengan EXTERNAL_LIBS di public/sw.js. Cetak lewat
   // 4.7.1 sedangkan peta offline dan cache service worker memakai 3.6.2, sehingga
   // salinan cetaknya tidak pernah ada di cache dan gagal dimuat saat offline.
   const maplibreVersion = '3.6.2';
   return `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>${title} - Cetak</title>
+<html><head><meta charset="UTF-8"><title>${escapeHtml(title)} - Cetak</title>
 <style>
   @page { margin: 1cm; size: A4 landscape; }
   body { margin: 0; font-family: Arial, sans-serif; }
@@ -1607,7 +1986,8 @@ function generatePrintHTML(center, zoom, bearing, pitch = 0) {
   .legend-color { width: 20px; height: 3px; border-radius: 2px; }
 </style></head><body>
 <div class="header">
-  <h1>${title}</h1>
+  <h1>${escapeHtml(title)}</h1>
+  ${wilayahBaris}
   <p>Dicetak pada: ${date} | Koordinat tengah: ${center.lng.toFixed(6)}, ${center.lat.toFixed(6)} | Zoom: ${zoom.toFixed(1)} | Skala ~1:${scale.toLocaleString()}</p>
 </div>
 <div class="map-container" id="print-map"></div>
@@ -1615,7 +1995,9 @@ function generatePrintHTML(center, zoom, bearing, pitch = 0) {
   <div>Sumber: OpenStreetMap, PMTiles Kontur Sulsel</div>
   <div class="legend">
     <div class="legend-item"><span class="legend-color" style="background:#8c510a"></span> Kontur</div>
-    <div class="legend-item"><span class="legend-color" style="background:#2563eb; border:1px dashed #2563eb"></span> Batas Kabupaten</div>
+    <div class="legend-item"><span class="legend-color" style="background:#2563eb; border:1px dashed #2563eb"></span> Batas Kabupaten</div>${hasKecamatanGeojson.value ? `
+    <div class="legend-item"><span class="legend-color" style="background:#0f766e"></span> Batas Kecamatan</div>` : ''}${wilayah?.namaKec ? `
+    <div class="legend-item"><span class="legend-color" style="background:#EDD330"></span> Kecamatan Dipilih</div>` : ''}
   </div>
 </div>
 <script src="https://unpkg.com/maplibre-gl@${maplibreVersion}/dist/maplibre-gl.js"><\/script>
@@ -1634,6 +2016,7 @@ function generatePrintHTML(center, zoom, bearing, pitch = 0) {
       sources: {
         'kontur': { type: 'vector', url: '${pmtilesSourceUrl.value}' },
         'batas': { type: 'geojson', data: '${url}' },
+${cetakKecamatan}
         'osm': { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 }
       },
       layers: [
@@ -1642,6 +2025,7 @@ function generatePrintHTML(center, zoom, bearing, pitch = 0) {
           layout: { 'line-join': 'round', 'line-cap': 'round' },
           paint: { 'line-color': '#8c510a', 'line-width': ['case', ['==', ['%', ['get', 'ELEV'], 50], 0], 1.8, 0.8] }
         },
+${cetakKecamatanLayers}
         { id: 'batas', type: 'line', source: 'batas', paint: { 'line-color': '#2563eb', 'line-width': 1.5, 'line-dasharray': [2, 2] } }
       ]
     },
@@ -1667,6 +2051,10 @@ function generatePrintHTML(center, zoom, bearing, pitch = 0) {
  * 2. Paket tile untuk dipakai tanpa sinyal diambil service worker, dan halaman
  *    peta offline disusun dari komponen yang dicentang.
  *
+* Nama wilayah pada langkah 1 dan 2 diambil dari tempat yang sama supaya judul
+ * PNG, isi paket tile, dan halaman peta offline tidak pernah menyebut wilayah
+ * yang berbeda dalam satu unduhan.
+ *
  * Tombol "Cetak Peta PNG" yang dulu terpisah tidak ada lagi: cetak PNG memang
  * hasil akhir dari unduhan peta offline, bukan fitur lain.
  */
@@ -1675,9 +2063,9 @@ async function downloadOffline() {
 
   downloading.value = true;
 
-  const region = downloadMode.value === 'region' ? selectedOfflineRegionData.value : null;
-  const areaName = region ? region.nama_kab : 'Sulawesi Selatan';
-  const areaLabel = region ? `Kabupaten ${region.nama_kab}` : 'Provinsi Sulawesi Selatan';
+  const wilayah = downloadMode.value === 'region' ? selectedOfflineWilayah.value : null;
+  const areaName = wilayah?.name ?? 'Sulawesi Selatan';
+  const areaLabel = wilayah?.label ?? 'Provinsi Sulawesi Selatan';
 
   const components = {
     scaleBar: includeScaleBar.value,
@@ -1718,6 +2106,16 @@ async function downloadOffline() {
     // masih dilayani dari origin sendiri sehingga boleh dibuat relatif.
     const pmtilesUrl = props.mapConfig.pmtilesUrl;
     const geojsonUrlRelative = geojsonUrl.value.replace(/^https?:\/\/[^\/]+/, '');
+    // Batas kecamatan dan kode yang perlu disorot diteruskan ke worker. Tanpa
+    // keduanya, halaman peta offline yang dihasilkan hanya menampilkan garis
+    // batas kabupaten sehingga pengguna tidak bisa mencocokkan isi unduhan
+    // dengan peta yang diunduh.
+    const kecamatanGeojsonUrlRelative = hasKecamatanGeojson.value
+      ? kecamatanGeojsonUrl.value.replace(/^https?:\/\/[^\/]+/, '')
+      : null;
+    const highlightKecId = selectedOfflineWilayah.value?.namaKec
+      ? selectedOfflineWilayah.value.kode
+      : null;
 
     const layoutOptions = components;
 
@@ -1773,6 +2171,8 @@ async function downloadOffline() {
         zoomMax: maxZoom,
         pmtilesUrl,
         geojsonUrl: geojsonUrlRelative,
+        kecamatanGeojsonUrl: kecamatanGeojsonUrlRelative,
+        highlightKecId,
         layoutOptions,
         areaName,
         protocol: SW_PROTOCOL,
@@ -1801,7 +2201,24 @@ watch(showMiniMap, async (visible) => {
   }
 });
 
+/**
+ * Ganti kabupaten di dialog unduhan.
+ *
+ * Kecamatan lama harus dibuang bersama kabupatennya. Kalau tidak, kodemya masih
+ * tertahan padahal tidak lagi ada di daftar kabupaten yang baru, sehingga preview
+ * dan estimasi tile memakai batas yang salah tanpa memberi tanda.
+ */
 watch(selectedOfflineRegion, () => {
+  selectedOfflineKecamatan.value = '';
+
+  if (showMiniMap.value) {
+    nextTick().then(() => initMiniMap());
+  }
+});
+
+// Mengganti kecamatan hanya mengubah wilayah, bukan menampilkannya, jadi peta
+// mini cukup dibangun ulang.
+watch(selectedOfflineKecamatan, () => {
   if (showMiniMap.value) {
     nextTick().then(() => initMiniMap());
   }

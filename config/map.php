@@ -23,4 +23,19 @@ return [
 
     'geojson_path' => 'storage/maps/batas_kabupaten_sulsel.geojson',
 
+    /*
+    |--------------------------------------------------------------------------
+    | Batas Kecamatan
+    |--------------------------------------------------------------------------
+    |
+    | Batas kecamatan dipakai untuk menyorot kecamatan yang dipilih. Berkas ini
+    | jauh lebih besar daripada batas kabupaten karena detail batasnya jauh
+    | lebih rapat, jadi frontend memperlakukannya sebagai opsional: layer hanya
+    | dibuat kalau berkasnya ada, dan halaman peta tetap bisa dibuka tanpa
+    | berkas ini.
+    |
+    */
+
+    'kecamatan_geojson_path' => 'storage/maps/batas_kecamatan_sulsel.geojson',
+
 ];
