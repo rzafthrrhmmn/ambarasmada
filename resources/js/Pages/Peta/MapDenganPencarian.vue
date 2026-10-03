@@ -598,6 +598,7 @@ const selectedKabupaten = ref('');
 const selectedKecamatan = ref('');
 const miniMapLoading = ref(false);
 const miniMapError = ref('');
+const miniMapLoadingTimer = ref(null);
 
 // Mode unduh peta offline: 'full' untuk seluruh Sulawesi Selatan,
 // 'region' untuk satu kabupaten/kota, atau satu kecamatan di dalamnya.
@@ -1104,6 +1105,7 @@ function initMiniMap() {
 
         miniMap.value.on('load', () => {
           miniMapLoading.value = false;
+          clearTimeout(miniMapLoadingTimer.value);
           // Fit to the selected region's bbox for better preview
           miniMap.value?.fitBounds(
             [[west, south], [east, north]],
@@ -1113,9 +1115,23 @@ function initMiniMap() {
 
         miniMap.value.on('error', (e) => {
           miniMapLoading.value = false;
+          clearTimeout(miniMapLoadingTimer.value);
           miniMapError.value = `Gagal memuat preview: ${e.error?.message || 'Kesalahan peta'}`;
           console.error('Mini map error:', e);
         });
+
+        // Peta utama punya batas waktu, preview belum punya. Kalau satu source
+        // tidak pernah menyelesaikan diri, event load maupun error sama sekali
+        // tidak datang dan "Memuat preview..." menutupi peta selamanya tanpa
+        // ada tombol untuk membukanya lagi. Batas waktunya tidak membatalkan
+        // peta: preview yang telat tetap tampil begitu tile-nya tiba, hanya
+        // teks penutupnya yang lebih dulu hilang.
+        clearTimeout(miniMapLoadingTimer.value);
+        miniMapLoadingTimer.value = setTimeout(() => {
+          if (miniMapLoading.value) {
+            miniMapLoading.value = false;
+          }
+        }, 8000);
       } catch (error) {
         miniMapLoading.value = false;
         miniMapError.value = `Gagal inisialisasi preview: ${error.message}`;
@@ -1123,6 +1139,58 @@ function initMiniMap() {
       }
     });
   });
+}
+
+/**
+ * Beri tahu peta kalau ukuran wadahnya berubah.
+ *
+ * MapLibre tidak pernah memeriksa ukuran wadah sendiri. Padahal ukuran wadah
+ * peta ini berubah beberapa kali setelah halaman pertama kali dibuka, dan
+ * hampir semuanya terjadi di ponsel:
+ *
+ * - `h-[70vh]` memakai satuan vh, yang ukurannya ikut berubah saat bilah
+ *   alamat browser muncul atau menghilang. Kanvas peta kalau tidak ikut
+ *   resize akan tertinggal dari wadahnya, jadi kontrol di pojok peta berdiri
+ *   di atas peta yang salah tempat dan sebagian peta tampak kosong.
+ * - Memutar ponsel menukar lebar dan tinggi.
+ * - Panel di atas peta membungkus ke baris baru saat layarnya menyempit.
+ *
+ * Semua itu diperbaiki dengan satu `resize()`. Permintaannya dikumpulkan per
+ * frame karena `resize()` mengalokasikan ulang kanvas WebGL, jadi menjalankannya
+ * untuk setiap callback ResizeObserver akan berat dan membuat peta berkedip.
+ */
+let mapResizeObserver = null;
+let mapResizeFrame = null;
+
+function observeMapSize() {
+  if (typeof ResizeObserver === 'undefined' || !mapContainer.value) return;
+
+  mapResizeObserver = new ResizeObserver(() => {
+    if (!map.value || mapResizeFrame !== null) return;
+
+    mapResizeFrame = requestAnimationFrame(() => {
+      mapResizeFrame = null;
+
+      try {
+        map.value?.resize();
+      } catch {
+        // Peta yang sudah dibuang tidak bisa diukur ulang. Halaman sudah tidak
+        // aktif, jadi tidak ada yang perlu diberitahukan ke pengguna.
+      }
+    });
+  });
+
+  mapResizeObserver.observe(mapContainer.value);
+}
+
+function stopObservingMapSize() {
+  mapResizeObserver?.disconnect();
+  mapResizeObserver = null;
+
+  if (mapResizeFrame !== null) {
+    cancelAnimationFrame(mapResizeFrame);
+    mapResizeFrame = null;
+  }
 }
 
 async function initMap() {
@@ -1358,6 +1426,12 @@ async function initMap() {
       // Preview daerah di bawah tidak perlu, jadi hanya peta utama yang
       // mengaktifkannya.
       preserveDrawingBuffer: true,
+      // Batas kanvas WebGL ditulis eksplisit, bukan mengandalkan bawaan
+      // MapLibre. Saat PNG dicetak, rasio piksel kanvas sengaja dinaikkan supaya
+      // petanya tajam; kalau batasnya lebih kecil, MapLibre menurunkannya lagi
+      // secara diam-diam dan hasilnya tetap buram tanpa ada tanda yang terlihat.
+      // Nilai 4096 adalah ukuran yang aman di hampir semua GPU, termasuk ponsel.
+      maxCanvasSize: [4096, 4096],
       style: {
         version: 8,
         // Layer symbol (kontur-labels, kabupaten-labels) memakai text-field,
@@ -1469,6 +1543,11 @@ async function initMap() {
     map.value.on('load', () => {
       clearLoading();
       mapError.value = null;
+
+      // Layout sering baru settles setelah style selesai diurai. Kalau ukuran
+      // wadahnya berubah di saat itu, canvas lahir dengan ukuran lama dan tidak
+      // pernah benar tanpa resize di sini.
+      map.value?.resize();
       mapStatus.value = hasPmtiles.value
         ? 'Peta kontur Sulawesi Selatan dimuat. Garis kontur setiap 10 meter elevasi.'
         : 'Peta dasar dan batas kabupaten dimuat. Garis kontur belum tersedia karena file PMTiles tidak ada di server.';
@@ -1545,13 +1624,23 @@ function locateUser() {
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
       const { longitude, latitude } = pos.coords;
-      map.value.flyTo({ center: [longitude, latitude], zoom: 14, duration: 2000 });
-      const { Popup } = await import('../../maplibre');
-      new Popup()
-        .setLngLat([longitude, latitude])
-        .setHTML('<div class="p-2 text-[#1f2937]">Lokasi Anda</div>')
-        .addTo(map.value);
-      locating.value = false;
+
+      // Callback ini async, jadi isinya bisa melempar galat. Tanpa try di
+      // sini locating tidak pernah kembali ke false dan tombolnya macet
+      // menulis "Mencari..." selamanya, padahal lokasi sebenarnya sudah
+      // ditemukan.
+      try {
+        map.value?.flyTo({ center: [longitude, latitude], zoom: 14, duration: 2000 });
+        const { Popup } = await import('../../maplibre');
+        new Popup()
+          .setLngLat([longitude, latitude])
+          .setHTML('<div class="p-2 text-[#1f2937]">Lokasi Anda</div>')
+          .addTo(map.value);
+      } catch (error) {
+        mapStatus.value = `Lokasi ditemukan, tetapi peta gagal menampilkannya: ${error.message}`;
+      } finally {
+        locating.value = false;
+      }
     },
     (err) => {
       locating.value = false;
@@ -2176,6 +2265,7 @@ async function downloadOffline() {
 
 onMounted(() => {
   initMap();
+  observeMapSize();
 });
 
 watch(showMiniMap, async (visible) => {
@@ -2220,6 +2310,9 @@ watch(showOfflineModal, (open) => {
 });
 
 onBeforeUnmount(() => {
+  stopObservingMapSize();
+  clearTimeout(miniMapLoadingTimer.value);
+
   if (map.value) {
     map.value.remove();
     map.value = null;

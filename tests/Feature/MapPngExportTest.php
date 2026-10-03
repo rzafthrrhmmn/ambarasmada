@@ -195,16 +195,25 @@ class MapPngExportTest extends TestCase
             'Tinggi area peta harus memakai jumlah baris judul yang sebenarnya.'
         );
         $this->assertStringContainsString(
-            'const subtitleLines = wrapText(probe, subtitleText, mapWidth).length;',
+            'const subtitleLines = wrapText(probe, subtitle, mapWidth).length;',
             $module,
             'Tinggi area peta harus memakai jumlah baris subjudul yang sebenarnya.'
+        );
+
+        // Perhitungan itu dipindah ke measureSheet() supaya jalur ekspor bisa
+        // mengetahui rasio sisi kotak peta lebih dulu, tanpa menghitungnya
+        // ulang dengan rumus yang bisa meleset.
+        $this->assertStringContainsString(
+            'const { mapHeight } = measureSheet({ title, subtitle: subtitleText });',
+            $module,
+            'buildMapPng harus memakai tinggi peta dari measureSheet, bukan menghitungnya sendiri.'
         );
 
         // Tinggi peta dan tinggi kanvas harus berasal dari perhitungan yang sama.
         // Kalau tidak, yang diukur dan yang digambar berbeda dan isi bagian
         // bawah terpotong.
         $this->assertStringContainsString(
-            'const available = height - MARGIN * 2 - headerHeight - FOOTER_GAP - FOOTER_HEIGHT;',
+            'const available = SHEET_HEIGHT - MARGIN * 2 - headerHeight - FOOTER_GAP - FOOTER_HEIGHT;',
             $module,
             'Tinggi area peta harus dihitung dari sisa lembar, bukan dari isi teks.'
         );
@@ -1054,6 +1063,158 @@ class MapPngExportTest extends TestCase
             '!layoutOptions.histogram ?',
             $sw,
             'Centang histogram harus tetap menghasilkan panel berisi keterangan, bukan panel yang hilang diam-diam.'
+        );
+    }
+
+    /**
+     * Lembar cetak harus dirender setajam mungkin, tapi tidak sampai melebihi
+     * luas kanvas yang bisa dibuat peramban seluler.
+     *
+     * Skala 2 menghasilkan berkas 3200 x 2000. Semua kelas teks, garis,
+     * dan simbol digambar ulang di kanvas lembar, jadi menaikkan skalanya
+     * memperbaiki semua isi lembar, bukan cuma peta.
+     */
+    public function test_lembar_cetak_dirender_pada_resolusi_tinggi(): void
+    {
+        $module = $this->module();
+
+        $this->assertStringContainsString(
+            'const SHEET_SCALE = 3;',
+            $module,
+            'Skala lembar harus 3 supaya isi lembar lebih rapat.'
+        );
+
+        $this->assertStringContainsString(
+            'const MAX_SHEET_PIXELS = 16_000_000;',
+            $module,
+            'Luas kanvas lembar harus dijaga di bawah batas peramban seluler.'
+        );
+
+        $this->assertStringContainsString(
+            'const scale = sheetScale();',
+            $module,
+            'Skala yang dipakai harus lewat sheetScale() supaya jaring pengaman berlaku.'
+        );
+
+        $this->assertStringContainsString(
+            'Math.sqrt(MAX_SHEET_PIXELS / area)',
+            $module,
+            'Skala harus diturunkan otomatis kalau ukuran lembar someday bertambah.'
+        );
+    }
+
+    /**
+     * Peta yang diunduh dari ponsel harus landscape dan tajam, sama seperti
+     * hasil desktop.
+     *
+     * Kanvas peta mengikuti ukuran layar, jadi di ponsel kanvasnya portrait.
+     * Snapshot portrait di dalam kotak peta yang landscape tidak dipotong oleh
+     * fitContain, melainkan diberi pita abu-abu di kiri dan kanan yang memakai
+     * lebih dari separuh lebar berkas.
+     */
+    public function test_ekspor_dari_ponsel_dibuat_landscape_seperti_desktop(): void
+    {
+        $module = $this->module();
+
+        $this->assertStringContainsString(
+            'function exportSurfaceFor(map, targetAspect)',
+            $module,
+            'Permukaan ekspor harus dihitung dari rasio sisi kotak peta.'
+        );
+
+        $this->assertStringContainsString(
+            '< targetAspect * ASPECT_TOLERANCE',
+            $module,
+            'Kanvas yang lebih portrait dari kotaknya harus dibetulkan ukurannya.'
+        );
+
+        $this->assertStringContainsString(
+            'const width = reshape ? EXPORT_SURFACE_WIDTH : currentWidth;',
+            $module,
+            'Saat dibetulkan, kanvas memakai lebar ekspor yang sudah ditentukan.'
+        );
+
+        $this->assertStringContainsString(
+            'const height = reshape ? Math.round(EXPORT_SURFACE_WIDTH / targetAspect) : currentHeight;',
+            $module,
+            'Tinggi kanvas harus mengikuti rasio kotak peta, bukan rasio layar.'
+        );
+
+        // Rasio piksel harus memakai nilai yang lebih besar dari plafon dan rasio
+        // yang sedang dipakai. Urutan min(max(...)) memilih nilai terkecil, dan
+        // di komputer dengan rasio piksel 1 hasilnya tetap 1 sehingga ketajaman
+        // tidak pernah bertambah sama sekali.
+        $this->assertStringContainsString(
+            'Math.max(currentRatio, ceiling)',
+            $module,
+            'Rasio piksel ekspor harus mengambil nilai terbesar, bukan terkecil.'
+        );
+
+        $this->assertStringNotContainsString(
+            'Math.min(ceiling, Math.max(currentRatio',
+            $module,
+            'Urutan min(max(...)) membuat rasio ekspor selalu jatuh ke nilai terkecil.'
+        );
+    }
+
+    /**
+     * Ukuran kanvas dan rasio piksel harus dikembalikan setelah ekspor selesai.
+     *
+     * Kalau tidak, satu unduhan dari ponsel membuat peta utama terkunci pada
+     * ukuran ekspor yang lebar di dalam wadah sempit, sehingga peta di layar
+     * jadi tidak bisa dipakai sampai halaman dimuat ulang.
+     */
+    public function test_ukuran_peta_dikembalikan_setelah_ekspor(): void
+    {
+        $module = $this->module();
+
+        $this->assertStringContainsString(
+            'async function withExportSurface(map, surface, run)',
+            $module,
+            'Ekspor harus berjalan di dalam pembungkus yang memulihkan ukuran kanvas.'
+        );
+
+        $this->assertStringContainsString(
+            'container.style.width = previousWidth;',
+            $module,
+            'Lebar wadah peta harus dikembalikan setelah ekspor.'
+        );
+
+        $this->assertStringContainsString(
+            'container.style.height = previousHeight;',
+            $module,
+            'Tinggi wadah peta harus dikembalikan setelah ekspor.'
+        );
+
+        $this->assertStringContainsString(
+            'map.setPixelRatio?.(previousRatio);',
+            $module,
+            'Rasio piksel peta harus dikembalikan, kalau tidak peta berikutnya jadi buram.'
+        );
+
+        // Pemulihan harus ada di finally supaya tetap jalan walau ekspornya gagal.
+        $this->assertMatchesRegularExpression(
+            '/finally\s*\{[^}]*container\.style\.width = previousWidth;/s',
+            $module,
+            'Pemulihan ukuran kanvas harus berada di blok finally.'
+        );
+    }
+
+    /**
+     * Peta utama harus menyebut batas kanvas WebGL secara eksplisit.
+     *
+     * Saat ekspor, rasio piksel kanvas sengaja dinaikkan supaya petanya tajam.
+     * Kalau maxCanvasSize tidak ditulis, MapLibre bisa menurunkannya lagi secara
+     * diam-diam dan berkasnya tetap buram tanpa ada tanda apa pun.
+     */
+    public function test_peta_utama_menulis_batas_kanvas_webgl(): void
+    {
+        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+
+        $this->assertStringContainsString(
+            'maxCanvasSize: [4096, 4096],',
+            $pencarian,
+            'Batas kanvas peta utama harus ditulis eksplisit, bukan mengandalkan bawaan.'
         );
     }
 }

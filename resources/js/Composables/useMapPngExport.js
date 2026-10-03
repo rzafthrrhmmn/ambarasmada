@@ -62,6 +62,107 @@ const FOOTER_GAP = 12;
 const FOOTER_HEIGHT = 18;
 
 /**
+ * Skala render lembar cetak.
+ *
+ * Isi lembar digambar ulang di kanvas 2D, bukan difoto dari layar, jadi
+ * menaikkan skala membuat setiap huruf, garis, dan simbol lebih tajam. Angkanya
+ * bukan sembarang: 1600 x 1000 dikali 3 jadi 4800 x 3000, yaitu 14,4 juta
+ * piksel, masih di bawah batas luas kanvas yang biasa dipakai peramban seluler
+ * (16,7 juta piksel). Dikali 4 sudah 25,6 juta piksel dan sebagian peramban
+ * menolak kanvasnya sehingga PNG tersimpan kosong. Versi lama memakai 2, jadi
+ * seluruh isi lembar sekarang digambar tiga kali lebih rapat.
+ */
+const SHEET_SCALE = 3;
+
+/**
+ * Batas luas kanvas yang aman untuk satu lembar.
+ *
+ * Jaring pengaman: kalau ukuran lembar someday diubah, skala otomatis
+ * diturunkan alih-alih menghasilkan berkas PNG yang gagal dibuat.
+ */
+const MAX_SHEET_PIXELS = 16_000_000;
+
+/**
+ * Sisi terpanjang kanvas WebGL yang boleh diminta saat ekspor.
+ *
+ * Kanvas peta adalah render target WebGL, bukan kanvas 2D, jadi batasnya lebih
+ * rendah: 4096 piksel adalah ukuran yang hampir semua GPU seluler anggap aman.
+ * MapLibre menurunkan rasio piksel secara diam-diam kalau kanvasnya melewati
+ * `maxCanvasSize`, jadi batasnya lebih baik dihitung di sini daripada diharapkan.
+ */
+const EXPORT_CANVAS_MAX_SIDE = 4096;
+
+/** Batas atas rasio piksel ekspor, supaya tidak berlebihan saat zoom tinggi. */
+const EXPORT_MAX_PIXEL_RATIO = 4;
+
+/**
+ * Lebar kanvas peta CSS saat ekspor.
+ *
+ * Dipakai sebagai permukaan temporer supaya kanvas peta dapat dibuat landscape
+ * dan selebar ini walaupun layar pemakainya sempit. Lebarnya sengaja tidak
+ * mengikuti lebar layar: yang sedang diolah adalah berkas PNG, bukan tampilan
+ * di layar.
+ */
+const EXPORT_SURFACE_WIDTH = 1400;
+
+/**
+ * Seberapa jauh rasio sisi boleh berbeda dari kotak peta sebelum kanvasnya
+ * dianggap portrait lalu dibetulkan.
+ *
+ * Tanpa toleransi ini setiap ekspor sedikit mengubah ukuran kanvas sehingga
+ * peta berkedip. Dengan toleransi ini, ekspor dari desktop yang sudah landscape
+ * hanya menaikkan resolusi tanpa mengubah tampilan.
+ */
+const ASPECT_TOLERANCE = 0.85;
+
+/**
+ * Skala lembar yang aman untuk ukuran lembar sekarang.
+ *
+ * @returns {number}
+ */
+function sheetScale() {
+  const area = SHEET_WIDTH * SHEET_HEIGHT;
+  const capped = Math.sqrt(MAX_SHEET_PIXELS / area);
+  return Math.max(1, Math.min(SHEET_SCALE, capped));
+}
+
+/**
+ * Hitung tinggi area peta untuk isi lembar tertentu.
+ *
+ * Tinggi area peta bergantung pada jumlah baris judul dan subjudul, dan itu
+ * hanya bisa diketahui setelah teksnya diukur. Fungsi ini dipakai dua tempat:
+ * `buildMapPng` untuk benar-benar menggambar, dan jalur ekspor untuk mengetahui
+ * rasio sisi kotak peta lebih dulu. Dipisah supaya keduanya tidak bisa berbeda
+ * jawaban, yang akan membuat kanvas peta dibetulkan ke ukuran yang salah lalu
+ * muncul pita abu-abu di tepi PNG.
+ *
+ * @param {{ title?: string, subtitle?: string }} [content]
+ * @returns {{ width:number, height:number, mapWidth:number, mapHeight:number }}
+ */
+function measureSheet({ title = '', subtitle = '' } = {}) {
+  const mapWidth = SHEET_WIDTH - MARGIN * 2;
+  const probe = document.createElement('canvas').getContext('2d');
+
+  setFont(probe, 32, '700');
+  const titleLines = wrapText(probe, title, mapWidth).length;
+  setFont(probe, 14, '400');
+  const subtitleLines = wrapText(probe, subtitle, mapWidth).length;
+
+  const headerHeight = titleLines * TITLE_LINE_HEIGHT + TITLE_GAP
+    + subtitleLines * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;
+
+  const available = SHEET_HEIGHT - MARGIN * 2 - headerHeight - FOOTER_GAP - FOOTER_HEIGHT;
+  const mapHeight = Math.round(Math.min(Math.max(available, MAP_MIN_HEIGHT), MAP_MAX_HEIGHT));
+
+  return {
+    width: SHEET_WIDTH,
+    height: SHEET_HEIGHT,
+    mapWidth,
+    mapHeight,
+  };
+}
+
+/**
  * Tempatkan snapshot di dalam kotak peta tanpa memotong bagian mana pun.
  *
  * Selalu memakai rasio kedua sumbu yang sama, sehingga gambar tidak pernah
@@ -665,7 +766,7 @@ export async function buildMapPng({
 } = {}) {
   const width = SHEET_WIDTH;
   const height = SHEET_HEIGHT;
-  const scale = 2;
+  const scale = sheetScale();
   const picked = { ...DEFAULT_COMPONENTS, ...components };
   const mapWidth = width - MARGIN * 2;
   const mapWidthMeters = metersPerPixel(latitude, zoom) * mapWidth;
@@ -675,25 +776,12 @@ export async function buildMapPng({
   // subjudul.
   const subtitleText = subtitle || `Lebar area ${distanceLabel(mapWidthMeters)}`;
 
-  const probe = document.createElement('canvas').getContext('2d');
-
   // Tinggi area peta = sisa lembar setelah judul, subjudul, dan kaki halaman.
   // Lembarnya sendiri tetap landscape: kalau judulnya butuh ruang lebih, yang
   // mengecil adalah peta, bukan halaman. Itu membuat format keluar konsisten
   // untuk semua wilayah, yang justru tidak bisa dijamin kalau tinggi lembar
   // ikut berubah-ubah.
-  const headerHeight = (() => {
-    setFont(probe, 32, '700');
-    const titleLines = wrapText(probe, title, mapWidth).length;
-    setFont(probe, 14, '400');
-    const subtitleLines = wrapText(probe, subtitleText, mapWidth).length;
-
-    return titleLines * TITLE_LINE_HEIGHT + TITLE_GAP
-      + subtitleLines * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;
-  })();
-
-  const available = height - MARGIN * 2 - headerHeight - FOOTER_GAP - FOOTER_HEIGHT;
-  const mapHeight = Math.round(Math.min(Math.max(available, MAP_MIN_HEIGHT), MAP_MAX_HEIGHT));
+  const { mapHeight } = measureSheet({ title, subtitle: subtitleText });
 
   const canvas = document.createElement('canvas');
   canvas.width = width * scale;
@@ -1087,6 +1175,122 @@ async function frameRegion(map, region, maxZoom) {
   return { restore, framed: true, reason: null };
 }
 
+/**
+ * Rasio sisi yang dipakai kanvas peta saat ekspor.
+ *
+ * Dua hal yang membuat hasil unduhan dari ponsel berbeda dari hasil desktop,
+ * dan keduanya berakar pada satu sebab: kanvas peta mengikuti ukuran layarnya.
+ * Di desktop kanvasnya sudah landscape dan cukup lebar. Di ponsel kanvasnya
+ * portrait dan sempit, sehingga snapshot-nya ikut portrait di dalam kotak peta
+ * yang landscape. `fitContain` tidak pernah memotong, jadi yang terjadi bukan
+ * terpotong melainkan pita abu-abu besar di kiri dan kanan. Resolusi petanya
+ * sendiri ikut turun karena kanvas kecil lalu dilebarkan ke kotak cetak.
+ *
+ * Fungsi ini mengembalikan ukuran yang perlu dipakai agar keduanya beres:
+ * landscape seperti desktop, dan cukup besar supaya kualitasnya tidak bergantung
+ * pada besar kecilnya layar tempat pengguna menekan tombol cetak.
+ *
+ * @param {object} map
+ * @param {number} targetAspect  Rasio sisi kotak peta di lembar cetak.
+ * @returns {{ width:number, height:number, reshape:boolean, ratio:number }}
+ */
+function exportSurfaceFor(map, targetAspect) {
+  const container = map?.getContainer?.();
+  const rect = container?.getBoundingClientRect?.();
+
+  const currentWidth = Math.round(rect?.width ?? map?.getCanvas?.()?.clientWidth ?? 0);
+  const currentHeight = Math.round(rect?.height ?? map?.getCanvas?.()?.clientHeight ?? 0);
+
+  const currentRatio = map?.getPixelRatio?.() ?? window.devicePixelRatio ?? 1;
+
+  // Kanvas yang sudah landscape tidak diubah ukurannya, hanya resolusinya.
+  // Mengubahnya juga akan membuat peta berkedip setiap kali pengguna menekan
+  // tombol cetak, dan tidak memberi keuntungan apa pun.
+  const reshape = !(currentWidth > 0 && currentHeight > 0)
+    || (currentWidth / currentHeight) < targetAspect * ASPECT_TOLERANCE;
+
+  const width = reshape ? EXPORT_SURFACE_WIDTH : currentWidth;
+  const height = reshape ? Math.round(EXPORT_SURFACE_WIDTH / targetAspect) : currentHeight;
+
+  // Rasio piksel tertinggi yang masih muat di bawah batas kanvas WebGL.
+  const ceiling = Math.min(
+    EXPORT_MAX_PIXEL_RATIO,
+    EXPORT_CANVAS_MAX_SIDE / Math.max(width, 1),
+    EXPORT_CANVAS_MAX_SIDE / Math.max(height, 1),
+  );
+
+  // Yang dipakai adalah nilai yang lebih besar dari dua itu: plafon di atas
+  // adalah resolusi maksimum yang bisa dibayar, sedangkan rasio sekarang
+  // jangan diturunkan hanya karena kanvasnya sedang disiapkan ulang. Urutan
+  // min(max(...)) di sini akan selalu memilih nilai terkecil, sehingga di
+  // komputer dengan rasio piksel 1 hasil akhirnya tetap 1 dan ketajaman tidak
+  // pernah bertambah sama sekali.
+  const ratio = Math.max(1, Math.min(EXPORT_MAX_PIXEL_RATIO, Math.max(currentRatio, ceiling)));
+
+  return { width, height, reshape, ratio };
+}
+
+/**
+ * Jalankan suatu pekerjaan dengan kanvas peta yang disiapkan khusus ekspor.
+ *
+ * MapLibre hanya bisa mengubah ukuran kanvas lewat mengubah ukuran wadahnya
+ * lalu memanggil `resize()`. Peramban tidak punya cara lain, dan setiap
+ * perubahan dikembalikan utuh setelah pekerjaan selesai supaya tampilan pengguna
+ * tidak tersisa berubah gara-gara ia mengunduh peta.
+ *
+ * @param {object} map
+ * @param {{ width:number, height:number, ratio:number }} surface
+ * @param {() => Promise<unknown>} run
+ * @returns {Promise<unknown>}
+ */
+async function withExportSurface(map, surface, run) {
+  const container = map?.getContainer?.();
+
+  // Tanpa wadah yang bisa diubah, tidak ada yang bisa disiapkan. Pemanggil
+  // tetap jalan dengan kanvas apa adanya daripada gagal menulis berkas.
+  if (!container) {
+    return run();
+  }
+
+  const previousWidth = container.style.width;
+  const previousHeight = container.style.height;
+  const previousRatio = map.getPixelRatio?.();
+
+  try {
+    container.style.width = `${Math.round(surface.width)}px`;
+    container.style.height = `${Math.round(surface.height)}px`;
+
+    // setPixelRatio harus dipanggil sebelum resize: resize-lah yang memakai
+    // rasio itu untuk menghitung ukuran buffer kanvas.
+    if (Number.isFinite(surface.ratio) && surface.ratio > 0) {
+      map.setPixelRatio?.(surface.ratio);
+    }
+
+    map.resize();
+    await waitForMapIdle(map);
+
+    return await run();
+  } finally {
+    container.style.width = previousWidth;
+    container.style.height = previousHeight;
+
+    if (Number.isFinite(previousRatio) && previousRatio > 0) {
+      try {
+        map.setPixelRatio?.(previousRatio);
+      } catch {
+        // Peta yang sudah dibuang tidak bisa dikembalikan; halaman sudah tidak
+        // aktif sehingga tidak ada yang perlu diberitahukan ke pengguna.
+      }
+    }
+
+    try {
+      map.resize();
+    } catch {
+      // Sama seperti di atas: tidak ada yang bisa dilakukan kalau peta sudah mati.
+    }
+  }
+}
+
 export function useMapPngExport() {
   const isExporting = ref(false);
   const exportError = ref(null);
@@ -1220,72 +1424,98 @@ export function useMapPngExport() {
     // `filename`, `region`, dan `regionMaxZoom` bukan opsi gambar, jadi
     // dipisah sebelum diteruskan ke buildMapPng.
     const { filename, region = null, regionMaxZoom = null, ...pngOptions } = overrides;
+    const { subtitle: subtitleOverride, ...restOptions } = pngOptions;
 
-    // Kamera diarahkan ke wilayah lebih dulu, baru dibaca. Semua angka yang
-    // dipakai berikutnya (pusat, zoom, batas, skala) diambil dari kamera yang
-    // sudah sesuai wilayah, sehingga judul, bilah skala, dan grid koordinat
-    // cocok dengan isi gambarnya.
-    let restoreCamera = null;
-    let framingProblem = null;
-
-    if (region && map?.fitBounds) {
-      const framing = await frameRegion(map, region, regionMaxZoom);
-      restoreCamera = framing.restore;
-      framingProblem = framing.framed ? null : framing.reason;
-    }
+    // Rasio sisi kotak peta di lembar harus diketahui lebih dulu, karena kanvas
+    // peta disiapkan supaya ikut rasio itu. Subjudul yang dipakai untuk
+    // menghitungnya belum lengkap karena detail koordinat baru ada setelah
+    // kamera diarahkan, tetapi selisihnya hanya satu baris teks dan tidak
+    // mengubah tinggi area peta secara berarti.
+    const sheet = measureSheet({ title: restOptions.title, subtitle: subtitleOverride });
+    const surface = exportSurfaceFor(map, sheet.mapWidth / sheet.mapHeight);
 
     try {
-      const center = map?.getCenter?.() ?? { lat: 0, lng: 0 };
-      const zoom = map?.getZoom?.() ?? 10;
-      const { canvas, blocked, reason } = await captureMapCanvas(map);
-
-      // Batas yang benar-benar tertangkap diambil dari peta, bukan dihitung ulang
-      // dari pusat dan zoom: snapshot dipotong di tengah supaya memenuhi kotak
-      // cetak, jadi hanya peta yang tahu wilayah yang benar-benar terlihat.
+      // Kamera diarahkan ke wilayah lebih dulu, baru dibaca. Semua angka yang
+      // dipakai berikutnya (pusat, zoom, batas, skala) diambil dari kamera yang
+      // sudah sesuai wilayah, sehingga judul, bilah skala, dan grid koordinat
+      // cocok dengan isi gambarnya.
       //
-      // Batas dibaca lewat getWest/getSouth/getEast/getNorth, bukan toArray().
-      // LngLatBounds.toArray() mengembalikan [[west, south], [east, north]],
-      // yaitu dua pasang angka, bukan empat angka berurutan. Memecahnya seperti
-      // angka berurutan membuat west berisi pasangan dan east berisi undefined,
-      // sehingga selisihnya NaN dan grid koordinat diam-diam tidak pernah
-      // digambar padahal penggunanya mencentangnya.
-      let bounds = null;
+      // Semuanya berjalan di dalam permukaan ekspor, jadi snapshot diambil dari
+      // kanvas yang sudah landscape dan resolusi tinggi. Peta pengguna, kanvas,
+      // dan rasio pikselnya dikembalikan seperti semula setelah selesai.
+      const printed = await withExportSurface(map, surface, async () => {
+        let restoreCamera = null;
+        let framingProblem = null;
 
-      try {
-        const raw = map?.getBounds?.();
-        if (raw) {
-          bounds = {
-            west: raw.getWest(),
-            south: raw.getSouth(),
-            east: raw.getEast(),
-            north: raw.getNorth(),
-          };
+        if (region && map?.fitBounds) {
+          const framing = await frameRegion(map, region, regionMaxZoom);
+          restoreCamera = framing.restore;
+          framingProblem = framing.framed ? null : framing.reason;
         }
-      } catch {
-        bounds = null;
-      }
 
-      // Subjudul digabung, bukan ditimpa. Versi lama menaruh seluruh subjudul
-      // di dalam spread ...pngOptions, sehingga subtitle yang dikirim halaman
-      // menimpa bagian ini dan Angka "Skala 1:..." yang sempat dihitung tidak
-      // pernah muncul di PNG mana pun.
-      const detail = `Koordinat tengah ${center.lng.toFixed(4)}, ${center.lat.toFixed(4)} | Zoom ${zoom.toFixed(1)}`
-        + ` | Skala 1:${scaleDenominator(center.lat, zoom).toLocaleString('id-ID')}`;
-      const { subtitle: subtitleOverride, ...restOptions } = pngOptions;
-      const subtitle = subtitleOverride ? `${subtitleOverride} — ${detail}` : detail;
+        try {
+          const center = map?.getCenter?.() ?? { lat: 0, lng: 0 };
+          const zoom = map?.getZoom?.() ?? 10;
+          const { canvas, blocked, reason } = await captureMapCanvas(map);
 
-      const blob = await buildMapPng({
-        mapCanvas: canvas,
-        latitude: center.lat,
-        longitude: center.lng,
-        zoom,
-        bearing: map?.getBearing?.() ?? 0,
-        subtitle,
-        areaBlocked: blocked,
-        mapProblem: reason,
-        bounds,
-        ...restOptions,
+          // Batas yang benar-benar tertangkap diambil dari peta, bukan dihitung
+          // ulang dari pusat dan zoom: hanya peta yang tahu wilayah yang benar-
+          // benar terlihat pada kanvas yang sedang direkam.
+          //
+          // Batas dibaca lewat getWest/getSouth/getEast/getNorth, bukan
+          // toArray(). LngLatBounds.toArray() mengembalikan
+          // [[west, south], [east, north]], yaitu dua pasang angka, bukan
+          // empat angka berurutan. Memecahnya seperti angka berurutan membuat
+          // west berisi pasangan dan east berisi undefined, sehingga
+          // selisihnya NaN dan grid koordinat diam-diam tidak pernah digambar
+          // padahal penggunanya mencentangnya.
+          let bounds = null;
+
+          try {
+            const raw = map?.getBounds?.();
+            if (raw) {
+              bounds = {
+                west: raw.getWest(),
+                south: raw.getSouth(),
+                east: raw.getEast(),
+                north: raw.getNorth(),
+              };
+            }
+          } catch {
+            bounds = null;
+          }
+
+          // Subjudul digabung, bukan ditimpa. Versi lama menaruh seluruh
+          // subjudul di dalam spread ...pngOptions, sehingga subtitle yang
+          // dikirim halaman menimpa bagian ini dan Angka "Skala 1:..." yang
+          // sempat dihitung tidak pernah muncul di PNG mana pun.
+          const detail = `Koordinat tengah ${center.lng.toFixed(4)}, ${center.lat.toFixed(4)} | Zoom ${zoom.toFixed(1)}`
+            + ` | Skala 1:${scaleDenominator(center.lat, zoom).toLocaleString('id-ID')}`;
+          const subtitle = subtitleOverride ? `${subtitleOverride} — ${detail}` : detail;
+
+          const blob = await buildMapPng({
+            mapCanvas: canvas,
+            latitude: center.lat,
+            longitude: center.lng,
+            zoom,
+            bearing: map?.getBearing?.() ?? 0,
+            subtitle,
+            areaBlocked: blocked,
+            mapProblem: reason,
+            bounds,
+            ...restOptions,
+          });
+
+          return { blob, canvas, blocked, reason, framingProblem };
+        } finally {
+          // Kamera dikembalikan walau cetak gagal. Kalau tidak, satu unduhan
+          // yang bermasalah cukup untuk membuat peta utama tersesat ke wilayah
+          // lain dan pengguna mengira tampilan itu memang pilihan mereka.
+          restoreCamera?.();
+        }
       });
+
+      const { blob, canvas, blocked, reason, framingProblem } = printed;
 
       const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
       triggerPngDownload(blob, filename ?? `peta-kontur-${stamp}.png`);
@@ -1313,10 +1543,10 @@ export function useMapPngExport() {
       exportError.value = error?.message ?? 'Gagal membuat PNG peta.';
       return { ok: false, blocked: false, error: exportError.value };
     } finally {
-      // Kamera dikembalikan walau cetak gagal. Kalau tidak, satu unduhan yang
-      // bermasalah cukup untuk membuat peta utama tersesat ke wilayah lain dan
-      // pengguna mengira tampilan itu memang pilihan mereka.
-      restoreCamera?.();
+      // Kamera dan ukuran kanvas sudah dikembalikan di dalam closure di atas,
+      // jadi yang tersisa hanya melepas kunci cetak. Kuncinya harus dilepas
+      // walau cetaknya gagal, kalau tidak tombol cetak tidak akan pernah bisa
+      // dipakai lagi setelah satu kegagalan.
       isExporting.value = false;
     }
   }
