@@ -1045,8 +1045,13 @@ async function frameRegion(map, region, maxZoom) {
   try {
     map.fitBounds(
       [
-        [region.south, region.west],
-        [region.north, region.east],
+        // Urutannya bujur lalu lintang. MapLibre membaca setiap titik sebagai
+        // [lng, lat]; versi lama menuliskannya [south, west] sehingga angka bujur
+        // 119 terbaca sebagai lintang 119 dan fitBounds melempar "Invalid LngLat
+        // latitude value". Kegagalan itu tertelan catch di bawah, jadi peta
+        // tidak pernah bergerak dan PNG berisi viewport.
+        [region.west, region.south],
+        [region.east, region.north],
       ],
       {
         padding: regionPadding(map),
@@ -1059,15 +1064,20 @@ async function frameRegion(map, region, maxZoom) {
         ...(Number.isFinite(maxZoom) ? { maxZoom } : {}),
       },
     );
-  } catch {
-    // Peta tanpa fitBounds yang bisa dipakai. Kamera dibiarkan apa adanya dan
-    // snapshot tetap diambil, supaya pengguna tetap mendapat berkas.
-    return () => {};
+  } catch (error) {
+    // Kegagalan ini wajib diteruskan, bukan ditelan. Kalau dibiarkan diam,
+    // pengguna menerima berkas berisi viewport yang bukan wilayah pilihannya
+    // tanpa ada petunjuk apa pun salahnya.
+    return {
+      restore: () => {},
+      framed: false,
+      reason: error?.message ?? 'Peta tidak bisa diarahkan ke wilayah yang dipilih.',
+    };
   }
 
   await waitForMapIdle(map);
 
-  return restore;
+  return { restore, framed: true, reason: null };
 }
 
 export function useMapPngExport() {
@@ -1209,9 +1219,12 @@ export function useMapPngExport() {
     // sudah sesuai wilayah, sehingga judul, bilah skala, dan grid koordinat
     // cocok dengan isi gambarnya.
     let restoreCamera = null;
+    let framingProblem = null;
 
     if (region && map?.fitBounds) {
-      restoreCamera = await frameRegion(map, region, regionMaxZoom);
+      const framing = await frameRegion(map, region, regionMaxZoom);
+      restoreCamera = framing.restore;
+      framingProblem = framing.framed ? null : framing.reason;
     }
 
     try {
@@ -1273,7 +1286,19 @@ export function useMapPngExport() {
       // Alasan kegagalan peta dikembalikan ke pemanggil supaya halaman bisa
       // memberi tahu pengguna. Tanpa ini, kotak peta kosong disertai status
       // "PNG tersimpan" dan pengguna mengira peta ikut tercetak.
-      return { ok: true, blocked, error: null, mapMissing: !canvas, mapProblem: reason };
+      //
+      // framingProblem sengaja dipisah dari mapProblem: artinya berbeda.
+      // Berkas tetap tersimpan, tetapi wilayah yang dipilih bukan isi
+      // gambarnya, dan itu harus disampaikan ke pengguna.
+      return {
+        ok: true,
+        blocked,
+        error: null,
+        mapMissing: !canvas,
+        mapProblem: reason,
+        framingProblem,
+        regionMatched: !framingProblem,
+      };
     } catch (error) {
       // Pesan asli harus ikut dikembalikan. Kalau hanya disimpan di
       // exportError, pemanggil yang tidak punya akses ke ref itu hanya melihat

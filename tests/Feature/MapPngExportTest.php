@@ -333,6 +333,57 @@ class MapPngExportTest extends TestCase
     }
 
     /**
+     * fitBounds harus menerima bujur lebih dulu.
+     *
+     * MapLibre membaca setiap titik sebagai [lng, lat]. Versi lama menuliskannya
+     * [south, west], sehingga bujur Sulawesi 119 terbaca sebagai lintang 119 dan
+     * fitBounds melempar "Invalid LngLat latitude value". Kegagalan itu tertelan
+     * catch yang mengembalikan fungsi kosong, jadi peta tidak pernah bergerak dan
+     * PNG berisi viewport peta utama, persis seperti keluhuan pengguna.
+     *
+     * Urutan ini harus ada di test: harness berbasis stub bisa saja memakai
+     * konvensi yang sama salahnya sehingga lolos tanpa menangkap apa pun.
+     */
+    public function test_fit_bounds_menerima_bujur_lalu_lintang(): void
+    {
+        $module = $this->module();
+
+        $this->assertStringContainsString(
+            '[region.west, region.south],',
+            $module,
+            'Sudut kiri bawah wilayah harus ditulis [bujur, lintang].'
+        );
+
+        $this->assertStringContainsString(
+            '[region.east, region.north],',
+            $module,
+            'Sudut kanan atas wilayah harus ditulis [bujur, lintang].'
+        );
+
+        foreach (['[region.south, region.west]', '[region.north, region.east]'] as $terbalik) {
+            $this->assertStringNotContainsString(
+                $terbalik,
+                $module,
+                "Urutan {$terbalik} menukar bujur dan lintang sehingga fitBounds melempar."
+            );
+        }
+
+        // Kegagalan fitBounds tidak boleh ditelan. Kalau ditelan, pengguna
+        // menerima berkas berisi viewport tanpa ada petunjuk apa yang salah.
+        $this->assertStringContainsString(
+            'framed: false,',
+            $module,
+            'Kegagalan penyesuaian kamera harus ditandai, bukan diam-diam diabaikan.'
+        );
+
+        $this->assertStringContainsString(
+            'framingProblem,',
+            $module,
+            'Alasan kegagalan penyesuaian kamera harus dikembalikan ke pemanggil.'
+        );
+    }
+
+    /**
      * PNG hanya berisi peta, bukan daftar uraian komponen peta kontur.
      *
      * Uraian itu cocok untuk lembar handout, tapi di sini ia membuat halaman

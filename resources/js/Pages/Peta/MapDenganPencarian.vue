@@ -1521,8 +1521,12 @@ async function printMapPng({ area = null, region = null, components = null } = {
 
   if (result.ok) {
     // Peta kosong harus diberitahukan, bukan diam-diam disembunyikan di balik
-    // "PNG tersimpan": yang tersimpan hanya bahan ajar, bukan peta.
-    if (result.mapMissing) {
+    // "PNG tersimpan": yang tersimpan bukan peta.
+    if (result.framingProblem) {
+      // Berkasnya tetap ada, tapi isinya bukan wilayah yang dipilih. Menyembunyikan
+      // ini membuat pengguna mengira pilihannya tidak berpengaruh.
+      mapStatus.value = `PNG ${name} tersimpan, tetapi isinya BUKAN wilayah pilihan: ${result.framingProblem}`;
+    } else if (result.mapMissing) {
       mapStatus.value = `PNG ${name} tersimpan TANPA area peta. ${result.mapProblem ?? ''}`.trim();
     } else if (result.blocked) {
       mapStatus.value = 'PNG tersimpan, tetapi area peta tidak ikut karena browser memblokir pembacaan tile.';
