@@ -59,7 +59,7 @@
             v-for="(label, key) in catalog"
             :key="key"
             class="rounded bg-[#263D26] px-1.5 py-0.5 text-[10px] text-[#8fa06a]"
-          >${key} &mdash; {{ label }}</code>
+          >{{ '${' + key + '}' }} &mdash; {{ label }}</code>
         </div>
       </div>
     </div>
@@ -86,7 +86,7 @@
             v-for="name in template.placeholders"
             :key="name"
             class="rounded bg-[#263D26] px-1.5 py-0.5 text-[10px] text-[#d4dc9a]"
-          >${name}</code>
+          >{{ '${' + name + '}' }}</code>
         </div>
         <p v-else class="mt-3 rounded-lg border border-[#ef4419]/60 p-2 text-xs text-[#ef4419]">
           Template ini tidak memiliki penanda, jadi akan memakai tata letak bawaan.

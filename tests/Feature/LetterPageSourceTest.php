@@ -147,7 +147,86 @@ class LetterPageSourceTest extends TestCase
         );
     }
 
-    private function source(string $file): string
+    /**
+ * Bentuk penanda ${nama} di dalam template Vue.
+ *
+ * "${name}" ditulis sebagai teks biasa oleh Vue, bukan interpolasi. Kalau
+ * tidak dirakit sendiri lewat {{ '${' + name + '}' }}, seluruh penanda
+ * template tampil sama saja sebagai "${name}".
+ */
+public function test_daftar_penanda_dirakit_sendiri(): void
+{
+    foreach ([self::INDEX, 'Letters/Templates.vue'] as $page) {
+        $source = $this->source($page);
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/>\s*\$\{(name|key)\}\s*</',
+            $source,
+            "{$page}: penanda harus memakai {{ '\${\' + name + '}' }}, bukan teks \${name} yang selalu sama."
+        );
+
+        $this->assertStringContainsString(
+            "'\${' + ",
+            $source,
+            "{$page}: penanda harus dirakit dari nama penanda."
+        );
+    }
+}
+
+/**
+ * Pesan galat per-field harus hilang begitu isiannya diperbaiki.
+ *
+ * Tombol Pratinjau memasang pesan "perihal wajib diisi" lewat form.setError
+ * ketika periphery masih kosong. Tanpa penghapusan pesan, pesan itu tetap
+ * tampil setelah isian diperbaiki, termasuk setelah menekan Simpan, dan
+ * membuat pengguna mengira formulirnya masih salah.
+ */
+public function test_pesan_galat_dihapus_begitu_isian_diperbaiki(): void
+{
+    $source = $this->source(self::INDEX);
+
+    $this->assertStringContainsString(
+        'form.setError',
+        $source,
+        'Halaman surat memasang pesan galat sendiri sebelum membuka pratinjau.'
+    );
+
+    $this->assertStringContainsString(
+        'noteRejectedValues',
+        $source,
+        'Halaman surat harus mencatat nilai isian saat pesan galat dibuat.'
+    );
+
+    $this->assertMatchesRegularExpression(
+        '/watch\([\s\S]{0,700}form\.clearErrors\(field\)/',
+        $source,
+        'Pesan galat per-field harus dihapus saat isiannya berubah.'
+    );
+}
+
+/**
+ * Input berkas menyimpan nama berkas di DOM, sementara form.file direset.
+ * Kalau DOM tidak dikosongkan, nama berkas lama tetap terlihat padahal berkas
+ * itu tidak akan terkirim.
+ */
+public function test_input_lampiran_dikosongkan_saat_form_direset(): void
+{
+    $source = $this->source(self::INDEX);
+
+    $this->assertStringContainsString(
+        'ref="fileInput"',
+        $source,
+        'Input lampiran perlu ref supaya bisa dikosongkan.'
+    );
+
+    $this->assertMatchesRegularExpression(
+        '/fileInput\.value\.value\s*=\s*\'\'/',
+        $source,
+        'Input lampiran harus dikosongkan saat form ditutup atau dibuka ulang.'
+    );
+}
+
+private function source(string $file): string
     {
         $path = $file === 'LetterController.php'
             ? app_path('Http/Controllers/'.$file)

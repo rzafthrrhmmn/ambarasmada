@@ -91,13 +91,6 @@
 
     <Modal v-if="showLetter && can('letters.manage')" :title="editItem ? 'Edit surat' : 'Surat baru'" @close="reset">
       <form @submit.prevent="submitForm" class="grid gap-4">
-        <p
-          v-if="submitError"
-          class="rounded-lg border border-[#ef4419]/70 bg-[#ef4419]/10 p-3 text-xs text-[#ef4419]"
-        >
-          {{ submitError }}
-        </p>
-
         <section class="rounded-xl border border-[#6F9435]/60 bg-[#263D26] p-4">
           <p class="mb-3 text-xs font-bold uppercase tracking-wide text-[#EDD330]">1. Template</p>
           <label class="block">
@@ -119,11 +112,16 @@
               {{ selectedTemplate.placeholders.length }} penanda &mdash; isian form dibuat otomatis dari penanda template.
             </p>
             <div class="mt-2 flex flex-wrap gap-1">
+              <!--
+                "${name}" ditulis sebagai teks biasa oleh Vue, jadi bentuk
+                penanda harus dirakit sendiri. Kalau tidak, semua penanda
+                tampil sama saja sebagai "${name}".
+              -->
               <code
                 v-for="name in selectedTemplate.placeholders"
                 :key="name"
                 class="rounded bg-[#335233] px-1.5 py-0.5 text-[10px] text-[#d4dc9a]"
-              >${name}</code>
+              >{{ '${' + name + '}' }}</code>
             </div>
           </div>
           <p v-else class="mt-3 text-xs text-[#8fa06a]">
@@ -163,10 +161,11 @@
             <div class="sm:col-span-2">
               <span class="text-xs font-medium text-[#d4dc9a]">Lampiran (opsional)</span>
               <input
+                ref="fileInput"
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
                 class="mt-1 w-full text-sm text-[#d4dc9a] file:mr-3 file:rounded-lg file:border-0 file:bg-[#6F9435] file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
-                @change="form.file = $event.target.files?.[0] ?? null"
+                @change="pickAttachment"
               />
               <p v-if="form.errors.file" class="mt-1 text-xs text-[#ef4419]">{{ form.errors.file }}</p>
             </div>
@@ -191,6 +190,17 @@
         </section>
 
         <div class="flex flex-wrap items-center gap-2">
+          <!--
+            Pesan penolakan server juga ditampilkan di dekat tombol simpan.
+            Kalau hanya di bagian atas form, penyebabnya tidak terlihat saat
+            pengguna sedang berada di bagian bawah.
+          -->
+          <p
+            v-if="submitError"
+            class="w-full rounded-lg border border-[#ef4419]/70 bg-[#ef4419]/10 p-3 text-xs text-[#ef4419]"
+          >
+            {{ submitError }}
+          </p>
           <button
             type="button"
             data-test="btn-preview"
@@ -296,6 +306,7 @@ const previewUrl = ref('');
 const previewLoading = ref(false);
 const previewError = ref('');
 const submitError = ref('');
+const fileInput = ref(null);
 
 const filters = reactive({
   search: props.filters?.search ?? '',
@@ -398,6 +409,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer));
 
 function openCreate() {
   editItem.value = null;
+  rejectedValues = null;
   form.reset();
   form.clearErrors();
   form.ambalan_id = null;
@@ -412,6 +424,7 @@ function openCreate() {
 
 function openEdit(item) {
   editItem.value = item;
+  rejectedValues = null;
   form.reset();
   form.clearErrors();
   form.ambalan_id = item.ambalan_id ?? null;
@@ -434,14 +447,72 @@ function openEdit(item) {
 function reset() {
   showLetter.value = false;
   editItem.value = null;
+  rejectedValues = null;
   clearExtras();
   closePreview();
   form.reset();
+  form.clearErrors();
   form.ambalan_id = null;
   form.jenis_surat = 'Masuk';
   form.tgl_surat = today();
   form.template_id = null;
   form.placeholder_values = {};
+  // Input berkas menyimpan nama berkas di DOM, jadi harus dikosongkan juga.
+  // Kalau tidak, nama berkas lama tetap terlihat padahal form.file sudah null
+  // dan berkas itu tidak ikut terkirim.
+  if (fileInput.value) {
+    fileInput.value.value = '';
+  }
+}
+
+/** Isian surat yang bisa punya pesan galat dari server atau dari cek sebelum pratinjau. */
+const LETTER_FIELDS = [
+  'template_id',
+  'ambalan_id',
+  'nomor_surat',
+  'jenis_surat',
+  'tgl_surat',
+  'waktu_kegiatan',
+  'lokasi_kegiatan',
+  'perihal',
+  'tujuan_pengirim',
+  'isi_surat',
+  'file',
+];
+
+/**
+ * Nilai isian pada saat percobaan simpan atau pratinjau terakhir ditolak.
+ *
+ * Inertia tidak menghapus pesan galat sendiri ketika isiannya diperbaiki, jadi
+ * pesan dari percobaan yang gagal ikut tertawa. Akibatnya pesan "perihal wajib
+ * diisi" tetap tampil setelah isiannya diperbaiki, termasuk setelah menekan
+ * tombol Simpan. Pesan hanya dihapus untuk isian yang berubah dibanding nilai
+ * saat penolakan.
+ */
+let rejectedValues = null;
+
+function noteRejectedValues() {
+  rejectedValues = LETTER_FIELDS.reduce((values, field) => ({ ...values, [field]: form[field] }), {});
+}
+
+watch(
+  () => LETTER_FIELDS.map((field) => form[field]),
+  () => {
+    if (!rejectedValues) {
+      return;
+    }
+
+    for (const field of LETTER_FIELDS) {
+      if (form.errors[field] && form[field] !== rejectedValues[field]) {
+        form.clearErrors(field);
+      }
+    }
+  }
+);
+
+function pickAttachment(event) {
+  form.file = event.target.files?.[0] ?? null;
+  form.clearErrors('file');
 }
 
 function clearExtras() {
@@ -453,16 +524,21 @@ function clearExtras() {
 function submitForm() {
   form.placeholder_values = { ...extraValues };
   submitError.value = '';
+  noteRejectedValues();
 
   const options = {
     onSuccess: () => {
+      rejectedValues = null;
       reset();
     },
     // Error validasi tampil per-field. Kalau tidak ada satu pun field yang
     // salah, berarti permintaan ditolak server (429 terlalu sering mencoba,
-    // 419 token kedaluwarsa, atau 500 kesalahan server).
+    // 419 token kedaluwarsa, atau 500 kesalahan server). Pesan per-field dari
+    // percobaan sebelumnya sudah tidak relevan dan harus ikut dibuang.
     onError: (errors) => {
       if (!Object.keys(errors ?? {}).length) {
+        form.clearErrors();
+        rejectedValues = null;
         submitError.value =
           'Surat gagal disimpan karena server menolak permintaan. Penyebab paling sering: '
           + 'terlalu banyak percobaan menyimpan dalam waktu singkat. Tunggu sebentar lalu coba lagi, '
@@ -480,6 +556,7 @@ function submitForm() {
 
 function previewLetter() {
   if (!form.perihal) {
+    noteRejectedValues();
     form.setError('perihal', 'Perihal surat wajib diisi sebelum melihat pratinjau.');
     return;
   }
