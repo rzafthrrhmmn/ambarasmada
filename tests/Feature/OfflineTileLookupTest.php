@@ -521,35 +521,33 @@ class OfflineTileLookupTest extends TestCase
      *
      * Listener yang dibungkus named function boleh dilepas di onBeforeUnmount.
      */
-    public function test_listener_window_dilepas_saat_halaman ditutup(): void
+    public function test_listener_window_dilepas_saat_halaman_ditutup(): void
     {
         $pencarian = $this->pencarian();
 
-        foreach (['onWindowOnline', 'onWindowOffline'] as $handler) {
-            $this->assertStringContainsString(
-                "window.addEventListener('online', onWindowOnline);",
-                $pencarian,
-                'Status daring harus dipasang lewat named function supaya bisa dilepas.'
-            );
+        $this->assertStringContainsString(
+            "window.addEventListener('online', onWindowOnline);",
+            $pencarian,
+            'Status daring harus dipasang lewat named function supaya bisa dilepas.'
+        );
 
-            $this->assertStringContainsString(
-                "window.addEventListener('offline', onWindowOffline);",
-                $pencarian,
-                'Status luar jaringan harus dipasang lewat named function supaya bisa dilepas.'
-            );
+        $this->assertStringContainsString(
+            "window.addEventListener('offline', onWindowOffline);",
+            $pencarian,
+            'Status luar jaringan harus dipasang lewat named function supaya bisa dilepas.'
+        );
 
-            $this->assertStringContainsString(
-                "window.removeEventListener('online', onWindowOnline);",
-                $pencarian,
-                "Listener {$handler} harus dilepas saat komponen ditutup."
-            );
+        $this->assertStringContainsString(
+            "window.removeEventListener('online', onWindowOnline);",
+            $pencarian,
+            'Listener status daring harus dilepas saat komponen ditutup.'
+        );
 
-            $this->assertStringContainsString(
-                "window.removeEventListener('offline', onWindowOffline);",
-                $pencarian,
-                'Status luar jaringan harus dilepas saat komponen ditutup.'
-            );
-        }
+        $this->assertStringContainsString(
+            "window.removeEventListener('offline', onWindowOffline);",
+            $pencarian,
+            'Listener status luar jaringan harus dilepas saat komponen ditutup.'
+        );
 
         // map.remove() hanya membersihkan listener milik peta itu sendiri.
         $this->assertStringContainsString(
@@ -675,13 +673,19 @@ class OfflineTileLookupTest extends TestCase
             'Legenda harus menjelaskan bahwa kontur indeks dibedakan oleh tebal, bukan warna.'
         );
 
-        // Warna dan tebal swatch harus lewat kelas, bukan style inline. Proyek
-        // melarang inline CSS, dan style inline juga tidak bisa diwarnai ulang
-        // kalau tema berubah.
-        $this->assertStringNotContainsString(
-            'style="background:',
+        // Warna dan tebal swatch di layar harus lewat kelas, bukan atribut
+        // style inline: proyek melarang inline CSS, dan warnanya tidak bisa
+        // ikut berubah kalau tema berubah.
+        $this->assertStringContainsString(
+            'bg-[#8c510a]',
             $pencarian,
-            'Swatch legenda harus memakai kelas Tailwind, bukan style inline.'
+            'Swatch kontur pada legenda harus memakai kelas warna, bukan style inline.'
+        );
+
+        $this->assertStringContainsString(
+            'border-dashed border-[#2563eb]',
+            $pencarian,
+            'Swatch batas kabupaten harus memakai kelas, bukan style inline.'
         );
     }
 

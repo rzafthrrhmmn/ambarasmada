@@ -55,12 +55,14 @@
           class="rounded-lg border-2 border-[#6F9435]/50 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95 disabled:opacity-50"
         >
           <button
+            type="button"
             @click="locateUser"
             :disabled="locating"
-            class="flex items-center gap-1.5 disabled:cursor-not-allowed"
+            class="inline-flex items-center gap-1.5 disabled:cursor-not-allowed"
             title="Lokasi saya"
           >
-            <span aria-hidden="true">{{ locating ? '⟳' : '📍' }}</span>
+            <NavIcon v-if="locating" name="spinner" class="h-4 w-4 animate-spin" />
+            <NavIcon v-else name="locate" class="h-4 w-4" />
             <span class="text-xs">{{ locating ? 'Mencari...' : 'Lokasi saya' }}</span>
           </button>
         </div>
@@ -74,10 +76,11 @@
       <div class="peta-panel absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2 pr-12">
         <div
           v-if="isOffline"
-          class="rounded-lg bg-[#f59e0b]/90 px-3 py-1.5 text-xs font-bold text-white shadow-lg"
+          class="inline-flex items-center gap-1.5 rounded-lg bg-[#f59e0b]/90 px-3 py-1.5 text-xs font-bold text-white shadow-lg"
           data-nama="LencanaOffline"
         >
-          📴 Mode Offline
+          <NavIcon name="offline" class="h-4 w-4" />
+          Mode Offline
         </div>
 
         <div class="flex flex-wrap items-start justify-end gap-2" data-nama="AlatKananAtas">
@@ -88,18 +91,21 @@
             @change="changeBasemap"
             class="w-[168px] rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm text-[#f0ead8] shadow-lg backdrop-blur-sm outline-none focus:border-[#EDD330]"
           >
-            <option value="osm">🗺️ OpenStreetMap</option>
-            <option value="satellite">🛰️ Satelit</option>
-            <option value="terrain">🏔️ Terrain</option>
-            <option value="dark">🌙 Dark</option>
+            <!-- Opsi basemap memakai teks saja: elemen <option> hanya bisa memuat teks,
+               jadi SVG di dalamnya tidak akan dirender. -->
+            <option value="osm">OpenStreetMap</option>
+            <option value="satellite">Satelit</option>
+            <option value="terrain">Terrain</option>
+            <option value="dark">Gelap</option>
           </select>
 
           <button
+            type="button"
             @click="printMap"
             class="inline-flex items-center gap-1.5 rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95"
             title="Cetak peta"
           >
-            <span aria-hidden="true">🖨️</span>
+            <NavIcon name="printer" class="h-4 w-4" />
             <span class="text-xs">Cetak</span>
           </button>
         </div>
@@ -172,6 +178,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
+import NavIcon from '@/Components/NavIcon.vue';
 import { getActiveServiceWorker, SW_PROTOCOL } from '@/ServiceWorker.js';
 import { useMapPngExport } from '@/Composables/useMapPngExport.js';
 import { BASEMAPS, BASEMAP_LABELS, PRINT_BASEMAP, basemapAttribution } from '@/basemaps.js';

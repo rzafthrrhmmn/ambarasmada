@@ -193,11 +193,14 @@
             Legenda Elevasi
           </div>
           <!-- Isi legenda ini sengaja digambar dengan kelas Tailwind, bukan
-               style="background: ...". Warna dan tebalnya juga harus mengikuti
+               atribut style inline. Warna dan tebalnya juga harus mengikuti
                layer aslinya: garis kontur hanya satu warna, dan yang membedakan
                kontur indeks dari kontur biasa adalah tebalnya, bukan warnanya.
                Versi lama memakai empat warna yang tidak pernah muncul di peta
-               mana pun, sehingga legenda mengarang warna yang tidak ada. -->
+               mana pun, sehingga legenda mengarang warna yang tidak ada.
+
+               Legenda di halaman cetak berbeda: dokumen itu berdiri sendiri
+               tanpa CSS aplikasi, jadi warna di sana memang ditulis inline. -->
           <div class="space-y-1.5">
             <div class="flex items-center gap-2">
               <span class="h-[3px] w-6 rounded bg-[#8c510a]" aria-hidden="true"></span>
