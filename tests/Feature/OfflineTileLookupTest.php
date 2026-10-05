@@ -509,6 +509,254 @@ class OfflineTileLookupTest extends TestCase
         }
     }
 
+    /**
+     * Listener window harus dilepas lagi, bukan dibuat inline.
+     *
+     * Empat listener dibuat dengan arrow function di dalam initMap(). Arrow
+     * function tidak punya nama, jadi tidak ada rujukan untuk dilepas. Karena
+     * halaman ini dibuka lewat Inertia tanpa muat ulang penuh, setiap kunjungan
+     * berikutnya menambah satu pasang listener lagi, dan listener dari
+     * kunjungan yang sudah lewat masih hidup. Akibatnya satu event
+     * map-bookmark menyimpan bookmark beberapa kali sekaligus.
+     *
+     * Listener yang dibungkus named function boleh dilepas di onBeforeUnmount.
+     */
+    public function test_listener_window_dilepas_saat_halaman ditutup(): void
+    {
+        $pencarian = $this->pencarian();
+
+        foreach (['onWindowOnline', 'onWindowOffline'] as $handler) {
+            $this->assertStringContainsString(
+                "window.addEventListener('online', onWindowOnline);",
+                $pencarian,
+                'Status daring harus dipasang lewat named function supaya bisa dilepas.'
+            );
+
+            $this->assertStringContainsString(
+                "window.addEventListener('offline', onWindowOffline);",
+                $pencarian,
+                'Status luar jaringan harus dipasang lewat named function supaya bisa dilepas.'
+            );
+
+            $this->assertStringContainsString(
+                "window.removeEventListener('online', onWindowOnline);",
+                $pencarian,
+                "Listener {$handler} harus dilepas saat komponen ditutup."
+            );
+
+            $this->assertStringContainsString(
+                "window.removeEventListener('offline', onWindowOffline);",
+                $pencarian,
+                'Status luar jaringan harus dilepas saat komponen ditutup.'
+            );
+        }
+
+        // map.remove() hanya membersihkan listener milik peta itu sendiri.
+        $this->assertStringContainsString(
+            'window.removeEventListener(',
+            $pencarian,
+            'onBeforeUnmount harus melepas listener window; map.remove() tidak ikut melakukannya.'
+        );
+
+        // Batas waktu pesan "dimuat sebagian" juga punya hidup yang lebih panjang
+        // daripada komponennya.
+        $this->assertStringContainsString(
+            'clearTimeout(partialLoadTimer);',
+            $pencarian,
+            'Timer "dimuat sebagian" harus dibatalkan saat halaman ditutup.'
+        );
+    }
+
+    /**
+     * Isi popup tidak boleh dirangkai sebagai HTML.
+     *
+     * Nama kabupaten, id, dan nama provinsi berasal dari berkas GeoJSON, dan
+     * display_name dari pencarian berasal dari balasan server Nominatim. Kalau
+     * dirangkai jadi string lalu masuk lewat setHTML, isinya bisa menyisipkan
+     * tag sendiri dan skrip itu berjalan di origin aplikasi.
+     *
+     * Tombolnya juga tidak boleh memakai onclick berisi JSON.stringify: atribut
+     * HTML diapit tanda kutip ganda, sedangkan JSON juga memakai tanda kutip
+     * ganda, jadi satu nama dengan tanda kutip sudah menutup atribut lebih awal.
+     */
+    public function test_popup_dibangun_dari_node_bukan_html(): void
+    {
+        $pencarian = $this->pencarian();
+
+        $this->assertStringNotContainsString(
+            'onclick="window.dispatchEvent(',
+            $pencarian,
+            'onclick yang isinya JSON.stringify bisa keluar dari atributnya lewat tanda kutip pada nama wilayah.'
+        );
+
+        $this->assertStringContainsString(
+            'function popupWilayah(',
+            $pencarian,
+            'Isi popup harus punya pembangun sendiri supaya bisa diuji.'
+        );
+
+        $this->assertStringContainsString(
+            'judul.textContent = nama;',
+            $pencarian,
+            'Nama wilayah harus masuk lewat textContent, yang tidak pernah mengartikan tag.'
+        );
+
+        $this->assertStringContainsString(
+            ".setDOMContent(popupWilayah(",
+            $pencarian,
+            'Popup harus dipasang dari node, bukan dari string HTML.'
+        );
+
+        // Nama hasil pencarian juga dari luar, lewat balasan server.
+        $this->assertStringNotContainsString(
+            'text-[#1f2937]">${result.display_name}',
+            $pencarian,
+            'display_name dari server tidak boleh disisipkan sebagai HTML.'
+        );
+    }
+
+    /**
+     * Warna di dalam kueri wajib diisi dari larik tetap.
+     *
+     * CSS calc() mewajibkan spasi di sekitar operator + dan -. Tanpa spasi,
+     * browser membuang deklarasi itu sepenuhnya, jadi batas lebar yang
+     * sengaja dibuat supaya tidak menabrak tumpukan pojok kanan bawah tidak
+     * pernah berlaku.
+     */
+    public function test_calc_tidak_kehilangan_spasi(): void
+    {
+        $pencarian = $this->pencarian();
+
+        // Tailwind menulis spasi di dalam arbitrary value sebagai garis bawah,
+        // lalu mengubahnya jadi spasi saat CSS dibuat.
+        $this->assertStringNotContainsString(
+            'calc(100%-',
+            $pencarian,
+            'calc() tanpa spasi di sekitar operator minus dibuang browser, jadi lebarnya tidak pernah dibatasi.'
+        );
+
+        $this->assertStringNotContainsString(
+            'calc(100vw-',
+            $pencarian,
+            'calc() tanpa spasi di sekitar operator minus dibuang browser.'
+        );
+
+        $this->assertStringContainsString(
+            'calc(100%_-_13rem)',
+            $pencarian,
+            'Batas lebar readout koordinat harus memakai spasi yang ditulis sebagai garis bawah.'
+        );
+    }
+
+    /**
+     * Legenda harus menyebut warna dan tebal yang benar-benar ada di peta.
+     *
+     * Layer kontur hanya memakai satu warna, dan kontur indeks dibedakan oleh
+     * tebal garisnya, bukan warnanya. Legenda lama men manufacture empat warna
+     * yang tidak pernah muncul di peta mana pun, sehingga orang mencari
+     * perbedaan yang memang tidak ada. Legenda cetak di halaman cetak sudah
+     * benar sejak awal, jadi legenda di layar tidak boleh berbeda.
+     */
+    public function test_legenda_cocok_dengan_layer_peta(): void
+    {
+        $pencarian = $this->pencarian();
+
+        foreach (['#a0522d', '#cd853f', '#8b4513'] as $warna) {
+            $this->assertStringNotContainsString(
+                $warna,
+                $pencarian,
+                "Warna {$warna} tidak dipakai layer mana pun, jadi warna di legenda mengarang sesuatu."
+            );
+        }
+
+        $this->assertStringContainsString(
+            'Kontur indeks (setiap 50 m)',
+            $pencarian,
+            'Legenda harus menjelaskan bahwa kontur indeks dibedakan oleh tebal, bukan warna.'
+        );
+
+        // Warna dan tebal swatch harus lewat kelas, bukan style inline. Proyek
+        // melarang inline CSS, dan style inline juga tidak bisa diwarnai ulang
+        // kalau tema berubah.
+        $this->assertStringNotContainsString(
+            'style="background:',
+            $pencarian,
+            'Swatch legenda harus memakai kelas Tailwind, bukan style inline.'
+        );
+    }
+
+    /**
+     * Tombol tidak boleh memakai ikon keyboard atau emoji.
+     *
+     * Ikon emoji dirender berbeda tiap sistem operasi dan sering tidak sepadan
+     * dengan tinggi baris di sebelahnya, sehingga tampilan halaman berbeda
+     * antar perangkat. Ikon yang dipakai bersama harus berasal dari satu
+     * komponen SVG.
+     */
+    public function test_tombol_memakai_svg_bukan_ikon_keyboard(): void
+    {
+        foreach (['MapDenganPencarian', 'Index'] as $halaman) {
+            $sumber = $this->halamanPeta($halaman);
+
+            foreach (['📍', '🖨️', '🔖', '📏', '📐', '🗺️', '🛰️', '🌙', '📶', '📴', '⟳'] as $ikon) {
+                $this->assertStringNotContainsString(
+                    $ikon,
+                    $sumber,
+                    "{$halaman}: ikon {$ikon} tampil berbeda tiap perangkat. Pakai NavIcon."
+                );
+            }
+
+            $this->assertStringNotContainsString(
+                ">\n              ✕",
+                $sumber,
+                "{$halaman}: tombol hapus tidak boleh memakai tanda silang keyboard."
+            );
+        }
+
+        $pencarian = $this->pencarian();
+
+        $this->assertStringContainsString(
+            "import NavIcon from '@/Components/NavIcon.vue';",
+            $pencarian,
+            'Ikon tombol harus datang dari komponen SVG yang sama dengan sidebar.'
+        );
+
+        // Opsi <select> hanya bisa memuat teks, jadi ikon di dalamnya hilang
+        // tanpa jejak error.
+        $this->assertStringContainsString(
+            '<option value="osm">OpenStreetMap</option>',
+            $pencarian,
+            'Opsi basemap harus teks saja; SVG di dalam option tidak akan dirender.'
+        );
+    }
+
+    /**
+     * Ikon baru harus terdaftar di satu tempat.
+     *
+     * NavIcon memakai resolveIcon() yang diam-diam mengembalikan ikon lingkaran
+     * kalau namanya tidak ditemukan. Ikon yang tidak terdaftar tidak pernah
+     * gagal, hanya hilang.
+     */
+    public function test_nama_ikon_peta_terdaftar(): void
+    {
+        $pencarian = $this->pencarian();
+        $icons = file_get_contents(base_path('resources/js/Navigation/icons.js'));
+        $this->assertIsString($icons, 'Tidak bisa membaca resources/js/Navigation/icons.js.');
+
+        preg_match_all('/<NavIcon\s+(?:name|:name)="([a-zA-Z]+)"/', $pencarian, $cocok);
+        $dipakai = array_unique($cocok[1]);
+
+        $this->assertNotEmpty($dipakai, 'Halaman peta harus memakai minimal satu ikon NavIcon.');
+
+        foreach ($dipakai as $nama) {
+            $this->assertMatchesRegularExpression(
+                "/\b{$nama}:/",
+                $icons,
+                "Ikon \"{$nama}\" dipakai halaman peta tapi tidak terdaftar di icons.js, jadi diam-diam jadi lingkaran."
+            );
+        }
+    }
+
     private function halamanPeta(string $halaman): string
     {
         $source = file_get_contents(base_path("resources/js/Pages/Peta/{$halaman}.vue"));
