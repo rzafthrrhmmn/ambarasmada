@@ -40,7 +40,10 @@
         </div>
         <div class="mt-1 font-bold text-[#EDD330] text-xs">Keseluruhan: {{ a.nilai_keseluruhan }}</div>
       </div>
-      <p v-if="!assessments.data.length" class="rounded-xl border-2 border-[#6F9435]/30 bg-[#335233] p-10 text-center text-sm text-[#8fa06a]">Belum ada penilaian.</p>
+      <p v-if="!assessments.data.length" class="empty-state">
+        <AppIcon name="assessments" class="empty-state-icon h-6 w-6" />
+        <span class="empty-state-text">Belum ada penilaian.</span>
+      </p>
     </div>
     <Pagination :links="assessments.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
 
@@ -65,6 +68,7 @@
 import { ref, computed } from 'vue';
 import { useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';

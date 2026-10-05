@@ -107,7 +107,7 @@
           <span>{{ item.session?.nama || formatDate(item.created_at) }}</span>
           <span class="rounded-full bg-[#335233] px-2.5 py-1 text-xs text-[#EDD330]">{{ item.keterangan }}</span>
         </div>
-        <p v-if="!member.attendances?.length" class="text-sm text-[#8fa06a]">Belum ada presensi.</p>
+        <p v-if="!member.attendances?.length" class="empty-inline">Belum ada presensi.</p>
       </div>
     </section>
 

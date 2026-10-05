@@ -6,7 +6,10 @@
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Galeri Ambalan</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Dokumentasi foto kegiatan ambalan.</p>
       </div>
-      <button v-if="canManage" @click="showCreate = true" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Upload Foto</button>
+      <button v-if="canManage" type="button" class="btn-primary" @click="showCreate = true">
+        <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
+        Upload Foto
+      </button>
     </div>
 
     <div class="mb-4 flex flex-wrap gap-2">
@@ -23,7 +26,10 @@
           <p class="text-[10px] text-[#8fa06a]">{{ g.kategori }}</p>
         </div>
       </div>
-      <p v-if="!filteredGalleries.length" class="col-span-full rounded-xl border-2 border-[#6F9435]/30 bg-[#335233] p-10 text-center text-sm text-[#8fa06a]">Belum ada foto.</p>
+      <p v-if="!filteredGalleries.length" class="empty-state">
+        <AppIcon name="galleries" class="empty-state-icon h-6 w-6" />
+        <span class="empty-state-text">Belum ada foto.</span>
+      </p>
     </div>
 
     <Modal v-if="showCreate" :title="'Upload Foto'" @close="reset">
@@ -42,6 +48,7 @@
 import { ref, computed } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import { useAccess } from '@/Composables/useAccess.js';

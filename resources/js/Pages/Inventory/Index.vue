@@ -1,25 +1,214 @@
 <template>
   <AppLayout>
-    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p class="text-sm font-medium text-[#EDD330]">Inventaris Ambalan</p><h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Barang dan Aset</h1><p class="mt-1 text-sm text-[#8fa06a]">Pantau ketersediaan, kondisi, dan riwayat peminjaman barang.</p></div><button v-if="can('inventory.manage')" @click="showCreate = true" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Tambah barang</button></div>
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"><article v-for="item in items.data" :key="item.id" class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm border-[#6F9435]"><div class="flex items-start justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-wide text-[#EDD330]'">{{ item.kode_barang }}</p><h2 class="mt-1 text-lg font-semibold text-[#f0ead8]">{{ item.nama_barang }}</h2></div><span class="rounded-full px-2.5 py-1 text-xs" :class="item.status_pinjam === 'Tersedia' ? 'bg-[#A7B92A]/20 text-[#A7B92A]' : 'bg-[#EDD330]/20 text-[#EDD330]'">{{ item.status_pinjam }}</span></div><div class="mt-5 grid grid-cols-3 gap-2 text-center"><div class="rounded-xl bg-[#263D26] p-3"><p class="text-xl font-bold">{{ item.jumlah }}</p><p class="mt-1 text-[11px] text-[#8fa06a]">Jumlah</p></div><div class="rounded-xl bg-[#263D26] p-3"><p class="text-xl font-bold">{{ item.kondisi }}</p><p class="mt-1 text-[11px] text-[#8fa06a]">Kondisi</p></div><div class="rounded-xl bg-[#263D26] p-3"><p class="text-xl font-bold">{{ item.loans_count }}</p><p class="mt-1 text-[11px] text-[#8fa06a]">Pinjam</p></div></div><div class="mt-4 flex flex-wrap gap-2"><Link :href="`/inventory/${item.id}/movements`" class="rounded-lg border border-[#6F9435] px-3 py-2 text-xs font-semibold text-[#d4dc9a] transition hover:bg-[#6F9435]/20">Riwayat</Link><button v-if="can('inventory.manage')" @click="openLoan(item)" class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-3 py-2 text-xs font-semibold text-white">Pinjam</button><button v-if="can('inventory.manage')" @click="selected = item; showAdjust = true" class="rounded-lg border border-[#6F9435] px-3 py-2 text-xs font-semibold text-[#d4dc9a]">Sesuaikan stok</button></div></article></div>
-    <Modal v-if="showCreate && can('inventory.manage')" title="Tambah inventaris" @close="showCreate = false"><form @submit.prevent="form.post('/inventory', { onSuccess: () => showCreate = false })" class="grid gap-3 sm:grid-cols-2"><label class="block"><span class="text-xs font-medium">Kode barang</span><input v-model="form.kode_barang" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label><label class="block"><span class="text-xs font-medium">Nama barang</span><input v-model="form.nama_barang" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label><label class="block"><span class="text-xs font-medium">Jenis</span><select v-model="form.jenis" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm"><option>Aset</option><option>Stok</option></select></label><label class="block"><span class="text-xs font-medium">Satuan</span><input v-model="form.satuan" value="Unit" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label><label class="block"><span class="text-xs font-medium">Jumlah</span><input v-model="form.jumlah" type="number" min="0" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label><button class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white sm:col-span-2">Simpan barang</button></form></Modal>
-    <Modal v-if="showLoan && selected && can('inventory.manage')" title="Catat peminjaman" @close="showLoan = false"><form @submit.prevent="loan.post('/inventory-loans', { onSuccess: () => showLoan = false })" class="grid gap-3"><input type="hidden" v-model="loan.inventory_id" /><label class="block"><span class="text-xs font-medium">Peminjam</span><input v-model="loan.peminjam_nama" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label><label class="block"><span class="text-xs font-medium">Tanggal pinjam</span><input v-model="loan.tgl_pinjam" type="date" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label><button class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Simpan peminjaman</button></form></Modal>
-    <Modal v-if="showAdjust && selected && can('inventory.manage')" title="Sesuaikan stok" @close="showAdjust = false"><form @submit.prevent="adjust.post('/inventory-adjustments', { onSuccess: () => showAdjust = false })" class="grid gap-3"><input type="hidden" v-model="adjust.inventory_id" /><label class="block"><span class="text-xs font-medium">Selisih stok</span><input v-model="adjust.jumlah" type="number" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label><label class="block"><span class="text-xs font-medium">Catatan</span><textarea v-model="adjust.catatan" required rows="3" class="mt-1 w-full rounded-lg border border-[#6F9435] px-3 py-2 text-sm"></textarea></label><button class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Simpan penyesuaian</button></form></Modal>
+    <div class="page-head">
+      <div>
+        <p class="page-eyebrow">Inventaris Ambalan</p>
+        <h1 class="page-title">Barang dan Aset</h1>
+        <p class="page-subtitle">Pantau ketersediaan, kondisi, dan riwayat peminjaman barang.</p>
+      </div>
+      <button v-if="canManage" type="button" class="btn-primary" @click="openCreate">
+        <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
+        Tambah barang
+      </button>
+    </div>
+
+    <p v-if="!items.data.length" class="empty-state">
+      <AppIcon name="inventory" class="empty-state-icon h-6 w-6" />
+      <span class="empty-state-text">Belum ada barang di inventaris.</span>
+      <button v-if="canManage" type="button" class="btn-ghost btn-sm mt-1" @click="openCreate">
+        <AppIcon name="plus" :stroke="2.2" class="h-3.5 w-3.5" />
+        Tambah barang pertama
+      </button>
+    </p>
+
+    <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <article v-for="item in items.data" :key="item.id" class="card flex flex-col">
+        <span class="card-glow" aria-hidden="true" />
+
+        <div class="relative flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-xs font-bold uppercase tracking-wide text-[#A7B92B]">{{ item.kode_barang }}</p>
+            <h2 class="mt-1 text-lg font-bold text-[#f0ead8]">{{ item.nama_barang }}</h2>
+          </div>
+          <span class="badge shrink-0" :class="statusBadge(item.status_pinjam)">
+            <AppIcon :name="statusIcon(item.status_pinjam)" class="h-3 w-3" />
+            {{ item.status_pinjam }}
+          </span>
+        </div>
+
+        <dl class="relative mt-5 grid grid-cols-3 gap-2 text-center">
+          <div v-for="stat in stats(item)" :key="stat.label" class="rounded-xl border border-[#6F9435]/25 bg-[#263D26] p-3">
+            <dt class="text-[11px] text-[#8fa06a]">{{ stat.label }}</dt>
+            <dd class="mt-1 text-xl font-bold text-[#f0ead8]">{{ stat.value }}</dd>
+          </div>
+        </dl>
+
+        <div class="relative mt-4 flex flex-wrap gap-2">
+          <Link :href="`/inventory/${item.id}/movements`" class="btn-ghost btn-sm">
+            <AppIcon name="clipboard" class="h-3.5 w-3.5" />
+            Riwayat
+          </Link>
+          <button v-if="canManage" type="button" class="btn-primary btn-sm" @click="openLoan(item)">
+            <AppIcon name="members" class="h-3.5 w-3.5" />
+            Pinjam
+          </button>
+          <button v-if="canManage" type="button" class="btn-ghost btn-sm" @click="openAdjust(item)">
+            <AppIcon name="settings" class="h-3.5 w-3.5" />
+            Sesuaikan stok
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <Modal v-if="showCreate && canManage" title="Tambah inventaris" @close="closeCreate">
+      <form class="grid gap-3 sm:grid-cols-2" @submit.prevent="submitItem">
+        <label class="block">
+          <span class="field-label">Kode barang</span>
+          <input v-model="form.kode_barang" required class="field mt-1" />
+        </label>
+        <label class="block">
+          <span class="field-label">Nama barang</span>
+          <input v-model="form.nama_barang" required class="field mt-1" />
+        </label>
+        <label class="block">
+          <span class="field-label">Jenis</span>
+          <select v-model="form.jenis" class="field mt-1">
+            <option>Aset</option>
+            <option>Stok</option>
+          </select>
+        </label>
+        <label class="block">
+          <span class="field-label">Satuan</span>
+          <input v-model="form.satuan" class="field mt-1" />
+        </label>
+        <label class="block">
+          <span class="field-label">Jumlah</span>
+          <input v-model="form.jumlah" type="number" min="0" required class="field mt-1" />
+        </label>
+        <button type="submit" :disabled="form.processing" class="btn-primary sm:col-span-2">Simpan barang</button>
+      </form>
+    </Modal>
+
+    <Modal v-if="showLoan && selected && canManage" title="Catat peminjaman" @close="closeLoan">
+      <form class="grid gap-3" @submit.prevent="submitLoan">
+        <input v-model="loan.inventory_id" type="hidden" />
+        <label class="block">
+          <span class="field-label">Peminjam</span>
+          <input v-model="loan.peminjam_nama" required class="field mt-1" />
+        </label>
+        <label class="block">
+          <span class="field-label">Tanggal pinjam</span>
+          <input v-model="loan.tgl_pinjam" type="date" required class="field mt-1" />
+        </label>
+        <button type="submit" :disabled="loan.processing" class="btn-primary">Simpan peminjaman</button>
+      </form>
+    </Modal>
+
+    <Modal v-if="showAdjust && selected && canManage" title="Sesuaikan stok" @close="closeAdjust">
+      <form class="grid gap-3" @submit.prevent="submitAdjust">
+        <input v-model="adjust.inventory_id" type="hidden" />
+        <label class="block">
+          <span class="field-label">Selisih stok</span>
+          <input v-model="adjust.jumlah" type="number" required class="field mt-1" />
+        </label>
+        <label class="block">
+          <span class="field-label">Catatan</span>
+          <textarea v-model="adjust.catatan" required rows="3" class="field mt-1 resize-y"></textarea>
+        </label>
+        <button type="submit" :disabled="adjust.processing" class="btn-primary">Simpan penyesuaian</button>
+      </form>
+    </Modal>
   </AppLayout>
 </template>
+
 <script setup>
 import { computed, ref } from 'vue';
 import { useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
-import SkeletonLoader from '@/Components/SkeletonLoader.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import Modal from '@/Components/Modal.vue';
 import { useAccess } from '@/Composables/useAccess.js';
-defineProps({ items: Object });
-const { can } = useAccess();
-const showCreate = ref(false); const showLoan = ref(false); const showAdjust = ref(false); const selected = ref(null);
-const form = useForm({ kode_barang: '', nama_barang: '', jenis: 'Aset', satuan: 'Unit', jumlah: 0 });
-const loan = useForm({ inventory_id: '', peminjam_nama: '', tgl_pinjam: new Date().toISOString().slice(0, 10) });
-const adjust = useForm({ inventory_id: '', jumlah: 0, catatan: '' });
-function openLoan(item) { selected.value = item; loan.inventory_id = String(item.id); loan.peminjam_nama = ''; loan.tgl_pinjam = new Date().toISOString().slice(0, 10); showLoan.value = true; }
-</script>
 
+defineProps({ items: { type: Object, required: true } });
+
+const { can } = useAccess();
+const canManage = computed(() => can('inventory.manage'));
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+const showCreate = ref(false);
+const showLoan = ref(false);
+const showAdjust = ref(false);
+const selected = ref(null);
+
+const form = useForm({ kode_barang: '', nama_barang: '', jenis: 'Aset', satuan: 'Unit', jumlah: 0 });
+const loan = useForm({ inventory_id: '', peminjam_nama: '', tgl_pinjam: today() });
+const adjust = useForm({ inventory_id: '', jumlah: 0, catatan: '' });
+
+// Status dan triplet angka ditulis sebagai data supaya warna, ikon, dan urutan
+// labelnya hanya ada di satu tempat.
+const STATUS_STATES = {
+  Tersedia: { badge: 'badge-approved', icon: 'checkCircle' },
+  Dipinjam: { badge: 'badge-pending', icon: 'clock' },
+};
+
+const statusBadge = (status) => STATUS_STATES[status]?.badge ?? 'badge-neutral';
+const statusIcon = (status) => STATUS_STATES[status]?.icon ?? 'dot';
+
+function stats(item) {
+  return [
+    { label: 'Jumlah', value: item.jumlah },
+    { label: 'Kondisi', value: item.kondisi },
+    { label: 'Pinjam', value: item.loans_count },
+  ];
+}
+
+function openCreate() {
+  form.reset();
+  showCreate.value = true;
+}
+
+function closeCreate() {
+  showCreate.value = false;
+  form.reset();
+}
+
+function submitItem() {
+  form.post('/inventory', { onSuccess: closeCreate });
+}
+
+function openLoan(item) {
+  selected.value = item;
+  loan.reset();
+  loan.inventory_id = String(item.id);
+  loan.tgl_pinjam = today();
+  showLoan.value = true;
+}
+
+function closeLoan() {
+  showLoan.value = false;
+  selected.value = null;
+  loan.reset();
+}
+
+function submitLoan() {
+  loan.post('/inventory-loans', { onSuccess: closeLoan });
+}
+
+function openAdjust(item) {
+  selected.value = item;
+  adjust.reset();
+  adjust.inventory_id = String(item.id);
+  showAdjust.value = true;
+}
+
+function closeAdjust() {
+  showAdjust.value = false;
+  selected.value = null;
+  adjust.reset();
+}
+
+function submitAdjust() {
+  adjust.post('/inventory-adjustments', { onSuccess: closeAdjust });
+}
+</script>

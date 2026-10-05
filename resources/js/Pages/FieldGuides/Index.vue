@@ -22,7 +22,10 @@
           </button>
         </div>
       </div>
-      <p v-if="!filteredGuides.length" class="col-span-full rounded-xl border-2 border-[#6F9435]/30 bg-[#335233] p-10 text-center text-sm text-[#8fa06a]">Belum ada panduan.</p>
+      <p v-if="!filteredGuides.length" class="empty-state">
+        <AppIcon name="guides" class="empty-state-icon h-6 w-6" />
+        <span class="empty-state-text">Belum ada panduan.</span>
+      </p>
     </div>
   </AppLayout>
 </template>
@@ -31,6 +34,7 @@
 import { ref, computed } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 
 defineProps({ guides: Object });

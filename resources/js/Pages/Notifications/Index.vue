@@ -33,7 +33,10 @@
           </div>
         </div>
       </div>
-      <p v-if="!notifications.data.length" class="rounded-xl border-2 border-[#6F9435]/30 bg-[#335233] p-10 text-center text-sm text-[#8fa06a]">Belum ada notifikasi.</p>
+      <p v-if="!notifications.data.length" class="empty-state">
+        <AppIcon name="bell" class="empty-state-icon h-6 w-6" />
+        <span class="empty-state-text">Belum ada notifikasi.</span>
+      </p>
     </div>
     <Pagination :links="notifications.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
     </template>
@@ -44,6 +47,7 @@
 import { computed } from 'vue';
 import { useForm, usePage, router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useAccess } from '@/Composables/useAccess.js';

@@ -6,7 +6,10 @@
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Daftar Angkatan</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Kelola tahun, nomor, dan status angkatan anggota.</p>
       </div>
-      <button v-if="canManage" @click="openCreate" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Tambah angkatan</button>
+      <button v-if="canManage" type="button" class="btn-primary" @click="openCreate">
+        <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
+        Tambah angkatan
+      </button>
     </div>
 
     <div class="overflow-hidden rounded-2xl border border-[#6F9435] bg-[#335233] shadow-sm">
@@ -39,7 +42,7 @@
               </td>
             </tr>
             <tr v-if="!angkatan.data.length">
-              <td colspan="6" class="px-4 py-8 text-center text-sm text-[#8fa06a]">Belum ada angkatan.</td>
+              <td colspan="6" class="empty-cell">Belum ada angkatan.</td>
             </tr>
           </tbody>
         </table>
@@ -80,6 +83,7 @@
 import { computed, ref } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useAccess } from '@/Composables/useAccess.js';

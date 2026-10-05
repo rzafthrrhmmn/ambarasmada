@@ -22,8 +22,9 @@
           <div class="mt-3 whitespace-pre-line text-sm leading-7 text-[#d4dc9a]">{{ media.lirik }}</div>
         </div>
 
-        <div v-if="!media.lirik && !media.file_path" class="mt-6 text-center text-sm text-[#8fa06a]">
-          Belum ada lirik atau file audio.
+        <div v-if="!media.lirik && !media.file_path" class="empty-state">
+          <AppIcon name="materials" class="empty-state-icon h-6 w-6" />
+          <span class="empty-state-text">Belum ada lirik atau file audio.</span>
         </div>
       </div>
     </div>
@@ -33,6 +34,7 @@
 <script setup>
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 
 defineProps({ media: Object });
 </script>

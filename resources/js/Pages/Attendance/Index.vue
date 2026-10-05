@@ -6,7 +6,10 @@
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Presensi Anggota</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Buat sesi latihan, gunakan QR Code, dan lihat rekap kehadiran.</p>
       </div>
-      <button v-if="canCreate" @click="openCreate" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Sesi latihan</button>
+      <button v-if="canCreate" type="button" class="btn-primary" @click="openCreate">
+        <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
+        Sesi latihan
+      </button>
     </div>
 
     <section v-if="canBulkDelete" class="mb-5 rounded-2xl border border-[#6F9435] bg-[#335233] p-4">
@@ -219,6 +222,7 @@
 import { computed, ref, watch } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';

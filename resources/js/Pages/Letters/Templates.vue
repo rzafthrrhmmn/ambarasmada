@@ -64,8 +64,9 @@
       </div>
     </div>
 
-    <div v-if="!templates.length" class="rounded-2xl border border-[#6F9435] bg-[#335233] p-10 text-center">
-      <p class="text-sm text-[#8fa06a]">Belum ada template surat.</p>
+    <div v-if="!templates.length" class="empty-state">
+      <AppIcon name="letters" class="empty-state-icon h-6 w-6" />
+      <span class="empty-state-text">Belum ada template surat.</span>
     </div>
 
     <div v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -149,6 +150,7 @@
 import { ref } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import Modal from '@/Components/Modal.vue';
 
 defineProps({

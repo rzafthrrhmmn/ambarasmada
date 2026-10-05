@@ -9,7 +9,10 @@
       </div>
       <div class="flex flex-wrap gap-2">
         <button v-if="canPayIuran" @click="showPay = true" type="button" class="inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Bayar iuran</button>
-        <button v-if="canManageFinance" @click="showCreate = true" type="button" class="inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Transaksi baru</button>
+        <button v-if="canManageFinance" type="button" class="btn-primary" @click="showCreate = true">
+          <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
+          Transaksi baru
+        </button>
       </div>
     </div>
 
@@ -105,7 +108,7 @@
         </table>
       </div>
       <Pagination v-if="transactions.links?.length > 1" :links="transactions.links" class="p-3" />
-      <p v-if="! transactions.data?.length" class="px-4 py-6 text-center text-xs text-[#8fa06a]">Belum ada transaksi.</p>
+      <p v-if="! transactions.data?.length" class="empty-cell">Belum ada transaksi.</p>
     </section>
 
     <Modal v-if="showCreate && canManageFinance" title="Tambah transaksi kas" @close="showCreate = false">
@@ -164,6 +167,7 @@
 import { computed, ref } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';

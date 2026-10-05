@@ -6,9 +6,10 @@
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Backup Database</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Kelola backup database dan riwayatnya.</p>
       </div>
-      <button v-if="canManageTools" @click="createBackupFn" :disabled="creating" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50">
-        <span v-if="creating">Membuat...</span>
-        <span v-else>+ Backup Sekarang</span>
+      <button v-if="canManageTools" type="button" class="btn-primary" :disabled="creating" @click="createBackupFn">
+        <AppIcon v-if="creating" name="spinner" class="h-4 w-4 animate-spin" />
+        <AppIcon v-else name="plus" :stroke="2.2" class="h-4 w-4" />
+        {{ creating ? 'Membuat...' : 'Backup Sekarang' }}
       </button>
     </div>
 

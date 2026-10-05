@@ -6,7 +6,10 @@
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Modul Pelatihan</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Kelola modul pelatihan dan progres anggota.</p>
 </div>
-      <button v-if="canManage" @click="showCreate = true" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6F9435]">+ Tambah Pelatihan</button>
+      <button v-if="canManage" type="button" class="btn-primary" @click="showCreate = true">
+        <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
+        Tambah Pelatihan
+      </button>
     </div>
 
     <div v-if="canManage && showCreate" class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">

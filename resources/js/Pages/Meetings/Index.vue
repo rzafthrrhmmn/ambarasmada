@@ -6,7 +6,10 @@
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Rapat & Musyawarah</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Catat notulen, voting, dan keputusan rapat.</p>
       </div>
-      <button v-if="canManage" @click="showCreate = true" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Rapat Baru</button>
+      <button v-if="canManage" type="button" class="btn-primary" @click="showCreate = true">
+        <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
+        Rapat Baru
+      </button>
     </div>
 
     <div class="space-y-3">
@@ -22,7 +25,10 @@
           </div>
         </div>
       </div>
-      <p v-if="!meetings.data.length" class="rounded-xl border-2 border-[#6F9435]/30 bg-[#335233] p-10 text-center text-sm text-[#8fa06a]">Belum ada rapat.</p>
+      <p v-if="!meetings.data.length" class="empty-state">
+        <AppIcon name="meetings" class="empty-state-icon h-6 w-6" />
+        <span class="empty-state-text">Belum ada rapat.</span>
+      </p>
     </div>
     <Pagination :links="meetings.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
 
@@ -46,6 +52,7 @@
 import { ref, computed } from 'vue';
 import { useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';

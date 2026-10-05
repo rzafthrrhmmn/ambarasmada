@@ -146,10 +146,13 @@
 
         <div v-else class="p-10 text-center">
           <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#263D26] text-[#A7B92B]">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <AppIcon name="checkCircle" :stroke="2" class="h-6 w-6" />
           </span>
           <p class="mt-3 text-sm text-[#8fa06a]">Belum ada presensi pada sesi ini.</p>
-          <button v-if="canManageRecords" @click="openAdd" class="mt-3 rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-xs font-semibold text-white">+ Tambah presensi pertama</button>
+          <button v-if="canManageRecords" type="button" class="btn-primary btn-sm mt-3" @click="openAdd">
+            <AppIcon name="plus" :stroke="2.2" class="h-3.5 w-3.5" />
+            Tambah presensi pertama
+          </button>
         </div>
       </section>
 
@@ -208,7 +211,7 @@
               </div>
             </div>
           </div>
-          <p v-else class="mt-3 text-xs text-[#8fa06a]">Belum ada data untuk dihitung.</p>
+          <p v-else class="empty-inline">Belum ada data untuk dihitung.</p>
         </section>
       </aside>
     </div>
@@ -349,6 +352,7 @@
 import { computed, ref, watch } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import Modal from '@/Components/Modal.vue';
 import LocationPicker from '@/Components/LocationPicker.vue';
 import { useAccess } from '@/Composables/useAccess.js';

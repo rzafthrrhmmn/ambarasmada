@@ -48,7 +48,10 @@
           </button>
         </div>
       </div>
-      <p v-if="!events.data.length" class="col-span-full rounded-xl border-2 border-[#6F9435]/30 bg-[#335233] p-10 text-center text-sm text-[#8fa06a]">Belum ada kegiatan.</p>
+      <p v-if="!events.data.length" class="empty-state">
+        <AppIcon name="events" class="empty-state-icon h-6 w-6" />
+        <span class="empty-state-text">Belum ada kegiatan.</span>
+      </p>
     </div>
     <Pagination :links="events.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
 

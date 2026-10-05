@@ -608,6 +608,19 @@
         @apply text-sm font-medium text-lumut-400;
     }
 
+    /* Versi untuk baris tabel. `.empty-state` memakai `col-span-full` dan
+       tidak berlaku di dalam `<td>`, jadi pesan kosong pada tabel memakai
+       kelas ini agar tetap memakai warna dan ukuran yang sama. */
+    .empty-cell {
+        @apply px-4 py-8 text-center text-sm text-lumut-400;
+    }
+
+    /* Keadaan kosong tanpa kartu, untuk daftar yang sangat pendek dan tidak
+       perlu dibingkai (misalnya ringkasan satu baris di sidebar kartu). */
+    .empty-inline {
+        @apply py-6 text-center text-xs text-lumut-400;
+    }
+
     /* Baris label/nilai di dalam kartu detail. */
     .meta-row {
         @apply flex items-start gap-2 text-xs text-lumut-400;

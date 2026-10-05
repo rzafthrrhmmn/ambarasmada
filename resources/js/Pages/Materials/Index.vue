@@ -6,7 +6,10 @@
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Materi Kepramukaan</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Kumpulan panduan, sandi, navigasi, dan materi kepramukaan lainnya.</p>
       </div>
-      <button v-if="canManage" @click="showCreate = true" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Tambah materi</button>
+      <button v-if="canManage" type="button" class="btn-primary" @click="showCreate = true">
+        <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
+        Tambah materi
+      </button>
     </div>
 
     <div class="mb-4 flex flex-wrap items-center gap-3">
@@ -36,7 +39,10 @@
         </div>
       </article>
     </div>
-    <p v-if="!materials.data.length" class="mt-6 text-center text-sm text-[#8fa06a]">Belum ada materi.</p>
+    <p v-if="!materials.data.length" class="empty-state">
+      <AppIcon name="materials" class="empty-state-icon h-6 w-6" />
+      <span class="empty-state-text">Belum ada materi.</span>
+    </p>
 
     <Pagination :links="materials.links" />
 
@@ -57,6 +63,7 @@
 import { computed, reactive, ref } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';

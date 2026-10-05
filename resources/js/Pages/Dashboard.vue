@@ -109,7 +109,7 @@
             <p class="text-[10px] text-[#8fa06a]">{{ formatDate(event.tanggal) }} • {{ event.jenis }}</p>
           </div>
         </div>
-        <p v-else class="text-center text-sm text-[#8fa06a]">Tidak ada kegiatan terdaftar.</p>
+        <p v-else class="empty-inline">Tidak ada kegiatan terdaftar.</p>
       </div>
 
       <div class="rounded-2xl border-2 border-[#6F9435]/30 bg-[#335233] p-5 shadow-lg">
@@ -121,7 +121,7 @@
         <div v-else-if="teams.length" class="mt-3 flex flex-wrap gap-2">
           <span v-for="team in teams" :key="team.id" class="rounded-full bg-[#6F9435]/20 border border-[#6F9435]/50 px-3 py-1 text-xs font-bold text-[#d4dc9a]">{{ team.nama }}</span>
         </div>
-        <p v-else class="text-center text-sm text-[#8fa06a]">Belum ada gugus depan.</p>
+        <p v-else class="empty-inline">Belum ada gugus depan.</p>
       </div>
     </section>
   </AppLayout>

@@ -8,7 +8,10 @@
       </div>
       <div class="flex gap-2">
         <button v-if="canManageAngkatan" @click="showAngkatan = true" class="inline-flex items-center rounded-lg border border-[#EDD330] px-4 py-2 text-sm font-semibold text-[#EDD330] transition hover:bg-[#EDD330]/10">Kelola Angkatan</button>
-        <button v-if="canManage" @click="showCreate = true" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6F9435]">+ Tambah anggota</button>
+        <button v-if="canManage" type="button" class="btn-primary" @click="showCreate = true">
+          <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
+          Tambah anggota
+        </button>
       </div>
     </div>
 
@@ -88,7 +91,7 @@
                   </td>
                 </tr>
                 <tr v-if="!pengurus.length">
-                  <td colspan="5" class="px-4 py-6 text-center text-sm text-[#8fa06a]">Belum ada anggota dengan role Pengurus.</td>
+                  <td colspan="5" class="empty-cell">Belum ada anggota dengan role Pengurus.</td>
                 </tr>
               </tbody>
             </table>
@@ -158,12 +161,12 @@
               </td>
             </tr>
             <tr v-if="!members.data.length">
-              <td colspan="8" class="px-4 py-8 text-center text-sm text-[#8fa06a]">Data anggota belum tersedia.</td>
+              <td colspan="8" class="empty-cell">Data anggota belum tersedia.</td>
             </tr>
           </tbody>
           <tbody v-else class="divide-y divide-[#6F9435]/30">
             <tr>
-              <td colspan="8" class="px-4 py-8 text-center text-sm text-[#8fa06a]">Memuat data anggota...</td>
+              <td colspan="8" class="empty-cell">Memuat data anggota...</td>
             </tr>
           </tbody>
         </table>
@@ -211,7 +214,7 @@
               <button v-if="a.is_active" type="button" @click="archiveAngkatan(a)" class="rounded border border-[#ef4419]/50 px-2 py-1 text-xs text-[#ef4419] transition hover:bg-[#ef4419]/10">Arsipkan</button>
             </div>
           </div>
-          <p v-if="!angkatanList.length" class="text-center text-xs text-[#8fa06a]">Belum ada angkatan.</p>
+          <p v-if="!angkatanList.length" class="empty-inline">Belum ada angkatan.</p>
         </div>
       </div>
     </Modal>
@@ -370,6 +373,7 @@
 import { computed, reactive, ref } from 'vue';
 import { router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useAccess } from '@/Composables/useAccess.js';

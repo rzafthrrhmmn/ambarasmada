@@ -16,12 +16,10 @@
       </p>
     </header>
 
-    <div
-      v-if="!linked"
-      class="rounded-2xl border border-dashed border-[#6F9435] bg-[#335233] p-8 text-center"
-    >
+    <div v-if="!linked" class="empty-state">
+      <AppIcon name="attendance" class="empty-state-icon h-6 w-6" />
       <p class="text-sm font-semibold text-[#f0ead8]">Belum ada data kehadiran untuk akun ini</p>
-      <p class="mx-auto mt-2 max-w-md text-xs text-[#8fa06a]">
+      <p class="mx-auto mt-1 max-w-md text-xs text-[#8fa06a]">
         Hubungi pembina untuk menautkan akunmu dengan data anggota. Setelah terhubung, riwayat presensi dan
         pemindaian QR Code akan muncul di halaman ini.
       </p>
@@ -50,9 +48,9 @@
         <div class="space-y-3">
           <SkeletonLoader v-if="!sessions || !sessions.data" variant="list" :lines="5" />
 
-          <div
-            v-else-if="!sessions.data.length"
-            class="rounded-xl border border-dashed border-[#6F9435] bg-[#263D26] p-6 text-center"
+<div
+            v-if="!sessions.data.length"
+            class="rounded-xl border border-dashed border-[#6F9435]/50 bg-[#263D26]/60 p-6 text-center"
           >
             <p class="text-sm text-[#8fa06a]">Belum ada sesi latihan yang tercatat.</p>
           </div>
@@ -153,6 +151,7 @@
 import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import Pagination from '@/Components/Pagination.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import { useAccess } from '@/Composables/useAccess.js';
