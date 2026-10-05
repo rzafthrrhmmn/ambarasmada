@@ -72,6 +72,22 @@ export const SHEET_ORIENTATION_LIST = Object.entries(SHEET_ORIENTATIONS).map(
 );
 
 /**
+ * Lambang yang dicetak di header lembar PNG.
+ *
+ * Yang dipakai adalah lambang resmi urutan organisasi Kepramukaan, bukan logo
+ * ambalan yang bisa diunggah lewat pengaturan. Alasannya isi lembar ini adalah
+ * bahan ajar: identitas lembar harus sama di semua wilayah yang diunduh, dan
+ * logo yang bisa diganti admin membuat dua unduhan dari wilayah yang sama
+ * terlihat seperti berasal dari dua sumber berbeda. Berkas asli 2789 x 659 ada
+ * di media/; yang dilayani aplikasi turunannya yang sudah diperkecil supaya
+ * header tidak mengunduh hampir satu megabyte setiap kali peta dicetak.
+ *
+ * Logonya mendatar, jadi kotak logo di header dibuat lebar dan pendek. Pakai
+ * kotak persegi seperti sebelumnya akan mengecilkannya jadi seperti garis.
+ */
+export const SHEET_LOGO_URL = '/images/Logo_Urutan_Organiasasi_Kepramukaan.png';
+
+/**
  * Ringkasan format lembar untuk ditampilkan sebagai pratinjau di dialog.
  *
  * Angkanya dihitung dengan fungsi yang sama dengan yang menggambar lembar, jadi
@@ -95,7 +111,7 @@ export function describeSheet(orientation = DEFAULT_ORIENTATION) {
     title: 'Peta Kontur - Contoh Wilayah',
     subtitle: 'Koordinat tengah 119,4321, -5,1234 | Zoom 11.0 | Skala 1:250.000',
     orientation,
-    logo: { width: LOGO_BOX, height: LOGO_BOX },
+    logo: { width: LOGO_MAX_WIDTH, height: LOGO_MAX_HEIGHT },
   });
   const scale = sheetScale(sheet);
 
@@ -128,16 +144,34 @@ const MAP_MAX_RATIO = 0.82;
 /**
  * Lebar minimum teks header setelah kolom logo dipotong.
  *
- * Kolom logo selebar LOGO_BOX, jadi pada format terlebar pun masih tersisa
+ * Kolom logo selebar LOGO_MAX_WIDTH, jadi pada format terlebar pun masih tersisa
  * lebih dari separuh lembar. Angka ini jaring pengaman saja: kalau someday
  * logonya jauh lebih lebar, judul dan subjudul tidak boleh tersempit sampai
  * satu huruf per baris.
  */
 const MAP_MIN_WIDTH = 320;
 
-/** Keterangan sumber di bawah peta, termasuk jaraknya dari area peta. */
-const FOOTER_GAP = 12;
-const FOOTER_HEIGHT = 18;
+/** Jarak area peta ke baris keterangan sumber di bawahnya. */
+const FOOTER_GAP = 16;
+
+/** Tinggi baris keterangan sumber: keterangan garis kontur dan kredit sumber. */
+const FOOTER_ROW = 18;
+
+/** Jarak baris keterangan sumber ke garis pemisah kaki halaman. */
+const FOOTER_RULE_GAP = 12;
+
+/** Tinggi baris paling bawah, yaitu waktu cetak dan nama sistem. */
+const FOOTER_ROW_BOTTOM = 16;
+
+/**
+ * Total tinggi kaki halaman.
+ *
+ * Dijumlahkan dari tinggi tiap barisnya supaya menambah baris baru tidak
+ * membuat isinya menimpa tepi kertas. Tinggi ini juga yang dipotong dari sisa
+ * lembar saat menghitung tinggi area peta, sehingga kaki halaman yang bertambah
+ * membuat peta mengecil, bukan justru menindih.
+ */
+const FOOTER_HEIGHT = FOOTER_ROW + FOOTER_RULE_GAP + FOOTER_ROW_BOTTOM;
 
 /**
  * Skala render lembar cetak.
@@ -208,14 +242,20 @@ function sheetScale(sheet) {
  *
  * Logo tidak boleh memakai seluruh tinggi header: judul dan subjudul tetap
  * harus punya ruangnya masing-masing di sebelah kanan dan di bawahnya.
+ *
+ * Kotaknya mendatar karena lambang urutan organisasi Kepramukaan berbentuk
+ * memanjang (sekitar 4:1). Versi sebelumnya memakai kotak persegi 64 x 64, dan
+ * gambar setinggi 64 dengan rasio 4:1 hanya jadi setinggi 15: logo yang sudah
+ * kecil makin tidak terbaca karena diperkecil, bukan karena ruangnya kurang.
  */
-const LOGO_BOX = 64;
+const LOGO_MAX_WIDTH = 224;
+const LOGO_MAX_HEIGHT = 56;
 
 /** Jarak logo ke teks di sebelahnya dan ke baris pertama yang ada di bawahnya. */
 const LOGO_GAP = 20;
 
 /**
- * Ukuran logo di dalam kotak LOGO_BOX, dengan rasio gambar tetap terjaga.
+ * Ukuran logo di dalam kotak header, dengan rasio gambar tetap terjaga.
  *
  * Dipakai oleh pengukur tinggi dan penggambar, jadi keduanya tidak bisa
  * berbeda jawaban soal berapa ruang yang dimakan logo.
@@ -228,7 +268,7 @@ function logoBox(image) {
     return null;
   }
 
-  const ratio = Math.min(LOGO_BOX / image.width, LOGO_BOX / image.height);
+  const ratio = Math.min(LOGO_MAX_WIDTH / image.width, LOGO_MAX_HEIGHT / image.height);
 
   return {
     width: Math.max(1, Math.round(image.width * ratio)),
@@ -368,7 +408,15 @@ function fitContain(sourceWidth, sourceHeight, boxX, boxY, boxWidth, boxHeight) 
 const TITLE_LINE_HEIGHT = 38;
 const TITLE_GAP = 8;
 const SUBTITLE_LINE_HEIGHT = 20;
-const SUBTITLE_GAP = 18;
+
+/**
+ * Jarak subjudul ke area peta.
+ *
+ * Di dalam jarak ini digambar garis pemisah header, jadi angkanya bukan
+ * sekadar jarak kosong: kalau diperkecil, garis dan peta saling menempel dan
+ * header terlihat seperti belum selesai.
+ */
+const SUBTITLE_GAP = 26;
 
 /**
  * Ukuran elemen yang digantung di atas area peta.
@@ -945,6 +993,10 @@ function drawScaleBar(ctx, x, y, metersPerPx, maxWidthPx) {
  *   elemen itu tidak ikut masuk ke snapshot dan PNG tanpa kredit eksplisit
  *   menampilkan citra yang tidak dikreditkan. Nilai standarnya hanya berlaku
  *   untuk Peta/Index, yang cetakannya selalu memakai OSM.
+ * @param {string|null} options.logo  Alamat lambang yang dicetak di header.
+ *   Bawaannya adalah lambang urutan organisasi Kepramukaan (SHEET_LOGO_URL)
+ *   supaya semua lembar, dari halaman mana pun, memakai identitas yang sama.
+ *   Null berarti lembar dicetak tanpa lambang.
  * @returns {Promise<Blob>}
  */
 export async function buildMapPng({
@@ -961,7 +1013,7 @@ export async function buildMapPng({
   elevation = null,
   bounds = null,
   orientation = DEFAULT_ORIENTATION,
-  logo = null,
+  logo = SHEET_LOGO_URL,
   sources = 'Sumber: © OpenStreetMap contributors, PMTiles Kontur Sulsel',
 } = {}) {
   const picked = { ...DEFAULT_COMPONENTS, ...components };
@@ -1030,13 +1082,34 @@ export async function buildMapPng({
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   // Subjudul mulai di bawah logo, bukan di sampingnya. Logo bisa setinggi
-  // LOGO_BOX, sedangkan judul cuma satu baris, jadi kalau subjudul langsung
-  // mengikuti judul, baris pertamanya akan berada di dalam kotak logo dan
-  // teksnya tertutup gambarnya.
+  // LOGO_MAX_HEIGHT, sedangkan judul cuma satu baris, jadi kalau subjudul
+  // langsung mengikuti judul, baris pertamanya akan berada di dalam kotak logo
+  // dan teksnya tertutup gambarnya.
   const subtitleLines = wrapText(ctx, subtitleText, mapWidth);
   subtitleLines.forEach((line, index) => {
     ctx.fillText(line, MARGIN, subtitleTop + index * SUBTITLE_LINE_HEIGHT);
   });
+
+  // Garis pemisah antara header dan peta. Tanpa itu, subjudul terakhir dan
+  // bingkai peta jadi satu blok abu-abu yang tidak jelas di mana judul berhenti
+  // dan peta dimulai.
+  //
+  // Garis digambar di dalam jarak SUBTITLE_GAP, bukan di luar, supaya ruangnya
+  // sudah dihitung measureSheet dan tidak menambah tinggi lembar diam-diam.
+  const headerRuleY = subtitleTop + subtitleLines.length * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP / 2;
+
+  ctx.strokeStyle = INK.rule;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(MARGIN, headerRuleY);
+  ctx.lineTo(width - MARGIN, headerRuleY);
+  ctx.stroke();
+
+  // Segmen tebal di ujung kiri garis. Garis tipis penuh saja membuat header
+  // terbaca sebagai garis sembarang, jadi ujung kirinya ditebalkan agar
+  // urutannya jelas: logo dan judul dulu, baru peta.
+  ctx.fillStyle = INK.accent;
+  ctx.fillRect(MARGIN, headerRuleY - 1.5, 72, 3);
 
   // Kursor harus ikut bertambah sesuai jumlah baris. Kalau hanya menambah tinggi
   // satu baris, subjudul dua baris menimpa kotak peta.
@@ -1164,6 +1237,12 @@ export async function buildMapPng({
   // Tidak ada lagi daftar uraian komponen peta kontur di bawah peta. Uraian itu
   // cocok untuk lembar handout, tapi di sini ia hanya memperpanjang halaman dan
   // membuat peta mengecil sampai wilayah yang dipilih sulit dibaca.
+  //
+  // Kaki halaman disusun dua baris yang dipisah garis tipis: baris atas
+  // membawa keterangan isi peta dan kredit datanya, baris bawah membawa waktu
+  // cetak di kiri dan nama sistem di kanan. Semuanya ditumpangkan ke tepi peta
+  // dengan tinggi yang sudah dipesan FOOTER_HEIGHT, bukan menempel ke tepi
+  // kertas, sehingga posisinya tidak bergeser antarwilayah.
   cursorY = mapY + mapHeight + FOOTER_GAP;
   setFont(ctx, 12, '400');
   ctx.fillStyle = INK.muted;
@@ -1179,17 +1258,31 @@ export async function buildMapPng({
   ctx.textAlign = 'right';
   ctx.fillText(sources, width - MARGIN, cursorY);
 
-  // Kaki halaman menempel ke tepi bawah lembar, tidak mengikuti cursor, supaya
-  // posisinya sama untuk semua wilayah.
+  // Garis pemisah di antara keterangan sumber dan baris paling bawah. Tanpa
+  // garis, kedua baris terbaca sebagai satu paragraf panjang yang tidak
+  // penting.
+  const footerRuleY = cursorY + FOOTER_ROW + FOOTER_RULE_GAP / 2;
+
+  ctx.strokeStyle = INK.rule;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(MARGIN, footerRuleY);
+  ctx.lineTo(width - MARGIN, footerRuleY);
+  ctx.stroke();
+
+  const footerBottomY = cursorY + FOOTER_ROW + FOOTER_RULE_GAP;
+
   setFont(ctx, 11, '400');
   ctx.fillStyle = INK.muted;
   ctx.textAlign = 'left';
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText(
-    `Dicetak pada ${new Date().toLocaleString('id-ID')} dari AMBARA - Sistem Digital Ambalan UPT SMAN 2 Maros`,
-    MARGIN,
-    height - MARGIN * 0.5,
-  );
+  ctx.textBaseline = 'top';
+  ctx.fillText(`Dicetak pada ${new Date().toLocaleString('id-ID')}`, MARGIN, footerBottomY);
+
+  // Nama sistem di kanan, bukan menempel di belakang waktu cetak. Satu baris
+  // yang memuat keduanya jadi panjang dan tidak imbang, dan tepi kanvas yang
+  // sudah dipatok tidak boleh jadi tempat teks yang terpotong.
+  ctx.textAlign = 'right';
+  ctx.fillText('AMBARA - Sistem Digital Ambalan UPT SMAN 2 Maros', width - MARGIN, footerBottomY);
 
   return new Promise((resolve, reject) => {
     // Kanvas 2D yang sudah di-taint (gambar peta lintas origin) membuat toBlob
@@ -1720,7 +1813,7 @@ export function useMapPngExport() {
       regionMaxZoom = null,
       matchViewport = false,
       orientation = DEFAULT_ORIENTATION,
-      logo = null,
+      logo = SHEET_LOGO_URL,
       ...pngOptions
     } = overrides;
     const { subtitle: subtitleOverride, ...restOptions } = pngOptions;

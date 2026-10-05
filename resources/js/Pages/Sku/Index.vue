@@ -7,7 +7,10 @@
         <p v-if="!can('sku.submit')" class="mt-1 text-sm text-[#8fa06a]">{{ can('sku.review') ? 'Kelola poin SKU dan TKK, serta verifikasi pengajuan anggota.' : 'Lihat pengajuan dan statistik SKU.' }}</p>
         <p v-else class="mt-1 text-sm text-[#8fa06a]">Pilih poin yang sudah diselesaikan, lalu kirim dokumentasi untuk diverifikasi.</p>
       </div>
-      <button v-if="can('sku.submit') && !completed" type="button" @click="openSubmission()" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Ajukan SKU</button>
+      <button v-if="can('sku.submit') && !completed" type="button" class="btn-accent" @click="openSubmission()">
+        <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
+        Ajukan SKU
+      </button>
     </div>
 
     <div v-if="progress" class="mb-6 rounded-2xl border border-[#6F9435]/50 bg-[#335233] p-5">
@@ -223,7 +226,7 @@
           <span class="text-xs font-medium">Catatan koreksi</span>
           <textarea v-model="formReject.catatan" required rows="5" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm"></textarea>
         </label>
-        <button class="rounded-lg bg-[#ef4419] px-4 py-2 text-sm font-semibold text-white">Tolak pengajuan</button>
+        <button type="submit" class="btn-danger-solid">Tolak pengajuan</button>
       </form>
     </Modal>
 

@@ -1,7 +1,9 @@
 ﻿// Naikkan setiap kali format respons yang disimpan berubah. Tile kini disimpan
 // tanpa header Content-Encoding dan halaman peta offline punya cache sendiri, jadi
-// cache versi sebelumnya tidak boleh dipakai ulang.
-const CACHE_VERSION = 'v1.5.0';
+// cache versi sebelumnya tidak boleh dipakai ulang. v1.5.1 menambahkan lambang
+// urutan organisasi Kepramukaan ke precache supaya header lembar PNG tetap ada
+// saat peta diunduh tanpa jaringan.
+const CACHE_VERSION = 'v1.5.1';
 const CACHE_NAME = 'jaya-jaya-jaya-' + CACHE_VERSION;
 const ASSETS_CACHE = 'jaya-jaya-jaya-assets-' + CACHE_VERSION;
 const TILES_CACHE = 'jaya-jaya-jaya-tiles-' + CACHE_VERSION;
@@ -33,6 +35,7 @@ const STATIC_ASSETS = [
     '/images/icons/maskable-192.png',
     '/images/icons/maskable-512.png',
     '/images/Logo_Ambalan.png',
+    '/images/Logo_Urutan_Organiasasi_Kepramukaan.png',
     '/robots.txt',
 ];
 

@@ -1588,22 +1588,58 @@ class MapPngExportTest extends TestCase
         );
     }
 
-    /**
-     * Logo ambalan harus masuk header lembar, dan tidak boleh menggagalkan PNG.
+/**
+     * Header lembar memakai lambang urutan organisasi Kepramukaan, dan
+     * kegagalan memuatnya tidak boleh menggagalkan PNG.
      *
-     * Logo dari domain lain hanya bisa digambar ke kanvas kalau server-nya
-     * mengirim header CORS. Kalau tidak, kanvas ikut tercemar dan toBlob gagal
-     * dengan SecurityError, jadi seluruh PNG hilang gara-gara satu logo.
+     * Dua hal yang dijaga di sini. Pertama, sumber logonya bukan lagi logo
+     * ambalan yang bisa diunggah: lembar ini dibagikan sebagai bahan ajar, dan
+     * header yang ikut berubah setiap kali admin mengganti logo membuat dua
+     * unduhan dari wilayah yang sama terlihat seperti dari dua sumber berbeda.
+     *
+     * Kedua, lambang itu dimuat dengan mode CORS. Gambar lintas origin hanya
+     * boleh digambar ke kanvas kalau server-nya mengirim header CORS. Kalau
+     * tidak, kanvas ikut tercemar dan toBlob gagal dengan SecurityError, jadi
+     * seluruh PNG hilang gara-gara satu logo.
      */
-    public function test_logo_ambalan_masuk_header_tanpa_merusak_png(): void
+    public function test_lambang_kepramukaan_masuk_header_tanpa_merusak_png(): void
     {
         $module = $this->module();
         $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
 
         $this->assertStringContainsString(
-            "const logoUrl = computed(() => page.props.ambalan?.logo_url || '/images/Logo_Ambalan.png');",
+            "export const SHEET_LOGO_URL = '/images/Logo_Urutan_Organiasasi_Kepramukaan.png';",
+            $module,
+            'Lambang resmi urutan organisasi Kepramukaan harus jadi sumber logo header lembar.'
+        );
+
+        // Berkas lambang harus benar-benar dilayani, kalau tidak header cetakan
+        // selalu kosong tanpa jejaknya karena pemuatannya gagal diam-diam.
+        $this->assertFileExists(
+            public_path('images/Logo_Urutan_Organiasasi_Kepramukaan.png'),
+            'Berkas lambang tidak ada di public/images, jadi tidak bisa dilayani.'
+        );
+
+        // Halaman peta harus memakai lambang yang sama, bukan kembali ke logo
+        // ambalan milik setiap penyewa.
+        $this->assertStringContainsString(
+            'const logoUrl = computed(() => SHEET_LOGO_URL);',
             $pencarian,
-            'Logo harus memakai sumber yang sama dengan header aplikasi.'
+            'Halaman peta harus memakai lambang lembar yang sama dengan bawaan modul ekspor.'
+        );
+
+        $this->assertStringNotContainsString(
+            'ambalan?.logo_url',
+            $pencarian,
+            'Logo ambalan yang diunggah tidak boleh lagi menjadi logo header lembar PNG.'
+        );
+
+        // Bawaan di kedua lapisan: halaman yang lupa mengirim logo pun tetap
+        // mencetak lambang, jadi hasilnya tidak bergantung pada pemanggil.
+        $this->assertSame(
+            2,
+            preg_match_all('/logo = SHEET_LOGO_URL,/', $module),
+            'Bawaan logo harus dipasang di buildMapPng dan exportMapPng.'
         );
 
         $this->assertStringContainsString(
@@ -1648,8 +1684,8 @@ class MapPngExportTest extends TestCase
 
         // Jalur ekspor menyiapkan kanvas peta memakai rasio dari measureSheet,
         // jadi logo juga harus ikut diukur di sana. Kalau tidak, rasio yang
-        // dipakai menyiapkan kanvas beda dari rasio yang digambar dan tepi PNG
-        // berisi pita abu-abu.
+        // dipakai menyiapkan kanvas peta berbeda dari rasio yang digambar dan tepi
+        // PNG berisi pita abu-abu.
         $this->assertStringContainsString(
             'const logoSize = logoBox(await loadLogo(restOptions.logo));',
             $module,
@@ -1668,6 +1704,117 @@ class MapPngExportTest extends TestCase
             'if (!logoCache.has(url)) {',
             $module,
             'Logo yang sudah dimuat harus dipakai ulang, bukan diunduh ulang.'
+        );
+    }
+
+    /**
+     * Lambang resmi itu memanjang, jadi kotak logo tidak boleh tetap persegi.
+     *
+     * Logo lama 640 x 640 muat rapi di kotak 64 x 64. Lambang urutan organisasi
+     * Kepramukaan berbanding sekitar 4:1, dan kalau kotak logonya tetap
+     * persegi, gambar selebar 64 hanya jadi setinggi 15: lambang yang sudah
+     * kecil makin tidak terbaca karena diperkecil, bukan karena ruangnya kurang.
+     */
+    public function test_kotak_logo_menyesuaikan_gambar_yang_memanjang(): void
+    {
+        $module = $this->module();
+
+        $this->assertStringContainsString(
+            'const LOGO_MAX_WIDTH = 224;',
+            $module,
+            'Kotak logo harus memuat lambang yang memanjang.'
+        );
+
+        $this->assertStringContainsString(
+            'const LOGO_MAX_HEIGHT = 56;',
+            $module,
+            'Tinggi kotak logo harus dibatasi supaya judul punya ruang di sebelahnya.'
+        );
+
+        // Rasio gambar harus tetap terjaga di dalam kotak, kalau tidak lambang
+        // teregang dan tidak lagi sama dengan berkas aslinya.
+        $this->assertStringContainsString(
+            'const ratio = Math.min(LOGO_MAX_WIDTH / image.width, LOGO_MAX_HEIGHT / image.height);',
+            $module,
+            'Ukuran logo harus mengikuti rasio gambar, bukan dipaksa jadi kotak.'
+        );
+
+        // Pratinjau format di dialog unduhan tidak memuat logo sungguhan, jadi
+        // ruang yang dipesannya harus memakai kotak yang sama dengan yang dipakai
+        // menggambar. Kalau tidak, pratinjau menjanjikan area peta yang lebih
+        // besar dari yang benar-benar ada.
+        $this->assertStringContainsString(
+            'logo: { width: LOGO_MAX_WIDTH, height: LOGO_MAX_HEIGHT },',
+            $module,
+            'Pratinjau format harus memesan ruang logo sebesar kotak yang sebenarnya.'
+        );
+
+        $this->assertStringNotContainsString(
+            'LOGO_BOX',
+            $module,
+            'Kotak logo persegi yang lama tidak boleh tersisa, karena menyelesaikan gambar yang memanjang.'
+        );
+    }
+
+    /**
+     * Header dan kaki halaman harus terbaca sebagai dua bagian yang rapi.
+     *
+     * Tanpa garis pemisah, subjudul terakhir, bingkai peta, keterangan sumber,
+     * dan waktu cetak menyatu jadi satu blok teks kecil yang tidak jelas di mana
+     * judul berhenti dan peta dimulai. Susunan dua baris di kaki halaman juga
+     * membuat isinya seimbang: keterangan isi peta dan kreditnya di atas, waktu
+     * cetak di kiri bawah dan nama sistem di kanan bawah.
+     */
+    public function test_header_dan_kaki_halaman_punya_garis_pemisah_dan_susun_berimbang(): void
+    {
+        $module = $this->module();
+
+        // Garis pemisah header digambar di dalam jarak subjudul ke peta, bukan
+        // di luar, supaya ruangnya sudah dipesan saat mengukur tinggi area peta.
+        $this->assertStringContainsString(
+            'const headerRuleY = subtitleTop + subtitleLines.length * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP / 2;',
+            $module,
+            'Garis pemisah header harus digambar pada jarak yang sudah dipesan measureSheet.'
+        );
+
+        $this->assertStringContainsString(
+            'const SUBTITLE_GAP = 26;',
+            $module,
+            'Jarak subjudul ke peta harus cukup untuk garis pemisah, bukan hanya ruang kosong.'
+        );
+
+        $this->assertStringContainsString(
+            'const footerRuleY = cursorY + FOOTER_ROW + FOOTER_RULE_GAP / 2;',
+            $module,
+            'Kaki halaman harus dipisahkan dari baris keterangan sumber oleh garis.'
+        );
+
+        // Waktu cetak dan nama sistem harus jadi dua blok yang berderajat,
+        // bukan satu baris panjang yang menempel di tepi kertas.
+        $this->assertStringContainsString(
+            'ctx.fillText(`Dicetak pada ${new Date().toLocaleString(\'id-ID\')}`, MARGIN, footerBottomY);',
+            $module,
+            'Waktu cetak harus berada di kaki halaman kiri pada tinggi yang sudah dipesan.'
+        );
+
+        $this->assertStringContainsString(
+            "ctx.fillText('AMBARA - Sistem Digital Ambalan UPT SMAN 2 Maros', width - MARGIN, footerBottomY);",
+            $module,
+            'Nama sistem harus berada di kaki halaman kanan, diseimbangkan dengan waktu cetak.'
+        );
+
+        // Kaki halaman yang bertambah baris harus ikut mengurangi tinggi area
+        // peta, kalau tidak isinya menimpa tepi kertas.
+        $this->assertStringContainsString(
+            'const FOOTER_HEIGHT = FOOTER_ROW + FOOTER_RULE_GAP + FOOTER_ROW_BOTTOM;',
+            $module,
+            'Tinggi kaki halaman harus dijumlahkan dari tinggi tiap barisnya.'
+        );
+
+        $this->assertStringNotContainsString(
+            'height - MARGIN * 0.5,',
+            $module,
+            'Kaki halaman lama ditumpangkan ke tepi kertas, sehingga posisinya bergeser antarwilayah.'
         );
     }
 

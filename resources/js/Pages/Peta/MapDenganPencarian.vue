@@ -862,7 +862,7 @@ import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import NavIcon from '@/Components/NavIcon.vue';
 import { getActiveServiceWorker, SW_PROTOCOL } from '@/ServiceWorker.js';
-import { useMapPngExport, SHEET_ORIENTATION_LIST, describeSheet, scaleLabel } from '@/Composables/useMapPngExport.js';
+import { useMapPngExport, SHEET_ORIENTATION_LIST, SHEET_LOGO_URL, describeSheet, scaleLabel } from '@/Composables/useMapPngExport.js';
 import { BASEMAPS, PRINT_BASEMAP, basemapAttribution } from '@/basemaps.js';
 
 const props = defineProps({
@@ -979,12 +979,15 @@ const printOrientation = ref('landscape');
 const printFormatPreview = computed(() => describeSheet(printOrientation.value));
 
 /**
- * Logo ambalan yang dicetak di header lembar PNG.
+ * Lambang yang dicetak di header lembar PNG.
  *
- * Sumbernya sama persis dengan yang dipakai AppLayout, supaya logo di header
- * PNG tidak berbeda dengan logo di header aplikasi.
+ * Bukan logo ambalan yang diunggah lewat pengaturan, melainkan lambang resmi
+ * urutan organisasi Kepramukaan yang juga dipakai sebagai bawaan ekspor PNG di
+ * modul export. Alasannya lembar ini dibagikan sebagai bahan ajar: identitas
+ * header harus sama di semua wilayah, tidak ikut berubah setiap kali admin
+ * mengganti logo ambalan.
  */
-const logoUrl = computed(() => page.props.ambalan?.logo_url || '/images/Logo_Ambalan.png');
+const logoUrl = computed(() => SHEET_LOGO_URL);
 
 /**
  * Satu-satunya sumber pilihan komponen cetak.

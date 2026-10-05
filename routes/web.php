@@ -46,6 +46,10 @@ Route::prefix('api/v1')->name('api.v1.')->group(function () {
     Route::get('/guest/home', [App\Http\Controllers\Api\GuestController::class, 'home'])->name('guest.home');
 });
 
+Route::get('/favicon.ico', function () {
+    return response()->noContent(204);
+})->name('favicon');
+
 Route::get('/', GuestController::class)->name('home');
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->middleware('throttle:5,1');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post')->middleware('throttle:5,1');
