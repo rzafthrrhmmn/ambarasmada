@@ -99,9 +99,19 @@ class DocxTemplate
      */
     public function toHtml(string $path, array $values): string
     {
-        [$xml] = $this->applyValues($this->bodyXml($path), $values);
+        $parts = $this->parts($path);
+        $htmlParts = [];
 
-        return $this->xmlToHtml($xml);
+        foreach (['word/header', 'word/footer', 'word/document.xml'] as $partType) {
+            foreach ($parts as $name => $xml) {
+                if (str_starts_with($name, $partType)) {
+                    [$filledXml] = $this->applyValues($xml, $values);
+                    $htmlParts[] = $this->xmlToHtml($filledXml);
+                }
+            }
+        }
+
+        return implode("\n", $htmlParts);
     }
 
     /**
