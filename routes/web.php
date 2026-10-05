@@ -39,6 +39,13 @@ use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\UserPermissionController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/up', fn () => response()->json(['status' => 'ok', 'time' => now()]))->name('up');
+
+// Public API v1 — guest-facing JSON endpoints with CDN-friendly cache headers.
+Route::prefix('api/v1')->name('api.v1.')->group(function () {
+    Route::get('/guest/home', [App\Http\Controllers\Api\GuestController::class, 'home'])->name('guest.home');
+});
+
 Route::get('/', GuestController::class)->name('home');
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->middleware('throttle:5,1');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post')->middleware('throttle:5,1');

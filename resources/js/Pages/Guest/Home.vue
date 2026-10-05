@@ -53,7 +53,7 @@
         id="mobile-menu-button"
         class="glass-panel float-right flex md:hidden h-10 w-10 items-center justify-center rounded-full p-0 text-krem-300"
         @click="openMobileMenu"
-        :aria-expanded="mobileMenuOpen"
+        :aria-expanded="uiStore.mobileMenuOpen"
         aria-controls="mobile-menu-overlay"
         aria-label="Buka menu"
       >
@@ -66,7 +66,7 @@
     <Teleport to="body">
       <Transition name="fade">
         <div
-          v-if="mobileMenuOpen"
+          v-if="uiStore.mobileMenuOpen"
           id="mobile-menu-overlay"
           class="fixed inset-0 z-50 flex items-center justify-center bg-hutan-900/80 backdrop-blur-md"
           @click.self="closeMobileMenu"
@@ -102,8 +102,8 @@
 
     <main id="main-content" class="relative mx-auto w-full px-4 py-10 sm:px-6 sm:py-14 lg:px-[50px] lg:py-20">
       <header class="mb-12 text-center" data-parallax-hero>
-        <section v-if="combinedSlides.length > 0" class="mb-10">
-          <PhotoSlider :slides="combinedSlides" :interval="6000" />
+        <section v-if="sliderSlides.length > 0" class="mb-10">
+          <PhotoSlider :slides="sliderSlides" :interval="6000" />
         </section>
 
         <div class="mb-12 flex justify-center">
@@ -157,8 +157,8 @@
 
       <section class="mt-12" data-animate="stats">
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Anggota Aktif" :value="animatedMembers" icon="members" />
-          <StatCard label="Alumni Tercatat" :value="animatedAlumni" icon="alumni" />
+          <StatCard label="Anggota Aktif" :value="guestStore.stats.members" icon="members" />
+          <StatCard label="Alumni Tercatat" :value="guestStore.stats.alumni" icon="alumni" />
           <StatCard label="Layanan Digital" value="5+" icon="tools" />
           <StatCard label="Akses Ponsel" value="PWA" icon="download" />
         </div>
@@ -186,7 +186,7 @@
         </div>
       </section>
 
-      <section v-if="gallery && gallery.length > 0" id="dokumentasi" class="mt-20 scroll-mt-24">
+      <section v-if="guestStore.gallery.length > 0" id="dokumentasi" class="mt-20 scroll-mt-24">
         <div class="mb-6 flex items-end justify-between">
           <div>
             <span class="section-eyebrow text-daun-400">Dokumentasi Kegiatan</span>
@@ -208,7 +208,7 @@
             class="hide-scrollbar flex gap-3 overflow-x-auto pb-2 scroll-snap-type-x mandatory"
           >
             <div
-              v-for="(item, idx) in gallery"
+              v-for="(item, idx) in guestStore.gallery"
               :key="idx"
               class="group relative flex-shrink-0 overflow-hidden rounded-2xl border-2 border-daun-400/20 bg-hutan-600/60 shadow-lg transition-all duration-300 first:ml-0 hover:-translate-y-1 hover:border-daun-400/40 hover:shadow-2xl hover:shadow-daun-400/10 scroll-snap-align-start"
               style="width: 280px;"
@@ -237,7 +237,7 @@
           </div>
 
           <button
-            v-if="gallery.length > 1"
+            v-if="guestStore.gallery.length > 1"
             @click="scrollGallery('left')"
             :disabled="galleryScrollLeft <= 0"
             class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-hutan-800/80 p-2.5 text-krem-100 shadow-lg transition hover:bg-daun-500/40 hover:text-emas-400 active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
@@ -248,7 +248,7 @@
             </svg>
           </button>
           <button
-            v-if="gallery.length > 1"
+            v-if="guestStore.gallery.length > 1"
             @click="scrollGallery('right')"
             :disabled="galleryScrollRight <= 0"
             class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-hutan-800/80 p-2.5 text-krem-100 shadow-lg transition hover:bg-daun-500/40 hover:text-emas-400 active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
@@ -338,7 +338,7 @@
         </div>
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <article
-            v-for="(item, idx) in announcements.slice(0, 6)"
+            v-for="(item, idx) in guestStore.announcements.slice(0, 6)"
             :key="item.id"
             class="group relative flex flex-col rounded-2xl border border-daun-400/10 bg-hutan-800/50 p-6 shadow-lg backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-daun-400/30"
           >
@@ -363,7 +363,7 @@
               </span>
             </div>
           </article>
-          <div v-if="!announcements.length" class="empty-state md:col-span-2 lg:col-span-3">
+          <div v-if="!guestStore.announcements.length" class="empty-state md:col-span-2 lg:col-span-3">
             <div class="empty-state-icon">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
@@ -472,6 +472,11 @@ import { Link } from '@inertiajs/vue3';
 import PhotoSlider from '@/Components/PhotoSlider.vue';
 import StatCard from '@/Components/StatCard.vue';
 import AppIcon from '@/Components/AppIcon.vue';
+import { useGuestStore } from '@/Stores/guest';
+import { useUIStore } from '@/Stores/ui';
+
+const guestStore = useGuestStore();
+const uiStore = useUIStore();
 
 const props = defineProps({
   announcements: Array,
@@ -480,16 +485,18 @@ const props = defineProps({
   gallery: { type: Array, default: () => [] },
 });
 
-const mobileMenuOpen = ref(false);
-const animatedMembers = ref(0);
-const animatedAlumni = ref(0);
+const mobileMenuOpen = computed({
+  get: () => uiStore.mobileMenuOpen,
+  set: (v) => uiStore.setMobileMenuOpen(v),
+});
 const particles = ref([]);
-const container = ref(null);
 const galleryContainer = ref(null);
 const galleryScrollLeft = ref(0);
 const galleryScrollRight = ref(0);
 const newsletterEmail = ref('');
 const newsletterSubscribed = ref(false);
+const animatedMembers = ref(0);
+const animatedAlumni = ref(0);
 let animationFrameId;
 let scrollHandler;
 let revealObserver;
@@ -522,21 +529,7 @@ const partners = [
   { name: 'Kwarcab', icon: 'members' },
 ];
 
-const fallbackSlides = [
-  { src: '/images/slider/slide-1.svg', title: 'Pramuka SMAN 2 Maros', description: 'Satya dan Darma dalam satu genggaman', alt: 'Foto kegiatan pramuka di SMA Negeri 2 Maros' },
-  { src: '/images/slider/slide-2.svg', title: 'Kegiatan Inti', description: 'Pengembangan bakat dan kepribadian anggota', alt: 'Kegiatan inti kepramukaan di Ambalan SMA 2 Maros' },
-  { src: '/images/slider/slide-3.svg', title: 'Sistem Informasi', description: 'SKU, presensi, kas, inventaris — terintegrasi', alt: 'Tampilan sistem digital ekosistem ambalan' },
-];
-
 const logoFallback = '/images/Logo_Ambalan.png';
-
-const combinedSlides = computed(() => {
-  if (props.sliderSlides && props.sliderSlides.length > 0) {
-    return props.sliderSlides.map(s => ({ ...s, alt: s.title || 'Dokumentasi kegiatan ambalan' }));
-  }
-  return fallbackSlides;
-});
-
 const currentYear = computed(() => new Date().getFullYear());
 
 function categoryIcon(kategori) {
@@ -605,7 +598,7 @@ function formatDate(value) {
 }
 
 function openMobileMenu() {
-  mobileMenuOpen.value = true;
+  uiStore.setMobileMenuOpen(true);
   lastFocusedElement = document.activeElement;
   document.body.style.overflow = 'hidden';
   nextTick(() => {
@@ -615,13 +608,13 @@ function openMobileMenu() {
 }
 
 function closeMobileMenu() {
-  mobileMenuOpen.value = false;
+  uiStore.setMobileMenuOpen(false);
   document.body.style.overflow = '';
   if (lastFocusedElement) lastFocusedElement.focus();
 }
 
 function trapFocus(event) {
-  if (!mobileMenuOpen.value) return;
+  if (!uiStore.mobileMenuOpen) return;
   const overlay = document.getElementById('mobile-menu-overlay');
   if (!overlay) return;
   const focusable = overlay.querySelectorAll('a, button, input, textarea, select, [tabindex]:not([tabindex="-1"])');
@@ -725,8 +718,8 @@ onMounted(() => {
         if (entry.isIntersecting) {
           entry.target.classList.add('is-visible');
           if (entry.target.dataset.animate === 'stats') {
-            animateStat(props.stats?.members || 0, animatedMembers);
-            animateStat(props.stats?.alumni || 0, animatedAlumni);
+            animateStat(guestStore.stats.members, animatedMembers);
+            animateStat(guestStore.stats.alumni, animatedAlumni);
           }
           revealObserver.unobserve(entry.target);
         }

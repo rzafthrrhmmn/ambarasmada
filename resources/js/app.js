@@ -5,18 +5,31 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from 'ziggy-js';
 import Toast from 'vue-toastification';
 import 'vue-toastification/dist/index.css';
+import { createPinia } from 'pinia';
+import { VueQueryPlugin, QueryClient } from '@tanstack/vue-query';
 
 const appName = import.meta.env.VITE_APP_NAME || 'AMBARA-SISTEM DIGITAL';
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: 1,
+    },
+  },
+});
 
 createInertiaApp({
     title: (title) => (title ? title + ' - ' + appName : appName),
     resolve: (name) => resolvePageComponent('./Pages/' + name + '.vue', import.meta.glob('./Pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
-        createApp({ render: () => h(App, props) })
-            .use(plugin)
-            .use(ZiggyVue)
-            .use(Toast, { position: 'top-center', timeout: 4000, closeOnClick: true, pauseOnHover: true, draggable: true, showCloseButton: 'onError', transition: 'Vue-Toastification__bounce' })
-            .mount(el);
+        const app = createApp({ render: () => h(App, props) });
+        app.use(plugin);
+        app.use(createPinia());
+        app.use(VueQueryPlugin, { queryClient });
+        app.use(ZiggyVue);
+        app.use(Toast, { position: 'top-center', timeout: 4000, closeOnClick: true, pauseOnHover: true, draggable: true, showCloseButton: 'onError', transition: 'Vue-Toastification__bounce' });
+        app.mount(el);
     },
     progress: {
         color: '#6F9435',
