@@ -87,6 +87,74 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
+// Fortify features: 2FA, passkeys, profile, password updates.
+Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(function () {
+    \Laravel\Fortify\Fortify::ignoreRoutes();
+
+    Route::put('/user/profile-information', [\Laravel\Fortify\Http\Controllers\ProfileInformationController::class, 'update'])
+        ->name('user-profile-information.update');
+
+    Route::put('/user/password', [\Laravel\Fortify\Http\Controllers\PasswordController::class, 'update'])
+        ->name('user-password.update');
+
+    Route::post('/user/two-factor-authentication', [\Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::class, 'store'])
+        ->name('two-factor.enable');
+
+    Route::post('/user/confirmed-two-factor-authentication', [\Laravel\Fortify\Http\Controllers\ConfirmedTwoFactorAuthenticationController::class, 'store'])
+        ->name('two-factor.confirm');
+
+    Route::delete('/user/two-factor-authentication', [\Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::class, 'destroy'])
+        ->name('two-factor.disable');
+
+    Route::get('/user/two-factor-qr-code', [\Laravel\Fortify\Http\Controllers\TwoFactorQrCodeController::class, 'show'])
+        ->name('two-factor.qr-code');
+
+    Route::get('/user/two-factor-secret-key', [\Laravel\Fortify\Http\Controllers\TwoFactorSecretKeyController::class, 'show'])
+        ->name('two-factor.secret-key');
+
+    Route::get('/user/two-factor-recovery-codes', [\Laravel\Fortify\Http\Controllers\RecoveryCodeController::class, 'index'])
+        ->name('two-factor.recovery-codes');
+
+    Route::post('/user/two-factor-recovery-codes', [\Laravel\Fortify\Http\Controllers\RecoveryCodeController::class, 'store'])
+        ->name('two-factor.regenerate-recovery-codes');
+
+    Route::get('/two-factor-challenge', [\Laravel\Fortify\Http\Controllers\TwoFactorAuthenticatedSessionController::class, 'create'])
+        ->middleware('guest:web')
+        ->name('two-factor.login');
+
+    Route::post('/two-factor-challenge', [\Laravel\Fortify\Http\Controllers\TwoFactorAuthenticatedSessionController::class, 'store'])
+        ->middleware('guest:web')
+        ->name('two-factor.login.store');
+
+    Route::get('/passkeys/login/options', [\Laravel\Passkeys\Http\Controllers\PasskeyLoginController::class, 'index'])
+        ->middleware('guest:web')
+        ->name('passkey.login-options');
+
+    Route::post('/passkeys/login', [\Laravel\Passkeys\Http\Controllers\PasskeyLoginController::class, 'store'])
+        ->middleware('guest:web')
+        ->name('passkey.login');
+
+    Route::get('/passkeys/confirm/options', [\Laravel\Passkeys\Http\Controllers\PasskeyConfirmationController::class, 'index'])
+        ->middleware('auth:web')
+        ->name('passkey.confirm-options');
+
+    Route::post('/passkeys/confirm', [\Laravel\Passkeys\Http\Controllers\PasskeyConfirmationController::class, 'store'])
+        ->middleware('auth:web')
+        ->name('passkey.confirm');
+
+    Route::get('/user/passkeys/options', [\Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController::class, 'index'])
+        ->middleware('auth:web')
+        ->name('passkey.registration-options');
+
+    Route::post('/user/passkeys', [\Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController::class, 'store'])
+        ->middleware('auth:web')
+        ->name('passkey.store');
+
+    Route::delete('/user/passkeys/{passkey}', [\Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController::class, 'destroy'])
+        ->middleware('auth:web')
+        ->name('passkey.destroy');
+});
+
 // Gallery (public read)
 Route::get('/galleries', [GalleryController::class, 'index'])->name('galleries.index');
 
