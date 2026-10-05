@@ -1,51 +1,89 @@
 <template>
   <AppLayout>
-    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <!-- Kepala halaman.
+         Kendali lapis dulunya lima tombol berlabel panjang ("Sembunyikan
+         Kontur", "Sembunyikan Label Kontur", ...) yang berderet satu baris.
+         Di ponsel lima label sepanjang itu membungkus jadi beberapa baris dan
+         mendorong judul halaman jauh ke bawah, sementara isinya persis
+         menduplikasi checkbox "Tampilan Peta" di dialog unduhan. Sekarang
+         jadi lima chip pendek yang keadaan aktifnya ditandai warnanya, jadi
+         yang sedang aktif terlihat tanpa harus membaca teks tombolnya. -->
+    <header class="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
       <div>
-        <p class="text-sm font-medium text-[#EDD330]">Peta Kontur</p>
-        <h1 class="mt-1 text-2xl font-extrabold text-[#f0ead8]">Peta Kontur Sulawesi Selatan</h1>
-        <p class="mt-1 text-sm text-[#8fa06a]">Cari kabupaten, lihat batas administratif, dan jelajahi kontur topografi.</p>
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#A7B92A]">Peta Kontur</p>
+        <h1 class="mt-1 text-2xl font-extrabold text-[#f0ead8] sm:text-3xl">Peta Kontur Sulawesi Selatan</h1>
+        <p class="mt-2 max-w-2xl text-sm text-[#8fa06a]">
+          Cari kabupaten, lihat batas administratif, dan jelajahi kontur topografi.
+        </p>
+
+        <!-- Ringkasan tetap yang selalu benar dan tidak bergantung pilihan
+             pengguna, jadi pembaca punya konteks sebelum menyentuh peta. -->
+        <dl class="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs">
+          <div class="flex items-baseline gap-1.5">
+            <dt class="text-[#8fa06a]">Jangkauan</dt>
+            <dd class="font-semibold text-[#d4dc9a]">24 kabupaten/kota</dd>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <dt class="text-[#8fa06a]">Interval kontur</dt>
+            <dd class="font-semibold text-[#d4dc9a]">10 meter</dd>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <dt class="text-[#8fa06a]">Kontur indeks</dt>
+            <dd class="font-semibold text-[#d4dc9a]">Setiap 50 meter</dd>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <dt class="text-[#8fa06a]">Status data</dt>
+            <dd class="font-semibold" :class="hasPmtiles ? 'text-[#A7B92A]' : 'text-[#f87171]'">
+              {{ hasPmtiles ? 'Kontur tersedia' : 'Kontur belum tersedia' }}
+            </dd>
+          </div>
+        </dl>
       </div>
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-if="hasPmtiles"
-          @click="showOfflineModal = true"
-          class="inline-flex items-center rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-4 py-2 text-sm font-bold text-[#A7B92A] transition hover:bg-[#A7B92A]/20"
-        >
-          Unduh Peta Offline
-        </button>
-        <button
-          @click="toggleLayer"
-          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
-        >
-          {{ showContour ? 'Sembunyikan Kontur' : 'Tampilkan Kontur' }}
-        </button>
-        <button
-          @click="toggleHillshade"
-          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
-        >
-          {{ showHillshade ? 'Sembunyikan Hillshade' : 'Tampilkan Hillshade' }}
-        </button>
-        <button
-          @click="toggleDistrictLabels"
-          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
-        >
-          {{ showDistrictLabels ? 'Sembunyikan Label' : 'Tampilkan Label' }}
-        </button>
-        <button
-          @click="toggleContourLabels"
-          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
-        >
-          {{ showContourLabels ? 'Sembunyikan Label Kontur' : 'Tampilkan Label Kontur' }}
-        </button>
-        <button
-          @click="showElevationLegend = !showElevationLegend"
-          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
-        >
-          {{ showElevationLegend ? 'Sembunyikan Legenda' : 'Tampilkan Legenda' }}
-        </button>
-      </div>
-    </div>
+
+      <section class="rounded-xl border-2 border-[#6F9435]/40 bg-[#335233]/70 p-3">
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-[#A7B92A]">Lapisan Peta</h2>
+          <button
+            v-if="hasPmtiles"
+            @click="showOfflineModal = true"
+            class="inline-flex items-center rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-3 py-1.5 text-xs font-bold text-[#A7B92A] transition hover:bg-[#A7B92A]/20"
+          >
+            Unduh Offline
+          </button>
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            v-for="lapisan in LAPISAN_PETA"
+            :key="lapisan.key"
+            type="button"
+            @click="lapisan.toggle"
+            :aria-pressed="lapisan.aktif"
+            class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition"
+            :class="lapisan.aktif
+              ? 'border-[#EDD330] bg-[#EDD330]/15 text-[#EDD330]'
+              : 'border-[#6F9435]/50 bg-[#263D26]/60 text-[#8fa06a] hover:border-[#6F9435] hover:text-[#d4dc9a]'"
+          >
+            <NavIcon :name="lapisan.icon" class="h-4 w-4" />
+            {{ lapisan.nama }}
+          </button>
+
+          <!-- Legenda bukan lapisan data, jadi tombolnya berdiri sendiri.
+               Dipisah supaya state-nya tidak ikut@a v-for di atas. -->
+          <button
+            type="button"
+            @click="showElevationLegend = !showElevationLegend"
+            :aria-pressed="showElevationLegend"
+            class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition"
+            :class="showElevationLegend
+              ? 'border-[#EDD330] bg-[#EDD330]/15 text-[#EDD330]'
+              : 'border-[#6F9435]/50 bg-[#263D26]/60 text-[#8fa06a] hover:border-[#6F9435] hover:text-[#d4dc9a]'"
+          >
+            <NavIcon name="legend" class="h-4 w-4" />
+            Legenda
+          </button>
+        </div>
+      </section>
+    </header>
 
     <div class="mb-4 rounded-xl border-2 border-[#A7B92A]/40 bg-[#335233] p-4">
       <label for="peta-kabupaten" class="block text-xs font-medium text-[#d4dc9a] mb-2">Cari Kabupaten</label>
@@ -130,7 +168,7 @@
            dua-duanya pernah memakai bottom-4 left-4 dan saling menutupi.
            Lebarnya dibatasi supaya tidak menabrak tumpukan pojok kanan bawah
            pada layar sempit. -->
-      <div v-if="mouseCoords" class="peta-panel pointer-events-none absolute bottom-12 left-3 max-w-[min(260px,calc(100%-13rem))] rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 px-3 py-1.5 font-mono text-xs text-[#EDD330] shadow-lg backdrop-blur-sm">
+      <div v-if="mouseCoords" class="peta-panel pointer-events-none absolute bottom-12 left-3 max-w-[min(260px,calc(100%_-_13rem))] rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 px-3 py-1.5 font-mono text-xs text-[#EDD330] shadow-lg backdrop-blur-sm">
         Lon: {{ mouseCoords.lng.toFixed(6) }}° | Lat: {{ mouseCoords.lat.toFixed(6) }}°
       </div>
 
@@ -154,12 +192,33 @@
             <span aria-hidden="true">📶</span>
             Legenda Elevasi
           </div>
-          <div class="space-y-1">
-            <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #8c510a;"></span> Kontur 10m</div>
-            <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #a0522d;"></span> Kontur 50m (Index)</div>
-            <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #cd853f;"></span> Kontur 100m</div>
-            <div class="flex items-center gap-2"><span class="h-1.5 w-6 rounded" style="background: #8b4513;"></span> Kontur 500m+</div>
-            <div class="mt-2 flex items-center gap-2 border-t border-[#6F9435]/30 pt-2"><span class="h-1.5 w-6 rounded" style="background: #2563eb;"></span> Batas Kabupaten</div>
+          <!-- Isi legenda ini sengaja digambar dengan kelas Tailwind, bukan
+               style="background: ...". Warna dan tebalnya juga harus mengikuti
+               layer aslinya: garis kontur hanya satu warna, dan yang membedakan
+               kontur indeks dari kontur biasa adalah tebalnya, bukan warnanya.
+               Versi lama memakai empat warna yang tidak pernah muncul di peta
+               mana pun, sehingga legenda mengarang warna yang tidak ada. -->
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2">
+              <span class="h-[3px] w-6 rounded bg-[#8c510a]" aria-hidden="true"></span>
+              Kontur indeks (setiap 50 m)
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="h-px w-6 bg-[#8c510a]" aria-hidden="true"></span>
+              Kontur biasa (setiap 10 m)
+            </div>
+            <div class="mt-2 flex items-center gap-2 border-t border-[#6F9435]/30 pt-2">
+              <span class="h-0 w-6 border-t-2 border-dashed border-[#2563eb]" aria-hidden="true"></span>
+              Batas kabupaten/kota
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="h-0 w-6 border-t-2 border-[#0f766e]" aria-hidden="true"></span>
+              Batas kecamatan
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="h-3 w-6 rounded-sm border border-[#EDD330] bg-[#EDD330]/40" aria-hidden="true"></span>
+              Kecamatan yang dipilih
+            </div>
           </div>
         </div>
 
@@ -311,7 +370,7 @@ title="Cetak PNG peta yang sedang terlihat"
         </div>
 
         <!-- Bookmark list -->
-        <div v-if="bookmarks.length > 0" class="max-h-56 w-[min(280px,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 p-2 text-xs shadow-lg backdrop-blur-sm">
+        <div v-if="bookmarks.length > 0" class="max-h-56 w-[min(280px,calc(100vw_-_2rem))] overflow-y-auto rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 p-2 text-xs shadow-lg backdrop-blur-sm">
           <p class="mb-1 px-1 font-bold text-[#EDD330]">Tampilan Tersimpan ({{ bookmarks.length }})</p>
           <div
             v-for="(bookmark, index) in bookmarks"
@@ -655,6 +714,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
+import NavIcon from '@/Components/NavIcon.vue';
 import { getActiveServiceWorker, SW_PROTOCOL } from '@/ServiceWorker.js';
 import { useMapPngExport, SHEET_ORIENTATION_LIST, describeSheet } from '@/Composables/useMapPngExport.js';
 import { BASEMAPS, PRINT_BASEMAP, basemapAttribution } from '@/basemaps.js';
@@ -677,6 +737,21 @@ const showContour = ref(true);
 const showHillshade = ref(false);
 const showDistrictLabels = ref(false);
 const showContourLabels = ref(false);
+
+/**
+ * Daftar lapisan untuk kartu "Lapisan Peta" di kepala halaman.
+ *
+ * Ojokan layer dikumpulkan di sini supaya tombolnya bisa di-v-for. Ojokan ini
+ * memakai fungsi toggel yang sama dengan yang dipakai setLayerVisibility, jadi
+ * toggel di kepala halaman dan checkbox di dialog unduhan tidak mungkin
+ * navegar ke tempat berbeda.
+ */
+const LAPISAN_PETA = computed(() => [
+  { key: 'contour', nama: 'Kontur', icon: 'contour', aktif: showContour.value, toggle: toggleLayer },
+  { key: 'hillshade', nama: 'Relief', icon: 'hillshade', aktif: showHillshade.value, toggle: toggleHillshade },
+  { key: 'label-kabupaten', nama: 'Label wilayah', icon: 'label', aktif: showDistrictLabels.value, toggle: toggleDistrictLabels },
+  { key: 'label-kontur', nama: 'Label kontur', icon: 'label', aktif: showContourLabels.value, toggle: toggleContourLabels },
+]);
 const showOfflineModal = ref(false);
 const downloading = ref(false);
 const downloadStatus = ref('');
@@ -692,6 +767,24 @@ const selectedKecamatan = ref('');
 const miniMapLoading = ref(false);
 const miniMapError = ref('');
 const miniMapLoadingTimer = ref(null);
+
+// Timer pesan "dimuat sebagian" dan handler window disimpan sebagai nama,
+// bukan ditulis inline, karena semuanya harus bisa dibatalkan dan dilepas
+// di onBeforeUnmount. Listener yang dibuat inline tidak punya rujukan untuk
+// dilepas, jadi setiap kunjungan ke halaman ini akan menambah satu pasang.
+let partialLoadTimer = null;
+
+function onWindowOnline() {
+  isOffline.value = false;
+}
+
+function onWindowOffline() {
+  isOffline.value = true;
+}
+
+// Penanda urut pencarian, dipakai searchPlace() supaya jawaban yang sudah
+// basi tidak menimpa jawaban pencarian yang lebih baru.
+let searchSequence = 0;
 
 // Mode unduh peta offline: 'full' untuk seluruh Sulawesi Selatan,
 // 'region' untuk satu kabupaten/kota, atau satu kecamatan di dalamnya.
@@ -1715,22 +1808,16 @@ async function initMap() {
       const feature = e.features[0];
       if (feature && feature.properties) {
         const props = feature.properties;
-        const content = `
-          <div class="p-2 min-w-[200px]">
-            <h3 class="font-bold text-[#1f2937] mb-1">${props.nama_kab || 'Kabupaten'}</h3>
-            <div class="text-sm text-[#6b7280]">
-              <div>ID: ${props.id_kab || 'N/A'}</div>
-              <div>Provinsi: ${props.nama_prov || 'Sulawesi Selatan'}</div>
-            </div>
-            <div class="mt-2 flex gap-2">
-              <button onclick="window.dispatchEvent(new CustomEvent('map-zoom-to', {detail: ${JSON.stringify([e.lngLat.lng, e.lngLat.lat])})}))" class="text-xs bg-[#A7B92A] text-white px-2 py-1 rounded">Zoom</button>
-              <button onclick="window.dispatchEvent(new CustomEvent('map-bookmark', {detail: ${JSON.stringify({name: props.nama_kab, coords: [e.lngLat.lng, e.lngLat.lat]})})}))" class="text-xs bg-[#6F9435] text-white px-2 py-1 rounded">Bookmark</button>
-            </div>
-          </div>
-        `;
+        const koordinat = [e.lngLat.lng, e.lngLat.lat];
+
         new Popup({ closeButton: true, maxWidth: '300px' })
           .setLngLat(e.lngLat)
-          .setHTML(content)
+          .setDOMContent(popupWilayah(
+            props.nama_kab || 'Kabupaten',
+            props.id_kab || 'N/A',
+            props.nama_prov || 'Sulawesi Selatan',
+            koordinat,
+          ))
           .addTo(map.value);
       }
     });
@@ -1743,20 +1830,12 @@ async function initMap() {
       map.value.getCanvas().style.cursor = '';
     });
 
-    // Offline/online detection
-    window.addEventListener('online', () => { isOffline.value = false; });
-    window.addEventListener('offline', () => { isOffline.value = true; });
-
-    // Listen for bookmark events from popup
-    window.addEventListener('map-bookmark', (e) => {
-      const { name, coords } = e.detail;
-      saveBookmark(name, coords);
-    });
-
-    window.addEventListener('map-zoom-to', (e) => {
-      const [lng, lat] = e.detail;
-      map.value.flyTo({ center: [lng, lat], zoom: 12, duration: 2000 });
-    });
+    // Status daring atau luar jaringan mengikuti event window, jadi keduanya
+    // diberi nama dan dilepas lagi saat halaman ditutup. Tanpa itu setiap
+    // kunjungan berikutnya menambah satu pasang listener lagi, dan instance
+    // yang sudah ditutup tetap bereaksi terhadap event lama.
+    window.addEventListener('online', onWindowOnline);
+    window.addEventListener('offline', onWindowOffline);
 
     // Overlay "Memuat peta..." tidak boleh menggantung selamanya, tapi juga tidak
     // boleh hilang sebelum kontennya benar-benar ada.
@@ -1773,7 +1852,8 @@ async function initMap() {
 
     map.value.on('idle', clearLoading);
 
-    setTimeout(() => {
+    // Batas waktu untuk pesan "dimuat sebagian", dibatalkan lagi di onBeforeUnmount.
+    partialLoadTimer = setTimeout(() => {
       if (loading.value) {
         clearLoading();
         mapStatus.value = 'Peta dimuat sebagian: sebagian layer belum selesai masuk dan masih dimuat di latar belakang.';
@@ -1900,10 +1980,19 @@ async function searchPlace() {
   }
 
   // Search via Nominatim
+  // Nomor urut penanda pencarian yang sedang berjalan. Dua pencarian yang
+  // tumpang tindih bisa jawabannya datang terbalik, dan hasil yang lebih lama
+  // akan menimpa hasil yang lebih baru. Hanya jawaban milik nomor terakhir
+  // yang boleh menulis ke searchResults.
+  const nomorPencarian = ++searchSequence;
+
   try {
     searchResults.value = [];
     const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery.value)}&limit=5&countrycodes=id&accept-language=id`);
     const data = await response.json();
+
+    if (nomorPencarian !== searchSequence) return;
+
     searchResults.value = data.map(item => ({
       place_id: item.place_id,
       display_name: item.display_name,
@@ -1914,6 +2003,8 @@ async function searchPlace() {
       mapStatus.value = 'Tidak ditemukan hasil untuk pencarian tersebut.';
     }
   } catch (error) {
+    if (nomorPencarian !== searchSequence) return;
+
     console.error('Search error:', error);
     mapStatus.value = 'Gagal mencari lokasi. Periksa koneksi internet.';
   }
@@ -1923,9 +2014,17 @@ async function selectSearchResult(result) {
   if (!map.value) return;
   map.value.flyTo({ center: [result.lon, result.lat], zoom: 14, duration: 2000 });
   const { Popup } = await import('../../maplibre');
+
+  // display_name berasal dari balasan server Nominatim, jadi ikut dirangkai
+  // sebagai HTML apa adanya bisa menyisipkan tag. Isi teksnya dibuat lewat
+  // textContent, yang tidak pernah mengartikan tag.
+  const kotak = document.createElement('div');
+  kotak.className = 'p-2 text-[#1f2937]';
+  kotak.textContent = result.display_name || result.label || '';
+
   new Popup()
     .setLngLat([result.lon, result.lat])
-    .setHTML(`<div class="p-2 text-[#1f2937]">${result.display_name}</div>`)
+    .setDOMContent(kotak)
     .addTo(map.value);
   searchQuery.value = '';
   searchResults.value = [];
@@ -1941,7 +2040,7 @@ const MEASURE_FILL_LAYER = 'measurement-fill';
  * Siapkan sumber dan layer pengukuran.
  *
  * Versi lama hanya menambahkan sumber GeoJSON tanpa satu pun layer, jadi
- * although datanya benar, tidak ada yang tergambar. FeatureCollection kosong
+ * datanya benar tetapi tidak ada yang tergambar. FeatureCollection kosong
  * maupun LineString tanpa layer hanya diam di dalam peta.
  *
  * addSource/addLayer hanya boleh dipanggil setelah style selesai dimuat, jadi
@@ -2248,6 +2347,75 @@ function escapeHtml(text) {
     '"': '&quot;',
     "'": '&#39;',
   })[c]);
+}
+
+/**
+ * Isi popup informasi kabupaten.
+ *
+ * Elemennya dibangun dengan createElement dan textContent, bukan dirangkai jadi
+ * string HTML lalu setHTML. Dua alasannya:
+ *
+ * Nama kabupaten, id, dan nama provinsi berasal dari berkas GeoJSON, dan
+ * display_name pada pencarian berasal dari balasan server Nominatim. Semuanya
+ * masuk ke halaman ini sebagai HTML kalau dirangkai, sehingga isinya bisa
+ * menyisipkan tag sendiri. textContent tidak pernah mengartikan tag.
+ *
+ * Tombolnya juga tidak memakai onclick yang isinya JSON.stringify. Atribut itu
+ * diapit tanda kutip ganda, sedangkan JSON memakai tanda kutip ganda juga, jadi
+ * nama kabupaten ber tanda kutip sudah cukup untuk menutup atribut lebih awal
+ * dan menyisipkan atribut lain. Listener dipasang di sisi skrip, jadi isinya
+ * tidak pernah diurai browser.
+ *
+ * @param {string} nama
+ * @param {string} idKab
+ * @param {string} namaProv
+ * @param {[number, number]} koordinat
+ * @returns {HTMLElement}
+ */
+function popupWilayah(nama, idKab, namaProv, koordinat) {
+  const akar = document.createElement('div');
+  akar.className = 'p-2 min-w-[200px]';
+
+  const judul = document.createElement('h3');
+  judul.className = 'font-bold text-[#1f2937] mb-1';
+  judul.textContent = nama;
+  akar.appendChild(judul);
+
+  const meta = document.createElement('div');
+  meta.className = 'text-sm text-[#6b7280]';
+
+  const barisId = document.createElement('div');
+  barisId.textContent = `ID: ${idKab}`;
+  const barisProv = document.createElement('div');
+  barisProv.textContent = `Provinsi: ${namaProv}`;
+  meta.append(barisId, barisProv);
+  akar.appendChild(meta);
+
+  const aksi = document.createElement('div');
+  aksi.className = 'mt-2 flex gap-2';
+
+  // Dua tombolnya memanggil fungsi yang sama dengan yang dipakai panel di luar
+  // peta, jadi tidak perlu CustomEvent yang harus dicari lewat window.
+  const tombolZoom = document.createElement('button');
+  tombolZoom.className = 'text-xs bg-[#A7B92A] text-white px-2 py-1 rounded';
+  tombolZoom.type = 'button';
+  tombolZoom.textContent = 'Zoom';
+  tombolZoom.addEventListener('click', () => {
+    map.value?.flyTo({ center: koordinat, zoom: 12, duration: 2000 });
+  });
+
+  const tombolBookmark = document.createElement('button');
+  tombolBookmark.className = 'text-xs bg-[#6F9435] text-white px-2 py-1 rounded';
+  tombolBookmark.type = 'button';
+  tombolBookmark.textContent = 'Bookmark';
+  tombolBookmark.addEventListener('click', () => {
+    saveBookmark(nama, koordinat);
+  });
+
+  aksi.append(tombolZoom, tombolBookmark);
+  akar.appendChild(aksi);
+
+  return akar;
 }
 
 function generatePrintHTML(camera, wilayah = null) {
@@ -2578,6 +2746,17 @@ watch(showOfflineModal, (open) => {
 onBeforeUnmount(() => {
   stopObservingMapSize();
   clearTimeout(miniMapLoadingTimer.value);
+
+  // Timer dan listener window punya hidup yang lebih panjang daripada
+  // komponen ini, jadi harus dilepas sendiri. map.remove() hanya membersihkan
+  // listener milik peta itu sendiri, bukan yang menempel di window.
+  if (partialLoadTimer) {
+    clearTimeout(partialLoadTimer);
+    partialLoadTimer = null;
+  }
+
+  window.removeEventListener('online', onWindowOnline);
+  window.removeEventListener('offline', onWindowOffline);
 
   if (map.value) {
     map.value.remove();

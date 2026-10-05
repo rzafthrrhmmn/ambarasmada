@@ -37,7 +37,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue';
+import { onBeforeUnmount, ref, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 
 const page = usePage();
@@ -50,15 +50,69 @@ const props = defineProps({
   persistent: { type: Boolean, default: false },
 });
 
+const HIDE_DELAY = 8000;
+const ERROR_KEYS = ['error', 'danger'];
+
+let timer = null;
+
+/**
+ * Pilih pesan pertama yang benar-benar punya isi.
+ *
+ * Key flash yang kosong (null atau '') dulu tetap dianggap sebagai pesan, jadi
+ * setiap kali halaman dimuat, termasuk setelah refresh, muncul kotak notifikasi
+ * tanpa teks. Kotak tanpa teks tidak berguna, jadi key kosong dilewati dan pesan
+ * pertama yang ada teksnya yang ditampilkan.
+ */
+function pickMessage(flash) {
+  if (!flash || typeof flash !== 'object') {
+    return null;
+  }
+
+  const keys = ERROR_KEYS.some((key) => key in flash)
+    ? [...ERROR_KEYS, 'warning', 'info', 'success']
+    : ['success', 'info', 'warning', ...ERROR_KEYS];
+
+  for (const key of keys) {
+    const value = typeof flash[key] === 'string' ? flash[key].trim() : flash[key];
+
+    if (value !== '' && value !== null && value !== undefined && value !== false) {
+      return {
+        message: String(value).trim(),
+        type: ERROR_KEYS.includes(key) ? 'error' : 'success',
+      };
+    }
+  }
+
+  return null;
+}
+
+function startTimer() {
+  if (timer) {
+    clearTimeout(timer);
+  }
+
+  if (props.persistent) {
+    return;
+  }
+
+  timer = setTimeout(() => {
+    showFlash.value = false;
+  }, HIDE_DELAY);
+}
+
 watch(
   () => page.props.flash,
   (flash) => {
-    if (flash && Object.keys(flash).length > 0) {
-      const key = Object.keys(flash)[0];
-      flashMessage.value = flash[key];
-      type.value = key === 'error' ? 'error' : 'success';
-      showFlash.value = true;
+    const picked = pickMessage(flash);
+
+    if (!picked) {
+      return;
     }
+
+    flashMessage.value = picked.message;
+    type.value = picked.type;
+    showFlash.value = true;
+    startTimer();
   },
   { immediate: true },
 );
@@ -70,23 +124,15 @@ watch(
       flashMessage.value = 'Harap perbaiki kesalahan pada formulir.';
       type.value = 'error';
       showFlash.value = true;
+      startTimer();
     }
   },
   { immediate: true },
 );
 
-const timer = ref(null);
-onMounted(() => {
-  timer.value = setTimeout(() => {
-    if (!props.persistent) {
-      showFlash.value = false;
-    }
-  }, 8000);
-});
-
-watch(showFlash, (val) => {
-  if (!val && !props.persistent) {
-    clearTimeout(timer.value);
+onBeforeUnmount(() => {
+  if (timer) {
+    clearTimeout(timer);
   }
 });
 </script>

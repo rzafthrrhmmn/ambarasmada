@@ -45,10 +45,35 @@ class HandleInertiaRequests extends Middleware
             'pendingCount' => $request->user() && in_array($request->user()->role, ['Admin', 'Pembina'], true)
                 ? User::where('status', 'pending')->count()
                 : null,
-            'flash' => [
-                'success' => fn () => $request->session()->get('success'),
-                'error' => fn () => $request->session()->get('error'),
-            ],
+            'flash' => $this->flashMessages($request),
         ];
+    }
+
+    /**
+     * Flash yang dibagikan ke halaman hanya berisi pesan yang benar-benar ada.
+     *
+     * Sebelumnya 'success' dan 'error' selalu dikirim, walau nilainya null.
+     * Sisi klien hanya memeriksa jumlah key, jadi setiap muat halaman (termasuk
+     * hasil refresh) memunculkan kotak notifikasi tanpa teks. Pesan yang kosong
+     * karena itu diabaikan di sini, dan supaya tidak perlu perubahan di tiap
+     * pengirim pesan, flash apa pun yang bukan string kosong ikut diteruskan.
+     *
+     * @return array<string, string>
+     */
+    protected function flashMessages(Request $request): array
+    {
+        $messages = [];
+
+        foreach (['success', 'info', 'warning', 'error'] as $key) {
+            $message = $request->session()->get($key);
+
+            $message = is_string($message) ? $message : ($message === null ? '' : (string) $message);
+
+            if (trim($message) !== '') {
+                $messages[$key] = $message;
+            }
+        }
+
+        return $messages;
     }
 }
