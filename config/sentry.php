@@ -13,7 +13,5 @@ return [
 
     'send_default_pii' => env('SENTRY_SEND_DEFAULT_PII', false),
 
-    'before_send' => function (\Sentry\Event $event) {
-        return $event;
-    },
+    'enable_logs' => env('SENTRY_ENABLE_LOGS', false),
 ];

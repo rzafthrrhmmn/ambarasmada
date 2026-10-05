@@ -75,6 +75,7 @@
     "APP_DEBUG": "false",
     "APP_URL": "https://ambarasmada.vercel.app",
     "APP_NAME": "AMBARA-SISTEM DIGITAL",
+    "APP_KEY": "base64:42RhQGqnl6apnWJWcRn58DVLAfHhNpFDnn0DHCB/eGo=",
     "APP_STORAGE": "/tmp/storage",
     "APP_CONFIG_CACHE": "/tmp/bootstrap/cache/config.php",
     "APP_EVENTS_CACHE": "/tmp/bootstrap/cache/events.php",
@@ -86,7 +87,7 @@
     "CACHE_DRIVER": "database",
     "QUEUE_CONNECTION": "sync",
     "LOG_CHANNEL": "stderr",
-    "LOG_LEVEL": "debug",
+    "LOG_LEVEL": "error",
     "SESSION_DRIVER": "cookie",
     "SESSION_LIFETIME": "120",
     "SESSION_PATH": "/",
@@ -94,6 +95,13 @@
     "SESSION_SAMESITE": "lax",
     "SESSION_PARTITIONED_COOKIE": "false",
     "DB_CONNECTION": "pgsql",
-    "BCRYPT_ROUNDS": "12"
+    "DB_HOST": "aws-0-ap-southeast-1.pooler.supabase.com",
+    "DB_PORT": "6543",
+    "DB_DATABASE": "postgres",
+    "DB_USERNAME": "postgres.ugbpqikqduptseeslfri",
+    "DB_PASSWORD": "RezaNeko26@",
+    "BCRYPT_ROUNDS": "12",
+    "SENTRY_LARAVEL_DSN": "https://07809ac890f7ab126faf73aff5e27b14@o4512203552587776.ingest.us.sentry.io/4512203588173824",
+    "VERCEL_ANALYTICS_ID": ""
   }
 }
