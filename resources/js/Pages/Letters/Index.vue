@@ -144,8 +144,20 @@
             <Field v-model="form.tgl_surat" label="Tanggal surat" type="date" :error="form.errors.tgl_surat" />
             <Field v-model="form.waktu_kegiatan" label="Waktu kegiatan" :error="form.errors.waktu_kegiatan" />
             <Field v-model="form.lokasi_kegiatan" label="Lokasi kegiatan" :error="form.errors.lokasi_kegiatan" />
-            <Field v-model="form.perihal" label="Perihal" required :error="form.errors.perihal" />
-            <Field v-model="form.tujuan_pengirim" label="Tujuan / Pengirim" required :error="form.errors.tujuan_pengirim" />
+            <Field
+              v-model="form.perihal"
+              label="Perihal"
+              required
+              :error="form.errors.perihal"
+              @input="form.errors.perihal && form.clearErrors('perihal')"
+            />
+            <Field
+              v-model="form.tujuan_pengirim"
+              label="Tujuan / Pengirim"
+              required
+              :error="form.errors.tujuan_pengirim"
+              @input="form.errors.tujuan_pengirim && form.clearErrors('tujuan_pengirim')"
+            />
             <div class="sm:col-span-2">
               <Field
                 v-model="form.isi_surat"
@@ -325,7 +337,7 @@ const form = useForm({
   ambalan_id: null,
   nomor_surat: '',
   jenis_surat: 'Masuk',
-  perishal: '',
+  perihal: '',
   isi_surat: '',
   tujuan_pengirim: '',
   tgl_surat: today(),

@@ -10,7 +10,7 @@
          yang sedang aktif terlihat tanpa harus membaca teks tombolnya. -->
     <header class="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
       <div>
-        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#A7B92A]">Peta Kontur</p>
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-daun-400">Peta Kontur</p>
         <h1 class="mt-1 text-2xl font-extrabold text-[#f0ead8] sm:text-3xl">Peta Kontur Sulawesi Selatan</h1>
         <p class="mt-2 max-w-2xl text-sm text-[#8fa06a]">
           Cari kabupaten, lihat batas administratif, dan jelajahi kontur topografi.
@@ -40,13 +40,13 @@
         </dl>
       </div>
 
-      <section class="rounded-xl border-2 border-[#6F9435]/40 bg-[#335233]/70 p-3">
+      <section class="rounded-xl border-2 border-daun-500/40 bg-hutan-600/70 p-3">
         <div class="mb-2 flex items-center justify-between gap-2">
           <h2 class="text-xs font-semibold uppercase tracking-wider text-[#A7B92A]">Lapisan Peta</h2>
           <button
             v-if="hasPmtiles"
             @click="showOfflineModal = true"
-            class="inline-flex items-center rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-3 py-1.5 text-xs font-bold text-[#A7B92A] transition hover:bg-[#A7B92A]/20"
+            class="inline-flex items-center rounded-lg border-2 border-[#A7B92A] bg-daun-400/10 px-3 py-1.5 text-xs font-bold text-[#A7B92A] transition hover:bg-daun-400/20"
           >
             Unduh Offline
           </button>
@@ -60,23 +60,23 @@
             :aria-pressed="lapisan.aktif"
             class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition"
             :class="lapisan.aktif
-              ? 'border-[#EDD330] bg-[#EDD330]/15 text-[#EDD330]'
-              : 'border-[#6F9435]/50 bg-[#263D26]/60 text-[#8fa06a] hover:border-[#6F9435] hover:text-[#d4dc9a]'"
+              ? 'border-emas-400 bg-emas-400/15 text-emas-400'
+              : 'border-daun-500/50 bg-hutan-800/60 text-lumut-400 hover:border-daun-500 hover:text-krem-300'"
           >
             <NavIcon :name="lapisan.icon" class="h-4 w-4" />
             {{ lapisan.nama }}
           </button>
 
           <!-- Legenda bukan lapisan data, jadi tombolnya berdiri sendiri.
-               Dipisah supaya state-nya tidak ikut@a v-for di atas. -->
+               Dipisah supaya state-nya tidak ikutTerIkut v-for di atas. -->
           <button
             type="button"
             @click="showElevationLegend = !showElevationLegend"
             :aria-pressed="showElevationLegend"
             class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition"
             :class="showElevationLegend
-              ? 'border-[#EDD330] bg-[#EDD330]/15 text-[#EDD330]'
-              : 'border-[#6F9435]/50 bg-[#263D26]/60 text-[#8fa06a] hover:border-[#6F9435] hover:text-[#d4dc9a]'"
+              ? 'border-emas-400 bg-emas-400/15 text-emas-400'
+              : 'border-daun-500/50 bg-hutan-800/60 text-lumut-400 hover:border-daun-500 hover:text-krem-300'"
           >
             <NavIcon name="legend" class="h-4 w-4" />
             Legenda
@@ -131,7 +131,7 @@
           <button
             v-if="selectedKabupaten"
             @click="printWilayah"
-            class="rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-3 py-2 text-xs font-bold text-[#A7B92A] transition hover:bg-[#A7B92A]/20"
+            class="rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-3 py-2 text-xs font-bold text-[#A7B92A] transition hover:bg-daun-400/20"
             :title="`Cetak PNG wilayah yang dipilih: ${selectedWilayah?.label ?? ''}`"
           >
             Cetak PNG
@@ -189,7 +189,7 @@
           class="rounded-lg border border-[#6F9435]/40 bg-[#1a1a1a]/90 p-3 text-xs text-[#d4dc9a] shadow-lg backdrop-blur-sm min-w-[150px]"
         >
           <div class="mb-2 flex items-center gap-1.5 font-bold text-[#EDD330]">
-            <span aria-hidden="true">📶</span>
+            <NavIcon name="legend" class="h-4 w-4" />
             Legenda Elevasi
           </div>
           <!-- Isi legenda ini sengaja digambar dengan kelas Tailwind, bukan
@@ -233,10 +233,11 @@
           <button
             @click="locateUser"
             :disabled="locating"
-            class="flex items-center gap-1.5 disabled:cursor-not-allowed"
+            class="inline-flex items-center gap-1.5 disabled:cursor-not-allowed"
             title="Lokasi saya"
           >
-            <span aria-hidden="true">{{ locating ? '⟳' : '📍' }}</span>
+            <NavIcon v-if="locating" name="spinner" class="h-4 w-4 animate-spin" />
+            <NavIcon v-else name="locate" class="h-4 w-4" />
             <span class="text-xs">{{ locating ? 'Mencari...' : 'Lokasi saya' }}</span>
           </button>
         </div>
@@ -250,8 +251,9 @@
       <div class="peta-panel absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2 pr-12">
       <div class="flex w-[min(300px,100%)] flex-col items-start gap-2" data-nama="PanelKiri">
         <!-- Offline indicator -->
-        <div v-if="isOffline" class="rounded-lg bg-[#f59e0b]/90 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
-          📴 Mode Offline
+        <div v-if="isOffline" class="inline-flex items-center gap-1.5 rounded-lg bg-[#f59e0b]/90 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+          <NavIcon name="offline" class="h-4 w-4" />
+          Mode Offline
         </div>
 
         <!-- Search panel -->
@@ -267,16 +269,18 @@
             />
             <button
               v-if="searchQuery"
+              type="button"
               @click="searchQuery = ''"
-              class="absolute right-2 top-1/2 -translate-y-1/2 text-[#8fa06a] hover:text-[#EDD330]"
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-[#8fa06a] transition hover:text-[#EDD330]"
+              title="Bersihkan pencarian"
             >
-              ✕
+              <NavIcon name="close" class="h-4 w-4" />
             </button>
           </div>
           <button
             @click="searchPlace"
             :disabled="!searchQuery.trim()"
-            class="rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-3 py-2 text-sm font-bold text-[#A7B92A] transition hover:bg-[#A7B92A]/20 disabled:opacity-50"
+            class="rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-3 py-2 text-sm font-bold text-[#A7B92A] transition hover:bg-daun-400/20 disabled:opacity-50"
           >
             Cari
           </button>
@@ -293,7 +297,10 @@
         <!-- Measurement tool panel -->
         <div v-if="measurementMode !== 'none'" class="w-full rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 p-3 text-xs text-[#EDD330]">
           <div class="mb-2 flex items-center justify-between">
-            <span class="font-bold">{{ measurementMode === 'distance' ? '📏 Ukur Jarak' : '📐 Ukur Luas' }}</span>
+            <span class="inline-flex items-center gap-1.5 font-bold">
+              <NavIcon :name="measurementMode === 'distance' ? 'ruler' : 'polygon'" class="h-4 w-4" />
+              {{ measurementMode === 'distance' ? 'Ukur Jarak' : 'Ukur Luas' }}
+            </span>
             <button @click="cancelMeasurement" class="text-[#f87171] hover:underline">Batal</button>
           </div>
           <div v-if="measurementPoints.length > 0" class="space-y-1">
@@ -322,50 +329,57 @@
             @change="changeBasemap"
             class="w-[168px] rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm text-[#f0ead8] shadow-lg backdrop-blur-sm outline-none focus:border-[#EDD330]"
           >
-            <option value="osm">🗺️ OpenStreetMap</option>
-            <option value="satellite">🛰️ Satelit</option>
-            <option value="terrain">🏔️ Terrain</option>
-            <option value="dark">🌙 Dark</option>
+            <!-- Opsi basemap memakai teks saja. Elemen <option> hanya bisa memuat
+             teks, jadi SVG di dalamnya tidak akan dirender dan ikon yang
+             dicoba ditaruh di situ akan hilang diam-diam. -->
+            <option value="osm">OpenStreetMap</option>
+            <option value="satellite">Satelit</option>
+            <option value="terrain">Terrain</option>
+            <option value="dark">Gelap</option>
           </select>
 
           <!-- Measurement toggles -->
           <button
+            type="button"
             @click="startMeasurement('distance')"
             :disabled="measurementMode !== 'none'"
-            class="rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95 disabled:opacity-50"
+            class="inline-flex h-[38px] w-[38px] items-center justify-center rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95 disabled:opacity-50"
             title="Ukur jarak"
           >
-            <span aria-hidden="true">📏</span>
+            <NavIcon name="ruler" class="h-4 w-4" />
           </button>
           <button
+            type="button"
             @click="startMeasurement('area')"
             :disabled="measurementMode !== 'none'"
-            class="rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95 disabled:opacity-50"
+            class="inline-flex h-[38px] w-[38px] items-center justify-center rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95 disabled:opacity-50"
             title="Ukur luas"
           >
-            <span aria-hidden="true">📐</span>
+            <NavIcon name="polygon" class="h-4 w-4" />
           </button>
 
           <!-- Bookmark/save view button -->
           <button
+            type="button"
             @click="saveBookmark"
-            class="rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95"
+            class="inline-flex h-[38px] w-[38px] items-center justify-center rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95"
             title="Simpan tampilan"
           >
-            <span aria-hidden="true">🔖</span>
+            <NavIcon name="bookmark" class="h-4 w-4" />
           </button>
 
 <!-- Print button. Mencetak PNG isi kanvas persis seperti yang sedang
 tampil, bukan membuka jendela cetak terpisah dan bukan memakai wilayah
 yang kebetulan sedang dipilih di dropdown. -->
 <button
-@click="printMapPng({ matchViewport: true })"
-:disabled="isExporting"
-class="inline-flex items-center gap-1.5 rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95 disabled:cursor-not-allowed disabled:opacity-50"
-title="Cetak PNG peta yang sedang terlihat"
+  type="button"
+  @click="printMapPng({ matchViewport: true })"
+  :disabled="isExporting"
+  class="inline-flex items-center gap-1.5 rounded-lg border-2 border-[#6F9435]/60 bg-[#263D26]/95 px-3 py-2 text-sm font-bold text-[#EDD330] shadow-lg backdrop-blur-sm transition hover:bg-[#335233]/95 disabled:cursor-not-allowed disabled:opacity-50"
+  title="Cetak PNG peta yang sedang terlihat"
 >
-<span aria-hidden="true">🖨️</span>
-<span class="text-xs">{{ isExporting ? 'Menyiapkan...' : 'Cetak' }}</span>
+  <NavIcon :name="isExporting ? 'spinner' : 'printer'" class="h-4 w-4" :class="isExporting ? 'animate-spin' : ''" />
+  <span class="text-xs">{{ isExporting ? 'Menyiapkan...' : 'Cetak' }}</span>
 </button>
         </div>
 
@@ -380,8 +394,13 @@ title="Cetak PNG peta yang sedang terlihat"
             <button @click="goToBookmark(bookmark)" class="flex-1 truncate text-left text-[#f0ead8] hover:text-[#EDD330]" :title="bookmark.name">
               {{ bookmark.name }}
             </button>
-            <button @click="deleteBookmark(index)" class="shrink-0 text-[#f87171] hover:underline" title="Hapus bookmark">
-              ✕
+            <button
+              type="button"
+              @click="deleteBookmark(index)"
+              class="shrink-0 text-[#f87171] transition hover:text-[#fca5a5]"
+              title="Hapus bookmark"
+            >
+              <NavIcon name="trash" class="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -404,7 +423,7 @@ title="Cetak PNG peta yang sedang terlihat"
           <p class="mt-2 text-sm text-[#8fa06a]">{{ mapError }}</p>
           <button
             @click="initMap"
-            class="mt-4 inline-flex items-center rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-4 py-2 text-sm font-bold text-[#A7B92A] transition hover:bg-[#A7B92A]/20"
+            class="mt-4 inline-flex items-center rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-4 py-2 text-sm font-bold text-[#A7B92A] transition hover:bg-daun-400/20"
           >
             Coba Lagi
           </button>
@@ -415,6 +434,115 @@ title="Cetak PNG peta yang sedang terlihat"
     <div v-if="mapStatus" class="mt-3 rounded-lg border border-[#6F9435]/30 bg-[#335233] p-3 text-xs text-[#d4dc9a]">
       {{ mapStatus }}
     </div>
+
+    <!-- Bagian statis di bawah peta.
+         Semuanya ditulis sebagai markup, bukan dari props atau hasil
+         computations, karena isinya memang tidak berubah: sumber data,
+         interval kontur, cara membacanya, dan urutan zamannya. Bagian ini
+         membuat halaman tetap punya penjelasan ketika peta gagal dimuat,
+         karena tidak bergantung pada apa pun milik peta. -->
+    <section class="mt-5 grid gap-4 lg:grid-cols-3" aria-labelledby="peta-tentang-judul">
+      <div class="peta-kartu">
+        <h2 id="peta-tentang-judul" class="peta-kartu-judul">
+          <NavIcon name="layers" class="h-4 w-4" />
+          Tentang Peta Ini
+        </h2>
+        <dl class="grid gap-3 sm:grid-cols-2">
+          <div class="peta-info">
+            <dt class="peta-info-label">Wilayah</dt>
+            <dd class="peta-info-nilai">Sulawesi Selatan</dd>
+          </div>
+          <div class="peta-info">
+            <dt class="peta-info-label">Interval kontur</dt>
+            <dd class="peta-info-nilai">10 meter</dd>
+          </div>
+          <div class="peta-info">
+            <dt class="peta-info-label">Kontur indeks</dt>
+            <dd class="peta-info-nilai">Setiap 50 meter</dd>
+          </div>
+          <div class="peta-info">
+            <dt class="peta-info-label">Jumlah wilayah</dt>
+            <dd class="peta-info-nilai">24 kabupaten/kota</dd>
+          </div>
+        </dl>
+        <p class="mt-3 text-xs leading-relaxed text-lumut-400">
+          Batas wilayah mengikuti data administratif resmi. Garis kontur berasal dari data elevasi
+          terolah dan bukan pengganti survei lapangan, sehingga jangan dipakai menentukan batas
+          atau elevasi secara presisi.
+        </p>
+      </div>
+
+      <div class="peta-kartu">
+        <h2 class="peta-kartu-judul">
+          <NavIcon name="contour" class="h-4 w-4" />
+          Cara Membaca Kontur
+        </h2>
+        <ul class="space-y-2 text-sm leading-relaxed text-krem-300">
+          <li class="flex gap-2">
+            <span class="mt-[7px] h-[3px] w-6 shrink-0 rounded bg-[#8c510a]" aria-hidden="true"></span>
+            <span>
+              Garis kontur yang tebal adalah kontur indeks, digambar setiap kelipatan
+              50 meter, jadi paling mudah dipakai sebagai acuan elevasi.
+            </span>
+          </li>
+          <li class="flex gap-2">
+            <span class="mt-[7px] h-px w-6 shrink-0 bg-[#8c510a]" aria-hidden="true"></span>
+            <span>
+              Garis tipis mengisi di antara dua kontur indeks, berjarak 10 meter satu sama lain.
+            </span>
+          </li>
+          <li class="flex gap-2">
+            <span class="mt-[9px] h-0 w-6 shrink-0 border-t-2 border-dashed border-[#2563eb]" aria-hidden="true"></span>
+            <span>Garis putus-putus biru adalah batas kabupaten atau kota.</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="mt-[9px] h-0 w-6 shrink-0 border-t-2 border-[#0f766e]" aria-hidden="true"></span>
+            <span>Garis hijau tua adalah batas kecamatan.</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="mt-[5px] h-4 w-6 shrink-0 rounded-sm border border-[#EDD330] bg-[#EDD330]/30" aria-hidden="true"></span>
+            <span>Area kuning adalah kecamatan yang sedang dipilih.</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="peta-kartu">
+        <h2 class="peta-kartu-judul">
+          <NavIcon name="guides" class="h-4 w-4" />
+          Langkah Pemakaian
+        </h2>
+        <ol class="space-y-2.5">
+          <li class="peta-langkah">
+            <span class="peta-langkah-nomor" aria-hidden="true">1</span>
+            <span class="peta-langkah-teks">
+              Pilih kabupaten, lalu kecamatan bila perlu. Peta akan menyesuaikan wilayahnya.
+            </span>
+          </li>
+          <li class="peta-langkah">
+            <span class="peta-langkah-nomor" aria-hidden="true">2</span>
+            <span class="peta-langkah-teks">
+              Gunakan alat ukur untuk mengukur jarak atau luas langsung di atas peta.
+            </span>
+          </li>
+          <li class="peta-langkah">
+            <span class="peta-langkah-nomor" aria-hidden="true">3</span>
+            <span class="peta-langkah-teks">
+              Simpan tampilan yang sedang dilihat agar bisa dibuka lagi nanti.
+            </span>
+          </li>
+          <li class="peta-langkah">
+            <span class="peta-langkah-nomor" aria-hidden="true">4</span>
+            <span class="peta-langkah-teks">
+              Cetak PNG untuk laporan, atau unduh paket offline untuk dipakai tanpa jaringan.
+            </span>
+          </li>
+        </ol>
+        <p class="mt-3 border-t border-daun-500/30 pt-3 text-xs leading-relaxed text-lumut-400">
+          Pencarian menerima nama tempat maupun koordinat. Urutannya latitude lalu longitude,
+          jadi tulis <code class="text-krem-300">lat, lng</code> dengan tanda pisah koma.
+        </p>
+      </div>
+    </section>
   </AppLayout>
 
   <Modal v-if="showOfflineModal" title="Unduh Peta Offline" @close="showOfflineModal = false">
@@ -432,7 +560,7 @@ title="Cetak PNG peta yang sedang terlihat"
               class="sr-only peer"
             />
             <div class="relative rounded-lg border-2 border-[#6F9435] bg-[#263D26] p-4 text-center transition-all peer-checked:border-[#A7B92A] peer-checked:bg-[#A7B92A]/10 peer-checked:ring-2 peer-checked:ring-[#A7B92A]/20">
-              <div class="text-lg font-bold text-[#EDD330]">🗺️</div>
+              <div class="mx-auto mb-1 w-fit text-[#EDD330]"><NavIcon name="map" class="h-6 w-6" /></div>
               <div class="mt-1 text-sm font-semibold text-[#f0ead8]">Seluruh Peta</div>
               <div class="mt-1 text-xs text-[#8fa06a]">Sulawesi Selatan lengkap</div>
             </div>
@@ -446,7 +574,7 @@ title="Cetak PNG peta yang sedang terlihat"
               class="sr-only peer"
             />
             <div class="relative rounded-lg border-2 border-[#6F9435] bg-[#263D26] p-4 text-center transition-all peer-checked:border-[#A7B92A] peer-checked:bg-[#A7B92A]/10 peer-checked:ring-2 peer-checked:ring-[#A7B92A]/20">
-              <div class="text-lg font-bold text-[#EDD330]">📍</div>
+              <div class="mx-auto mb-1 w-fit text-[#EDD330]"><NavIcon name="locate" class="h-6 w-6" /></div>
               <div class="mt-1 text-sm font-semibold text-[#f0ead8]">Satu Daerah</div>
               <div class="mt-1 text-xs text-[#8fa06a]">Pilih kabupaten/kota, lalu kecamatan</div>
             </div>
@@ -1787,7 +1915,7 @@ async function initMap() {
     map.value.addControl(new ScaleControl({ maxWidth: 200, unit: 'metric' }), 'bottom-left');
     map.value.addControl(new NavigationControl({ showCompass: true, showZoom: false }), 'top-right');
 
-    // Kontrol lokasi bawaan tidak dipakai: tombol 📍 di template memanggil
+    // Kontrol lokasi bawaan tidak dipakai: tombol lokasi di template memanggil
     // locateUser() yang juga menampilkan popup "Lokasi Anda" dan menulis
     // alasannya ke mapStatus bila lokasi ditolak.
     if ('geolocation' in navigator) {

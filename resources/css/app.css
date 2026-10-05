@@ -525,3 +525,48 @@
 .peta-shell .peta-panel {
     z-index: 20;
 }
+
+/* Bagian statis di bawah peta.
+ *
+ * Isinya penjelasan yang tidak berubah saat pengguna memilih wilayah,
+ * memindahkan kamera, atau mengunduh paket. Kelasnya dikumpulkan di sini
+ * karena dipakai berulang di beberapa kartu, sementara utilitas Tailwind
+ * yang sama ditulis ulang berkali-kali pada tiap kartu.
+ *
+ * Warnanya memakai token palet hutan, bukan hex mentah, supaya kartu ini
+ * ikut mengikuti tema yang sama dengan sidebar dan komponen lain.
+ */
+.peta-kartu {
+    @apply rounded-xl border-2 border-daun-500/40 bg-hutan-600/70 p-4;
+}
+
+.peta-kartu-judul {
+    @apply mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-daun-400;
+}
+
+.peta-info {
+    @apply flex flex-col gap-0.5;
+}
+
+.peta-info-label {
+    @apply text-[11px] uppercase tracking-wide text-lumut-400;
+}
+
+.peta-info-nilai {
+    @apply text-sm font-semibold text-krem-300;
+}
+
+/* Satu langkah pada daftar cara memakai. Nomornya digambar dengan lingkaran
+ * sehingga urutannya terbaca tanpa harus bergantung pada gaya penomoran
+ * list bawaan browser yang berbeda antar sistem. */
+.peta-langkah {
+    @apply flex gap-3;
+}
+
+.peta-langkah-nomor {
+    @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-daun-400/60 bg-hutan-800 text-xs font-bold text-emas-400;
+}
+
+.peta-langkah-teks {
+    @apply text-sm leading-relaxed text-krem-300;
+}
