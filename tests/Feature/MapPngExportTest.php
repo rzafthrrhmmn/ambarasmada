@@ -187,9 +187,15 @@ class MapPngExportTest extends TestCase
         // memakan sebagian header. Kalau judulnya dipecah menurut lebar penuh,
         // baris kedua dan seterusnya mulai tepat di atas logo.
         $this->assertStringContainsString(
-            'textWidth = mapWidth - (logoWidth + gap);',
+            'const reserved = logo ? logo.width + LOGO_GAP : 0;',
             $module,
-            'Lebar isi header harus dikurangi ruang logo, bukan tetap sebesar lembar.'
+            'Kolom logo harus dipotong dari lebar isi header, bukan tetap sebesar lembar.'
+        );
+
+        $this->assertStringContainsString(
+            'const titleLines = wrapText(probe, title, textWidth).length;',
+            $module,
+            'Pengukuran tinggi header harus memecah judul dengan lebar yang sama seperti menggambar.'
         );
 
         // Subjudul memuat koordinat, zoom, dan skala sekaligus, jadi bisa panjang.
@@ -203,7 +209,7 @@ class MapPngExportTest extends TestCase
         // Kalau hanya menambah tinggi satu baris, subjudul dua baris menimpa
         // kotak peta.
         $this->assertStringContainsString(
-            'cursorY += subtitleLines.length * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;',
+            'cursorY = subtitleTop + subtitleLines.length * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;',
             $module,
             'Kursor harus menyesuaikan tinggi subjudul yang sebenarnya.'
         );
@@ -218,21 +224,24 @@ class MapPngExportTest extends TestCase
         // bukan diasumsikan satu baris. Kalau tidak, judul panjang membuat
         // subjudul menimpa peta.
         $this->assertStringContainsString(
-            'const titleLines = wrapText(probe, title, mapWidth).length;',
-            $module,
-            'Tinggi area peta harus memakai jumlah baris judul yang sebenarnya.'
-        );
-        $this->assertStringContainsString(
             'const subtitleLines = wrapText(probe, subtitle, mapWidth).length;',
             $module,
             'Tinggi area peta harus memakai jumlah baris subjudul yang sebenarnya.'
+        );
+
+        // Ruang logo juga harus ikut terukur, kalau tidak tinggi header yang
+        // digambar lebih besar dari yang dihitung dan isinya menimpa peta.
+        $this->assertStringContainsString(
+            'const headerHeight = stackTop + subtitleLines * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;',
+            $module,
+            'Tinggi header harus memperhitungkan ruang logo dan jumlah baris sebenarnya.'
         );
 
         // Perhitungan itu dipindah ke measureSheet() supaya jalur ekspor bisa
         // mengetahui rasio sisi kotak peta lebih dulu, tanpa menghitungnya
         // ulang dengan rumus yang bisa meleset.
         $this->assertStringContainsString(
-            'const sheet = measureSheet({ title, subtitle: subtitleText, orientation });',
+            'const sheet = measureSheet({ title, subtitle: subtitleText, orientation, logo: logoSize });',
             $module,
             'buildMapPng harus memakai tinggi peta dari measureSheet, bukan menghitungnya sendiri.'
         );
@@ -1498,16 +1507,55 @@ class MapPngExportTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'ctx.drawImage(logoImage, MARGIN, MARGIN, logoWidth, logoHeight);',
+            'ctx.drawImage(logoImage, MARGIN, MARGIN, logoSize.width, logoSize.height);',
             $module,
             'Logo harus digambar di header lembar.'
         );
 
         // Lebar teks header harus menyusut, bukan menimpa logo.
         $this->assertStringContainsString(
-            'textWidth = mapWidth - (logoWidth + gap);',
+            'const { textLeft, textWidth, subtitleTop } = sheet;',
             $module,
-            'Judul harus digeser agar tidak menimpa logo.'
+            'Judul harus digeser agar tidak menimpa logo, memakai hasil pengukuran yang sama.'
+        );
+
+        // Logo bisa jauh lebih tinggi daripada satu baris judul, jadi subjudul
+        // tidak boleh langsung mengikuti judul: baris pertamanya akan berada di
+        // dalam kotak logo dan teksnya tertutup gambarnya.
+        $this->assertStringContainsString(
+            'const stackTop = Math.max(titleHeight, logo ? logo.height + LOGO_GAP : 0);',
+            $module,
+            'Subjudul harus mulai di bawah logo, bukan di sampingnya.'
+        );
+
+        $this->assertStringContainsString(
+            'ctx.fillText(line, MARGIN, subtitleTop + index * SUBTITLE_LINE_HEIGHT);',
+            $module,
+            'Baris subjudul harus digambar pada tinggi yang sudah diukur.'
+        );
+
+        // Jalur ekspor menyiapkan kanvas peta memakai rasio dari measureSheet,
+        // jadi logo juga harus ikut diukur di sana. Kalau tidak, rasio yang
+        // dipakai menyiapkan kanvas beda dari rasio yang digambar dan tepi PNG
+        // berisi pita abu-abu.
+        $this->assertStringContainsString(
+            'const logoSize = logoBox(await loadLogo(restOptions.logo));',
+            $module,
+            'Jalur ekspor harus mengukur ruang logo sebelum menyiapkan kanvas peta.'
+        );
+
+        $this->assertStringContainsString(
+            'logo: logoSize,',
+            $module,
+            'measureSheet harus menerima ruang logo supaya tinggi header ikut terhitung.'
+        );
+
+        // Tanpa cache, logo dimuat dua kali: sekali untuk mengukur, sekali
+        // untuk menggambar.
+        $this->assertStringContainsString(
+            'if (!logoCache.has(url)) {',
+            $module,
+            'Logo yang sudah dimuat harus dipakai ulang, bukan diunduh ulang.'
         );
     }
 

@@ -87,10 +87,15 @@ export const SHEET_ORIENTATION_LIST = Object.entries(SHEET_ORIENTATIONS).map(
  */
 export function describeSheet(orientation = DEFAULT_ORIENTATION) {
   const preset = SHEET_ORIENTATIONS[orientation] ?? SHEET_ORIENTATIONS[DEFAULT_ORIENTATION];
+  // Logo tidak dimuat di sini, tapi ruangnya tetap harus dipesan supaya
+  // pratinjau ini tidak menjanjikan area peta yang lebih besar dari yang
+  // benar-benar ada. Kotak penuh dipakai karena gambar logonya tidak diketahui
+  // di sini, dan overestimate hanya membuat pratinjau sedikit lebih kecil.
   const sheet = measureSheet({
     title: 'Peta Kontur - Contoh Wilayah',
     subtitle: 'Koordinat tengah 119,4321, -5,1234 | Zoom 11.0 | Skala 1:250.000',
     orientation,
+    logo: { width: LOGO_BOX, height: LOGO_BOX },
   });
   const scale = sheetScale(sheet);
 
@@ -119,6 +124,16 @@ const MARGIN = 48;
  */
 const MAP_MIN_HEIGHT = 260;
 const MAP_MAX_RATIO = 0.82;
+
+/**
+ * Lebar minimum teks header setelah kolom logo dipotong.
+ *
+ * Kolom logo selebar LOGO_BOX, jadi pada format terlebar pun masih tersisa
+ * lebih dari separuh lembar. Angka ini jaring pengaman saja: kalau someday
+ * logonya jauh lebih lebar, judul dan subjudul tidak boleh tersempit sampai
+ * satu huruf per baris.
+ */
+const MAP_MIN_WIDTH = 320;
 
 /** Keterangan sumber di bawah peta, termasuk jaraknya dari area peta. */
 const FOOTER_GAP = 12;
@@ -188,8 +203,41 @@ function sheetScale(sheet) {
   return Math.max(1, Math.min(SHEET_SCALE, capped));
 }
 
-/** Lebar dan tinggi logo di header, dalam satuan CSS lembar. */
+/**
+ * Batas ukuran logo di header, dalam satuan CSS lembar.
+ *
+ * Logo tidak boleh memakai seluruh tinggi header: judul dan subjudul tetap
+ * harus punya ruangnya masing-masing di sebelah kanan dan di bawahnya.
+ */
 const LOGO_BOX = 64;
+
+/** Jarak logo ke teks di sebelahnya dan ke baris pertama yang ada di bawahnya. */
+const LOGO_GAP = 20;
+
+/**
+ * Ukuran logo di dalam kotak LOGO_BOX, dengan rasio gambar tetap terjaga.
+ *
+ * Dipakai oleh pengukur tinggi dan penggambar, jadi keduanya tidak bisa
+ * berbeda jawaban soal berapa ruang yang dimakan logo.
+ *
+ * @param {HTMLImageElement|null|undefined} image
+ * @returns {{width:number, height:number}|null}
+ */
+function logoBox(image) {
+  if (!image || !(image.width > 0) || !(image.height > 0)) {
+    return null;
+  }
+
+  const ratio = Math.min(LOGO_BOX / image.width, LOGO_BOX / image.height);
+
+  return {
+    width: Math.max(1, Math.round(image.width * ratio)),
+    height: Math.max(1, Math.round(image.height * ratio)),
+  };
+}
+
+/** Logo yang sudah dimuat, dikunci per URL supaya tidak diunduh dua kali. */
+const logoCache = new Map();
 
 /**
  * Muat logo untuk digambar di header lembar.
@@ -200,6 +248,9 @@ const LOGO_BOX = 64;
  * seluruh PNG gagal dibuat gara-gara satu logo. Karena itu logo yang gagal
  * dimuat dilewati saja, dan hasilnya tetap PNG tanpa logo.
  *
+ * Hasilnya disimpan per URL: pengukuran lembar dan penggambar keduanya butuh
+ * logo, dan tanpa cache keduanya akan memuat berkas yang sama dua kali.
+ *
  * @param {string|null|undefined} url
  * @returns {Promise<HTMLImageElement|null>}
  */
@@ -208,18 +259,22 @@ function loadLogo(url) {
     return Promise.resolve(null);
   }
 
-  return new Promise((resolve) => {
-    const image = new Image();
+  if (!logoCache.has(url)) {
+    logoCache.set(url, new Promise((resolve) => {
+      const image = new Image();
 
-    image.crossOrigin = 'anonymous';
+      image.crossOrigin = 'anonymous';
 
-    image.onload = () => resolve(image);
-    // onerror termasuk logo yang tidak ditemukan dan penolakan CORS. Keduanya
-    // berakhir sama saja: tanpa logo.
-    image.onerror = () => resolve(null);
+      image.onload = () => resolve(image);
+      // onerror termasuk logo yang tidak ditemukan dan penolakan CORS. Keduanya
+      // berakhir sama saja: tanpa logo.
+      image.onerror = () => resolve(null);
 
-    image.src = url;
-  });
+      image.src = url;
+    }));
+  }
+
+  return logoCache.get(url);
 }
 
 /**
@@ -235,7 +290,7 @@ function loadLogo(url) {
  * @param {{ title?: string, subtitle?: string, orientation?: string }} [options]
  * @returns {{width:number, height:number, mapWidth:number, mapHeight:number, orientation:string}}
  */
-function measureSheet({ title = '', subtitle = '', orientation = DEFAULT_ORIENTATION } = {}) {
+function measureSheet({ title = '', subtitle = '', orientation = DEFAULT_ORIENTATION, logo = null } = {}) {
   const preset = SHEET_ORIENTATIONS[orientation] ?? SHEET_ORIENTATIONS[DEFAULT_ORIENTATION];
 
   const width = preset.width;
@@ -243,19 +298,41 @@ function measureSheet({ title = '', subtitle = '', orientation = DEFAULT_ORIENTA
   const mapWidth = width - MARGIN * 2;
   const probe = document.createElement('canvas').getContext('2d');
 
+  // Kolom logo memakan lebar judul, jadi pemecahan baris judul harus memakai
+  // lebar yang sama dengan yang dipakai menggambar.
+  const reserved = logo ? logo.width + LOGO_GAP : 0;
+  const textLeft = MARGIN + reserved;
+  const textWidth = Math.max(MAP_MIN_WIDTH, mapWidth - reserved);
+
   setFont(probe, 32, '700');
-  const titleLines = wrapText(probe, title, mapWidth).length;
+  const titleLines = wrapText(probe, title, textWidth).length;
   setFont(probe, 14, '400');
+  // Subjudul tetap selebar lembar: tidak ada yang mengapitinya di kanan.
   const subtitleLines = wrapText(probe, subtitle, mapWidth).length;
 
-  const headerHeight = titleLines * TITLE_LINE_HEIGHT + TITLE_GAP
-    + subtitleLines * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;
+  // Logo, judul, dan subjudul berbagi satu header. Yang paling dalam menentukan
+  // tempat baris pertama di bawah header. `stackTop` diukur dari MARGIN
+  // supaya bisa langsung dipakai menghitung tinggi header, sedangkan
+  // `subtitleTop` adalah koordinat gambarnya dan harus sudah mutlak.
+  const titleHeight = titleLines * TITLE_LINE_HEIGHT + TITLE_GAP;
+  const stackTop = Math.max(titleHeight, logo ? logo.height + LOGO_GAP : 0);
+  const subtitleTop = MARGIN + stackTop;
+  const headerHeight = stackTop + subtitleLines * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;
 
   const available = height - MARGIN * 2 - headerHeight - FOOTER_GAP - FOOTER_HEIGHT;
   const maxMapHeight = Math.round(height * MAP_MAX_RATIO);
   const mapHeight = Math.round(Math.min(Math.max(available, MAP_MIN_HEIGHT), maxMapHeight));
 
-  return { width, height, mapWidth, mapHeight, orientation: preset.label ? orientation : DEFAULT_ORIENTATION };
+  return {
+    width,
+    height,
+    mapWidth,
+    mapHeight,
+    textLeft,
+    textWidth,
+    subtitleTop,
+    orientation: preset.label ? orientation : DEFAULT_ORIENTATION,
+  };
 }
 
 /**
@@ -874,11 +951,19 @@ export async function buildMapPng({
   // subjudul.
   const subtitleText = subtitle || `Lebar area ${distanceLabel(mapWidthMeters)}`;
 
+  // Logo dimuat sebelum lembar diukur, karena ruang yang dipesan logo ikut
+  // menentukan tinggi header. Kalau diukur tanpa logo, tinggi header yang
+  // dipakai untuk menggambar jadi lebih besar dari yang dihitung dan isinya
+  // terdorong menimpa area peta. Kegagalan memuatnya dilewati saja, lalu
+  // lembar tetap dicetak tanpa logo.
+  const logoImage = await loadLogo(logo);
+  const logoSize = logoBox(logoImage);
+
   // Ukuran lembar dan area petanya diukur sekali di sini lalu dipakai untuk
   // menggambar. Pemanggil yang mengirim ukuran sendiri tidak boleh menimpanya:
   // tinggi peta harus mengikuti format yang dipatok, bukan format hasil
   // pengukuran pemanggil.
-  const sheet = measureSheet({ title, subtitle: subtitleText, orientation });
+  const sheet = measureSheet({ title, subtitle: subtitleText, orientation, logo: logoSize });
   const { width, height, mapWidth, mapHeight } = sheet;
   const scale = sheetScale(sheet);
 
@@ -889,30 +974,20 @@ export async function buildMapPng({
   const ctx = canvas.getContext('2d');
   ctx.scale(scale, scale);
 
-  // Logo dimuat sebelum kanvas mulai digambar karena menggambarnya harus
-  // synchronous. Kalau gagal, lembar tetap dicetak tanpa logo.
-  const logoImage = await loadLogo(logo);
-
   ctx.fillStyle = INK.paper;
   ctx.fillRect(0, 0, width, height);
 
   // Logo duduk di kiri header dan judulnya digeser ke kanan, bukan ditumpuk
   // di atasnya. Logo menutupi judul akan membuat keduanya saling tumpang tindih
   // kalau judulnya panjang, dan panjangnya tergantung nama wilayah.
-  let textLeft = MARGIN;
-  let textWidth = mapWidth;
-
-  if (logoImage) {
-    const ratio = Math.min(LOGO_BOX / logoImage.width, LOGO_BOX / logoImage.height);
-    const logoWidth = Math.max(1, Math.round(logoImage.width * ratio));
-    const logoHeight = Math.max(1, Math.round(logoImage.height * ratio));
-
-    ctx.drawImage(logoImage, MARGIN, MARGIN, logoWidth, logoHeight);
-
-    const gap = 20;
-    textLeft = MARGIN + logoWidth + gap;
-    textWidth = mapWidth - (logoWidth + gap);
+  if (logoSize) {
+    ctx.drawImage(logoImage, MARGIN, MARGIN, logoSize.width, logoSize.height);
   }
+
+  // Lebar dan posisi teks berasal dari pengukuran, bukan dihitung ulang di
+  // sini: kalau pemecahan baris memakai lebar yang berbeda dari yang dipakai
+  // menghitung tinggi header, hasilnya satu baris lebih banyak dan menimpa peta.
+  const { textLeft, textWidth, subtitleTop } = sheet;
 
   // Judul, dipecah bila panjangnya melebihi lebar konten.
   let cursorY = MARGIN;
@@ -924,24 +999,23 @@ export async function buildMapPng({
   titleLines.forEach((line, index) => {
     ctx.fillText(line, textLeft, cursorY + index * TITLE_LINE_HEIGHT);
   });
-  cursorY += titleLines.length * TITLE_LINE_HEIGHT + TITLE_GAP;
 
   setFont(ctx, 14, '400');
   ctx.fillStyle = INK.muted;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  // Subjudul juga dipecah: ia memuat koordinat, zoom, dan skala sekaligus,
-  // sehingga panjangnya bergantung pada nilai yang sedang dilihat.
-  // Lebarnya tetap penuh: subjudul tidak boleh ikut bergeser hanya karena ada
-  // logo, dan tidak ada yang mengapitinya di kanan.
+  // Subjudul mulai di bawah logo, bukan di sampingnya. Logo bisa setinggi
+  // LOGO_BOX, sedangkan judul cuma satu baris, jadi kalau subjudul langsung
+  // mengikuti judul, baris pertamanya akan berada di dalam kotak logo dan
+  // teksnya tertutup gambarnya.
   const subtitleLines = wrapText(ctx, subtitleText, mapWidth);
   subtitleLines.forEach((line, index) => {
-    ctx.fillText(line, MARGIN, cursorY + index * SUBTITLE_LINE_HEIGHT);
+    ctx.fillText(line, MARGIN, subtitleTop + index * SUBTITLE_LINE_HEIGHT);
   });
 
   // Kursor harus ikut bertambah sesuai jumlah baris. Kalau hanya menambah tinggi
   // satu baris, subjudul dua baris menimpa kotak peta.
-  cursorY += subtitleLines.length * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;
+  cursorY = subtitleTop + subtitleLines.length * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;
 
   // Area peta
   const mapX = MARGIN;
@@ -1643,7 +1717,16 @@ export function useMapPngExport() {
     // menghitungnya belum lengkap karena detail koordinat baru ada setelah
     // kamera diarahkan, tetapi selisihnya hanya satu baris teks dan tidak
     // mengubah tinggi area peta secara berarti.
-    const sheet = measureSheet({ title: restOptions.title, subtitle: subtitleOverride, orientation });
+    // Logo ikut diukur di sini, bukan hanya saat menggambar. Kalau tidak,
+    // rasio sisi yang dipakai menyiapkan kanvas peta berbeda dari rasio yang
+    // benar-benar digambar, dan tepi PNG akan berisi pita abu-abu.
+    const logoSize = logoBox(await loadLogo(restOptions.logo));
+    const sheet = measureSheet({
+      title: restOptions.title,
+      subtitle: subtitleOverride,
+      orientation,
+      logo: logoSize,
+    });
     const surface = exportSurfaceFor(map, sheet.mapWidth / sheet.mapHeight);
 
     try {
