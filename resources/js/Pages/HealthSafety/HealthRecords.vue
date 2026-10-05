@@ -37,12 +37,27 @@
           <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
               <p class="text-sm font-semibold text-[#f0ead8]">{{ r.member?.nama_lengkap || 'Tidak diketahui' }}</p>
-              <div class="mt-1 grid gap-1 text-xs text-[#8fa06a]">
-                <p v-if="r.riwayat_penyakit">🦠 Riwayat: {{ r.riwayat_penyakit }}</p>
-                <p v-if="r.alergi">⚠️ Alergi: {{ r.alergi }}</p>
-                <p v-if="r.darah">🩸 Darah: {{ r.darah }}</p>
-                <p v-if="r.tinggi_badan || r.berat_badan">📏 TB: {{ r.tinggi_badan }}cm / BB: {{ r.berat_badan }}kg</p>
-                <p v-if="r.catatan_tambahan">📝 {{ r.catatan_tambahan }}</p>
+              <div class="mt-2 grid gap-1.5 text-xs text-[#8fa06a]">
+                <p v-if="r.riwayat_penyakit" class="meta-row">
+                  <AppIcon name="germ" class="meta-icon" />
+                  <span>Riwayat: {{ r.riwayat_penyakit }}</span>
+                </p>
+                <p v-if="r.alergi" class="meta-row text-[#EDD330]">
+                  <AppIcon name="warning" class="meta-icon text-[#EDD330]" />
+                  <span>Alergi: {{ r.alergi }}</span>
+                </p>
+                <p v-if="r.darah" class="meta-row">
+                  <AppIcon name="droplet" class="meta-icon" />
+                  <span>Darah: {{ r.darah }}</span>
+                </p>
+                <p v-if="r.tinggi_badan || r.berat_badan" class="meta-row">
+                  <AppIcon name="ruler" class="meta-icon" />
+                  <span>TB: {{ r.tinggi_badan }}cm / BB: {{ r.berat_badan }}kg</span>
+                </p>
+                <p v-if="r.catatan_tambahan" class="meta-row">
+                  <AppIcon name="note" class="meta-icon" />
+                  <span>{{ r.catatan_tambahan }}</span>
+                </p>
               </div>
             </div>
             <div v-if="canManage" class="flex gap-2">
@@ -53,7 +68,10 @@
         </div>
         <Pagination :links="records.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
       </div>
-      <p v-else class="empty-state empty-state-text">Belum ada rekam medis.</p>
+      <p v-else class="empty-state">
+          <AppIcon name="germ" class="empty-state-icon h-6 w-6" />
+          <span class="empty-state-text">Belum ada rekam medis.</span>
+        </p>
     </div>
   </AppLayout>
 </template>
@@ -62,6 +80,7 @@
 import { computed, reactive, ref } from 'vue';
 import { useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useAccess } from '@/Composables/useAccess.js';
 

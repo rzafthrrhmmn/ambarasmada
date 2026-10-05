@@ -68,7 +68,10 @@
         </div>
         <Pagination :links="points.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
       </div>
-      <p v-else class="empty-state empty-state-text">Belum ada poin.</p>
+      <p v-else class="empty-state">
+        <AppIcon name="points" class="empty-state-icon h-6 w-6" />
+        <span class="empty-state-text">Belum ada poin.</span>
+      </p>
     </div>
   </AppLayout>
 </template>
@@ -77,6 +80,7 @@
 import { computed } from 'vue';
 import { useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useAccess } from '@/Composables/useAccess.js';

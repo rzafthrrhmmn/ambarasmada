@@ -1,21 +1,30 @@
 /**
- * Model ikon navigasi.
+ * Model ikon aplikasi.
  *
- * Ikon tidak lagi disimpan sebagai string HTML siap `v-html`. Setiap ikon
- * adalah data: sekumpulan bentuk (path/rect/circle) pada viewBox 24x24 yang
- * dirender `NavIcon.vue` sebagai elemen SVG asli. Keuntungannya:
+ * Ikon tidak lagi disimpan sebagai string HTML siap `v-html`, dan tidak lagi
+ * memakai emoji keyboard sebagai pengganti. Setiap ikon adalah data: sekumpulan
+ * bentuk (path/rect/circle) pada viewBox 24x24 yang dirender `AppIcon.vue`
+ * sebagai elemen SVG asli. Keuntungannya:
  *
  * - `currentColor` dan `stroke-width` selalu konsisten karena berasal dari
  *   satu komponen, bukan dari string per ikon.
- * - Tidak ada `v-html` di sidebar, sehingga aman terhadap HTML yang tidak
- *   terduga dan tetap kompatibel dengan deteksi kelas Tailwind.
+ * - Bentuk dan ketebalan sama di semua perangkat. Emoji berganti bersama font
+ *   sistem, jadi bentuk tombol ikut berubah antar Android, Windows, dan iOS.
+ * - Tidak ada `v-html`, sehingga aman terhadap HTML yang tidak terduga dan
+ *   tetap kompatibel dengan deteksi kelas Tailwind.
  * - Ikon baru cukup ditambah satu entri di sini, lalu dipakai lewat nama pada
- *   model navigasi (`icon: 'dashboard'`).
+ *   model navigasi (`icon: 'dashboard'`) maupun halaman mana pun
+ *   (`<AppIcon name="check" />`).
+ *
+ * Bentuk boleh opting out dari mode garis dengan `filled: true`. Ikon seperti
+ * titik status butuh isi penuh; bentuk lain tetap memakai `currentColor` +
+ * `stroke` supaya warnanya tetap mengikuti teks induknya.
  */
 
 const path = (d) => ({ type: 'path', d });
 const rect = (x, y, width, height, rx = 2) => ({ type: 'rect', x, y, width, height, rx });
 const circle = (cx, cy, r) => ({ type: 'circle', cx, cy, r });
+const filledCircle = (cx, cy, r) => ({ type: 'circle', cx, cy, r, filled: true });
 
 export const ICON_VIEW_BOX = 24;
 export const ICON_STROKE_WIDTH = 1.7;
@@ -162,6 +171,69 @@ export const navigationIcons = {
             'M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75',
         ),
     ],
+
+    /* Penanda arah dan status. Emoji lama (✓ ✕ → ← 🟢 🔴) digantikan bentuk
+       vektor supaya ukurannya tetap sama di semua perangkat. */
+    plus: [path('M12 4.5v15m7.5-7.5h-15')],
+    check: [path('M4.5 12.75l6 6 9-13.5')],
+    checkCircle: [path('M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z')],
+    xCircle: [path('M9.75 9.75l4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z')],
+    warning: [
+        path(
+            'M12 9v3.75m0 3.75h.008v.008H12v-.008ZM10.29 3.86 2.82 17a2 2 0 0 0 1.71 3h14.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z',
+        ),
+    ],
+    statusDot: [filledCircle(12, 12, 5.25)],
+    arrowRight: [path('M13.5 4.5 21 12l-7.5 7.5M21 12H3')],
+    arrowLeft: [path('M10.5 4.5 3 12l7.5 7.5M3 12h18')],
+    externalLink: [
+        path('M13.5 4.5H18a1.5 1.5 0 0 1 1.5 1.5v4.5M14.25 9.75 19.5 4.5M19.5 9v9a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 4.5 18V6A1.5 1.5 0 0 1 6 4.5h4.5'),
+    ],
+
+    /* Keterangan isi. Dipakai sebagai label baris data dan kartu ringkasan,
+       menggantikan emoji yang sebelumnya disalin ke setiap halaman. */
+    calendar: [
+        path(
+            'M6.75 3v2.25M17.25 3v2.25M3.75 18.75V7.5A2.25 2.25 0 0 1 6 5.25h12a2.25 2.25 0 0 1 2.25 2.25v11.25A2.25 2.25 0 0 1 18 21H6a2.25 2.25 0 0 1-2.25-2.25ZM3.75 9.75h16.5',
+        ),
+    ],
+    clock: [path('M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z')],
+    pin: [circle(12, 10.5, 2.75), path('M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z')],
+    phone: [
+        path(
+            'M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z',
+        ),
+    ],
+    clipboard: [
+        path(
+            'M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z',
+        ),
+    ],
+    note: [
+        path(
+            'M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10',
+        ),
+    ],
+    star: [
+        path(
+            'M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z',
+        ),
+    ],
+    droplet: [
+        path('M12 2.75s6.75 6.53 6.75 11.25a6.75 6.75 0 0 1-13.5 0C5.25 9.28 12 2.75 12 2.75Z'),
+        path('M9.75 14.25a2.25 2.25 0 0 0 2.25 2.25'),
+    ],
+    shield: [
+        path(
+            'M12 3.75 5.25 6v5.25c0 4.02 2.87 7.77 6.75 9 3.88-1.23 6.75-4.98 6.75-9V6L12 3.75Z',
+        ),
+    ],
+    germ: [
+        circle(12, 12, 4.5),
+        path('M12 12h.01'),
+        path('M12 2.75v2.5M12 18.75v2.5M2.75 12h2.5M18.75 12h2.5M5.32 5.32l1.77 1.77M16.91 16.91l1.77 1.77M18.68 5.32l-1.77 1.77M7.09 16.91l-1.77 1.77'),
+    ],
+    pulse: [path('M2.25 12h4.5l2.25-6 4.5 12 2.25-6h6')],
 
     /* Peta */
     layers: [

@@ -51,8 +51,9 @@
         </div>
       </div>
 
-      <p v-else class="empty-state empty-state-text">
-        Belum ada riwayat pergerakan untuk barang ini.
+      <p v-else class="empty-state">
+        <AppIcon name="inventory" class="empty-state-icon h-6 w-6" />
+        <span class="empty-state-text">Belum ada riwayat pergerakan untuk barang ini.</span>
       </p>
     </div>
   </AppLayout>
@@ -61,6 +62,7 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 
 defineProps({
   inventory: Object,

@@ -12,7 +12,13 @@
           <div class="min-w-0">
             <h3 class="text-sm font-bold text-[#f0ead8]">{{ r.judul }}</h3>
             <p class="text-xs text-[#8fa06a]">{{ r.deskripsi || '-' }}</p>
-            <p class="mt-1 text-[10px] text-[#EDD330]">⏰ {{ formatDateTime(r.jadwal) }} • {{ r.jenis }}</p>
+            <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-[#EDD330]">
+              <span class="inline-flex items-center gap-1.5">
+                <AppIcon name="clock" class="h-3.5 w-3.5 shrink-0" />
+                {{ formatDateTime(r.jadwal) }}
+              </span>
+              <span class="badge border border-[#EDD330]/40 bg-[#EDD330]/10 text-[#EDD330]">{{ r.jenis }}</span>
+            </p>
           </div>
           <div class="flex gap-2 shrink-0">
             <button v-if="!r.is_sent && canManage" @click="$inertia.post(`/reminders/${r.id}/sent`)" class="rounded-lg border border-[#6F9435] px-2 py-1 text-[10px] font-bold text-[#d4dc9a] hover:bg-[#6F9435]/20">Kirim</button>
@@ -20,7 +26,10 @@
           </div>
         </div>
       </div>
-      <p v-if="!reminders.data.length" class="rounded-xl border-2 border-[#6F9435]/30 bg-[#335233] p-10 text-center text-sm text-[#8fa06a]">Belum ada pengingat.</p>
+      <p v-if="!reminders.data.length" class="empty-state">
+          <AppIcon name="clock" class="empty-state-icon h-6 w-6" />
+          <span class="empty-state-text">Belum ada pengingat.</span>
+        </p>
     </div>
 
     <Modal v-if="showCreate" :title="'Tambah Pengingat'" @close="reset">
@@ -42,6 +51,7 @@
 import { computed, ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import { useAccess } from '@/Composables/useAccess.js';

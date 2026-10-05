@@ -23,7 +23,20 @@ class ArticleController extends Controller
             $query->where('kategori', $request->string('kategori'));
         }
 
+        $user = $request->user();
+
+        /*
+         * Penentuan siapa boleh menyunting atau menghapus setiap kartu
+         * ditentukan di sini, bukan dari daftar peran yang ditulis ulang di
+         * Vue. Kalau aturan update dan destroy di bawah berubah, tampilan ikut
+         * berubah tanpa harus menyentuh halaman.
+         */
+        $canManageAll = in_array($user->role, ['Admin', 'Pembina'], true);
+
         $articles = $query->paginate(15)->withQueryString();
+        $articles->getCollection()->transform(fn (Article $article) => $article->setAttribute('can_edit', $article->author_id === $user->id || $canManageAll));
+        $articles->getCollection()->transform(fn (Article $article) => $article->setAttribute('can_delete', $canManageAll));
+
         $categories = ['Laporan Kegiatan', 'Artikel', 'Berita', 'Tips & Trik', 'Lainnya'];
 
         return Inertia::render('Articles/Index', [
@@ -92,10 +105,26 @@ class ArticleController extends Controller
         return redirect()->route('articles.index')->with('success', 'Artikel dihapus.');
     }
 
-    public function show(Article $article): Response
+    public function show(Request $request, Article $article): Response
     {
+        // Daftar hanya menampilkan artikel yang sudah terbit, jadi artikel
+        // draf yang bocor lewat URL harus ditolak di sini juga. Penulisnya
+        // sendiri tetap boleh membuka drafnya untuk menyunting.
+        $isPrivileged = $article->author_id === $request->user()->id
+            || in_array($request->user()->role, ['Admin', 'Pembina'], true);
+
+        abort_unless($article->is_published || $isPrivileged, 404);
+
         $article->load(['ambalan', 'author']);
 
-        return Inertia::render('Articles/Show', ['article' => $article]);
+        return Inertia::render('Articles/Show', [
+            'article' => $article,
+            // Halaman detail ikut menentukan apakah tombol sunting dan hapus
+            // ditampilkan. Daftar peran di sini persis sama dengan yang dipakai
+            // update dan destroy, jadi halaman ini tidak perlu menyimpan daftar
+            // sendiri yang bisa melenceng dari server.
+            'canManage' => $isPrivileged,
+            'canDelete' => in_array($request->user()->role, ['Admin', 'Pembina'], true),
+        ]);
     }
 }

@@ -30,7 +30,10 @@
       </div>
     </section>
 
-    <Link :href="`/assessments`" class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/30 hover:text-[#EDD330]">← Kembali</Link>
+    <Link href="/assessments" class="btn-ghost">
+      <AppIcon name="arrowLeft" class="h-4 w-4" />
+      Kembali
+    </Link>
   </AppLayout>
 </template>
 
@@ -38,6 +41,7 @@
 import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 
 defineProps({ assessment: Object });
 const labels = computed(() => ({

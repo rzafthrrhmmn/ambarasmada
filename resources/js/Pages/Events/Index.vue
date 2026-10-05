@@ -6,7 +6,10 @@
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Manajemen Kegiatan</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Buat, kelola, dan pantau seluruh kegiatan ambalan.</p>
       </div>
-      <button v-if="canManage" @click="showCreate = true" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">+ Kegiatan Baru</button>
+      <button v-if="canManage" @click="showCreate = true" class="btn-primary">
+        <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
+        Kegiatan Baru
+      </button>
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -22,9 +25,15 @@
         </div>
         <h3 class="text-base font-bold text-[#f0ead8]">{{ event.nama }}</h3>
         <p class="mt-1 line-clamp-2 text-xs leading-5 text-[#8fa06a]">{{ event.deskripsi || 'Tanpa deskripsi' }}</p>
-        <div class="mt-3 flex items-center gap-3 text-[10px] font-medium text-[#8fa06a]">
-          <span>📅 {{ formatDate(event.tanggal) }}</span>
-          <span v-if="event.lokasi">📍 {{ event.lokasi }}</span>
+        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-medium text-[#8fa06a]">
+          <span class="inline-flex items-center gap-1.5">
+            <AppIcon name="calendar" class="h-3.5 w-3.5 shrink-0 text-[#A7B92B]" />
+            {{ formatDate(event.tanggal) }}
+          </span>
+          <span v-if="event.lokasi" class="inline-flex items-center gap-1.5">
+            <AppIcon name="pin" class="h-3.5 w-3.5 shrink-0 text-[#A7B92B]" />
+            {{ event.lokasi }}
+          </span>
         </div>
         <div class="mt-3 flex flex-wrap gap-2">
           <span v-if="event.participants_count !== undefined" class="text-[10px] font-medium text-[#8fa06a]">{{ event.participants_count }} peserta</span>
@@ -63,6 +72,7 @@
 import { ref, computed } from 'vue';
 import { useForm, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';

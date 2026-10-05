@@ -81,7 +81,9 @@
           :key="izin.key"
           class="flex items-start gap-2 rounded-lg border border-[#6F9435]/60 bg-[#263D26] px-3 py-2"
         >
-          <span class="mt-0.5 text-xs" :class="izinClass(izin.state)">{{ izinIcon(izin.state) }}</span>
+          <span class="mt-0.5 shrink-0" :class="izinClass(izin.state)">
+            <AppIcon :name="izinIcon(izin.state)" :stroke="2.4" class="h-3.5 w-3.5" />
+          </span>
           <span class="text-xs">
             <span class="block font-medium text-[#d4dc9a]">{{ izin.label }}</span>
             <span class="block text-[#8fa06a]">{{ izinNote(izin.state) }}</span>
@@ -141,6 +143,7 @@ import { useForm, router } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import { Html5Qrcode } from 'html5-qrcode';
 import { enqueue } from '@/OfflineQueue.js';
@@ -234,11 +237,11 @@ function izinNote(state) {
 }
 
 function izinIcon(state) {
-  if (state === 'granted') return '✓';
-  if (state === 'denied') return '✕';
-  if (state === 'prompt') return '•';
-  if (state === 'not-needed') return '–';
-  return '?';
+  if (state === 'granted') return 'check';
+  if (state === 'denied') return 'close';
+  if (state === 'prompt') return 'dot';
+  if (state === 'not-needed') return 'close';
+  return 'warning';
 }
 
 function izinClass(state) {

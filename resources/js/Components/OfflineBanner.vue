@@ -10,7 +10,7 @@
   >
     <span
       :class="[
-        'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black',
+        'flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
         isOnline ? 'bg-[#A7B92A]/20 text-[#A7B92A]' : 'bg-[#EDD330]/20 text-[#EDD330]',
       ]"
     >
@@ -20,8 +20,8 @@
           <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
       </template>
-      <template v-else-if="isOnline">✓</template>
-      <template v-else>!</template>
+      <template v-else-if="isOnline"><AppIcon name="check" :stroke="2.4" class="h-4 w-4" /></template>
+      <template v-else><AppIcon name="warning" :stroke="2.2" class="h-4 w-4" /></template>
     </span>
 
     <span class="min-w-0 flex-1">
@@ -55,6 +55,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useNetworkStatus } from '@/Composables/useNetworkStatus.js';
+import AppIcon from '@/Components/AppIcon.vue';
 
 const { isOnline, queued, flushing, flushQueue } = useNetworkStatus();
 

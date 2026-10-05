@@ -77,8 +77,10 @@
                 :class="period.is_closed ? 'bg-[#ef4419]/20 text-[#ef4419]' : 'bg-[#6F9435]/20 text-[#A7B92B]'"
               >{{ period.is_closed ? 'Ditutup' : 'Buka' }}</span>
             </p>
-            <p class="mt-1 text-xs text-[#8fa06a]">
-              {{ formatDate(period.starts_at) }} → {{ formatDate(period.ends_at) }}
+            <p class="mt-1 inline-flex items-center gap-1.5 text-xs text-[#8fa06a]">
+              {{ formatDate(period.starts_at) }}
+              <AppIcon name="arrowRight" class="h-3 w-3 shrink-0 text-[#A7B92B]" />
+              {{ formatDate(period.ends_at) }}
             </p>
           </div>
           <div class="flex items-center gap-1">
@@ -110,7 +112,10 @@
         <Pagination :links="periods.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
       </div>
 
-      <p v-else class="empty-state empty-state-text">Belum ada periode keuangan.</p>
+      <p v-else class="empty-state">
+          <AppIcon name="calendar" class="empty-state-icon h-6 w-6" />
+          <span class="empty-state-text">Belum ada periode keuangan.</span>
+        </p>
     </div>
   </AppLayout>
 </template>
@@ -119,6 +124,7 @@
 import { computed, ref, reactive } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useAccess } from '@/Composables/useAccess.js';
 

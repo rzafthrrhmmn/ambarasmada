@@ -43,7 +43,10 @@
               <button v-if="item.status === 'Pending' && can('sku.submit')" type="button" @click="router.post(`/sku/${item.id}/cancel`)" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Batalkan</button>
             </div>
           </div>
-          <p v-if="!submissions.data.length" class="text-center text-xs text-[#8fa06a]">Belum ada pengajuan.</p>
+          <p v-if="!submissions.data.length" class="empty-state">
+            <AppIcon name="clipboard" class="empty-state-icon h-6 w-6" />
+            <span class="empty-state-text">Belum ada pengajuan.</span>
+          </p>
         </div>
         <Pagination :links="submissions.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
       </section>
@@ -95,8 +98,8 @@
           <h3 class="mb-2 flex items-center justify-between text-sm font-bold text-[#EDD330]"><span>{{ levelName }}</span><span class="text-[10px] font-medium text-[#8fa06a]">{{ level.length }} poin</span></h3>
           <div class="space-y-2">
             <div v-for="point in level" :key="point.id" class="flex items-center gap-3 rounded-xl border border-[#6F9435]/30 bg-[#263D26] p-3 transition hover:border-[#A7B92B]/60" :class="isSubmissionAvailable(point) ? 'cursor-pointer' : ''" @click="openSubmission(point)">
-              <span class="flex h-5 w-5 items-center justify-center rounded border border-[#6F9435]/50 text-xs" :class="point.status === 'Approved' ? 'bg-[#A7B92B]/30 border-[#A7B92B] text-[#A7B92B]' : 'text-[#8fa06a]'">
-                <span v-if="point.status === 'Approved'">✓</span>
+              <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded border" :class="point.status === 'Approved' ? 'border-[#A7B92B] bg-[#A7B92B]/30 text-[#A7B92B]' : 'border-[#6F9435]/50 text-[#8fa06a]'">
+                <AppIcon v-if="point.status === 'Approved'" name="check" :stroke="2.8" class="h-3.5 w-3.5" />
               </span>
               <div class="min-w-0 flex-1">
                 <p class="text-sm font-medium text-[#f0ead8]">{{ point.nomor_poin }}. {{ point.deskripsi_poin }}</p>
@@ -127,13 +130,20 @@
 
       <template v-if="completed">
         <div class="py-8 text-center">
-          <span class="mb-2 block text-5xl">✓</span>
+          <span
+            class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#A7B92B]/50 bg-[#A7B92B]/15 text-[#A7B92B] shadow-lg shadow-[#A7B92B]/20"
+          >
+            <AppIcon name="check" :stroke="2.6" class="h-8 w-8" />
+          </span>
           <p class="text-sm font-semibold text-[#A7B92B]">Selamat!</p>
           <p class="mt-1 text-xs text-[#8fa06a]">Anda telah menyelesaikan seluruh poin SKU dan TKK.</p>
         </div>
       </template>
       <template v-else-if="!hasFilteredResults">
-        <p class="text-center text-xs text-[#8fa06a]">Tidak ada poin SKU untuk tingkatan ini.</p>
+        <p class="empty-state">
+          <AppIcon name="search" class="empty-state-icon h-6 w-6" />
+          <span class="empty-state-text">Tidak ada poin SKU untuk tingkatan ini.</span>
+        </p>
       </template>
 
       <div v-if="tkkPointsWithStatus.length" class="mt-4 border-t border-[#6F9435]/30 pt-4">
@@ -143,8 +153,8 @@
         </div>
         <div class="space-y-2">
           <div v-for="tkk in tkkPointsWithStatus" :key="tkk.id" class="flex items-center gap-3 rounded-xl border border-[#6F9435]/30 bg-[#263D26] p-3">
-            <span class="flex h-5 w-5 items-center justify-center rounded border border-[#6F9435]/50 text-xs" :class="tkk.status === 'Approved' ? 'bg-[#A7B92B]/30 border-[#A7B92B] text-[#A7B92B]' : 'text-[#8fa06a]'">
-              <span v-if="tkk.status === 'Approved'">✓</span>
+            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded border" :class="tkk.status === 'Approved' ? 'border-[#A7B92B] bg-[#A7B92B]/30 text-[#A7B92B]' : 'border-[#6F9435]/50 text-[#8fa06a]'">
+              <AppIcon v-if="tkk.status === 'Approved'" name="check" :stroke="2.8" class="h-3.5 w-3.5" />
             </span>
             <div class="min-w-0 flex-1">
               <p class="text-sm font-medium text-[#f0ead8]">{{ tkk.nama }}</p>
@@ -282,6 +292,7 @@
 import { computed, ref } from 'vue';
 import { useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';

@@ -9,14 +9,31 @@
         <SkeletonLoader v-if="loading" variant="text" :lines="1" class="mt-1 h-5 w-72" />
         <p v-else class="mt-1 text-sm text-[#8fa06a]">Semua aktivitas ambalan dalam satu layar.</p>
       </div>
-      <div class="flex items-center gap-2">
+<div class="flex items-center gap-2">
         <SkeletonLoader v-if="loading" variant="card" class="h-9 w-36" />
-        <Link v-else href="/notifications" class="relative inline-flex items-center rounded-lg border-2 border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/30 hover:text-[#EDD330]">
-          🔔 Notifikasi
-          <span v-if="unreadCount > 0" class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#EDD330] text-[10px] font-bold text-[#263D26]">{{ unreadCount }}</span>
+        <Link
+          v-else
+          href="/notifications"
+          class="relative inline-flex items-center gap-2 rounded-lg border-2 border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:border-[#EDD330]/70 hover:bg-[#6F9435]/30 hover:text-[#EDD330]"
+        >
+          <AppIcon name="bell" class="h-4 w-4" />
+          Notifikasi
+          <span
+            v-if="unreadCount > 0"
+            class="absolute -right-2 -top-2 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#EDD330] px-1 text-[10px] font-bold text-[#263D26]"
+          >
+            {{ unreadCount > 99 ? '99+' : unreadCount }}
+          </span>
         </Link>
         <SkeletonLoader v-if="loading" variant="card" class="h-9 w-20" />
-        <Link v-else href="/reports" class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/30 hover:text-[#EDD330]">📊 Laporan</Link>
+        <Link
+          v-else
+          href="/reports"
+          class="inline-flex items-center gap-2 rounded-lg border-2 border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:border-[#EDD330]/70 hover:bg-[#6F9435]/30 hover:text-[#EDD330]"
+        >
+          <AppIcon name="reports" class="h-4 w-4" />
+          Laporan
+        </Link>
       </div>
     </div>
 
@@ -112,6 +129,7 @@
 
 <script setup>
 import StatCard from '@/Components/StatCard.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import ActivityCalendar from '@/Components/ActivityCalendar.vue';
 import UpcomingActivities from '@/Components/UpcomingActivities.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
@@ -136,12 +154,7 @@ const canViewMetrics = computed(() => can('dashboard.view_metrics'));
 
 const loading = computed(() => !page.props.stats && !page.props.pendingSku && !page.props.announcements);
 const labels = { members: 'Total anggota', attendance: 'Rekap kehadiran', sku: 'Pengajuan SKU', finance: 'Transaksi kas' };
-const icons = {
-  members: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0z" /></svg>',
-  attendance: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M9 9.563a3 3 0 1 0 5.138-2.121 3 3 0 0 0-5.138 2.121zM15 12l3.6-3.6m0 0L16.8 6.6m1.8 1.8h-3.6" /></svg>',
-  sku: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>',
-  finance: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125h20.25M12 6V5.25m0 13.5h.008v.008H12V18.75zm0-4.5h.008v.008H12v-.008zm0-4.5h.008v.008H12v-.008z" /></svg>',
-};
+const icons = { members: 'members', attendance: 'attendance', sku: 'audit', finance: 'wallet' };
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
 }

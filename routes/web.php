@@ -80,6 +80,9 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
+// Gallery (public read)
+Route::get('/galleries', [GalleryController::class, 'index'])->name('galleries.index');
+
 Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
@@ -270,14 +273,12 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
 
     // Articles/Blog
     Route::get('/articles', [ArticleController::class, 'index'])->name('articles.index');
+    // `show` pernah ada di controller tapi rutenya tidak pernah didaftarkan,
+    // jadi setiap tautan ke /articles/{id} berakhir 404.
+    Route::get('/articles/{article}', [ArticleController::class, 'show'])->name('articles.show');
     Route::post('/articles', [ArticleController::class, 'store'])->name('articles.store')->middleware('throttle:10,1');
     Route::patch('/articles/{article}', [ArticleController::class, 'update'])->name('articles.update')->middleware('throttle:20,1');
     Route::delete('/articles/{article}', [ArticleController::class, 'destroy'])->name('articles.destroy')->middleware('throttle:10,1');
-
-    // Gallery
-    Route::get('/galleries', [GalleryController::class, 'index'])->name('galleries.index');
-    Route::post('/galleries', [GalleryController::class, 'store'])->name('galleries.store')->middleware('throttle:10,1');
-    Route::delete('/galleries/{gallery}', [GalleryController::class, 'destroy'])->name('galleries.destroy')->middleware('throttle:10,1');
 
     // Teams/Gugus Depan
     Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');

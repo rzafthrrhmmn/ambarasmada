@@ -38,19 +38,32 @@
             <div class="min-w-0">
               <p class="text-sm font-semibold text-[#f0ead8]">{{ c.kategori }}</p>
               <p class="mt-1 text-xs text-[#8fa06a]">{{ c.deskripsi }}</p>
-              <p class="mt-1 text-xs text-[#8fa06a]">
-                <span :class="c.passed ? 'text-[#A7B92A]' : 'text-[#ef4419]'">
-                  {{ c.passed ? '✅ Lulus' : '❌ Tidak Lulus' }}
+              <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#8fa06a]">
+                <span
+                  class="badge"
+                  :class="c.passed ? 'badge-approved' : 'badge-rejected'"
+                >
+                  <AppIcon :name="c.passed ? 'checkCircle' : 'xCircle'" class="h-3.5 w-3.5" />
+                  {{ c.passed ? 'Lulus' : 'Tidak Lulus' }}
                 </span>
-                <span v-if="c.event"> • {{ c.event?.nama || 'Event' }}</span>
-                • {{ c.createdBy?.name || '-' }}
+                <span v-if="c.event" class="inline-flex items-center gap-1.5">
+                  <AppIcon name="calendar" class="h-3.5 w-3.5 shrink-0 text-[#A7B92B]" />
+                  {{ c.event?.nama || 'Event' }}
+                </span>
+                <span class="inline-flex items-center gap-1.5">
+                  <AppIcon name="profile" class="h-3.5 w-3.5 shrink-0 text-[#A7B92B]" />
+                  {{ c.createdBy?.name || '-' }}
+                </span>
               </p>
             </div>
           </div>
         </div>
         <Pagination :links="checks.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
       </div>
-      <p v-else class="empty-state empty-state-text">Belum ada pemeriksaan keselamatan.</p>
+      <p v-else class="empty-state">
+          <AppIcon name="shield" class="empty-state-icon h-6 w-6" />
+          <span class="empty-state-text">Belum ada pemeriksaan keselamatan.</span>
+        </p>
     </div>
   </AppLayout>
 </template>
@@ -59,6 +72,7 @@
 import { computed, reactive } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useAccess } from '@/Composables/useAccess.js';
 

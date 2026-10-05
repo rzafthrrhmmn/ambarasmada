@@ -37,11 +37,15 @@
               <p class="text-sm font-semibold text-[#f0ead8]">{{ w.nama }}</p>
               <p class="mt-1 break-all text-xs text-[#8fa06a]">{{ w.url }}</p>
               <p v-if="w.event" class="text-xs text-[#8fa06a]">Event: {{ w.event }}</p>
-              <p class="mt-1 text-xs">
-                <span :class="w.is_active ? 'text-[#A7B92A]' : 'text-[#ef4419]'" class="font-bold">
-                  {{ w.is_active ? '🟢 Aktif' : '🔴 Nonaktif' }}
+              <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                <span class="badge" :class="w.is_active ? 'badge-approved' : 'badge-rejected'">
+                  <AppIcon name="statusDot" class="h-2.5 w-2.5" />
+                  {{ w.is_active ? 'Aktif' : 'Nonaktif' }}
                 </span>
-                • {{ w.logs?.length || 0 }} log
+                <span class="inline-flex items-center gap-1.5 text-[#8fa06a]">
+                  <AppIcon name="clipboard" class="h-3.5 w-3.5 shrink-0 text-[#A7B92B]" />
+                  {{ w.logs?.length || 0 }} log
+                </span>
               </p>
             </div>
             <div class="flex gap-2">
@@ -52,7 +56,10 @@
         </div>
         <Pagination :links="webhooks.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
       </div>
-      <p v-else class="empty-state empty-state-text">Belum ada webhook.</p>
+      <p v-else class="empty-state">
+        <AppIcon name="offline" class="empty-state-icon h-6 w-6" />
+        <span class="empty-state-text">Belum ada webhook.</span>
+      </p>
     </div>
 
     <div v-if="triggerResult !== null" class="mt-4 rounded-xl border-2 bg-[#263D26] p-4 text-sm">
@@ -68,6 +75,7 @@
 import { computed, reactive, ref } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useAccess } from '@/Composables/useAccess.js';
 

@@ -36,7 +36,10 @@
         </div>
         <Pagination :links="logs.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
       </div>
-      <p v-else class="empty-state empty-state-text">Belum ada backup.</p>
+      <p v-else class="empty-state">
+        <AppIcon name="materials" class="empty-state-icon h-6 w-6" />
+        <span class="empty-state-text">Belum ada backup.</span>
+      </p>
     </div>
   </AppLayout>
 </template>
@@ -45,6 +48,7 @@
 import { computed, ref } from 'vue';
 import { useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useAccess } from '@/Composables/useAccess.js';
 

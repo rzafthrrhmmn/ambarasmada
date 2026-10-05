@@ -75,7 +75,7 @@ class RouteErrorCheckTest extends TestCase
             '/finance' => null,
             '/finance/categories' => 'Admin',
             '/finance/periods' => 'Admin',
-            '/galleries' => 'Admin',
+            '/galleries' => null,
             '/guides' => null,
             '/health/safety/checks' => 'Admin',
             '/health/safety/records' => 'Admin',

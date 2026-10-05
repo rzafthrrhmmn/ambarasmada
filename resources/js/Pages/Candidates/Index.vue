@@ -6,7 +6,10 @@
         <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Pendaftar Baru</h1>
         <p class="mt-1 text-sm text-[#8fa06a]">Kelola calon anggota yang ingin bergabung.</p>
       </div>
-      <button v-if="canManage" @click="showCreate = true" class="inline-flex w-fit items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6F9435]">+ Tambah Calon</button>
+      <button v-if="canManage" @click="showCreate = true" class="btn-primary">
+        <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
+        Tambah Calon
+      </button>
     </div>
 
     <div v-if="canManage && showCreate" class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
@@ -48,8 +51,14 @@
             <div class="min-w-0">
               <p class="text-sm font-semibold text-[#f0ead8]">{{ c.nama_lengkap }}</p>
               <p class="mt-1 text-xs text-[#8fa06a]">{{ c.tempat_lahir }} • {{ c.tanggal_lahir }} • {{ c.jenis_kelamin }} • {{ c.kelas }}</p>
-              <p v-if="c.no_hp" class="text-xs text-[#8fa06a]">📱 {{ c.no_hp }}</p>
-              <p v-if="c.riwayat_pramuka" class="mt-1 text-xs text-[#8fa06a]">📋 {{ c.riwayat_pramuka }}</p>
+              <p v-if="c.no_hp" class="mt-1 inline-flex items-center gap-1.5 text-xs text-[#8fa06a]">
+                <AppIcon name="phone" class="h-3.5 w-3.5 shrink-0 text-[#A7B92B]" />
+                {{ c.no_hp }}
+              </p>
+              <p v-if="c.riwayat_pramuka" class="mt-1 inline-flex items-start gap-1.5 text-xs text-[#8fa06a]">
+                <AppIcon name="clipboard" class="mt-px h-3.5 w-3.5 shrink-0 text-[#A7B92B]" />
+                {{ c.riwayat_pramuka }}
+              </p>
             </div>
             <div class="flex flex-wrap gap-2">
               <span :class="{
@@ -68,7 +77,10 @@
         </div>
         <Pagination :links="candidates.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
       </div>
-      <p v-else class="empty-state empty-state-text">Belum ada calon anggota.</p>
+      <p v-else class="empty-state">
+        <AppIcon name="pending" class="empty-state-icon h-6 w-6" />
+        <span class="empty-state-text">Belum ada calon anggota.</span>
+      </p>
     </div>
   </AppLayout>
 </template>
@@ -77,6 +89,7 @@
 import { computed, reactive, ref } from 'vue';
 import { useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useAccess } from '@/Composables/useAccess.js';

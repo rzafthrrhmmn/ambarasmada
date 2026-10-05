@@ -447,6 +447,192 @@
     }
 }
 
+/*
+| Halaman konten
+|--------------------------------------------------------------------------
+| Sebelas halaman masih memakai kelas `empty-state` dan `empty-state-text`
+| yang tidak pernah punya aturan CSS, jadi pesan "belum ada data" muncul
+| sebagai teks polos tanpa kartu. Sisanya menulis gaya yang sama secara
+| manual, dan setiap penulisan sedikit berbeda.
+|
+| Bagian ini mengumpulkan bentuk dasar yang berulang di halaman konten:
+| kartu, isian formulir, keadaan kosong, dan isi artikel. Warnanya memakai
+| token palet hutan yang sama seperti header dan sidebar, sehingga perubahan
+| tema cukup dilakukan di satu tempat.
+|
+| Tombol dan lencana didaftarkan lewat `@utility`, bukan `@layer`, karena satu
+| varian disusun dari varian dasar (`.btn-primary` memuat `.btn`). Tailwind
+| hanya mengenali `@apply` untuk nama utility; kelas biasa di `@layer` akan
+| ditolak sebagai "unknown utility class".
+*/
+@utility btn {
+    @apply inline-flex w-fit items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400/70 disabled:pointer-events-none disabled:opacity-50;
+}
+
+@utility btn-sm {
+    @apply px-3 py-1.5 text-xs;
+}
+
+@utility btn-primary {
+    @apply btn bg-gradient-to-r from-daun-400 to-daun-500 text-white shadow-sm hover:-translate-y-0.5 hover:brightness-110 hover:shadow-lg hover:shadow-emas-400/25;
+}
+
+@utility btn-accent {
+    @apply btn bg-emas-400 font-bold text-hutan-800 shadow-sm hover:-translate-y-0.5 hover:bg-emas-500 hover:shadow-lg hover:shadow-emas-400/30;
+}
+
+@utility btn-ghost {
+    @apply btn border-2 border-daun-500 text-krem-300 hover:border-emas-400/70 hover:bg-daun-500/25 hover:text-emas-400;
+}
+
+@utility btn-danger {
+    @apply btn-sm border-2 border-[#ef4419]/50 text-[#ef4419] hover:bg-[#ef4419]/15 hover:text-white;
+}
+
+@utility btn-danger-solid {
+    @apply btn bg-[#ef4419] font-semibold text-white hover:brightness-110;
+}
+
+@utility badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold;
+}
+
+@utility badge-neutral {
+    @apply badge bg-daun-500/20 text-emas-400;
+}
+
+@utility badge-pending {
+    @apply badge bg-emas-400/20 text-emas-400;
+}
+
+@utility badge-approved {
+    @apply badge bg-daun-400/20 text-daun-400;
+}
+
+@utility badge-rejected {
+    @apply badge bg-[#ef4419]/20 text-[#ef4419];
+}
+
+@layer components {
+    /* Panel kaca untuk nav dan kartu guest. */
+    .glass-panel {
+        @apply bg-hutan-800/60 backdrop-blur-md border border-daun-500/20 rounded-2xl;
+    }
+
+    .section-eyebrow {
+        @apply text-xs font-bold uppercase tracking-widest text-daun-400;
+    }
+
+    .text-gradient-gold {
+        background: linear-gradient(to right, var(--color-krem-100), var(--color-krem-300), var(--color-daun-400));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+
+    /* Kepala halaman: label kecil, judul, dan keterangan. */
+    .page-head {
+        @apply mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end;
+    }
+
+    .page-eyebrow {
+        @apply text-sm font-medium text-emas-400;
+    }
+
+    .page-title {
+        @apply mt-1 text-2xl font-bold text-krem-100;
+    }
+
+    .page-subtitle {
+        @apply mt-1 text-sm text-lumut-400;
+    }
+
+    /* Kartu. `.card-accent` dipakai bagian yang jadi focal point halaman. */
+    .card {
+        @apply relative overflow-hidden rounded-2xl border-2 border-daun-500/40 bg-hutan-600 p-5 shadow-lg transition duration-200 hover:border-daun-400/60;
+    }
+
+    .card-accent {
+        @apply relative overflow-hidden rounded-2xl border-2 border-daun-400/40 bg-gradient-to-br from-hutan-600 to-hutan-700 p-5 shadow-lg transition duration-200 hover:-translate-y-0.5 hover:border-emas-400/70 hover:shadow-xl hover:shadow-emas-400/15;
+    }
+
+    .card-title {
+        @apply font-extrabold text-emas-400;
+    }
+
+    .card-body {
+        @apply text-sm text-krem-300;
+    }
+
+    .card-muted {
+        @apply text-xs text-lumut-400;
+    }
+
+    /* Kilau dekoratif di pojok kartu. Hanya berubah saat kursor lewat di atas
+       kartu, jadi tidak mengganggu saat dibaca dengan layar sentuh. */
+    .card-glow {
+        @apply pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-emas-400/10 blur-2xl transition duration-300;
+    }
+
+    .group:hover .card-glow {
+        @apply scale-125;
+    }
+
+    /* Isian formulir. Satu aturan untuk input, select, dan textarea supaya
+       tinggi serta warna fokus tidak berbeda antar field. */
+    .field {
+        @apply w-full rounded-lg border-2 border-daun-500/60 bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none transition focus:border-emas-400 focus:bg-hutan-900;
+    }
+
+    .field::placeholder {
+        @apply text-lumut-400/90;
+    }
+
+    .field-label {
+        @apply block text-xs font-medium text-krem-300;
+    }
+
+    /* Keadaan kosong. Ikon opsional lewat `.empty-state-icon`, teksnya lewat
+       `.empty-state-text` supaya pesan pendek tetap bisa tampil sendirian. */
+    .empty-state {
+        @apply col-span-full flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-daun-500/35 bg-hutan-600/60 px-6 py-10 text-center;
+    }
+
+    /* Ikon selalu `inline-flex`: kalau baru saja ada di keadaan tertentu, isi
+       kartu kosong tidak melompat satu baris. */
+    .empty-state-icon {
+        @apply inline-flex h-12 w-12 items-center justify-center rounded-full border-2 border-daun-500/30 bg-hutan-800 text-lumut-400;
+    }
+
+    .empty-state-text {
+        @apply text-sm font-medium text-lumut-400;
+    }
+
+    /* Baris label/nilai di dalam kartu detail. */
+    .meta-row {
+        @apply flex items-start gap-2 text-xs text-lumut-400;
+    }
+
+    .meta-icon {
+        @apply mt-px h-3.5 w-3.5 shrink-0 text-daun-400;
+    }
+
+    /*
+    | Isi artikel
+    |--------------------------------------------------------------------------
+    | Satu gaya untuk seluruh paragraf. Jarak antarparagraf diurus oleh `gap`
+    | di dalam `.prose-artikel`, sedangkan `whitespace-pre-line` menjaga baris
+    | baru yang diketik penulis tetap terbaca.
+    */
+    .prose-artikel {
+        @apply flex flex-col gap-4 text-sm leading-7 text-krem-300;
+    }
+
+    .prose-artikel p {
+        @apply whitespace-pre-line;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
