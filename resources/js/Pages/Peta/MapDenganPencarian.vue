@@ -499,9 +499,99 @@ title="Cetak PNG peta yang sedang terlihat"
         </div>
       </div>
 
-      <!-- Map Layout Options -->
-      <div class="rounded-lg border border-[#6F9435]/30 bg-[#335233] p-4">
-        <label class="block text-xs font-medium text-[#d4dc9a] mb-3">Komponen Peta Offline</label>
+<!-- Tampilan Peta: berlaku untuk peta utama, preview di atas, dan PNG yang
+ diunduh. Ketiganya harus ikut berubah karena PNG diambil dari kanvas utama,
+ jadi menyembunyikan kontur hanya di preview akan membuat berkas unduhan
+ tetap berisi kontur. -->
+<div class="rounded-lg border border-[#6F9435]/30 bg-[#335233] p-4">
+<label class="block text-xs font-medium text-[#d4dc9a] mb-3">Tampilan Peta</label>
+<div class="space-y-2">
+<label class="flex items-center gap-2 cursor-pointer">
+<input
+type="checkbox"
+:checked="showContour"
+@change="toggleLayer"
+class="rounded border-[#6F9435] text-[#A7B92A] focus:ring-[#A7B92A]"
+/>
+<span class="text-sm text-[#f0ead8]">Garis Kontur</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input
+type="checkbox"
+:checked="showHillshade"
+@change="toggleHillshade"
+class="rounded border-[#6F9435] text-[#A7B92A] focus:ring-[#A7B92A]"
+/>
+<span class="text-sm text-[#f0ead8]">Hillshade</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input
+type="checkbox"
+:checked="showDistrictLabels"
+@change="toggleDistrictLabels"
+class="rounded border-[#6F9435] text-[#A7B92A] focus:ring-[#A7B92A]"
+/>
+<span class="text-sm text-[#f0ead8]">Label Kabupaten/Kota</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input
+type="checkbox"
+:checked="showContourLabels"
+@change="toggleContourLabels"
+class="rounded border-[#6F9435] text-[#A7B92A] focus:ring-[#A7B92A]"
+/>
+<span class="text-sm text-[#f0ead8]">Label Kontur</span>
+</label>
+</div>
+<p class="mt-2 text-xs text-[#8fa06a]">
+Berlaku untuk peta utama, preview, dan PNG yang diunduh.
+</p>
+</div>
+
+<div class="rounded-lg border border-[#6F9435]/30 bg-[#335233] p-4">
+<label for="unduh-orientasi" class="block text-xs font-medium text-[#d4dc9a] mb-2">Format Lembar PNG</label>
+<select
+id="unduh-orientasi"
+v-model="printOrientation"
+class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-2.5 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
+>
+<option v-for="option in SHEET_ORIENTATION_LIST" :key="option.value" :value="option.value">
+{{ option.label }}
+</option>
+</select>
+<p class="mt-2 text-xs text-[#8fa06a]">
+Berlaku untuk tombol Cetak dan untuk PNG yang diunduh.
+</p>
+<!-- Pratinjau format. Kotak digambar dengan rasio sisi lembar yang benar-benar dipilih,
+sehingga potrait terlihat memanjang dan landscape terlihat mendatar.
+Angkanya di bawah diambil dari fungsi yang sama dengan penggambar lembar. -->
+<div class="mt-3 flex items-start gap-4">
+<div
+class="flex shrink-0 flex-col overflow-hidden rounded border-2 border-[#A7B92A]/70 bg-[#f0ead8]"
+:style="{
+width: printFormatPreview.height <= printFormatPreview.width ? '160px' : '110px',
+aspectRatio: `${printFormatPreview.width} / ${printFormatPreview.height}`,
+}"
+aria-hidden="true"
+>
+<div class="bg-[#A7B92A]/50" :style="{ height: '14%' }"></div>
+<div class="flex-1 bg-[#c9d6b0]"></div>
+<div class="bg-[#8fa06a]/40" :style="{ height: '7%' }"></div>
+</div>
+<div class="text-xs text-[#d4dc9a]">
+<p class="font-semibold text-[#EDD330]">{{ printFormatPreview.label }}</p>
+<p class="mt-1">Lembar: {{ printFormatPreview.width }} &times; {{ printFormatPreview.height }}</p>
+<p>Berkas PNG: {{ printFormatPreview.outputWidth }} &times; {{ printFormatPreview.outputHeight }} piksel</p>
+<p class="mt-1 text-[#8fa06a]">
+Area peta dipatok supaya judul dan kaki halaman tetap muat.
+</p>
+</div>
+</div>
+</div>
+
+<!-- Map Layout Options -->
+<div class="rounded-lg border border-[#6F9435]/30 bg-[#335233] p-4">
+<label class="block text-xs font-medium text-[#d4dc9a] mb-3">Komponen Peta Offline</label>
         <div class="space-y-2">
           <label class="flex items-center gap-2 cursor-pointer">
             <input
@@ -566,7 +656,7 @@ import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import { getActiveServiceWorker, SW_PROTOCOL } from '@/ServiceWorker.js';
-import { useMapPngExport } from '@/Composables/useMapPngExport.js';
+import { useMapPngExport, SHEET_ORIENTATION_LIST, describeSheet } from '@/Composables/useMapPngExport.js';
 import { BASEMAPS, PRINT_BASEMAP, basemapAttribution } from '@/basemaps.js';
 
 const props = defineProps({
@@ -629,6 +719,50 @@ const includeNorthArrow = ref(true);
 const includeLegend = ref(true);
 const includeHistogram = ref(true);
 const includeGrid = ref(true);
+
+/**
+ * Format lembar PNG yang dipilih pengguna.
+ *
+ * Satu untuk tombol Cetak dan untuk unduhan offline, supaya keduanya tidak
+ * bisa keluar dengan format berbeda hanya karena salah satunya lupa mengirim
+ * pilihannya.
+ */
+const printOrientation = ref('landscape');
+
+/**
+ * Pratinjau format lembar yang sedang dipilih.
+ *
+ * Angka dan rasionya berasal dari describeSheet(), jadi ukurannya sama dengan
+ * berkas yang nanti diunduh. Pratinjau yang dikarang sendiri di halaman akan
+ * menyimpang begitu ada format baru dan justru bikin pengguna salah paham,
+ * persis yang pratinjau ini mau cegah.
+ */
+const printFormatPreview = computed(() => describeSheet(printOrientation.value));
+
+/**
+ * Logo ambalan yang dicetak di header lembar PNG.
+ *
+ * Sumbernya sama persis dengan yang dipakai AppLayout, supaya logo di header
+ * PNG tidak berbeda dengan logo di header aplikasi.
+ */
+const logoUrl = computed(() => page.props.ambalan?.logo_url || '/images/Logo_Ambalan.png');
+
+/**
+ * Satu-satunya sumber pilihan komponen cetak.
+ *
+ * Dipakai oleh tombol Cetak dan oleh unduhan offline. Keduanya sebelumnya
+ * punya jalurnya sendiri: tombol Cetak tidak mengirim apa pun, jadi
+ * buildMapPng memakai DEFAULT_COMPONENTS yang histogram dan grid-nya mati.
+ * Akibatnya PNG "tampilan saat ini" diam-diam berbeda dari berkas unduhan
+ * offline, padahal yang dimaksud dua hal itu sama.
+ */
+const printComponents = computed(() => ({
+  scaleBar: includeScaleBar.value,
+  northArrow: includeNorthArrow.value,
+  legend: includeLegend.value,
+  histogram: includeHistogram.value,
+  grid: includeGrid.value,
+}));
 
 // Map controls state.
 // Bilah skala dan kompas memakai kontrol bawaan MapLibre, jadi tidak ada
@@ -872,25 +1006,53 @@ function calculateArea(coords) {
   return Math.abs(area * 6371000 * 6371000 * Math.PI / 180 / 2);
 }
 
-function toggleLayer() {
-  if (!map.value) return;
-  showContour.value = !showContour.value;
-  const layerId = 'garis-kontur';
-  if (map.value.getLayer(layerId)) {
-    map.value.setLayoutProperty(layerId, 'visibility', showContour.value ? 'visible' : 'none');
-  } else {
-    // Layer not ready yet, wait for map load
-    if (map.value.loaded()) {
-      // Map already loaded but layer not found - log error
-      console.warn(`Layer ${layerId} not found on loaded map`);
-    } else {
-      map.value.once('load', () => {
-        if (map.value?.getLayer(layerId)) {
-          map.value.setLayoutProperty(layerId, 'visibility', showContour.value ? 'visible' : 'none');
-        }
-      });
+/**
+ * Pasangan layer: peta utama, lalu layer kembarannya di preview dialog.
+ *
+ * Preview memakai peta MapLibre kedua, jadi satu tombol tidak boleh hanya
+ * mengubah peta utama. Kalau tidak, preview tetap menampilkan kontur yang
+ * sudah disembunyikan di kanvas, dan PNG yang diunduh berbeda dari yang
+ * dilihat pengguna.
+ */
+const MINI_LAYER_MIRROR = {
+  'garis-kontur': 'mini-kontur',
+  'hillshade-layer': 'mini-hillshade',
+  'kabupaten-labels': 'mini-kabupaten-labels',
+  'kontur-labels': 'mini-kontur-labels',
+};
+
+function setLayerVisibility(layerId, visible) {
+  const visibility = visible ? 'visible' : 'none';
+
+  const apply = (target, id) => {
+    if (target?.getLayer?.(id)) {
+      target.setLayoutProperty(id, 'visibility', visibility);
+      return true;
     }
+
+    return false;
+  };
+
+  const mainDone = apply(map.value, layerId);
+
+  const miniLayerId = MINI_LAYER_MIRROR[layerId];
+  const miniDone = miniLayerId ? apply(miniMap.value, miniLayerId) : true;
+
+  // Layer belum ada karena peta masih disusun. Keadaannya sudah tersimpan di
+  // ref, jadi cukup tunggu peta selesai lalu terapkan lagi. Tanpa ini toggles
+  // yang ditekan sebelum peta selesai akan hilang begitu style selesai diurai.
+  if (!mainDone && map.value && !map.value.loaded()) {
+    map.value.once('load', () => setLayerVisibility(layerId, visible));
   }
+
+  if (!miniDone && miniMap.value && !miniMap.value.loaded()) {
+    miniMap.value.once('load', () => setLayerVisibility(layerId, visible));
+  }
+}
+
+function toggleLayer() {
+  showContour.value = !showContour.value;
+  setLayerVisibility('garis-kontur', showContour.value);
 }
 
 function highlightKabupaten(idKab) {
@@ -1057,7 +1219,7 @@ function initMiniMap() {
   miniMapLoading.value = true;
   miniMapError.value = '';
 
-  import('../../maplibre').then(({ Map, addProtocol }) => {
+  import('../../maplibre').then(({ Map, addProtocol, GLYPHS_URL }) => {
     import('pmtiles').then(({ Protocol }) => {
       const protocol = new Protocol();
       addProtocol('pmtiles', protocol.tile);
@@ -1067,6 +1229,10 @@ function initMiniMap() {
           container: miniMapContainer.value,
           style: {
             version: 8,
+            // Wajib karena preview punya layer symbol. Tanpa glyphs MapLibre gagal
+            // menyusun shader teks, render loop berhenti, dan preview hanya
+            // garis kontur tanpa label apa pun.
+            glyphs: GLYPHS_URL,
             sources: {
               // Preview tanpa basemap hanya menampilkan garis kontur dan
               // batas wilayah di atas latar kosong, jadi bentuk wilayahnya
@@ -1075,6 +1241,15 @@ function initMiniMap() {
               'mini-basemap': BASEMAPS.osm,
               'kontur': { type: 'vector', url: pmtilesSourceUrl.value },
               'batas': { type: 'geojson', data: geojsonUrl.value },
+              // DEM yang sama dengan peta utama, supaya hillshade di preview
+              // sama persis dengan yang terlihat di kanvas utama.
+              'mini-hillshade-tiles': {
+                type: 'raster-dem',
+                tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+                encoding: 'terrarium',
+                tileSize: 256,
+                maxzoom: 14,
+              },
               // Source kecamatan dibuat bersyarat supaya preview tetap jalan
               // di pemasangan yang belum punya berkas batas kecamatan.
               ...(hasKecamatanGeojson.value
@@ -1083,9 +1258,55 @@ function initMiniMap() {
             },
             layers: [
               { id: 'mini-basemap-layer', type: 'raster', source: 'mini-basemap' },
+              {
+                id: 'mini-hillshade',
+                type: 'hillshade',
+                source: 'mini-hillshade-tiles',
+                layout: { visibility: showHillshade.value ? 'visible' : 'none' },
+                paint: {
+                  'hillshade-illumination-direction': 315,
+                  'hillshade-illumination-anchor': 'map',
+                  'hillshade-exaggeration': 0.5,
+                  'hillshade-shadow-color': 'rgba(0, 0, 0, 0.5)',
+                  'hillshade-highlight-color': 'rgba(255, 255, 255, 0.5)',
+                  'hillshade-accent-color': 'rgba(140, 81, 10, 0.3)',
+                },
+              },
               { id: 'mini-kontur', type: 'line', source: 'kontur', 'source-layer': 'kontur',
-                layout: { 'line-join': 'round', 'line-cap': 'round' },
-                paint: { 'line-color': '#8c510a', 'line-width': 0.8 } },
+                layout: {
+                  'line-join': 'round',
+                  'line-cap': 'round',
+                  visibility: showContour.value ? 'visible' : 'none',
+                },
+                paint: {
+                  'line-color': '#8c510a',
+                  'line-width': [
+                    'case',
+                    ['==', ['%', ['get', 'ELEV'], 50], 0],
+                    1.8,
+                    0.8,
+                  ],
+                  'line-opacity': 0.8,
+                } },
+              { id: 'mini-kontur-labels', type: 'symbol', source: 'kontur', 'source-layer': 'kontur',
+                filter: ['==', ['%', ['get', 'ELEV'], 50], 0],
+                layout: {
+                  visibility: showContourLabels.value ? 'visible' : 'none',
+                  'symbol-placement': 'line',
+                  'text-field': ['concat', ['get', 'ELEV'], ' m'],
+                  'text-font': ['Open Sans Regular'],
+                  'text-size': 10,
+                },
+                // Warna dan halo adalah paint, bukan layout. MapLibre menolak
+                // seluruh style kalau satu properti diletakkan di blok yang salah,
+                // lalu preview tidak menggambar apa pun. Nilainya disamakan dengan
+                // layer kontur peta utama supaya preview tidak bohong soal tampilan.
+                paint: {
+                  'text-color': '#8c510a',
+                  'text-halo-color': '#fff',
+                  'text-halo-width': 1.5,
+                  'text-halo-blur': 1,
+                } },
               ...(hasKecamatanGeojson.value
                 ? [{ id: 'mini-kecamatan', type: 'line', source: 'kecamatan',
                     paint: { 'line-color': '#0f766e', 'line-width': 0.6, 'line-opacity': 0.7 } }]
@@ -1099,6 +1320,22 @@ function initMiniMap() {
                 : []),
               { id: 'mini-batas', type: 'line', source: 'batas',
                 paint: { 'line-color': '#2563eb', 'line-width': 1, 'line-dasharray': [1, 1] } },
+              { id: 'mini-kabupaten-labels', type: 'symbol', source: 'batas',
+                filter: ['==', ['get', 'id_kab'], ['get', 'id_kab']],
+                layout: {
+                  visibility: showDistrictLabels.value ? 'visible' : 'none',
+                  'text-field': ['get', 'nama_kab'],
+                  'text-font': ['Open Sans Bold', 'Open Sans Regular'],
+                  'text-size': 11,
+                  'text-anchor': 'center',
+                  'text-allow-overlap': true,
+                },
+                paint: {
+                  'text-color': '#1f2937',
+                  'text-halo-color': '#fff',
+                  'text-halo-width': 2,
+                  'text-halo-blur': 1,
+                } },
             ],
           },
           center: [(west + east) / 2, (south + north) / 2],
@@ -1581,31 +1818,19 @@ async function initMap() {
 // Toggle hillshade
 function toggleHillshade() {
   showHillshade.value = !showHillshade.value;
-  if (!map.value) return;
-  const layerId = 'hillshade-layer';
-  if (map.value.getLayer(layerId)) {
-    map.value.setLayoutProperty(layerId, 'visibility', showHillshade.value ? 'visible' : 'none');
-  }
+  setLayerVisibility('hillshade-layer', showHillshade.value);
 }
 
 // Toggle district labels
 function toggleDistrictLabels() {
   showDistrictLabels.value = !showDistrictLabels.value;
-  if (!map.value) return;
-  const layerId = 'kabupaten-labels';
-  if (map.value.getLayer(layerId)) {
-    map.value.setLayoutProperty(layerId, 'visibility', showDistrictLabels.value ? 'visible' : 'none');
-  }
+  setLayerVisibility('kabupaten-labels', showDistrictLabels.value);
 }
 
 // Toggle contour labels
 function toggleContourLabels() {
   showContourLabels.value = !showContourLabels.value;
-  if (!map.value) return;
-  const layerId = 'kontur-labels';
-  if (map.value.getLayer(layerId)) {
-    map.value.setLayoutProperty(layerId, 'visibility', showContourLabels.value ? 'visible' : 'none');
-  }
+  setLayerVisibility('kontur-labels', showContourLabels.value);
 }
 
 // Change basemap
@@ -1905,13 +2130,13 @@ function deleteBookmark(index) {
  *
  * @param {{area?: {name: string, label: string}, region?: object, components?: object}} options
  */
-async function printMapPng({ area = null, region = null, components = null, matchViewport = false } = {}) {
+async function printMapPng({ area = null, region = null, components = printComponents.value, matchViewport = false } = {}) {
   if (!map.value) return { ok: false };
 
   const wilayah = selectedWilayah.value;
 
   // matchViewport menang atas wilayah yang sedang dipilih. Tombol Cetak
-  // promise isinya sama dengan yang terlihat di kanvas utama, jadi kalau
+  // promised isinya sama dengan yang terlihat di kanvas utama, jadi kalau
   // ada kabupaten yang dipilih, isinya tetap bukan kabupaten itu.
   const fallbackName = matchViewport ? 'Tampilan Saat Ini' : wilayah?.name ?? 'Peta Kontur Sulawesi Selatan';
   const fallbackLabel = matchViewport
@@ -1926,6 +2151,8 @@ async function printMapPng({ area = null, region = null, components = null, matc
     subtitle: label,
     sources: sourceCredit.value,
     filename: `peta-kontur-${slugify(name)}.png`,
+    orientation: printOrientation.value,
+    logo: logoUrl.value,
     ...(matchViewport ? { matchViewport: true } : {}),
     ...(region
       ? { region, regionMaxZoom: Number.isFinite(region.maxZoom) ? region.maxZoom : null }
@@ -2190,13 +2417,7 @@ async function downloadOffline() {
   const areaName = wilayah?.name ?? 'Sulawesi Selatan';
   const areaLabel = wilayah?.label ?? 'Provinsi Sulawesi Selatan';
 
-  const components = {
-    scaleBar: includeScaleBar.value,
-    northArrow: includeNorthArrow.value,
-    legend: includeLegend.value,
-    histogram: includeHistogram.value,
-    grid: includeGrid.value,
-  };
+  const components = printComponents.value;
 
   const bbox = currentBBox.value;
 

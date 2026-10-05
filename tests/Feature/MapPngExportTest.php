@@ -21,12 +21,31 @@ class MapPngExportTest extends TestCase
 {
     private function module(): string
     {
-        return file_get_contents(base_path('resources/js/Composables/useMapPngExport.js'));
+        return $this->sumber('resources/js/Composables/useMapPngExport.js');
     }
 
     private function petaIndex(): string
     {
-        return file_get_contents(base_path('resources/js/Pages/Peta/Index.vue'));
+        return $this->sumber('resources/js/Pages/Peta/Index.vue');
+    }
+
+    /**
+     * Baca berkas sumber dengan akhir baris dinormalkan ke LF.
+     *
+     * Halaman peta dan modul ekspor PNG dibaca apa adanya supaya pemeriksaan
+     * kontrak bisa menempel pada kode yang benar-benar dijalankan. Pemeriksaan
+     * itu juga mencocokkan potongan beberapa baris, jadi CRLF di working copy
+     * Windows akan membuatnya gagal atau, untuk negated assertion, lolos tanpa
+     * benar-benar memeriksa apa pun. Git sudah menormalkan LF saat commit
+     * (.gitattributes eol=lf), jadi menormalkan di sini hanya membuang
+     * perbedaan yang memang tidak pernah masuk ke repositori.
+     */
+    private function sumber(string $relatif): string
+    {
+        $source = file_get_contents(base_path($relatif));
+        $this->assertIsString($source, "Tidak bisa membaca {$relatif}.");
+
+        return str_replace("\r\n", "\n", $source);
     }
 
     /**
@@ -43,8 +62,8 @@ class MapPngExportTest extends TestCase
     private function petaPages(): array
     {
         return [
-            'Peta/Index' => file_get_contents(base_path('resources/js/Pages/Peta/Index.vue')),
-            'Peta/MapDenganPencarian' => file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue')),
+            'Peta/Index' => $this->sumber('resources/js/Pages/Peta/Index.vue'),
+            'Peta/MapDenganPencarian' => $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue'),
         ];
     }
 
@@ -159,9 +178,18 @@ class MapPngExportTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'const titleLines = wrapText(ctx, title, mapWidth);',
+            'const titleLines = wrapText(ctx, title, textWidth);',
             $module,
-            'Judul harus dipecah menurut lebar konten.'
+            'Judul harus dipecah menurut lebar konten yang tersisa.'
+        );
+
+        // Lebar kontennya boleh lebih kecil dari lebar lembar karena logo
+        // memakan sebagian header. Kalau judulnya dipecah menurut lebar penuh,
+        // baris kedua dan seterusnya mulai tepat di atas logo.
+        $this->assertStringContainsString(
+            'textWidth = mapWidth - (logoWidth + gap);',
+            $module,
+            'Lebar isi header harus dikurangi ruang logo, bukan tetap sebesar lembar.'
         );
 
         // Subjudul memuat koordinat, zoom, dan skala sekaligus, jadi bisa panjang.
@@ -204,7 +232,7 @@ class MapPngExportTest extends TestCase
         // mengetahui rasio sisi kotak peta lebih dulu, tanpa menghitungnya
         // ulang dengan rumus yang bisa meleset.
         $this->assertStringContainsString(
-            'const { mapHeight } = measureSheet({ title, subtitle: subtitleText });',
+            'const sheet = measureSheet({ title, subtitle: subtitleText, orientation });',
             $module,
             'buildMapPng harus memakai tinggi peta dari measureSheet, bukan menghitungnya sendiri.'
         );
@@ -213,12 +241,12 @@ class MapPngExportTest extends TestCase
         // Kalau tidak, yang diukur dan yang digambar berbeda dan isi bagian
         // bawah terpotong.
         $this->assertStringContainsString(
-            'const available = SHEET_HEIGHT - MARGIN * 2 - headerHeight - FOOTER_GAP - FOOTER_HEIGHT;',
+            'const available = height - MARGIN * 2 - headerHeight - FOOTER_GAP - FOOTER_HEIGHT;',
             $module,
             'Tinggi area peta harus dihitung dari sisa lembar, bukan dari isi teks.'
         );
         $this->assertStringContainsString(
-            'const mapHeight = Math.round(Math.min(Math.max(available, MAP_MIN_HEIGHT), MAP_MAX_HEIGHT));',
+            'const mapHeight = Math.round(Math.min(Math.max(available, MAP_MIN_HEIGHT), maxMapHeight));',
             $module,
             'Tinggi area peta harus dibatasi supaya judul dan kaki halaman tetap muat.'
         );
@@ -322,15 +350,20 @@ class MapPngExportTest extends TestCase
         $this->assertGreaterThan(
             (int) $tinggi[1],
             (int) $lebar[1],
-            'Lembar harus landscape: lebar lebih besar dari tinggi.'
+            'Lembar bawaan harus landscape: lebar lebih besar dari tinggi.'
         );
 
-        // Tinggi kanvas harus diambil dari konstanta lembar, bukan dihitung
-        // dari isi. Kalau dihitung dari isi, format keluar tidak seragam.
+        // Bawaannya harus menunjuk format yang benar-benar ada, kalau tidak
+        // pemakai yang tidak memilih format akan mendapat pengukuran diam-diam.
         $this->assertStringContainsString(
-            'const height = SHEET_HEIGHT;',
+            "const DEFAULT_ORIENTATION = 'landscape';",
             $module,
-            'Tinggi kanvas harus memakai tinggi lembar yang dipatok.'
+            'Format bawaan harus landscape dan harus ada di daftar format.'
+        );
+        $this->assertStringContainsString(
+            "landscape: { label: 'Landscape 16:9', width: SHEET_WIDTH, height: SHEET_HEIGHT },",
+            $module,
+            'Format landscape bawaan harus memakai konstanta lembar yang dipatok.'
         );
 
         // Kode lama yang mengukur isi tidak boleh kembali.
@@ -615,7 +648,7 @@ class MapPngExportTest extends TestCase
             );
         }
 
-        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+        $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
 
         // Urutan menentukan isi berkas: snapshot PNG diambil dari kanvas peta
         // yang sedang tampil, jadi cetaknya harus sebelum paket tile diminta ke
@@ -695,7 +728,7 @@ class MapPngExportTest extends TestCase
 
     public function test_peta_offline_lama_dibuang_karena_isinya_sudah_usang(): void
     {
-        $sw = file_get_contents(base_path('public/sw.js'));
+        $sw = $this->sumber('public/sw.js');
         $this->assertIsString($sw);
 
         // Cache OFFLINE_HTML_CACHE sengaja tidak ikut CACHE_VERSION supaya peta
@@ -784,7 +817,7 @@ class MapPngExportTest extends TestCase
             'Jalur keluar lebih awal juga harus menjelaskan kenapa gagal.'
         );
 
-        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+        $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
 
         $this->assertStringContainsString(
             'PNG peta gagal: ${png.error',
@@ -850,7 +883,7 @@ class MapPngExportTest extends TestCase
         );
 
         // Bilah skala pada peta offline punya aturan yang sama.
-        $sw = file_get_contents(base_path('public/sw.js'));
+        $sw = $this->sumber('public/sw.js');
         $this->assertIsString($sw);
         // Kode lama memakai find() pada daftar menaik dan karena itu selalu
         // memilih 1 meter. Catatan wrongs-nya masih ada di komentar, jadi yang
@@ -908,7 +941,7 @@ class MapPngExportTest extends TestCase
      */
     public function test_template_cetak_menghasilkan_html_yang_jalan(): void
     {
-        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+        $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
         $this->assertIsString($pencarian);
 
         $this->assertStringNotContainsString(
@@ -941,7 +974,7 @@ class MapPngExportTest extends TestCase
 
     public function test_preview_wilayah_punya_basemap(): void
     {
-        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+        $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
 
         // Preview yang hanya berisi kontur dan batas wilayah di atas latar
         // kosong tidak memberi informasi: pengguna tidak bisa memastikan
@@ -962,9 +995,14 @@ class MapPngExportTest extends TestCase
             'Layer basemap harus digambar lebih dulu supaya kontur menimpanya.'
         );
 
+        // Pencarian dibatasi pada definisi layer ("id: ..."), bukan nama layer
+        // belaka. Peta pantulan sekarang menyebut 'mini-kontur' di modul
+        // pemirrornya, dan kemunculan pertama nama itu ada jauh di atas style,
+        // sehingga pencarian longgar membandingkan posisi yang tidak berkaitan
+        // sama sekali.
         $this->assertLessThan(
-            strpos($pencarian, "'mini-kontur'"),
-            strpos($pencarian, "'mini-basemap-layer'"),
+            strpos($pencarian, "id: 'mini-kontur'"),
+            strpos($pencarian, "id: 'mini-basemap-layer'"),
             'Basemap harus berada di bawah layer kontur, bukan menutupinya.'
         );
     }
@@ -984,7 +1022,7 @@ class MapPngExportTest extends TestCase
     public function test_png_mengikuti_wilayah_yang_dipilih_bukan_viewport(): void
     {
         $module = $this->module();
-        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+        $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
 
         // Penyesuaian kamera harus pakai fitBounds, satu-satunya cara MapLibre
         // yang memperhitungkan ukuran wadah dan rasio aspek sekaligus.
@@ -1044,7 +1082,7 @@ class MapPngExportTest extends TestCase
 
     public function test_service_worker_tidak_membuat_angka_elevasi_palsu(): void
     {
-        $sw = file_get_contents(base_path('public/sw.js'));
+        $sw = $this->sumber('public/sw.js');
         $this->assertIsString($sw);
 
         $this->assertStringNotContainsString(
@@ -1091,7 +1129,7 @@ class MapPngExportTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'const scale = sheetScale();',
+            'const scale = sheetScale(sheet);',
             $module,
             'Skala yang dipakai harus lewat sheetScale() supaya jaring pengaman berlaku.'
         );
@@ -1122,38 +1160,56 @@ class MapPngExportTest extends TestCase
             'Permukaan ekspor harus dihitung dari rasio sisi kotak peta.'
         );
 
+        // Kanvas dibetulkan tanpa syarat. Kalau ukurannya dibiarkan apa adanya,
+        // kanvas ponsel yang cuma beberapa ratus piksel menghasilkan bitmap
+        // sekitar 1440 x 2000 untuk kotak cetak yang butuh 2712 x 3279, jadi
+        // petanya buram dan sebagian lebar berkas terbuang jadi pita abu-abu.
         $this->assertStringContainsString(
-            '< targetAspect * ASPECT_TOLERANCE',
+            'const width = EXPORT_SURFACE_WIDTH;',
             $module,
-            'Kanvas yang lebih portrait dari kotaknya harus dibetulkan ukurannya.'
+            'Kanvas peta harus selalu memakai lebar permukaan ekspor.'
         );
 
         $this->assertStringContainsString(
-            'const width = reshape ? EXPORT_SURFACE_WIDTH : currentWidth;',
-            $module,
-            'Saat dibetulkan, kanvas memakai lebar ekspor yang sudah ditentukan.'
-        );
-
-        $this->assertStringContainsString(
-            'const height = reshape ? Math.round(EXPORT_SURFACE_WIDTH / targetAspect) : currentHeight;',
+            'const height = Math.round(EXPORT_SURFACE_WIDTH / targetAspect);',
             $module,
             'Tinggi kanvas harus mengikuti rasio kotak peta, bukan rasio layar.'
         );
 
-        // Rasio piksel harus memakai nilai yang lebih besar dari plafon dan rasio
-        // yang sedang dipakai. Urutan min(max(...)) memilih nilai terkecil, dan
-        // di komputer dengan rasio piksel 1 hasilnya tetap 1 sehingga ketajaman
-        // tidak pernah bertambah sama sekali.
+        // Rasio piksel harus memakai plafon yang memperhitungkan sisi dan luas
+        // kanvas. Dua kesalahan lama tidak boleh kembali:
+        // min(max(...)) selalu memilih nilai terkecil sehingga ketajaman tidak
+        // pernah bertambah, dan max(ratioSaatIni, plafon) membiarkan perangkat
+        // beresolusi tinggi melewati plafon dan kehabisan memori GPU.
         $this->assertStringContainsString(
-            'Math.max(currentRatio, ceiling)',
+            'const ratio = Math.max(1, ceiling);',
             $module,
-            'Rasio piksel ekspor harus mengambil nilai terbesar, bukan terkecil.'
+            'Rasio piksel ekspor harus memakai plafon yang sudah memperhitungkan batas perangkat.'
         );
 
         $this->assertStringNotContainsString(
             'Math.min(ceiling, Math.max(currentRatio',
             $module,
             'Urutan min(max(...)) membuat rasio ekspor selalu jatuh ke nilai terkecil.'
+        );
+
+        $this->assertStringNotContainsString(
+            'Math.max(currentRatio, ceiling)',
+            $module,
+            'Rasio perangkat tidak boleh melewati plafon; di potrait dpr 3 hasilnya 21 juta piksel.'
+        );
+
+        // Batas luas inilah yang menjaga format potrait tetap muat di GPU.
+        $this->assertStringContainsString(
+            'const EXPORT_CANVAS_MAX_PIXELS = 12_000_000;',
+            $module,
+            'Kanvas WebGL perlu batas luas, bukan cuma batas sisi terpanjang.'
+        );
+
+        $this->assertStringContainsString(
+            'Math.sqrt(EXPORT_CANVAS_MAX_PIXELS / Math.max(width * height, 1))',
+            $module,
+            'Plafon rasio piksel harus ikut memperhitungkan luas kanvas.'
         );
     }
 
@@ -1209,7 +1265,7 @@ class MapPngExportTest extends TestCase
      */
     public function test_peta_utama_menulis_batas_kanvas_webgl(): void
     {
-        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+        $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
 
         $this->assertStringContainsString(
             'maxCanvasSize: [4096, 4096],',
@@ -1226,7 +1282,7 @@ class MapPngExportTest extends TestCase
      */
     public function test_tombol_cetak_mencetak_png_dari_kanvas_utama(): void
     {
-        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+        $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
         $module = $this->module();
 
         $this->assertStringContainsString(
@@ -1309,7 +1365,7 @@ class MapPngExportTest extends TestCase
      */
     public function test_halaman_cetak_tidak_mencetak_pdf_tanpa_peta(): void
     {
-        $pencarian = file_get_contents(base_path('resources/js/Pages/Peta/MapDenganPencarian.vue'));
+        $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
 
         $this->assertStringContainsString(
             "map.once('idle', cetakSekarang);",
@@ -1341,6 +1397,240 @@ class MapPngExportTest extends TestCase
             'if (printed) return;',
             $pencarian,
             'Cetak hanya boleh berjalan sekali walau idle dan batas waktunya sama-sama datang.'
+        );
+    }
+
+    /**
+     * Format lembar harus bisa dipilih pengguna, dan pratinjaunya harus jujur.
+     *
+     * Tanpa pratinjau, "potrait" dan "landscape" hanya istilah yang artinya
+     * berbeda antara pemakai dan sistem, dan hasilnya disappoint karena keduanya
+     * tidak pernah dibandingkan.
+     */
+    public function test_pemakai_bisa_memilih_format_lembar_dan_melihat_pratinjaunya(): void
+    {
+        $module = $this->module();
+        $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
+
+        $this->assertStringContainsString(
+            "portrait: { label: 'Potrait 3:4', width: 1000, height: 1333 },",
+            $module,
+            'Format potrait 3:4 harus tersedia untuk dipilih.'
+        );
+
+        $this->assertStringContainsString(
+            'export const SHEET_ORIENTATION_LIST',
+            $module,
+            'Daftar format harus bisa dibaca halaman untuk mengisi pemilihnya.'
+        );
+
+        // Pratinjau harus memakai fungsi yang sama dengan penggambar lembar.
+        $this->assertStringContainsString(
+            'export function describeSheet(orientation',
+            $module,
+            'Pratinjau harus dihitung dari ukuran lembar yang sama.'
+        );
+
+        $this->assertStringContainsString(
+            'const printFormatPreview = computed(() => describeSheet(printOrientation.value));',
+            $pencarian,
+            'Halaman harus memakai hasil describeSheet untuk pratinjau format.'
+        );
+
+        $this->assertStringContainsString(
+            'v-model="printOrientation"',
+            $pencarian,
+            'Pemilih format harus terikat ke state yang dipakai ekspor.'
+        );
+
+        // Rasio kotak pratinjau harus mengikuti rasio lembar, kalau tidak
+        // potrait akan tampil mendatar dan preview-nya menipu.
+        $this->assertStringContainsString(
+            'aspectRatio: `${printFormatPreview.width} / ${printFormatPreview.height}`',
+            $pencarian,
+            'Kotak pratinjau harus memakai rasio sisi lembar yang dipilih.'
+        );
+
+        // Ukuran berkas harus ikut ditampilkan, karena "potrait" saja tidak
+        // memberitahu berapa resolusi yang sebenarnya diterima pengguna.
+        $this->assertStringContainsString(
+            '{{ printFormatPreview.outputWidth }} &times; {{ printFormatPreview.outputHeight }} piksel',
+            $pencarian,
+            'Pratinjau harus menyebut ukuran berkas PNG hasilnya.'
+        );
+
+        // Format yang sama harus dipakai tombol Cetak dan unduhan offline.
+        $this->assertStringContainsString(
+            'orientation: printOrientation.value,',
+            $pencarian,
+            'Ekspor PNG harus mengirim format yang dipilih pengguna.'
+        );
+    }
+
+    /**
+     * Logo ambalan harus masuk header lembar, dan tidak boleh menggagalkan PNG.
+     *
+     * Logo dari domain lain hanya bisa digambar ke kanvas kalau server-nya
+     * mengirim header CORS. Kalau tidak, kanvas ikut tercemar dan toBlob gagal
+     * dengan SecurityError, jadi seluruh PNG hilang gara-gara satu logo.
+     */
+    public function test_logo_ambalan_masuk_header_tanpa_merusak_png(): void
+    {
+        $module = $this->module();
+        $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
+
+        $this->assertStringContainsString(
+            "const logoUrl = computed(() => page.props.ambalan?.logo_url || '/images/Logo_Ambalan.png');",
+            $pencarian,
+            'Logo harus memakai sumber yang sama dengan header aplikasi.'
+        );
+
+        $this->assertStringContainsString(
+            'image.crossOrigin =',
+            $module,
+            'Logo harus dimuat dengan mode CORS supaya tidak mencederai kanvas.'
+        );
+
+        $this->assertStringContainsString(
+            'function loadLogo(url)',
+            $module,
+            'Pemuatan logo harus dibungkus supaya kegagalan bisa dilewati.'
+        );
+
+        $this->assertStringContainsString(
+            'ctx.drawImage(logoImage, MARGIN, MARGIN, logoWidth, logoHeight);',
+            $module,
+            'Logo harus digambar di header lembar.'
+        );
+
+        // Lebar teks header harus menyusut, bukan menimpa logo.
+        $this->assertStringContainsString(
+            'textWidth = mapWidth - (logoWidth + gap);',
+            $module,
+            'Judul harus digeser agar tidak menimpa logo.'
+        );
+    }
+
+    /**
+     * Preview di dialog harus bisa menyembunyikan kontur dan mengikuti kanvas utama.
+     *
+     * Preview memakai peta MapLibre kedua. Kalau tombol hanya mengubah peta
+     * utama, preview tetap menampilkan kontur yang sudah disembunyikan dan PNG
+     * yang diunduh berbeda dari yang dilihat pengguna.
+     */
+    public function test_preview_dialog_bisa_mematikan_kontur_dan_mengikuti_peta_utama(): void
+    {
+        $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
+
+        $this->assertStringContainsString(
+            'const MINI_LAYER_MIRROR = {',
+            $pencarian,
+            'Layer preview harus punya pasangan dengan layer peta utama.'
+        );
+
+        $this->assertStringContainsString(
+            "'garis-kontur': 'mini-kontur',",
+            $pencarian,
+            'Layer kontur peta utama harus punya kembarannya di preview.'
+        );
+
+        // Mematikan kontur harus mengubah kedua peta.
+        $this->assertStringContainsString(
+            'function setLayerVisibility(layerId, visible)',
+            $pencarian,
+            'Visibilitas harus lewat satu fungsi yang menyentuh kedua peta.'
+        );
+
+        $this->assertStringContainsString(
+            'const miniDone = miniLayerId ? apply(miniMap.value, miniLayerId) : true;',
+            $pencarian,
+            'Fungsi visibilitas harus ikut mengubah peta preview lewat helper yang sama.'
+        );
+
+        $this->assertStringContainsString(
+            "target.setLayoutProperty(id, 'visibility', visibility);",
+            $pencarian,
+            'Helper visibilitas harus menuliskan properti ke peta mana pun yang diterimanya.'
+        );
+
+        // Layer bisa belum ada saat tombol ditekan, jadi Visibility ditunda
+        // sampai peta selesai dimuat. Tanpa itu toggle yang ditekan terlalu cepat
+        // hilang begitu style selesai diurai.
+        $this->assertStringContainsString(
+            'if (!miniDone && miniMap.value && !miniMap.value.loaded()) {',
+            $pencarian,
+            'Preview yang belum selesai dimuat harus menunda penerapan visibilitas.'
+        );
+
+        // Dialog harus punya kendali yang memakai toggel yang sama.
+        $this->assertStringContainsString(
+            '@change="toggleLayer"',
+            $pencarian,
+            'Dialog harus bisa menyembunyikan garis kontur lewat toggle yang sama.'
+        );
+
+        $this->assertStringContainsString(
+            ':checked="showContour"',
+            $pencarian,
+            'Checkbox dialog harus menampilkan keadaan kontur yang sedang aktif.'
+        );
+
+        // Preview butuh layer yang sama supaya tidak bohong soal tampilan.
+        $this->assertStringContainsString(
+            "id: 'mini-hillshade'",
+            $pencarian,
+            'Preview harus punya layer hillshade seperti peta utama.'
+        );
+
+        $this->assertStringContainsString(
+            "id: 'mini-kabupaten-labels'",
+            $pencarian,
+            'Preview harus punya layer label kabupaten seperti peta utama.'
+        );
+
+        // Layer symbol butuh glyphs, tanpa itu shader teks gagal dan preview
+        // berhenti digambar.
+        $this->assertStringContainsString(
+            'glyphs: GLYPHS_URL,',
+            $pencarian,
+            'Style preview wajib punya glyphs karena sekarang memakai layer symbol.'
+        );
+    }
+
+    /**
+     * Tombol Cetak dan unduhan offline harus memakai pilihan komponen yang sama.
+     *
+     * Tombol Cetak sebelumnya tidak mengirim apa pun, jadi buildMapPng memakai
+     * DEFAULT_COMPONENTS yang histogram dan grid-nya mati. PNG "tampilan saat
+     * ini" jadi berbeda dari berkas unduhan offline.
+     */
+    public function test_kedua_ekspor_memakai_pilihan_komponen_yang_sama(): void
+    {
+        $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
+
+        $this->assertStringContainsString(
+            'const printComponents = computed(() => ({',
+            $pencarian,
+            'Pilihan komponen harus punya satu sumber yang dipakai kedua ekspor.'
+        );
+
+        $this->assertStringContainsString(
+            'components = printComponents.value',
+            $pencarian,
+            'printMapPng harus memakai pilihan komponen bersama sebagai bawaan.'
+        );
+
+        $this->assertStringContainsString(
+            'const components = printComponents.value;',
+            $pencarian,
+            'Unduhan offline juga harus memakai pilihan komponen bersama.'
+        );
+
+        // Bersamaan dengan komponen, format juga harus satu sumber.
+        $this->assertStringContainsString(
+            'orientation: printOrientation.value,',
+            $pencarian,
+            'Kedua ekspor harus mengirim format yang sama.'
         );
     }
 }

@@ -33,29 +33,92 @@ const FONT = "'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
 /**
  * Ukuran lembar cetak.
  *
- * Dipatok landscape dan tidak lagi mengikuti isi. Versi lama mengukur tinggi
- * dari jumlah teks bahan ajar, jadi lembarnya jadi tinggi seperti halaman web:
- * peta tinggal jadi pita tipis di bagian atas, dan wilayah yang dipilih terlihat
- * kecil sampai sulit dibaca.
+ * Dipatok dan tidak lagi mengikuti isi. Versi lama mengukur tinggi dari jumlah
+ * teks bahan ajar, jadi lembarnya jadi tinggi seperti halaman web: peta tinggal
+ * jadi pita tipis di bagian atas, dan wilayah yang dipilih terlihat kecil
+ * sampai sulit dibaca.
  *
  * Sekarang isinya cuma peta, jadi ukuran halaman adalah pilihan format, bukan
- * hasil pengukuran. 16:10 cukup lebar untuk satu wilayah kabupaten, dan tidak
- * memaksa pemakai memutar kertas saat dicetak.
+ * hasil pengukuran, dan pemakai yang memilihnya lewat orientation.
+ *
+ * Landscape adalah bawaan karena peta lebih terbaca mendatar dan daftar
+ * komponen cetak juga butuh ruang mendatar. Tingginya tetap dipatok supaya
+ * semua wilayah keluar dengan format sama.
  */
 const SHEET_WIDTH = 1600;
-const SHEET_HEIGHT = 1000;
+const SHEET_HEIGHT = 900;
+
+/**
+ * Format lembar yang bisa dipilih pengguna.
+ *
+ * Dua pilihan yang diminta: landscape 16:9 dan potrait 3:4. Rasio memakai
+ * pembulatan yang membuat lebarnya habis dibagi tiganya, jadi 1000 x 1333
+ * sudah 3:4 betulan dan bukan 3:4 setengah.
+ *
+ * Tinggi potrait lebih besar dari landscape supaya area petanya masih tersisa
+ * setelah dikurangi margin, header, dan kaki halaman.
+ */
+const SHEET_ORIENTATIONS = {
+  landscape: { label: 'Landscape 16:9', width: SHEET_WIDTH, height: SHEET_HEIGHT },
+  portrait: { label: 'Potrait 3:4', width: 1000, height: 1333 },
+};
+
+/** Format yang dipakai kalau pemanggil tidak menyebut format. */
+const DEFAULT_ORIENTATION = 'landscape';
+
+/** Daftar format untuk dipilih di dialog unduhan. */
+export const SHEET_ORIENTATION_LIST = Object.entries(SHEET_ORIENTATIONS).map(
+  ([value, preset]) => ({ value, label: preset.label }),
+);
+
+/**
+ * Ringkasan format lembar untuk ditampilkan sebagai pratinjau di dialog.
+ *
+ * Angkanya dihitung dengan fungsi yang sama dengan yang menggambar lembar, jadi
+ * pratinjau ini tidak bisa berbeda dari berkas yang nanti diunduh. Kalau
+ * perhitungannya ditulis ulang di halaman, cepat atau lambat keduanya akan
+ * menyimpang dan pratinjau ini jadi tidak berguna justru karena itu.
+ *
+ * Yang dikembalikan adalah ukuran CSS lembar, ukuran area peta, dan ukuran
+ * berkas PNG setelah dikalikan skala render.
+ *
+ * @param {string} [orientation]
+ * @returns {{orientation:string,label:string,width:number,height:number,mapAspect:number,outputWidth:number,outputHeight:number}}
+ */
+export function describeSheet(orientation = DEFAULT_ORIENTATION) {
+  const preset = SHEET_ORIENTATIONS[orientation] ?? SHEET_ORIENTATIONS[DEFAULT_ORIENTATION];
+  const sheet = measureSheet({
+    title: 'Peta Kontur - Contoh Wilayah',
+    subtitle: 'Koordinat tengah 119,4321, -5,1234 | Zoom 11.0 | Skala 1:250.000',
+    orientation,
+  });
+  const scale = sheetScale(sheet);
+
+  return {
+    orientation: orientation in SHEET_ORIENTATIONS ? orientation : DEFAULT_ORIENTATION,
+    label: preset.label,
+    width: sheet.width,
+    height: sheet.height,
+    mapAspect: sheet.mapWidth / sheet.mapHeight,
+    outputWidth: sheet.width * scale,
+    outputHeight: sheet.height * scale,
+  };
+}
 
 const MARGIN = 48;
 
 /**
  * Batas tinggi area peta.
  *
- * Batas atas menjaga judul dan keterangan sumber tetap muat di lembar
- * landscape. Batas bawah cuma jaring pengaman: kalau judulnya luar biasa
- * panjang, area peta tidak boleh habis lalu judul menimpa peta.
+ * Batas bawah cuma jaring pengaman: kalau judulnya luar biasa panjang, area
+ * peta tidak boleh habis lalu judul menimpa peta.
+ *
+ * Batas atas memakai bagian dari tinggi lembar, bukan angka tetap. Angka tetap
+ * hanya benar untuk satu format; dipakai di potrait, petanya akan mentok di
+ * separuh halaman dan separuh bawahnya jadi ruang kosong yang tidak berguna.
  */
 const MAP_MIN_HEIGHT = 260;
-const MAP_MAX_HEIGHT = 820;
+const MAP_MAX_RATIO = 0.82;
 
 /** Keterangan sumber di bawah peta, termasuk jaraknya dari area peta. */
 const FOOTER_GAP = 12;
@@ -66,11 +129,11 @@ const FOOTER_HEIGHT = 18;
  *
  * Isi lembar digambar ulang di kanvas 2D, bukan difoto dari layar, jadi
  * menaikkan skala membuat setiap huruf, garis, dan simbol lebih tajam. Angkanya
- * bukan sembarang: 1600 x 1000 dikali 3 jadi 4800 x 3000, yaitu 14,4 juta
- * piksel, masih di bawah batas luas kanvas yang biasa dipakai peramban seluler
- * (16,7 juta piksel). Dikali 4 sudah 25,6 juta piksel dan sebagian peramban
- * menolak kanvasnya sehingga PNG tersimpan kosong. Versi lama memakai 2, jadi
- * seluruh isi lembar sekarang digambar tiga kali lebih rapat.
+ * bukan sembarang: lembar landscape 1600 x 900 dikali 3 jadi 4800 x 2700, yaitu
+ * 13 juta piksel, masih di bawah batas luas kanvas yang biasa dipakai peramban
+ * seluler (16,7 juta piksel). Dikali 4 sudah 19,4 juta piksel dan sebagian
+ * peramban menolak kanvasnya sehingga PNG tersimpan kosong. Versi lama memakai
+ * 2, jadi seluruh isi lembar sekarang digambar tiga kali lebih rapat.
  */
 const SHEET_SCALE = 3;
 
@@ -96,6 +159,15 @@ const EXPORT_CANVAS_MAX_SIDE = 4096;
 const EXPORT_MAX_PIXEL_RATIO = 4;
 
 /**
+ * Batas luas kanvas WebGL saat ekspor.
+ *
+ * Batas sisi terpanjang saja tidak cukup untuk format potrait, karena
+ * kanvasnya menjadi tinggi dan sempit. Batas luas ini yang menjaga
+ * framebuffer tetap muat di GPU seluler.
+ */
+const EXPORT_CANVAS_MAX_PIXELS = 12_000_000;
+
+/**
  * Lebar kanvas peta CSS saat ekspor.
  *
  * Dipakai sebagai permukaan temporer supaya kanvas peta dapat dibuat landscape
@@ -106,28 +178,52 @@ const EXPORT_MAX_PIXEL_RATIO = 4;
 const EXPORT_SURFACE_WIDTH = 1400;
 
 /**
- * Seberapa jauh rasio sisi boleh berbeda dari kotak peta sebelum kanvasnya
- * dianggap portrait lalu dibetulkan.
- *
- * Tanpa toleransi ini setiap ekspor sedikit mengubah ukuran kanvas sehingga
- * peta berkedip. Dengan toleransi ini, ekspor dari desktop yang sudah landscape
- * hanya menaikkan resolusi tanpa mengubah tampilan.
- */
-const ASPECT_TOLERANCE = 0.85;
-
-/**
  * Skala lembar yang aman untuk ukuran lembar sekarang.
  *
  * @returns {number}
  */
-function sheetScale() {
-  const area = SHEET_WIDTH * SHEET_HEIGHT;
+function sheetScale(sheet) {
+  const area = sheet.width * sheet.height;
   const capped = Math.sqrt(MAX_SHEET_PIXELS / area);
   return Math.max(1, Math.min(SHEET_SCALE, capped));
 }
 
+/** Lebar dan tinggi logo di header, dalam satuan CSS lembar. */
+const LOGO_BOX = 64;
+
 /**
- * Hitung tinggi area peta untuk isi lembar tertentu.
+ * Muat logo untuk digambar di header lembar.
+ *
+ * Gambar dari domain lain hanya boleh digambar ke kanvas kalau server-nya
+ * mengirim header CORS. Kalau tidak, satu piksel pun gambarnya akan membuat
+ * seluruh kanvas tercemar dan toBlob gagal dengan SecurityError, sehingga
+ * seluruh PNG gagal dibuat gara-gara satu logo. Karena itu logo yang gagal
+ * dimuat dilewati saja, dan hasilnya tetap PNG tanpa logo.
+ *
+ * @param {string|null|undefined} url
+ * @returns {Promise<HTMLImageElement|null>}
+ */
+function loadLogo(url) {
+  if (!url) {
+    return Promise.resolve(null);
+  }
+
+  return new Promise((resolve) => {
+    const image = new Image();
+
+    image.crossOrigin = 'anonymous';
+
+    image.onload = () => resolve(image);
+    // onerror termasuk logo yang tidak ditemukan dan penolakan CORS. Keduanya
+    // berakhir sama saja: tanpa logo.
+    image.onerror = () => resolve(null);
+
+    image.src = url;
+  });
+}
+
+/**
+ * Hitung ukuran lembar dan area petanya untuk isi tertentu.
  *
  * Tinggi area peta bergantung pada jumlah baris judul dan subjudul, dan itu
  * hanya bisa diketahui setelah teksnya diukur. Fungsi ini dipakai dua tempat:
@@ -136,11 +232,15 @@ function sheetScale() {
  * jawaban, yang akan membuat kanvas peta dibetulkan ke ukuran yang salah lalu
  * muncul pita abu-abu di tepi PNG.
  *
- * @param {{ title?: string, subtitle?: string }} [content]
- * @returns {{ width:number, height:number, mapWidth:number, mapHeight:number }}
+ * @param {{ title?: string, subtitle?: string, orientation?: string }} [options]
+ * @returns {{width:number, height:number, mapWidth:number, mapHeight:number, orientation:string}}
  */
-function measureSheet({ title = '', subtitle = '' } = {}) {
-  const mapWidth = SHEET_WIDTH - MARGIN * 2;
+function measureSheet({ title = '', subtitle = '', orientation = DEFAULT_ORIENTATION } = {}) {
+  const preset = SHEET_ORIENTATIONS[orientation] ?? SHEET_ORIENTATIONS[DEFAULT_ORIENTATION];
+
+  const width = preset.width;
+  const height = preset.height;
+  const mapWidth = width - MARGIN * 2;
   const probe = document.createElement('canvas').getContext('2d');
 
   setFont(probe, 32, '700');
@@ -151,15 +251,11 @@ function measureSheet({ title = '', subtitle = '' } = {}) {
   const headerHeight = titleLines * TITLE_LINE_HEIGHT + TITLE_GAP
     + subtitleLines * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;
 
-  const available = SHEET_HEIGHT - MARGIN * 2 - headerHeight - FOOTER_GAP - FOOTER_HEIGHT;
-  const mapHeight = Math.round(Math.min(Math.max(available, MAP_MIN_HEIGHT), MAP_MAX_HEIGHT));
+  const available = height - MARGIN * 2 - headerHeight - FOOTER_GAP - FOOTER_HEIGHT;
+  const maxMapHeight = Math.round(height * MAP_MAX_RATIO);
+  const mapHeight = Math.round(Math.min(Math.max(available, MAP_MIN_HEIGHT), maxMapHeight));
 
-  return {
-    width: SHEET_WIDTH,
-    height: SHEET_HEIGHT,
-    mapWidth,
-    mapHeight,
-  };
+  return { width, height, mapWidth, mapHeight, orientation: preset.label ? orientation : DEFAULT_ORIENTATION };
 }
 
 /**
@@ -762,26 +858,29 @@ export async function buildMapPng({
   components = {},
   elevation = null,
   bounds = null,
+  orientation = DEFAULT_ORIENTATION,
+  logo = null,
   sources = 'Sumber: © OpenStreetMap contributors, PMTiles Kontur Sulsel',
 } = {}) {
-  const width = SHEET_WIDTH;
-  const height = SHEET_HEIGHT;
-  const scale = sheetScale();
   const picked = { ...DEFAULT_COMPONENTS, ...components };
-  const mapWidth = width - MARGIN * 2;
-  const mapWidthMeters = metersPerPixel(latitude, zoom) * mapWidth;
+  const preset = SHEET_ORIENTATIONS[orientation] ?? SHEET_ORIENTATIONS[DEFAULT_ORIENTATION];
+
+  // Lebar area peta diperlukan untuk teks subjudul bawaan, jadi harus diketahui
+  // sebelum kanvas digambar.
+  const mapWidthMeters = metersPerPixel(latitude, zoom) * (preset.width - MARGIN * 2);
 
   // Teks yang benar-benar akan dicetak harus sudah diketahui sebelum kanvas
   // digambar, karena tinggi area peta bergantung pada jumlah baris judul dan
   // subjudul.
   const subtitleText = subtitle || `Lebar area ${distanceLabel(mapWidthMeters)}`;
 
-  // Tinggi area peta = sisa lembar setelah judul, subjudul, dan kaki halaman.
-  // Lembarnya sendiri tetap landscape: kalau judulnya butuh ruang lebih, yang
-  // mengecil adalah peta, bukan halaman. Itu membuat format keluar konsisten
-  // untuk semua wilayah, yang justru tidak bisa dijamin kalau tinggi lembar
-  // ikut berubah-ubah.
-  const { mapHeight } = measureSheet({ title, subtitle: subtitleText });
+  // Ukuran lembar dan area petanya diukur sekali di sini lalu dipakai untuk
+  // menggambar. Pemanggil yang mengirim ukuran sendiri tidak boleh menimpanya:
+  // tinggi peta harus mengikuti format yang dipatok, bukan format hasil
+  // pengukuran pemanggil.
+  const sheet = measureSheet({ title, subtitle: subtitleText, orientation });
+  const { width, height, mapWidth, mapHeight } = sheet;
+  const scale = sheetScale(sheet);
 
   const canvas = document.createElement('canvas');
   canvas.width = width * scale;
@@ -790,8 +889,30 @@ export async function buildMapPng({
   const ctx = canvas.getContext('2d');
   ctx.scale(scale, scale);
 
+  // Logo dimuat sebelum kanvas mulai digambar karena menggambarnya harus
+  // synchronous. Kalau gagal, lembar tetap dicetak tanpa logo.
+  const logoImage = await loadLogo(logo);
+
   ctx.fillStyle = INK.paper;
   ctx.fillRect(0, 0, width, height);
+
+  // Logo duduk di kiri header dan judulnya digeser ke kanan, bukan ditumpuk
+  // di atasnya. Logo menutupi judul akan membuat keduanya saling tumpang tindih
+  // kalau judulnya panjang, dan panjangnya tergantung nama wilayah.
+  let textLeft = MARGIN;
+  let textWidth = mapWidth;
+
+  if (logoImage) {
+    const ratio = Math.min(LOGO_BOX / logoImage.width, LOGO_BOX / logoImage.height);
+    const logoWidth = Math.max(1, Math.round(logoImage.width * ratio));
+    const logoHeight = Math.max(1, Math.round(logoImage.height * ratio));
+
+    ctx.drawImage(logoImage, MARGIN, MARGIN, logoWidth, logoHeight);
+
+    const gap = 20;
+    textLeft = MARGIN + logoWidth + gap;
+    textWidth = mapWidth - (logoWidth + gap);
+  }
 
   // Judul, dipecah bila panjangnya melebihi lebar konten.
   let cursorY = MARGIN;
@@ -799,9 +920,9 @@ export async function buildMapPng({
   ctx.fillStyle = INK.title;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  const titleLines = wrapText(ctx, title, mapWidth);
+  const titleLines = wrapText(ctx, title, textWidth);
   titleLines.forEach((line, index) => {
-    ctx.fillText(line, MARGIN, cursorY + index * TITLE_LINE_HEIGHT);
+    ctx.fillText(line, textLeft, cursorY + index * TITLE_LINE_HEIGHT);
   });
   cursorY += titleLines.length * TITLE_LINE_HEIGHT + TITLE_GAP;
 
@@ -811,6 +932,8 @@ export async function buildMapPng({
   ctx.textBaseline = 'top';
   // Subjudul juga dipecah: ia memuat koordinat, zoom, dan skala sekaligus,
   // sehingga panjangnya bergantung pada nilai yang sedang dilihat.
+  // Lebarnya tetap penuh: subjudul tidak boleh ikut bergeser hanya karena ada
+  // logo, dan tidak ada yang mengapitinya di kanan.
   const subtitleLines = wrapText(ctx, subtitleText, mapWidth);
   subtitleLines.forEach((line, index) => {
     ctx.fillText(line, MARGIN, cursorY + index * SUBTITLE_LINE_HEIGHT);
@@ -1237,42 +1360,58 @@ async function frameRegion(map, region, maxZoom, options = {}) {
  *
  * @param {object} map
  * @param {number} targetAspect  Rasio sisi kotak peta di lembar cetak.
- * @returns {{ width:number, height:number, reshape:boolean, ratio:number }}
+ * @returns {{ width:number, height:number, ratio:number }}
  */
 function exportSurfaceFor(map, targetAspect) {
-  const container = map?.getContainer?.();
-  const rect = container?.getBoundingClientRect?.();
 
-  const currentWidth = Math.round(rect?.width ?? map?.getCanvas?.()?.clientWidth ?? 0);
-  const currentHeight = Math.round(rect?.height ?? map?.getCanvas?.()?.clientHeight ?? 0);
 
-  const currentRatio = map?.getPixelRatio?.() ?? window.devicePixelRatio ?? 1;
+  // Kanvas selalu dibetulkan mengikuti kotak peta, bukan hanya ketika rasionya
+  // meleset.
+  //
+  // Versi lama mempertahankan ukuran kanvas yang sedang terlihat supaya peta tidak
+  // berkedip. Dua alasan membatalkan itu:
+  //
+  // 1. Kanvas yang dibiarkan apa adanya sering terlalu kecil. Di ponsel kanvas
+  //    berpotret cuma beberapa ratus piksel, jadi bitmap-nya keluar sekitar
+  //    1440 x 2000 padahal kotak cetaknya butuh 2712 x 3279. Peta jadi buram.
+  // 2. Rasionya tetap meleset sedikit, jadi fitContain selalu menyisakan pita
+  //    abu-abu dan sebagian lebar berkas terbuang.
+  //
+  // Kanvasnya dipulihkan setelah snapshot diambil, jadi pengguna hanya melihat
+  // betulan sesaat, bukan kanvas yang tertinggal di ukuran ekspor.
 
-  // Kanvas yang sudah landscape tidak diubah ukurannya, hanya resolusinya.
-  // Mengubahnya juga akan membuat peta berkedip setiap kali pengguna menekan
-  // tombol cetak, dan tidak memberi keuntungan apa pun.
-  const reshape = !(currentWidth > 0 && currentHeight > 0)
-    || (currentWidth / currentHeight) < targetAspect * ASPECT_TOLERANCE;
-
-  const width = reshape ? EXPORT_SURFACE_WIDTH : currentWidth;
-  const height = reshape ? Math.round(EXPORT_SURFACE_WIDTH / targetAspect) : currentHeight;
+  const width = EXPORT_SURFACE_WIDTH;
+  const height = Math.round(EXPORT_SURFACE_WIDTH / targetAspect);
 
   // Rasio piksel tertinggi yang masih muat di bawah batas kanvas WebGL.
   const ceiling = Math.min(
     EXPORT_MAX_PIXEL_RATIO,
     EXPORT_CANVAS_MAX_SIDE / Math.max(width, 1),
     EXPORT_CANVAS_MAX_SIDE / Math.max(height, 1),
+    // Batas luasnya yang membuat format potrait tetap aman. Kanvas potrait
+    // menjulang, jadi batas sisi terpanjang tidak lagi cukup: 1400 x 1690 dengan
+    // rasio 2,4 sudah 6,9 juta piksel dan sebagian GPU seluler kehabisan
+    // memori di sana.
+    Math.sqrt(EXPORT_CANVAS_MAX_PIXELS / Math.max(width * height, 1)),
   );
 
-  // Yang dipakai adalah nilai yang lebih besar dari dua itu: plafon di atas
-  // adalah resolusi maksimum yang bisa dibayar, sedangkan rasio sekarang
-  // jangan diturunkan hanya karena kanvasnya sedang disiapkan ulang. Urutan
-  // min(max(...)) di sini akan selalu memilih nilai terkecil, sehingga di
-  // komputer dengan rasio piksel 1 hasil akhirnya tetap 1 dan ketajaman tidak
-  // pernah bertambah sama sekali.
-  const ratio = Math.max(1, Math.min(EXPORT_MAX_PIXEL_RATIO, Math.max(currentRatio, ceiling)));
+  // Yang dipakai adalah plafonnya, bukan rasio piksel yang sedang dipakai
+  // perangkat.
+  //
+  // Dua-duanya dulu salah di sini dan tidak boleh kembali:
+  //
+  // - min(max(...)) selalu memilih nilai terkecil, sehingga di komputer dengan
+  //   rasio piksel 1 hasilnya tetap 1 dan ketajaman tidak pernah bertambah.
+  // - max(ratioSaatIni, plafon) membiarkan perangkat beresolusi tinggi melewati
+  //   plafon. Di ponsel ber-dpr 3 dan format potrait, kanvasnya jadi 4200 x
+  //   5079 yaitu 21 juta piksel, melewati batas 12 juta, dan sebagian GPU
+  //   kehabisan memori atau kehilangan konteks WebGL.
+  //
+  // Plafon di atas sudah memperhitungkan rasio piksel perangkat lewat batas
+  // sisi dan batas luasnya, jadi tidak ada yang hilang dengan memakainya.
+  const ratio = Math.max(1, ceiling);
 
-  return { width, height, reshape, ratio };
+  return { width, height, ratio };
 }
 
 /**
@@ -1481,6 +1620,8 @@ export function useMapPngExport() {
       region = null,
       regionMaxZoom = null,
       matchViewport = false,
+      orientation = DEFAULT_ORIENTATION,
+      logo = null,
       ...pngOptions
     } = overrides;
     const { subtitle: subtitleOverride, ...restOptions } = pngOptions;
@@ -1502,7 +1643,7 @@ export function useMapPngExport() {
     // menghitungnya belum lengkap karena detail koordinat baru ada setelah
     // kamera diarahkan, tetapi selisihnya hanya satu baris teks dan tidak
     // mengubah tinggi area peta secara berarti.
-    const sheet = measureSheet({ title: restOptions.title, subtitle: subtitleOverride });
+    const sheet = measureSheet({ title: restOptions.title, subtitle: subtitleOverride, orientation });
     const surface = exportSurfaceFor(map, sheet.mapWidth / sheet.mapHeight);
 
     try {
@@ -1570,6 +1711,8 @@ export function useMapPngExport() {
             areaBlocked: blocked,
             mapProblem: reason,
             bounds,
+            orientation,
+            logo,
             ...restOptions,
           });
 

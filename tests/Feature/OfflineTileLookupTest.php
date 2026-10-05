@@ -514,7 +514,11 @@ class OfflineTileLookupTest extends TestCase
         $source = file_get_contents(base_path("resources/js/Pages/Peta/{$halaman}.vue"));
         $this->assertIsString($source, "Tidak bisa membaca resources/js/Pages/Peta/{$halaman}.vue.");
 
-        return $source;
+        // Sebagian pemeriksaan menempel pada potongan beberapa baris, jadi CRLF
+        // di working copy Windows akan membuatnya gagal padahal kodenya benar.
+        // Git menormalkan LF saat commit (.gitattributes eol=lf), jadi ini hanya
+        // membuang perbedaan yang memang tidak pernah masuk ke repositori.
+        return str_replace("\r\n", "\n", $source);
     }
 
     private function pencarian(): string

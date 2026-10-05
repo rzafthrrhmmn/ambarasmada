@@ -79,7 +79,11 @@ class MapStyleValidationTest extends TestCase
         $path = base_path($page);
         $this->assertFileExists($path, "File {$page} tidak ditemukan.");
 
-        return (string) file_get_contents($path);
+        // Blok layout dibandingkan sebagai potongan beberapa baris, jadi CRLF di
+        // working copy Windows akan membuatnya gagal padahal bloknya benar. Git
+        // menormalkan LF saat commit (.gitattributes eol=lf), jadi menormalkan di
+        // sini hanya membuang perbedaan yang memang tidak masuk ke repositori.
+        return str_replace("\r\n", "\n", (string) file_get_contents($path));
     }
 
     /**
