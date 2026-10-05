@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (Schema::hasTable('announcements')) {
             Schema::table('announcements', function (Blueprint $table) {
-                $table->index(['published_at', 'is_published'], 'announcements_published_idx');
+                $table->index(['published_at', 'ambalan_id'], 'announcements_published_idx');
                 $table->index('ambalan_id', 'announcements_ambalan_idx');
             });
         }

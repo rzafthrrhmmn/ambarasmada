@@ -6,10 +6,14 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 #[Fillable(['nama', 'kode', 'alamat', 'status', 'logo_path'])]
-class Ambalan extends Model
+class Ambalan extends Model implements HasMedia
 {
+    use InteractsWithMedia;
+
     protected $fillable = ['nama', 'kode', 'alamat', 'status', 'logo_path'];
 
     public function getLogoUrlAttribute(): ?string

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -24,7 +25,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $fillable = ['username', 'name', 'email', 'password', 'role', 'is_active', 'status', 'foto', 'email_verified_at'];
 
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable;
 
     public function member(): HasOne
     {
