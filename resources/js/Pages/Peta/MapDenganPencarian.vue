@@ -163,13 +163,28 @@
     <div class="peta-shell relative overflow-hidden rounded-2xl border-2 border-[#A7B92A]/40 bg-[#263D26] shadow-lg">
       <div ref="mapContainer" class="h-[70vh] w-full min-h-[400px]"></div>
 
-      <!-- Coordinate display on mouse hover.
-           Diletakkan di atas bilah skala bawaan MapLibre di pojok kiri bawah;
-           dua-duanya pernah memakai bottom-4 left-4 dan saling menutupi.
-           Lebarnya dibatasi supaya tidak menabrak tumpukan pojok kanan bawah
-           pada layar sempit. -->
-      <div v-if="mouseCoords" class="peta-panel pointer-events-none absolute bottom-12 left-3 max-w-[min(260px,calc(100%_-_13rem))] rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 px-3 py-1.5 font-mono text-xs text-[#EDD330] shadow-lg backdrop-blur-sm">
-        Lon: {{ mouseCoords.lng.toFixed(6) }}° | Lat: {{ mouseCoords.lat.toFixed(6) }}°
+      <!-- Pojok kiri bawah: skala 1:N dan readout koordinat.
+           Keduanya duduk dalam satu wadah flex column dengan satu titik jangkar,
+           jadi keduanya tidak pernah saling menimpa dan tidak pernah menabrak
+           bilah skala bawaan MapLibre yang juga di pojok itu.
+
+           Skala ditulis sebagai 1:N karena ScaleControl bawaan hanya menggambar
+           batang tanpa angkanya, sehingga pembaca tidak tahu batangnya mewakili
+           berapa. Angkanya dihitung ulang tiap kamera bergerak, karena skala 1:N
+           ikut berubah begitu zoom atau lintang pusatnya berubah. -->
+      <div class="peta-panel pointer-events-none absolute bottom-12 left-3 flex flex-col items-start gap-1.5">
+        <div
+          v-if="mapScale"
+          class="max-w-[min(260px,calc(100%_-_13rem))] rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 px-3 py-1.5 font-mono text-xs text-[#EDD330] shadow-lg backdrop-blur-sm"
+        >
+          Skala 1:{{ mapScale }}
+        </div>
+        <div
+          v-if="mouseCoords"
+          class="max-w-[min(260px,calc(100%_-_13rem))] rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 px-3 py-1.5 font-mono text-xs text-[#EDD330] shadow-lg backdrop-blur-sm"
+        >
+          Lon: {{ mouseCoords.lng.toFixed(6) }}° | Lat: {{ mouseCoords.lat.toFixed(6) }}°
+        </div>
       </div>
 
       <!-- Bilah skala dan kompas memakai kontrol bawaan MapLibre
@@ -847,7 +862,7 @@ import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import NavIcon from '@/Components/NavIcon.vue';
 import { getActiveServiceWorker, SW_PROTOCOL } from '@/ServiceWorker.js';
-import { useMapPngExport, SHEET_ORIENTATION_LIST, describeSheet } from '@/Composables/useMapPngExport.js';
+import { useMapPngExport, SHEET_ORIENTATION_LIST, describeSheet, scaleLabel } from '@/Composables/useMapPngExport.js';
 import { BASEMAPS, PRINT_BASEMAP, basemapAttribution } from '@/basemaps.js';
 
 const props = defineProps({
@@ -993,6 +1008,10 @@ const printComponents = computed(() => ({
 // state untuk keduanya; legenda dan readout koordinat dikendalikan di sini.
 const showElevationLegend = ref(true);
 const mouseCoords = ref(null);
+
+// Skala 1:N yang sedang berlaku, ditulis sebagai pembilang saja supaya format
+// Locale-nya dikendalikan di satu tempat. Kosong berarti peta belum punya kamera.
+const mapScale = ref('');
 const hasGeolocation = ref(false);
 const locating = ref(false);
 
@@ -1925,6 +1944,31 @@ async function initMap() {
       hasGeolocation.value = true;
     }
 
+    // Skala 1:N mengikuti kamera, jadi harus dihitung ulang setiap kali zoom atau
+    // pusat peta berubah, bukan hanya sekali saat peta dimuat. Peta yang digeser
+    // ke utara atau selatan pada zoom yang sama pun angkanya berubah, karena
+    // cos(latitude) ikut berubah, jadi event geraknya ikut didengarkan.
+    const updateMapScale = () => {
+      const center = map.value?.getCenter?.();
+      const zoom = map.value?.getZoom?.();
+
+      if (!center || !Number.isFinite(zoom)) {
+        mapScale.value = '';
+        return;
+      }
+
+      const label = scaleLabel(center.lat, zoom);
+
+      // Di dekat kutub cos(latitude) mendekati nol sehingga 1:N-nya jatuh ke
+      // angka yang tidak masuk akal. scaleLabel() sudah mengembalikan "1:-" untuk
+      // kasus itu, jadi di sini cukup disembunyikan saja.
+      mapScale.value = label === '1:-' ? '' : label.slice(2);
+    };
+
+    map.value.on('move', updateMapScale);
+    map.value.on('zoom', updateMapScale);
+    updateMapScale();
+
     // Mouse move - coordinate display
     map.value.on('mousemove', (e) => {
       mouseCoords.value = { lng: e.lngLat.lng, lat: e.lngLat.lat };
@@ -2562,7 +2606,13 @@ function generatePrintHTML(camera, wilayah = null) {
     ? `<p>Wilayah: <strong>${escapeHtml(wilayah.label)}</strong> | Kode wilayah: ${escapeHtml(wilayah.kode)}</p>`
     : '';
   const date = new Date().toLocaleString('id-ID');
-  const scale = Math.round(156543.03392 * Math.cos(center.lat * Math.PI / 180) / Math.pow(2, zoom));
+  // Skala ditulis 1:N. Versi lama memakai rumus meter per piksel di sini, sehingga
+  // yang tampil "Skala ~1:76": angka 76 itu meter per piksel, bukan pembilang
+  // rasio, sehingga yang tertulis di halaman cetak bukan skala peta sama sekali.
+  // Rumus yang sama dipakai subjudul PNG supaya keduanya tidak berbeda.
+  // Bentuk yang sama dipakai readout di layar dan subjudul PNG, supaya angka
+  // skala yang sama tidak ditulis dengan ejaan berbeda di beberapa tempat.
+  const skalaLabel = scaleLabel(center.lat, zoom);
   // batas kabupaten dari mapConfig. Versi lama menulis ${url} di dalam template
   // tanpa pernah mendeklarasikan variabelnya, jadi memanggil fungsi ini melempar
   // ReferenceError sebelum HTML-nya sempat ditulis ke jendela cetak.
@@ -2605,7 +2655,7 @@ function generatePrintHTML(camera, wilayah = null) {
 <div class="header">
   <h1>${escapeHtml(title)}</h1>
   ${wilayahBaris}
-  <p>Dicetak pada: ${date} | Koordinat tengah: ${center.lng.toFixed(6)}, ${center.lat.toFixed(6)} | Zoom: ${zoom.toFixed(1)} | Skala ~1:${scale.toLocaleString()}</p>
+  <p>Dicetak pada: ${date} | Koordinat tengah: ${center.lng.toFixed(6)}, ${center.lat.toFixed(6)} | Zoom: ${zoom.toFixed(1)} | Skala ${skalaLabel}</p>
 </div>
 <div class="map-container" id="print-map"></div>
 <div class="footer">

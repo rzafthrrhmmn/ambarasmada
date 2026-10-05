@@ -535,6 +535,31 @@ export function scaleDenominator(latitude, zoom) {
 }
 
 /**
+ * Skala peta dalam bentuk 1:N, siap ditulis.
+ *
+ * Pembulatan dan format Locale-nya dikumpulkan di sini karena angkanya muncul
+ * di tiga tempat: readout pada halaman peta, subjudul PNG, dan footer halaman
+ * cetak. Kalau tiap tempat memformat sendiri, cepat atau lambat ada yang
+ * menulis meter per piksel seolah-olah pembilang rasio.
+ *
+ * @param {number} latitude
+ * @param {number} zoom
+ * @returns {string}
+ */
+export function scaleLabel(latitude, zoom) {
+  const denominator = Math.round(scaleDenominator(latitude, zoom));
+
+  // Di dekat kutub cos(latitude) mendekati nol sehingga pembilangnya jatuh ke
+  // angka yang tidak masuk akal. Menulis "1:0" lebih membingungkan daripada
+  // tidak menulis apa pun.
+  if (!Number.isFinite(denominator) || denominator <= 0) {
+    return '1:-';
+  }
+
+  return `1:${denominator.toLocaleString('id-ID')}`;
+}
+
+/**
  * Panjang dunia nyata yang terwakili oleh sejumlah piksel.
  *
  * Dipakai untuk menyatakan berapa luas area yang benar-benar tertangkap. Untuk
@@ -1781,7 +1806,7 @@ export function useMapPngExport() {
           // dikirim halaman menimpa bagian ini dan Angka "Skala 1:..." yang
           // sempat dihitung tidak pernah muncul di PNG mana pun.
           const detail = `Koordinat tengah ${center.lng.toFixed(4)}, ${center.lat.toFixed(4)} | Zoom ${zoom.toFixed(1)}`
-            + ` | Skala 1:${scaleDenominator(center.lat, zoom).toLocaleString('id-ID')}`;
+            + ` | Skala ${scaleLabel(center.lat, zoom)}`;
           const subtitle = subtitleOverride ? `${subtitleOverride} — ${detail}` : detail;
 
           const blob = await buildMapPng({

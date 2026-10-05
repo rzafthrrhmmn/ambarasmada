@@ -180,7 +180,7 @@ import AppLayout from '@/Components/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import NavIcon from '@/Components/NavIcon.vue';
 import { getActiveServiceWorker, SW_PROTOCOL } from '@/ServiceWorker.js';
-import { useMapPngExport } from '@/Composables/useMapPngExport.js';
+import { useMapPngExport, scaleLabel } from '@/Composables/useMapPngExport.js';
 import { BASEMAPS, BASEMAP_LABELS, PRINT_BASEMAP, basemapAttribution } from '@/basemaps.js';
 
 const props = defineProps({
@@ -594,7 +594,11 @@ function printMap() {
   const center = map.value.getCenter();
   const zoom = map.value.getZoom();
   const bearing = map.value.getBearing();
-  const scale = Math.round(156543.03392 * Math.cos(center.lat * Math.PI / 180) / Math.pow(2, zoom));
+  // Skala ditulis 1:N, dengan pembulatan dan format yang sama dipakai readout di
+  // layar dan subjudul PNG. Rumus meter per piksel pernah dipakai di sini,
+  // sehingga yang muncul "Skala ~1:76": angka 76 itu meter per piksel, bukan
+  // pembilang rasio, sehingga yang tertulis bukan skala peta sama sekali.
+  const skalaLabel = scaleLabel(center.lat, zoom);
   const date = new Date().toLocaleString('id-ID');
   // URL batas kabupaten wajib dideklarasikan di sini. Versi lama menulis
   // ${url} di dalam template tanpa pernah menyatakannya, sehingga setiap
@@ -626,7 +630,7 @@ function printMap() {
 </style></head><body>
 <div class="header">
   <h1>Peta Kontur Sulawesi</h1>
-  <p>Dicetak pada: ${date} | Koordinat tengah: ${center.lng.toFixed(6)}, ${center.lat.toFixed(6)} | Zoom: ${zoom.toFixed(1)} | Skala ~1:${scale.toLocaleString()}</p>
+  <p>Dicetak pada: ${date} | Koordinat tengah: ${center.lng.toFixed(6)}, ${center.lat.toFixed(6)} | Zoom: ${zoom.toFixed(1)} | Skala ${skalaLabel}</p>
 </div>
 <div class="map-container" id="print-map"></div>
 <div class="footer">

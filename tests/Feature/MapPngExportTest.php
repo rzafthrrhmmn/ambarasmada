@@ -910,6 +910,118 @@ class MapPngExportTest extends TestCase
     }
 
     /**
+     * Angka skala harus 1:N, bukan meter per piksel.
+     *
+     * Halaman cetak pernah menulis "Skala ~1:76" di zoom 11. Angka 76 itu
+     * meter per piksel, bukan pembilang rasio: pada lintang -5 dan zoom 11 satu
+     * piksel mewakili sekitar 76 meter, sedangkan skala yang benar di titik itu
+     * 1:287.752. Jadi angka yang tertulis bukan peta dengan skala 1:76, melainkan
+     * peta dengan satu piksel sepanjang 76 meter. Pembilang rasio dan meter per
+     * piksel memang berbeda sekitar 3.780 kali, jadi salah satulah yang tertulis
+     * di setiap tempat yang salah.
+     *
+     * Ketiga tempat yang menampilkan skala harus memanggil helper yang sama,
+     * supaya tidak ada yang lagi memakai rumus sendiri.
+     */
+    public function test_skala_1_n_bukan_meter_per_piksel(): void
+    {
+        $module = $this->module();
+
+        $this->assertStringContainsString(
+            'export function scaleLabel(latitude, zoom)',
+            $module,
+            'Bentuk siap tulis dari skala harus ada di satu helper.'
+        );
+
+        $this->assertStringContainsString(
+            'return `1:${denominator.toLocaleString(\'id-ID\')}`;',
+            $module,
+            'Label skala harus ditulis sebagai 1:N dengan format Locale Indonesia.'
+        );
+
+        $this->assertStringContainsString(
+            "return '1:-';",
+            $module,
+            'Pembilang yang tidak masuk akal di dekat kutub tidak boleh ditulis sebagai 1:0.'
+        );
+
+        // Subjudul PNG memakai helper, bukan merangkai sendiri.
+        $this->assertStringContainsString(
+            '| Skala ${scaleLabel(center.lat, zoom)}`;',
+            $module,
+            'Subjudul PNG harus memakai scaleLabel() supaya formatnya sama dengan yang lain.'
+        );
+
+        foreach (['MapDenganPencarian', 'Index'] as $halaman) {
+            $sumber = $this->sumber("resources/js/Pages/Peta/{$halaman}.vue");
+
+            $this->assertStringNotContainsString(
+                '156543.03392',
+                $sumber,
+                "{$halaman}: rumus meter per piksel dipakai sebagai pembilang rasio, sehingga angka skala yang tertulis salah."
+            );
+
+            $this->assertStringContainsString(
+                'scaleLabel(center.lat, zoom)',
+                $sumber,
+                "{$halaman}: halaman cetak harus memakai helper skala yang sama dengan PNG."
+            );
+        }
+    }
+
+    /**
+     * Skala 1:N harus terlihat di halaman, bukan hanya di berkas PNG.
+     *
+     * ScaleControl bawaan MapLibre hanya menggambar batang tanpa angkanya, jadi
+     * pembaca tidak tahu batangnya mewakili berapa. Angka 1:N ikut berubah
+     * begitu zoom atau lintang pusat peta berubah, jadi harus dihitung ulang
+     * ketika kamera bergerak, bukan hanya sekali saat peta dimuat.
+     */
+    public function test_halaman_menampilkan_angka_skala(): void
+    {
+        $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
+
+        $this->assertStringContainsString(
+            'Skala 1:{{ mapScale }}',
+            $pencarian,
+            'Halaman peta harus menuliskan skala 1:N, bukan hanya bilah skala.'
+        );
+
+        $this->assertStringContainsString(
+            'const mapScale = ref(\'\');',
+            $pencarian,
+            'Angka skala harus punya state sendiri supaya bisa diikat ke template.'
+        );
+
+        // Kamera yang bergerak harus memperbarui angkanya.
+        $this->assertStringContainsString(
+            "map.value.on('move', updateMapScale);",
+            $pencarian,
+            'Skala ikut berubah saat peta digeser, jadi harus ikut diperbarui.'
+        );
+
+        $this->assertStringContainsString(
+            "map.value.on('zoom', updateMapScale);",
+            $pencarian,
+            'Skala wajib berubah saat zoom berubah.'
+        );
+
+        $this->assertStringContainsString(
+            'const label = scaleLabel(center.lat, zoom);',
+            $pencarian,
+            'Angka skala di layar harus dihitung dengan helper yang sama seperti PNG.'
+        );
+
+        // Skala dan koordinat berbagi satu titik jangkar supaya tidak saling
+        // menimpa, dan tidak menabrak bilah skala bawaan di pojok yang sama.
+        $this->assertStringContainsString(
+            'absolute bottom-12 left-3 flex flex-col items-start gap-1.5',
+            $pencarian,
+            'Skala dan koordinat harus ditumpuk dalam satu wadah, bukan dipatok terpisah.'
+        );
+    }
+
+/**
      * Angka skala di subjudul harus benar-benar muncul di PNG.
      *
      * exportMapPng menghitung "Skala 1:N" memakai scaleDenominator(), lalu
