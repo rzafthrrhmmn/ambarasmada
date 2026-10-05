@@ -131,6 +131,11 @@ return [
             'handler' => NullHandler::class,
         ],
 
+        'sentry_logs' => [
+            'driver' => 'sentry_logs',
+            'level' => env('LOG_LEVEL', 'info'),
+        ],
+
         'emergency' => [
             'path' => env('LOG_PATH', storage_path('logs/ambara.log')),
         ],

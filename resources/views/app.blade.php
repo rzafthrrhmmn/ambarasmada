@@ -19,7 +19,7 @@
 <body class="antialiased">
     @inertia
     @if (app()->environment('production'))
-        <script defer src="https://cdn.vercelinsights.com/v1/script.js" data-telemetry-id="{{ env('VERCEL_ANALYTICS_ID') }}"></script>
+        <script defer src="https://cdn.vercelinsights.com/v1/script.js"></script>
     @endif
 </body>
 </html>
