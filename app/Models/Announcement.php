@@ -8,10 +8,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['ambalan_id', 'judul', 'isi', 'image', 'published_at', 'created_by'])]
+#[Fillable(['ambalan_id', 'judul', 'isi', 'image', 'published_at', 'kategori', 'created_by'])]
 class Announcement extends Model
 {
-    protected $fillable = ['ambalan_id', 'judul', 'isi', 'image', 'published_at', 'created_by'];
+    protected $fillable = ['ambalan_id', 'judul', 'isi', 'image', 'published_at', 'kategori', 'created_by'];
 
     use SoftDeletes;
 

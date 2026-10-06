@@ -53,8 +53,8 @@ class GuestController extends Controller
                 'logo_url' => $ambalan->logo_url,
             ] : null,
             'announcements' => $announcements,
-            'sliderSlides' => $sliderAnnouncements->isNotEmpty() ? $sliderAnnouncements : null,
-            'gallery' => $gallery->isNotEmpty() ? $gallery : null,
+            'sliderSlides' => $sliderAnnouncements->isNotEmpty() ? $sliderAnnouncements : [],
+            'gallery' => $gallery->isNotEmpty() ? $gallery : [],
             'stats' => [
                 'members' => Member::where('status_aktif', 'Aktif')->count(),
                 'alumni' => Member::where('status_aktif', 'Alumni')->count(),
