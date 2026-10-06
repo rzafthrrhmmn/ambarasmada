@@ -101,7 +101,6 @@
     "DB_USERNAME": "postgres.ugbpqikqduptseeslfri",
     "DB_PASSWORD": "RezaNeko26@",
     "BCRYPT_ROUNDS": "12",
-    "SENTRY_LARAVEL_DSN": "https://07809ac890f7ab126faf73aff5e27b14@o4512203552587776.ingest.us.sentry.io/4512203588173824",
-    "VERCEL_ANALYTICS_ID": ""
+    "SENTRY_LARAVEL_DSN": "https://07809ac890f7ab126faf73aff5e27b14@o4512203552587776.ingest.us.sentry.io/4512203588173824"
   }
 }

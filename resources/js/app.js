@@ -79,9 +79,9 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     });
 }
 
+//
 // Vercel Analytics — script injected in app.blade.php for production only.
-
- 
+//
 // Cookie overflow protection for PWA
 // Monitors cookie size and clears old non-essential cookies to prevent 500 errors
 (function() {
