@@ -17,61 +17,70 @@ class GuestController extends Controller
 {
     public function home(Request $request): JsonResponse
     {
-        $cached = Cache::remember('guest.home.api', 300, function () {
-            $ambalan = Ambalan::first();
+        try {
+            $cached = Cache::remember('guest.home.api', 300, function () {
+                $ambalan = Ambalan::first();
 
-            $announcements = Announcement::whereNotNull('published_at')
-                ->orderByDesc('published_at')
-                ->limit(6)
-                ->get(['id', 'judul', 'isi', 'published_at', 'kategori'])
-                ->map(fn ($item) => [
-                    'id' => $item->id,
-                    'judul' => $item->judul,
-                    'isi' => Str::limit(strip_tags($item->isi), 150),
-                    'published_at' => $item->published_at?->toIso8601String(),
-                    'kategori' => $item->kategori,
-                ]);
+                $announcements = Announcement::whereNotNull('published_at')
+                    ->orderByDesc('published_at')
+                    ->limit(6)
+                    ->get(['id', 'judul', 'isi', 'published_at', 'kategori'])
+                    ->map(fn ($item) => [
+                        'id' => $item->id,
+                        'judul' => $item->judul,
+                        'isi' => Str::limit(strip_tags($item->isi), 150),
+                        'published_at' => $item->published_at?->toIso8601String(),
+                        'kategori' => $item->kategori,
+                    ]);
 
-            $sliderAnnouncements = Announcement::whereNotNull('published_at')
-                ->whereNotNull('image')
-                ->orderByDesc('published_at')
-                ->limit(5)
-                ->get()
-                ->map(fn ($item) => [
-                    'src' => $item->image_url,
-                    'title' => $item->judul,
-                    'description' => Str::limit(strip_tags($item->isi), 100),
-                    'alt' => $item->judul,
-                ]);
+                $sliderAnnouncements = Announcement::whereNotNull('published_at')
+                    ->whereNotNull('image')
+                    ->orderByDesc('published_at')
+                    ->limit(5)
+                    ->get()
+                    ->map(fn ($item) => [
+                        'src' => $item->image_url,
+                        'title' => $item->judul,
+                        'description' => Str::limit(strip_tags($item->isi), 100),
+                        'alt' => $item->judul,
+                    ]);
 
-            $gallery = Gallery::whereNotNull('image')
-                ->orderByDesc('created_at')
-                ->limit(12)
-                ->get()
-                ->map(fn ($item) => [
-                    'src' => $item->image_url,
-                    'title' => $item->judul,
-                    'description' => $item->deskripsi,
-                    'kategori' => $item->kategori,
-                ]);
+                $gallery = Gallery::whereNotNull('image')
+                    ->orderByDesc('created_at')
+                    ->limit(12)
+                    ->get()
+                    ->map(fn ($item) => [
+                        'src' => $item->image_url,
+                        'title' => $item->judul,
+                        'description' => $item->deskripsi,
+                        'kategori' => $item->kategori,
+                    ]);
 
-            return [
-                'ambalan' => $ambalan ? [
-                    'id' => $ambalan->id,
-                    'nama' => $ambalan->nama,
-                    'kode' => $ambalan->kode,
-                    'logo_url' => $ambalan->logo_url,
-                ] : null,
-                'announcements' => $announcements,
-                'sliderSlides' => $sliderAnnouncements->isNotEmpty() ? $sliderAnnouncements : [],
-                'gallery' => $gallery->isNotEmpty() ? $gallery : [],
-                'stats' => [
-                    'members' => Member::where('status_aktif', 'Aktif')->count(),
-                    'alumni' => Member::where('status_aktif', 'Alumni')->count(),
-                ],
-            ];
-        });
+                return [
+                    'ambalan' => $ambalan ? [
+                        'id' => $ambalan->id,
+                        'nama' => $ambalan->nama,
+                        'kode' => $ambalan->kode,
+                        'logo_url' => $ambalan->logo_url,
+                    ] : null,
+                    'announcements' => $announcements,
+                    'sliderSlides' => $sliderAnnouncements->isNotEmpty() ? $sliderAnnouncements : [],
+                    'gallery' => $gallery->isNotEmpty() ? $gallery : [],
+                    'stats' => [
+                        'members' => Member::where('status_aktif', 'Aktif')->count(),
+                        'alumni' => Member::where('status_aktif', 'Alumni')->count(),
+                    ],
+                ];
+            });
 
-        return response()->json($cached, 200, ['Cache-Control' => 'public, max-age=300, stale-while-revalidate=60']);
+            return response()->json($cached, 200, ['Cache-Control' => 'public, max-age=300, stale-while-revalidate=60']);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'trace' => $e->getTraceAsString(),
+            ], 500);
+        }
     }
 }
