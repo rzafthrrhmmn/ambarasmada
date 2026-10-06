@@ -21,17 +21,17 @@ class GuestController extends Controller
             $cached = Cache::remember('guest.home.api', 300, function () {
                 $ambalan = Ambalan::first();
 
-                $announcements = Announcement::whereNotNull('published_at')
-                    ->orderByDesc('published_at')
-                    ->limit(6)
-                    ->get(['id', 'judul', 'isi', 'published_at', 'kategori'])
-                    ->map(fn ($item) => [
-                        'id' => $item->id,
-                        'judul' => $item->judul,
-                        'isi' => Str::limit(strip_tags($item->isi), 150),
-                        'published_at' => $item->published_at?->toIso8601String(),
-                        'kategori' => $item->kategori,
-                    ]);
+$announcements = Announcement::whereNotNull('published_at')
+                ->orderByDesc('published_at')
+                ->limit(6)
+                ->get(['id', 'judul', 'isi', 'published_at'])
+                ->map(fn ($item) => [
+                    'id' => $item->id,
+                    'judul' => $item->judul,
+                    'isi' => Str::limit(strip_tags($item->isi), 150),
+                    'published_at' => $item->published_at?->toIso8601String(),
+                    'kategori' => null,
+                ]);
 
                 $sliderAnnouncements = Announcement::whereNotNull('published_at')
                     ->whereNotNull('image')
