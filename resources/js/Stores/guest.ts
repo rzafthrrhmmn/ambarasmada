@@ -1,3 +1,4 @@
+import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 import type { GuestHomeData, GuestStats, GalleryItem, Announcement } from '@/Types/guest';
 

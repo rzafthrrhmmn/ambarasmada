@@ -24,7 +24,7 @@ class SecurityHeaders
         // tertutup untuk origin pihak ketiga yang di-embed.
         $response->headers->set(
             'Permissions-Policy',
-            'camera=(self), geolocation=(self), microphone=(), payment=(), usb=(), interest-cohort=()'
+            'camera=(self), geolocation=(self), microphone=(), payment=(), usb=()'
         );
 
         if ($request->isSecure() || $request->header('X-Forwarded-Proto') === 'https') {
@@ -44,7 +44,7 @@ class SecurityHeaders
 
         $csp = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' {$viteSources} https://unpkg.com https://tile.openstreetmap.org https://cdn.vercelinsights.com",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' {$viteSources} https://unpkg.com https://tile.openstreetmap.org",
             "style-src 'self' 'unsafe-inline' {$viteSources} https://unpkg.com https://fonts.googleapis.com",
             "font-src 'self' data: https://fonts.gstatic.com {$viteSources}",
             "img-src 'self' data: https: blob:",
