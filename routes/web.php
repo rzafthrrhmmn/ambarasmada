@@ -41,6 +41,17 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/up', fn () => response()->json(['status' => 'ok', 'time' => now()]))->name('up');
 
+Route::get('/debug/path', function (Illuminate\Http\Request $request) {
+    return response()->json([
+        'request_uri' => $request->server('REQUEST_URI'),
+        'path_info' => $request->server('PATH_INFO'),
+        'script_name' => $request->server('SCRIPT_NAME'),
+        'full_url' => $request->fullUrl(),
+        'path' => $request->path(),
+        'is_api' => $request->is('api/*'),
+    ]);
+})->name('debug.path');
+
 // Public API v1 — guest-facing JSON endpoints with CDN-friendly cache headers.
 Route::prefix('api/v1')->name('api.v1.')->group(function () {
     Route::get('/guest/home', [App\Http\Controllers\Api\GuestController::class, 'home'])->name('guest.home');
