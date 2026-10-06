@@ -1,14 +1,12 @@
 {
   "functions": {
     "api/index.php": {
-      "runtime": "vercel-php@0.9.0",
-      "maxDuration": 60,
-      "includeFiles": "launcher*"
+      "runtime": "vercel-php@0.8.0",
+      "maxDuration": 60
     },
     "api/status.php": {
-      "runtime": "vercel-php@0.9.0",
-      "maxDuration": 60,
-      "includeFiles": "launcher*"
+      "runtime": "vercel-php@0.8.0",
+      "maxDuration": 60
     }
   },
   "headers": [
@@ -73,11 +71,15 @@
     }
   ],
   "env": {
-    "APP_ENV": "production",
-    "APP_DEBUG": "false",
-    "APP_URL": "https://${VERCEL_PROJECT_PRODUCTION_URL}",
     "APP_NAME": "AMBARA-SISTEM DIGITAL",
-    "APP_KEY": "${APP_KEY}",
+    "APP_ENV": "production",
+    "APP_DEBUG": "0",
+    "APP_URL": "https://${VERCEL_PROJECT_PRODUCTION_URL}",
+
+    "APP_LOCALE": "en",
+    "APP_FALLBACK_LOCALE": "en",
+    "APP_FAKER_LOCALE": "en_US",
+    "APP_MAINTENANCE_DRIVER": "file",
     "APP_STORAGE": "/tmp/storage",
     "APP_CONFIG_CACHE": "/tmp/bootstrap/cache/config.php",
     "APP_EVENTS_CACHE": "/tmp/bootstrap/cache/events.php",
@@ -87,47 +89,37 @@
     "VIEW_COMPILED_PATH": "/tmp/storage/framework/views",
     "CACHE_STORE": "database",
     "CACHE_DRIVER": "database",
-    "QUEUE_CONNECTION": "sync",
+    "QUEUE_CONNECTION": "database",
     "LOG_CHANNEL": "stderr",
     "LOG_DEPRECATIONS_CHANNEL": "null",
     "LOG_LEVEL": "error",
-    "SESSION_DRIVER": "cookie",
+    "SESSION_DRIVER": "file",
     "SESSION_LIFETIME": "120",
     "SESSION_ENCRYPT": "true",
     "SESSION_PATH": "/",
-    "SESSION_DOMAIN": "null",
+
     "SESSION_SECURE_COOKIE": "true",
     "SESSION_SAMESITE": "none",
     "SESSION_PARTITIONED_COOKIE": "true",
     "BROADCAST_CONNECTION": "log",
     "FILESYSTEM_DISK": "local",
     "LETTERS_DISK": "s3",
+    "BCRYPT_ROUNDS": "12",
     "DB_CONNECTION": "pgsql",
     "DB_HOST": "aws-0-ap-southeast-1.pooler.supabase.com",
     "DB_PORT": "6543",
     "DB_DATABASE": "postgres",
-    "DB_USERNAME": "postgres.ugbpqikqduptseeslfri",
-    "DB_PASSWORD": "${DB_PASSWORD}",
-    "BCRYPT_ROUNDS": "12",
+
     "REDIS_CLIENT": "phpredis",
     "REDIS_HOST": "127.0.0.1",
-    "REDIS_PASSWORD": "null",
+
     "REDIS_PORT": "6379",
     "MAIL_MAILER": "smtp",
-    "MAIL_SCHEME": "null",
-    "MAIL_HOST": "smtp.gmail.com",
-    "MAIL_PORT": "587",
-    "MAIL_USERNAME": "ambarasmada@gmail.com",
-    "MAIL_PASSWORD": "${MAIL_PASSWORD}",
-    "MAIL_FROM_ADDRESS": "ambarasmada@gmail.com",
+
     "MAIL_FROM_NAME": "AMBARA-SISTEM DIGITAL",
-    "AWS_ACCESS_KEY_ID": "55f9078319db4f31cea52798fcc564eb",
-    "AWS_SECRET_ACCESS_KEY": "${AWS_SECRET_ACCESS_KEY}",
-    "AWS_DEFAULT_REGION": "ap-southeast-1",
-    "AWS_BUCKET": "letters",
-    "AWS_ENDPOINT": "https://ugbpqikqduptseeslfri.storage.supabase.co/storage/v1/s3",
-    "AWS_USE_PATH_STYLE_ENDPOINT": "true",
-    "SENTRY_LARAVEL_DSN": "${SENTRY_LARAVEL_DSN}",
+
+
+
     "SENTRY_TRACES_SAMPLE_RATE": "1.0",
     "SENTRY_PROFILES_SAMPLE_RATE": "1.0",
     "SENTRY_ENABLE_LOGS": "true"

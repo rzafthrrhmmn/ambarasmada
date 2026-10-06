@@ -490,6 +490,8 @@ const mobileMenuOpen = computed({
   set: (v) => uiStore.setMobileMenuOpen(v),
 });
 const particles = ref([]);
+const container = ref(null);
+const particlesSvg = ref(null);
 const galleryContainer = ref(null);
 const galleryScrollLeft = ref(0);
 const galleryScrollRight = ref(0);
