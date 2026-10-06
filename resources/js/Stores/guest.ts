@@ -28,7 +28,7 @@ export const useGuestStore = defineStore('guest', () => {
     error.value = null;
 
     try {
-      const response = await fetch('/api/v1/guest/home', {
+      const response = await fetch('/v1/guest/home', {
         headers: {
           'Accept': 'application/json',
         },

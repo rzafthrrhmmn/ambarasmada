@@ -42,7 +42,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/up', fn () => response()->json(['status' => 'ok', 'time' => now()]))->name('up');
 
 // Public API v1 — guest-facing JSON endpoints with CDN-friendly cache headers.
-Route::prefix('api/v1')->name('api.v1.')->group(function () {
+Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('/guest/home', [App\Http\Controllers\Api\GuestController::class, 'home'])->name('guest.home');
 });
 
