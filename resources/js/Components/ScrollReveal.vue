@@ -29,6 +29,7 @@ const props = defineProps({
 const el = ref(null);
 const isVisible = ref(false);
 let observer = null;
+let fallbackTimer = null;
 
 const animationClasses = {
   'fade-up': 'animate-fade-up',
@@ -90,11 +91,20 @@ function initObserver() {
 
 onMounted(() => {
   nextTick(initObserver);
+
+  fallbackTimer = setTimeout(() => {
+    if (!isVisible.value) {
+      isVisible.value = true;
+    }
+  }, 800);
 });
 
 onUnmounted(() => {
   if (observer) {
     observer.disconnect();
+  }
+  if (fallbackTimer) {
+    clearTimeout(fallbackTimer);
   }
 });
 

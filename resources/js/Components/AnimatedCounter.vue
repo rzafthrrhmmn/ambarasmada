@@ -29,6 +29,7 @@ const isVisible = ref(false);
 const counterEl = ref(null);
 let hasAnimated = false;
 let observer = null;
+let fallbackTimer = null;
 
 const formattedValue = computed(() => {
   const val = animatedValue.value.toFixed(props.decimals);
@@ -111,6 +112,22 @@ onMounted(() => {
   
   if (counterEl.value) {
     observer.observe(counterEl.value);
+  }
+
+  fallbackTimer = setTimeout(() => {
+    if (!isVisible.value) {
+      isVisible.value = true;
+      animate();
+    }
+  }, 800);
+});
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect();
+  }
+  if (fallbackTimer) {
+    clearTimeout(fallbackTimer);
   }
 });
 

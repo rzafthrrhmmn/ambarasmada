@@ -819,6 +819,18 @@ onMounted(() => {
   handleResize();
   window.addEventListener('resize', handleResize);
 
+  if (props.announcements?.length) {
+    guestStore.$patch({ announcements: props.announcements });
+  }
+  if (props.gallery?.length) {
+    guestStore.$patch({ gallery: props.gallery });
+  }
+  if (props.sliderSlides?.length) {
+    guestStore.$patch({ sliderSlides: props.sliderSlides });
+  }
+
+  guestStore.fetchGuestData();
+
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   revealObserver = new IntersectionObserver(
