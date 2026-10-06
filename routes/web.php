@@ -87,6 +87,31 @@ Route::get('/debug/api-guest', function () {
     }
 })->name('debug.api-guest');
 
+Route::get('/debug/cache', function () {
+    try {
+        // Test if cache table exists
+        $tableExists = \Illuminate\Support\Facades\DB::select("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'cache')");
+        
+        // Test cache write/read
+        \Illuminate\Support\Facades\Cache::put('test_key', 'test_value', 60);
+        $cached = \Illuminate\Support\Facades\Cache::get('test_key');
+        \Illuminate\Support\Facades\Cache::forget('test_key');
+        
+        return response()->json([
+            'success' => true,
+            'cache_table_exists' => $tableExists[0]->exists ?? false,
+            'cache_write_read' => $cached === 'test_value',
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'class' => get_class($e),
+            'trace' => $e->getTraceAsString(),
+        ], 500);
+    }
+})->name('debug.cache');
+
 // Public API v1 — guest-facing JSON endpoints with CDN-friendly cache headers.
 Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('/guest/home', [App\Http\Controllers\Api\GuestController::class, 'home'])->name('guest.home');
