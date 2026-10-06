@@ -499,10 +499,11 @@ const newsletterEmail = ref('');
 const newsletterSubscribed = ref(false);
 const animatedMembers = ref(0);
 const animatedAlumni = ref(0);
-let animationFrameId;
-let scrollHandler;
-let revealObserver;
-let lastFocusedElement;
+let animationFrameId = null;
+let scrollHandler = null;
+let revealObserver = null;
+let lastFocusedElement = null;
+let isAnimating = false;
 
 const howItWorks = [
   { title: 'Daftar', description: 'Buat akun dengan email atau NISN. Proses pendaftaran hanya membutuhkan waktu 2 menit.' },
@@ -733,6 +734,10 @@ onMounted(() => {
   container.value?.querySelectorAll('[data-animate]').forEach((el) => revealObserver.observe(el));
 
   const animateParticles = () => {
+    if (isAnimating || document.hidden) {
+      animationFrameId = requestAnimationFrame(animateParticles);
+      return;
+    }
     if (!prefersReducedMotion) {
       particles.value.forEach((p) => {
         p.y += p.speed;
@@ -745,6 +750,16 @@ onMounted(() => {
     animationFrameId = requestAnimationFrame(animateParticles);
   };
   animateParticles();
+
+  const handleVisibilityChange = () => {
+    if (document.hidden && animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    } else if (!document.hidden && !animationFrameId) {
+      animateParticles();
+    }
+  };
+  document.addEventListener('visibilitychange', handleVisibilityChange);
 
   scrollHandler = () => {
     if (!container.value || prefersReducedMotion) return;
@@ -768,6 +783,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('scroll', scrollHandler);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   revealObserver?.disconnect();
   window.removeEventListener('keydown', trapFocus);
