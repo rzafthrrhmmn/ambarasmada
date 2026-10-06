@@ -41,6 +41,19 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/up', fn () => response()->json(['status' => 'ok', 'time' => now()]))->name('up');
 
+Route::get('/debug/db', function () {
+    try {
+        $result = \Illuminate\Support\Facades\DB::select('SELECT 1 as test');
+        return response()->json(['success' => true, 'result' => $result]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ], 500);
+    }
+})->name('debug.db');
+
 // Public API v1 — guest-facing JSON endpoints with CDN-friendly cache headers.
 Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('/guest/home', [App\Http\Controllers\Api\GuestController::class, 'home'])->name('guest.home');
