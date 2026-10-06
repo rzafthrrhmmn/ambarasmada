@@ -2,11 +2,13 @@
   "functions": {
     "api/index.php": {
       "runtime": "vercel-php@0.9.0",
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": ["launcher*"]
     },
     "api/status.php": {
       "runtime": "vercel-php@0.9.0",
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": ["launcher*"]
     }
   },
   "headers": [
@@ -73,7 +75,7 @@
   "env": {
     "APP_ENV": "production",
     "APP_DEBUG": "false",
-    "APP_URL": "https://ambarasmada.vercel.app",
+    "APP_URL": "https://${VERCEL_PROJECT_PRODUCTION_URL}",
     "APP_NAME": "AMBARA-SISTEM DIGITAL",
     "APP_KEY": "base64:42RhQGqnl6apnWJWcRn58DVLAfHhNpFDnn0DHCB/eGo=",
     "APP_STORAGE": "/tmp/storage",
