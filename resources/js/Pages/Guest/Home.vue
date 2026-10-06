@@ -1,7 +1,7 @@
 <template>
-  <div ref="container" class="relative min-h-screen overflow-hidden bg-hutan-800 font-sans">
+  <div ref="container" class="relative min-h-screen overflow-hidden bg-hutan-800 font-sans guest-scroll">
     <ParticleBackground
-      :particle-count="80"
+      :particle-count="isMobile ? 40 : 80"
       :colors="['#A7B92B', '#EDD330', '#6F9435', '#f0ead8']"
       :interactive="true"
       :connection-distance="140"
@@ -13,37 +13,40 @@
       <div class="absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-gradient-to-br from-daun-400/15 via-daun-400/5 to-transparent blur-[100px] will-change-transform" data-parallax-bg></div>
       <div class="absolute -right-40 top-20 h-[400px] w-[400px] rounded-full bg-gradient-to-br from-emas-400/15 via-emas-400/5 to-transparent blur-[100px] will-change-transform"></div>
       <div class="absolute -bottom-40 left-1/3 h-[350px] w-[350px] rounded-full bg-gradient-to-br from-daun-500/20 to-transparent blur-[100px] will-change-transform"></div>
+      <div class="guest-noise-overlay absolute inset-0 opacity-30"></div>
     </div>
 
-    <a href="#main-content" class="skip-link">Lewati ke konten utama</a>
+    <a href="#main-content" class="guest-focus-ring skip-link">Lewati ke konten utama</a>
 
-    <nav class="sticky top-4 z-40 mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-[50px]">
-      <div class="glass-panel flex items-center justify-between px-5 py-3">
-        <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-daun-500/60 bg-hutan-800 text-emas-400">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-            </svg>
+    <nav class="sticky top-4 z-40 mx-auto w-full max-w-[1400px] guest-container">
+      <div class="glass-panel flex items-center justify-between px-4 py-2.5 sm:px-6 sm:py-3">
+        <Link href="/" class="flex items-center gap-3 group">
+          <div class="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-daun-500/60 bg-hutan-800 transition-all duration-300 group-hover:border-emas-400/60">
+            <img
+              :src="logoUrl"
+              alt="Logo Ambalan UPT SMAN 2 Maros"
+              class="guest-logo guest-logo-sm"
+            />
           </div>
           <div class="hidden sm:block">
-            <p class="text-sm font-black text-krem-100">{{ $page.props.ambalan?.nama || 'Ambalan UPT SMAN 2 Maros' }}</p>
+            <p class="text-sm font-black text-krem-100">{{ ambalanNama }}</p>
             <p class="text-[11px] font-bold text-lumut-400">Ekosistem Digital Kepramukaan</p>
           </div>
-        </div>
+        </Link>
 
-        <div class="hidden items-center gap-1 md:flex">
-          <a href="#fitur" class="rounded-xl px-3 py-2 text-sm font-bold text-krem-300 transition hover:bg-daun-500/20 hover:text-emas-400">Fitur</a>
-          <a href="#dokumentasi" class="rounded-xl px-3 py-2 text-sm font-bold text-krem-300 transition hover:bg-daun-500/20 hover:text-emas-400">Dokumentasi</a>
-          <a href="#testimoni" class="rounded-xl px-3 py-2 text-sm font-bold text-krem-300 transition hover:bg-daun-500/20 hover:text-emas-400">Testimoni</a>
-          <a href="#pengumatan" class="rounded-xl px-3 py-2 text-sm font-bold text-krem-300 transition hover:bg-daun-500/20 hover:text-emas-400">Pengumuman</a>
+        <div class="hidden items-center gap-1 lg:flex">
+          <a href="#fitur" class="guest-focus-ring rounded-xl px-3 py-2 text-sm font-bold text-krem-300 transition hover:bg-daun-500/20 hover:text-emas-400">Fitur</a>
+          <a href="#dokumentasi" class="guest-focus-ring rounded-xl px-3 py-2 text-sm font-bold text-krem-300 transition hover:bg-daun-500/20 hover:text-emas-400">Dokumentasi</a>
+          <a href="#testimoni" class="guest-focus-ring rounded-xl px-3 py-2 text-sm font-bold text-krem-300 transition hover:bg-daun-500/20 hover:text-emas-400">Testimoni</a>
+          <a href="#pengumatan" class="guest-focus-ring rounded-xl px-3 py-2 text-sm font-bold text-krem-300 transition hover:bg-daun-500/20 hover:text-emas-400">Pengumuman</a>
           <span class="mx-2 h-4 w-px bg-daun-500/30"></span>
-          <Link href="/login" class="rounded-xl px-4 py-2 text-sm font-bold text-krem-300 transition hover:bg-daun-500/20 hover:text-emas-400">Masuk</Link>
-          <Link href="/register" class="rounded-xl bg-gradient-to-r from-daun-400 to-emas-400 px-4 py-2 text-sm font-black text-hutan-800 shadow-lg shadow-emas-400/20 transition hover:brightness-110 hover:shadow-xl hover:shadow-emas-400/30 active:scale-95">Daftar</Link>
+          <Link href="/login" class="guest-focus-ring rounded-xl px-4 py-2 text-sm font-bold text-krem-300 transition hover:bg-daun-500/20 hover:text-emas-400">Masuk</Link>
+          <Link href="/register" class="guest-focus-ring guest-btn-shimmer rounded-xl bg-gradient-to-r from-daun-400 to-emas-400 px-4 py-2 text-sm font-black text-hutan-800 shadow-lg shadow-emas-400/20 transition hover:brightness-110 hover:shadow-xl hover:shadow-emas-400/30 active:scale-95">Daftar</Link>
         </div>
 
         <button
           id="mobile-menu-button"
-          class="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-daun-500/40 text-krem-300 transition hover:border-emas-400 hover:text-emas-400 md:hidden"
+          class="guest-focus-ring flex h-10 w-10 items-center justify-center rounded-xl border-2 border-daun-500/40 text-krem-300 transition hover:border-emas-400 hover:text-emas-400 lg:hidden"
           @click="openMobileMenu"
           :aria-expanded="uiStore.mobileMenuOpen"
           aria-controls="mobile-menu-overlay"
@@ -69,11 +72,14 @@
         >
           <div class="mx-4 w-full max-w-sm rounded-3xl border-2 border-daun-500/40 bg-hutan-800 p-6 shadow-2xl">
             <div class="mb-6 flex items-center justify-between">
-              <span class="text-lg font-black text-krem-100">Menu</span>
+              <div class="flex items-center gap-3">
+                <img :src="logoUrl" alt="Logo Ambalan" class="h-10 w-10 object-contain p-1" />
+                <span class="text-lg font-black text-krem-100">Menu</span>
+              </div>
               <button
                 id="mobile-menu-close"
                 @click="closeMobileMenu"
-                class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-daun-500 text-krem-300 transition hover:text-emas-400"
+                class="guest-focus-ring flex h-10 w-10 items-center justify-center rounded-full border-2 border-daun-500 text-krem-300 transition hover:text-emas-400"
                 aria-label="Tutup menu"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-5 w-5">
@@ -82,12 +88,12 @@
               </button>
             </div>
             <div class="flex flex-col gap-3">
-              <a href="#fitur" @click="closeMobileMenu" class="rounded-2xl border-2 border-daun-500/30 bg-hutan-700/50 px-4 py-3 text-center font-bold text-krem-100 transition hover:border-emas-400/50 hover:text-emas-400">Fitur</a>
-              <a href="#dokumentasi" @click="closeMobileMenu" class="rounded-2xl border-2 border-daun-500/30 bg-hutan-700/50 px-4 py-3 text-center font-bold text-krem-100 transition hover:border-emas-400/50 hover:text-emas-400">Dokumentasi</a>
-              <a href="#testimoni" @click="closeMobileMenu" class="rounded-2xl border-2 border-daun-500/30 bg-hutan-700/50 px-4 py-3 text-center font-bold text-krem-100 transition hover:border-emas-400/50 hover:text-emas-400">Testimoni</a>
-              <a href="#pengumatan" @click="closeMobileMenu" class="rounded-2xl border-2 border-daun-500/30 bg-hutan-700/50 px-4 py-3 text-center font-bold text-krem-100 transition hover:border-emas-400/50 hover:text-emas-400">Pengumuman</a>
-              <Link href="/login" @click="closeMobileMenu" class="rounded-2xl border-2 border-daun-500 bg-hutan-700/50 px-4 py-3 text-center font-bold text-krem-100 transition hover:border-emas-400/50 hover:text-emas-400">Masuk</Link>
-              <Link href="/register" @click="closeMobileMenu" class="rounded-2xl bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-4 py-3 text-center font-black text-hutan-800 shadow-lg transition hover:brightness-110 active:scale-95">Bergabung Sekarang</Link>
+              <a href="#fitur" @click="closeMobileMenu" class="guest-focus-ring rounded-2xl border-2 border-daun-500/30 bg-hutan-700/50 px-4 py-3 text-center font-bold text-krem-100 transition hover:border-emas-400/50 hover:text-emas-400">Fitur</a>
+              <a href="#dokumentasi" @click="closeMobileMenu" class="guest-focus-ring rounded-2xl border-2 border-daun-500/30 bg-hutan-700/50 px-4 py-3 text-center font-bold text-krem-100 transition hover:border-emas-400/50 hover:text-emas-400">Dokumentasi</a>
+              <a href="#testimoni" @click="closeMobileMenu" class="guest-focus-ring rounded-2xl border-2 border-daun-500/30 bg-hutan-700/50 px-4 py-3 text-center font-bold text-krem-100 transition hover:border-emas-400/50 hover:text-emas-400">Testimoni</a>
+              <a href="#pengumatan" @click="closeMobileMenu" class="guest-focus-ring rounded-2xl border-2 border-daun-500/30 bg-hutan-700/50 px-4 py-3 text-center font-bold text-krem-100 transition hover:border-emas-400/50 hover:text-emas-400">Pengumuman</a>
+              <Link href="/login" @click="closeMobileMenu" class="guest-focus-ring rounded-2xl border-2 border-daun-500 bg-hutan-700/50 px-4 py-3 text-center font-bold text-krem-100 transition hover:border-emas-400/50 hover:text-emas-400">Masuk</Link>
+              <Link href="/register" @click="closeMobileMenu" class="guest-focus-ring rounded-2xl bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-4 py-3 text-center font-black text-hutan-800 shadow-lg transition hover:brightness-110 active:scale-95">Bergabung Sekarang</Link>
             </div>
           </div>
         </div>
@@ -104,16 +110,9 @@
           <ScrollReveal animation="zoom-in" :delay="100">
             <div class="group relative mb-8 flex h-36 w-36 items-center justify-center rounded-3xl border-2 border-daun-500/50 bg-hutan-800/80 shadow-2xl shadow-daun-400/20 transition-all duration-500 hover:rotate-[5deg] hover:scale-105 sm:h-44 sm:w-44">
               <img
-                v-if="$page.props.ambalan?.logo_url"
-                :src="$page.props.ambalan.logo_url"
+                :src="logoUrl"
                 alt="Logo Ambalan UPT SMAN 2 Maros"
-                class="relative h-full w-full object-contain p-3"
-              />
-              <img
-                v-else
-                :src="logoFallback"
-                alt="Logo Ambalan UPT SMAN 2 Maros"
-                class="relative h-full w-full object-contain p-3"
+                class="guest-logo guest-logo-lg"
               />
               <div class="absolute -inset-1 rounded-3xl bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 opacity-0 blur transition-opacity duration-500 group-hover:opacity-60"></div>
             </div>
@@ -121,9 +120,9 @@
 
           <ScrollReveal animation="fade-up" :delay="200">
             <h1 class="text-4xl font-black text-transparent sm:text-5xl lg:text-6xl xl:text-7xl mb-4">
-              <span class="bg-gradient-to-r from-krem-100 to-krem-300 bg-clip-text text-transparent">Satya dan Darma</span>
+              <span class="guest-text-gradient">Satya dan Darma</span>
               <br class="sm:hidden" />
-              <span class="relative inline-block bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 bg-clip-text text-transparent"> dalam satu genggaman.</span>
+              <span class="relative inline-block guest-text-gradient-gold"> dalam satu genggaman.</span>
             </h1>
           </ScrollReveal>
 
@@ -137,7 +136,7 @@
             <div class="mt-8 flex flex-wrap justify-center gap-4">
               <Link
                 href="/register"
-                class="group relative isolate overflow-hidden rounded-2xl bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-8 py-4 text-sm font-black text-hutan-800 shadow-xl shadow-emas-400/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-emas-400/40 active:scale-95 before:absolute before:inset-0 before:bg-white before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-20"
+                class="guest-focus-ring group relative isolate overflow-hidden rounded-2xl bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-8 py-4 text-sm font-black text-hutan-800 shadow-xl shadow-emas-400/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-emas-400/40 active:scale-95 before:absolute before:inset-0 before:bg-white before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-20"
               >
                 <span class="relative z-10 flex items-center gap-2">
                   Bergabung Sekarang
@@ -148,7 +147,7 @@
               </Link>
               <Link
                 href="/login"
-                class="rounded-2xl border-2 border-daun-500 bg-hutan-800/40 px-8 py-4 text-sm font-bold text-krem-300 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-emas-400 hover:bg-daun-500/20 hover:text-emas-400 hover:shadow-lg hover:shadow-daun-500/20 active:scale-95"
+                class="guest-focus-ring rounded-2xl border-2 border-daun-500 bg-hutan-800/40 px-8 py-4 text-sm font-bold text-krem-300 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-emas-400 hover:bg-daun-500/20 hover:text-emas-400 hover:shadow-lg hover:shadow-daun-500/20 active:scale-95"
               >
                 Masuk
               </Link>
@@ -157,11 +156,11 @@
         </div>
       </header>
 
-      <section class="mt-12" data-animate="stats" id="stats">
+      <section class="guest-section" data-animate="stats" id="stats">
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <ScrollReveal v-for="(stat, idx) in statsItems" :key="stat.label" :delay="idx * 100" stagger>
-            <div class="group relative overflow-hidden rounded-2xl border-2 border-daun-400/40 bg-gradient-to-br from-hutan-600 to-hutan-700 p-5 shadow-lg transition duration-200 hover:-translate-y-1 hover:border-emas-400/70 hover:shadow-xl hover:shadow-emas-400/20">
-              <span aria-hidden="true" class="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emas-400/5 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
+          <ScrollReveal v-for="(stat, idx) in statsItems" :key="stat.label" :delay="idx * 100" :stagger="true" :style="`--stagger-index: ${idx}`">
+            <div class="guest-stat-card group">
+              <span aria-hidden="true" class="guest-stat-card-glow" />
               <div class="relative flex items-start justify-between gap-3">
                 <div class="min-w-0">
                   <p class="text-xs font-bold uppercase tracking-wide text-lumut-400">{{ stat.label }}</p>
@@ -176,7 +175,7 @@
         </div>
       </section>
 
-      <section class="mt-24" id="cara-kerja">
+      <section id="cara-kerja" class="guest-section scroll-mt-24">
         <div class="mb-12 text-center">
           <ScrollReveal animation="fade-up">
             <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
@@ -186,35 +185,35 @@
           </ScrollReveal>
           <ScrollReveal animation="fade-up" :delay="100">
             <h2 class="mt-5 text-3xl font-black text-transparent sm:text-4xl lg:text-5xl">
-              <span class="bg-gradient-to-r from-krem-100 to-krem-300 bg-clip-text text-transparent">Mulai dalam</span>
-              <span class="bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 bg-clip-text text-transparent"> 3 Langkah</span>
+              <span class="guest-text-gradient">Mulai dalam</span>
+              <span class="guest-text-gradient-gold"> 3 Langkah</span>
             </h2>
           </ScrollReveal>
         </div>
         <div class="grid gap-6 sm:grid-cols-3">
-          <ScrollReveal v-for="(step, idx) in howItWorks" :key="idx" :delay="idx * 150" stagger animation="fade-up">
+          <ScrollReveal v-for="(step, idx) in howItWorks" :key="idx" :delay="idx * 150" :stagger="true" :style="`--stagger-index: ${idx}`" animation="fade-up">
             <div class="relative flex h-full flex-col items-center rounded-3xl border-2 border-daun-500/30 bg-hutan-600/60 p-8 text-center shadow-lg transition-all duration-300 hover:-translate-y-2 hover:border-daun-400/60 hover:bg-hutan-600/80">
               <div class="absolute -top-4 left-1/2 -translate-x-1/2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-daun-400 bg-hutan-800 text-sm font-black text-emas-400">
                 {{ idx + 1 }}
               </div>
-              <div class="mt-4 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-daun-500/30 bg-hutan-800 text-2xl font-black text-emas-400 transition-transform group-hover:rotate-6">
+              <div class="mt-4 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-daun-500/30 bg-hutan-800 text-2xl font-black text-emas-400 transition-transform hover:rotate-6">
                 {{ step.emoji }}
               </div>
-              <h3 class="text-xl font-extrabold text-krem-100 transition-colors group-hover:text-emas-400">{{ step.title }}</h3>
+              <h3 class="text-xl font-extrabold text-krem-100">{{ step.title }}</h3>
               <p class="mt-3 text-sm leading-relaxed font-medium text-krem-300/80">{{ step.description }}</p>
             </div>
           </ScrollReveal>
         </div>
       </section>
 
-      <section v-if="guestStore.gallery.length > 0" id="dokumentasi" class="mt-24 scroll-mt-24">
+      <section v-if="guestStore.gallery.length > 0" id="dokumentasi" class="guest-section scroll-mt-24">
         <div class="mb-8 flex items-end justify-between">
           <div>
             <ScrollReveal animation="fade-up">
               <span class="section-eyebrow text-daun-400">Dokumentasi Kegiatan</span>
               <h2 class="text-2xl font-black text-transparent sm:text-3xl">
-                <span class="bg-gradient-to-r from-krem-100 to-krem-300 bg-clip-text text-transparent">Dokumentasi</span>
-                <span class="bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 bg-clip-text text-transparent"> Kegiatan</span>
+                <span class="guest-text-gradient">Dokumentasi</span>
+                <span class="guest-text-gradient-gold"> Kegiatan</span>
               </h2>
               <p class="mt-1 text-sm font-medium text-lumut-400">Foto-foto dokumentasi dari kegiatan kepramukaan terbaru.</p>
             </ScrollReveal>
@@ -229,17 +228,14 @@
           <div class="relative">
             <div
               ref="galleryContainer"
-              class="hide-scrollbar flex gap-4 overflow-x-auto pb-4 scroll-snap-type-x mandatory"
+              class="guest-gallery-track"
             >
-              <div
+              <button
                 v-for="(item, idx) in guestStore.gallery"
                 :key="idx"
-                class="group relative flex-shrink-0 overflow-hidden rounded-2xl border-2 border-daun-400/20 bg-hutan-600/60 shadow-lg transition-all duration-300 first:ml-0 hover:-translate-y-1 hover:border-daun-400/40 hover:shadow-2xl hover:shadow-daun-400/10 scroll-snap-align-start cursor-pointer"
-                style="width: 300px;"
+                class="guest-gallery-item"
+                style="width: min(300px, 80vw);"
                 @click="openLightbox(idx)"
-                role="button"
-                tabindex="0"
-                @keydown.enter="openLightbox(idx)"
                 :aria-label="`Lihat ${item.title || 'foto'}`"
               >
                 <div class="relative h-52 overflow-hidden">
@@ -269,14 +265,14 @@
                   <h3 class="text-sm font-extrabold text-krem-100 transition-colors group-hover:text-emas-400">{{ item.title || 'Tanpa judul' }}</h3>
                   <p v-if="item.description" class="mt-1 line-clamp-2 text-xs leading-relaxed font-medium text-krem-300/70">{{ item.description }}</p>
                 </div>
-              </div>
+              </button>
             </div>
 
             <button
               v-if="guestStore.gallery.length > 1"
               @click="scrollGallery('left')"
               :disabled="galleryScrollLeft <= 0"
-              class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-hutan-800/90 p-3 text-krem-100 shadow-xl transition hover:bg-daun-500/50 hover:text-emas-400 active:scale-90 disabled:opacity-30 disabled:pointer-events-none backdrop-blur-sm border-2 border-daun-500/40 hover:border-emas-400"
+              class="guest-gallery-nav left-2"
               aria-label="Gulir kiri"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-5 w-5">
@@ -287,7 +283,7 @@
               v-if="guestStore.gallery.length > 1"
               @click="scrollGallery('right')"
               :disabled="galleryScrollRight <= 0"
-              class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-hutan-800/90 p-3 text-krem-100 shadow-xl transition hover:bg-daun-500/50 hover:text-emas-400 active:scale-90 disabled:opacity-30 disabled:pointer-events-none backdrop-blur-sm border-2 border-daun-500/40 hover:border-emas-400"
+              class="guest-gallery-nav right-2"
               aria-label="Gulir kanan"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-5 w-5">
@@ -298,7 +294,7 @@
         </ScrollReveal>
       </section>
 
-      <section id="fitur" class="mt-24 scroll-mt-24">
+      <section id="fitur" class="guest-section scroll-mt-24">
         <div class="mb-12 text-center">
           <ScrollReveal animation="fade-up">
             <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
@@ -308,8 +304,8 @@
           </ScrollReveal>
           <ScrollReveal animation="fade-up" :delay="100">
             <h2 class="mt-5 text-3xl font-black text-transparent sm:text-4xl lg:text-5xl">
-              <span class="bg-gradient-to-r from-krem-100 to-krem-300 bg-clip-text text-transparent">Sistem Informasi</span>
-              <span class="bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 bg-clip-text text-transparent"> Terintegrasi</span>
+              <span class="guest-text-gradient">Sistem Informasi</span>
+              <span class="guest-text-gradient-gold"> Terintegrasi</span>
             </h2>
             <p class="mx-auto mt-4 max-w-lg text-sm font-medium text-krem-300/80 sm:text-base">
               Lima layanan digital yang saling terhubung untuk mendukung operasional ambalan secara efisien.
@@ -317,8 +313,8 @@
           </ScrollReveal>
         </div>
         <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <ScrollReveal v-for="(feature, idx) in features" :key="idx" :delay="idx * 100" stagger animation="fade-up">
-            <div class="group relative h-full overflow-hidden rounded-3xl border-2 border-daun-500/30 bg-gradient-to-br from-hutan-700 to-hutan-800 p-6 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:border-daun-400/60 hover:bg-hutan-700 hover:shadow-2xl hover:shadow-daun-400/10">
+          <ScrollReveal v-for="(feature, idx) in features" :key="idx" :delay="idx * 100" :stagger="true" :style="`--stagger-index: ${idx}`" animation="fade-up">
+            <div class="guest-feature-card">
               <div class="absolute inset-0 rounded-3xl bg-gradient-to-br from-daun-400/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
               <div class="relative flex items-start gap-5">
                 <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-hutan-800 to-hutan-600 border-2 border-daun-500/30 text-emas-400 shadow-lg shadow-daun-500/10 transition-all duration-300 group-hover:rotate-[5deg] group-hover:border-emas-400/50 group-hover:shadow-xl group-hover:shadow-daun-500/20">
@@ -335,7 +331,7 @@
         </div>
       </section>
 
-      <section id="testimoni" class="mt-24 scroll-mt-24">
+      <section id="testimoni" class="guest-section scroll-mt-24">
         <div class="mb-12 text-center">
           <ScrollReveal animation="fade-up">
             <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
@@ -345,8 +341,8 @@
           </ScrollReveal>
           <ScrollReveal animation="fade-up" :delay="100">
             <h2 class="mt-5 text-3xl font-black text-transparent sm:text-4xl lg:text-5xl">
-              <span class="bg-gradient-to-r from-krem-100 to-krem-300 bg-clip-text text-transparent">Apa Kata</span>
-              <span class="bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 bg-clip-text text-transparent"> Mereka</span>
+              <span class="guest-text-gradient">Apa Kata</span>
+              <span class="guest-text-gradient-gold"> Mereka</span>
             </h2>
           </ScrollReveal>
         </div>
@@ -355,7 +351,7 @@
         </ScrollReveal>
       </section>
 
-      <section id="pengumatan" class="mt-24 scroll-mt-24">
+      <section id="pengumatan" class="guest-section scroll-mt-24">
         <div class="mb-12 text-center">
           <ScrollReveal animation="fade-up">
             <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
@@ -365,8 +361,8 @@
           </ScrollReveal>
           <ScrollReveal animation="fade-up" :delay="100">
             <h2 class="mt-5 text-3xl font-black text-transparent sm:text-4xl">
-              <span class="bg-gradient-to-r from-krem-100 to-krem-300 bg-clip-text text-transparent">Pengumuman</span>
-              <span class="bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 bg-clip-text text-transparent"> Terbaru</span>
+              <span class="guest-text-gradient">Pengumuman</span>
+              <span class="guest-text-gradient-gold"> Terbaru</span>
             </h2>
             <p class="mx-auto mt-4 max-w-lg text-sm font-medium text-krem-300/80">
               Ikuti perkembangan terbaru dari ambalan.
@@ -374,9 +370,9 @@
           </ScrollReveal>
         </div>
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <ScrollReveal v-for="(item, idx) in guestStore.announcements.slice(0, 6)" :key="item.id" :delay="idx * 80" stagger animation="fade-up">
+          <ScrollReveal v-for="(item, idx) in guestStore.announcements.slice(0, 6)" :key="item.id" :delay="idx * 80" :stagger="true" :style="`--stagger-index: ${idx}`" animation="fade-up">
             <article
-              class="group relative flex h-full flex-col rounded-2xl border-2 border-daun-500/20 bg-hutan-800/60 p-6 shadow-lg backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-daun-400/40 hover:bg-hutan-800/80 hover:shadow-xl hover:shadow-daun-500/10"
+              class="guest-announcement-card"
             >
               <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-daun-400/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
               <div class="relative mb-4 flex items-center justify-between">
@@ -411,7 +407,7 @@
         </div>
       </section>
 
-      <section id="trust" class="mt-24 scroll-mt-24">
+      <section id="trust" class="guest-section scroll-mt-24">
         <div class="mb-10 text-center">
           <ScrollReveal animation="fade-up">
             <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
@@ -432,7 +428,7 @@
         </ScrollReveal>
       </section>
 
-      <section class="mt-24">
+      <section class="guest-section">
         <ScrollReveal animation="zoom-in">
           <div class="relative isolate overflow-hidden rounded-3xl border-2 border-emas-400/40 bg-gradient-to-r from-daun-400 via-daun-500 to-hutan-800 p-10 text-center shadow-2xl sm:p-16">
             <div class="absolute -top-24 -left-24 h-80 w-80 rounded-full bg-emas-400/20 blur-3xl"></div>
@@ -447,13 +443,13 @@
               <div class="mt-8 flex flex-wrap justify-center gap-4">
                 <Link
                   href="/register"
-                  class="rounded-2xl bg-hutan-800 px-9 py-4 text-sm font-black text-emas-400 shadow-xl shadow-black/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-black/40 active:scale-95"
+                  class="guest-focus-ring rounded-2xl bg-hutan-800 px-9 py-4 text-sm font-black text-emas-400 shadow-xl shadow-black/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-black/40 active:scale-95"
                 >
                   Bergabung Sekarang
                 </Link>
                 <Link
                   href="/login"
-                  class="rounded-2xl border-2 border-hutan-800 bg-white/10 px-9 py-4 text-sm font-black text-hutan-800 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-transparent hover:bg-white/20 active:scale-95"
+                  class="guest-focus-ring rounded-2xl border-2 border-hutan-800 bg-white/10 px-9 py-4 text-sm font-black text-hutan-800 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-transparent hover:bg-white/20 active:scale-95"
                 >
                   Masuk Akun
                 </Link>
@@ -463,7 +459,7 @@
         </ScrollReveal>
       </section>
 
-      <section id="newsletter" class="mt-24 scroll-mt-24">
+      <section id="newsletter" class="guest-section scroll-mt-24">
         <ScrollReveal animation="fade-up">
           <div class="mx-auto max-w-2xl rounded-3xl border-2 border-daun-500/30 bg-hutan-600/60 p-8 text-center shadow-lg backdrop-blur-sm sm:p-10">
             <h2 class="text-2xl font-black text-krem-100 sm:text-3xl">Dapatkan Kabar Terbaru</h2>
@@ -476,7 +472,7 @@
                 type="email"
                 required
                 placeholder="email@contoh.com"
-                class="flex-1 rounded-xl border-2 border-daun-500/40 bg-hutan-800 px-4 py-3 text-sm font-semibold text-krem-100 outline-none transition focus:border-emas-400 focus:shadow-lg focus:shadow-emas-400/10"
+                class="guest-focus-ring flex-1 rounded-xl border-2 border-daun-500/40 bg-hutan-800 px-4 py-3 text-sm font-semibold text-krem-100 outline-none transition focus:border-emas-400 focus:shadow-lg focus:shadow-emas-400/10"
               />
               <button type="submit" class="btn-primary rounded-xl px-6 py-3 text-sm font-black">
                 Berlangganan
@@ -487,15 +483,13 @@
         </ScrollReveal>
       </section>
 
-      <footer class="mt-24 border-t border-daun-500/20 pt-10 pb-6">
+      <footer class="guest-section border-t border-daun-500/20">
         <div class="flex flex-col items-center justify-center gap-5">
           <div class="flex items-center gap-3">
-            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-daun-400/20 text-emas-400">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-              </svg>
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl overflow-hidden border-2 border-daun-500/40 bg-hutan-800 text-emas-400">
+              <img :src="logoUrl" alt="Logo Ambalan" class="h-8 w-8 object-contain" />
             </div>
-            <span class="text-base font-bold text-krem-300">{{ $page.props.ambalan?.nama || 'Ambalan UPT SMAN 2 Maros' }}</span>
+            <span class="text-base font-bold text-krem-300">{{ ambalanNama }}</span>
           </div>
           <nav class="flex flex-wrap items-center justify-center gap-4 text-xs font-medium text-lumut-400">
             <Link href="/privacy" class="transition hover:text-emas-400">Kebijakan Privasi</Link>
@@ -508,6 +502,39 @@
         </div>
       </footer>
     </main>
+
+    <nav v-if="isMobile" class="guest-bottom-nav" aria-label="Navigasi bawah">
+      <a href="#fitur" class="guest-bottom-nav-item" @click.prevent="scrollToSection('fitur')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+        </svg>
+        <span>Fitur</span>
+      </a>
+      <a href="#dokumentasi" class="guest-bottom-nav-item" @click.prevent="scrollToSection('dokumentasi')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.25-5.25a2.25 2.25 0 013 0l3.75 3.75M9.75 12.75l.75.75m0 0l.75.75m-.75-.75v-6.75m-.75 6.75h6" />
+        </svg>
+        <span>Galeri</span>
+      </a>
+      <a href="#testimoni" class="guest-bottom-nav-item" @click.prevent="scrollToSection('testimoni')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.012z" />
+        </svg>
+        <span>Testimoni</span>
+      </a>
+      <a href="#pengumatan" class="guest-bottom-nav-item" @click.prevent="scrollToSection('pengumatan')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+        </svg>
+        <span>Pengumuman</span>
+      </a>
+      <Link href="/login" class="guest-bottom-nav-item">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+        </svg>
+        <span>Masuk</span>
+      </Link>
+    </nav>
 
     <LightboxModal
       v-model:open="lightboxOpen"
@@ -523,7 +550,6 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import PhotoSlider from '@/Components/PhotoSlider.vue';
-import StatCard from '@/Components/StatCard.vue';
 import AppIcon from '@/Components/AppIcon.vue';
 import ParticleBackground from '@/Components/ParticleBackground.vue';
 import ScrollReveal from '@/Components/ScrollReveal.vue';
@@ -542,6 +568,7 @@ const props = defineProps({
   gallery: { type: Array, default: () => [] },
 });
 
+const isMobile = ref(false);
 const mobileMenuOpen = computed({
   get: () => uiStore.mobileMenuOpen,
   set: (v) => uiStore.setMobileMenuOpen(v),
@@ -559,6 +586,10 @@ let animationFrameId = null;
 let scrollHandler = null;
 let revealObserver = null;
 let lastFocusedElement = null;
+let resizeObserver = null;
+
+const ambalanNama = computed(() => $page.props.ambalan?.nama || 'Ambalan UPT SMAN 2 Maros');
+const logoUrl = computed(() => $page.props.ambalan?.logo_url || '/images/Logo_Ambalan.png');
 
 const howItWorks = [
   { emoji: '📝', title: 'Daftar', description: 'Buat akun dengan email atau NISN. Proses pendaftaran hanya membutuhkan waktu 2 menit.' },
@@ -705,6 +736,15 @@ function onLightboxNavigate(direction) {
   }
 }
 
+function scrollToSection(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function handleResize() {
+  isMobile.value = window.innerWidth < 1024;
+}
+
 function setMetaTags() {
   const url = window.location.origin + '/';
   const title = 'AMBARA — Sistem Digital Ambalan SMA 2 Maros';
@@ -776,6 +816,8 @@ function setMetaTags() {
 
 onMounted(() => {
   setMetaTags();
+  handleResize();
+  window.addEventListener('resize', handleResize);
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -821,6 +863,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('scroll', scrollHandler);
+  window.removeEventListener('resize', handleResize);
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   revealObserver?.disconnect();
   window.removeEventListener('keydown', trapFocus);

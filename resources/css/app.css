@@ -769,3 +769,246 @@
 .peta-langkah-teks {
     @apply text-sm leading-relaxed text-krem-300;
 }
+
+/*
+| Guest Homepage — tata letak produksi
+|--------------------------------------------------------------------------
+| Kelas ini khusus untuk halaman tamu (Guest/Home). Di sini kita kumpulkan
+| pola visual yang berulang: bagian hero, kartu statistik, galeri, testimoni,
+| dan navigasi mobile. Tujuannya supaya Home.vue tidak penuh dengan utility
+| Tailwind yang sama berkali-kali, dan supaya tema ambalan tetap konsisten.
+|
+| Identitas ambalan menggunakan Logo_Ambalan.png di seluruh halaman.
+*/
+@layer guest {
+    /* Guliran halus untuk seluruh halaman tamu. */
+    .guest-scroll {
+        scroll-behavior: smooth;
+    }
+
+    /* Kontainer utama dengan batas lebar dan padding responsif. */
+    .guest-container {
+        @apply mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-[50px];
+    }
+
+    /* Spacing vertikal konsisten antar section. */
+    .guest-section {
+        @apply py-16 sm:py-24 lg:py-32;
+    }
+
+    .guest-section + .guest-section {
+        @apply border-t border-daun-500/10;
+    }
+
+    /* Teks gradient untuk elemen branding. */
+    .guest-text-gradient {
+        background: linear-gradient(to right, var(--color-krem-100), var(--color-krem-300), var(--color-daun-400));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+
+    /* Teks gradient emas untuk aksen. */
+    .guest-text-gradient-gold {
+        background: linear-gradient(to right, var(--color-daun-400), var(--color-emas-400), var(--color-daun-400));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+
+    /* Indikator fokus yang terlihat untuk aksesibilitas. */
+    .guest-focus-ring:focus-visible {
+        outline: 2px solid var(--color-emas-400);
+        outline-offset: 2px;
+    }
+
+    /* Kartu statistik dengan identitas visual yang kuat. */
+    .guest-stat-card {
+        @apply relative overflow-hidden rounded-2xl border-2 border-daun-400/40 bg-gradient-to-br from-hutan-600 to-hutan-700 p-5 shadow-lg transition duration-200 hover:-translate-y-1 hover:border-emas-400/70 hover:shadow-xl hover:shadow-emas-400/20;
+    }
+
+    .guest-stat-card-glow {
+        @apply pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emas-400/5 blur-2xl transition-opacity duration-300;
+    }
+
+    .guest-stat-card:hover .guest-stat-card-glow {
+        opacity: 1;
+    }
+
+    /* Kartu fitur dengan efek 3D. */
+    .guest-feature-card {
+        @apply relative h-full overflow-hidden rounded-3xl border-2 border-daun-500/30 bg-gradient-to-br from-hutan-700 to-hutan-800 p-6 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:border-daun-400/60 hover:bg-hutan-700 hover:shadow-2xl hover:shadow-daun-400/10;
+    }
+
+    /* Kartu testimoni. */
+    .guest-testimonial-card {
+        @apply relative h-full overflow-hidden rounded-2xl border-2 border-daun-500/30 bg-hutan-800/60 p-6 shadow-lg backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-daun-400/40 hover:bg-hutan-800/80 hover:shadow-xl hover:shadow-daun-500/10;
+    }
+
+    /* Kartu pengumuman. */
+    .guest-announcement-card {
+        @apply relative flex h-full flex-col rounded-2xl border-2 border-daun-500/20 bg-hutan-800/60 p-6 shadow-lg backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-daun-400/40 hover:bg-hutan-800/80 hover:shadow-xl hover:shadow-daun-500/10;
+    }
+
+    /* Galeri horizontal. */
+    .guest-gallery-track {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .guest-gallery-track::-webkit-scrollbar {
+        display: none;
+    }
+    .guest-gallery-track {
+        @apply flex gap-4 overflow-x-auto pb-4;
+        scroll-snap-type: x mandatory;
+    }
+    .guest-gallery-item {
+        @apply relative flex-shrink-0 overflow-hidden rounded-2xl border-2 border-daun-400/20 bg-hutan-600/60 shadow-lg transition-all duration-300 first:ml-0 hover:-translate-y-1 hover:border-daun-400/40 hover:shadow-2xl hover:shadow-daun-400/10;
+        scroll-snap-align: start;
+    }
+
+    /* Tombol galeri navigasi. */
+    .guest-gallery-nav {
+        @apply absolute top-1/2 -translate-y-1/2 rounded-full bg-hutan-800/90 p-3 text-krem-100 shadow-xl transition hover:bg-daun-500/50 hover:text-emas-400 active:scale-90 disabled:opacity-30 disabled:pointer-events-none backdrop-blur-sm border-2 border-daun-500/40 hover:border-emas-400;
+    }
+
+    /* Navigasi bawah untuk mobile. */
+    .guest-bottom-nav {
+        @apply fixed inset-x-0 bottom-0 z-40 border-t-2 border-daun-500/20 bg-hutan-800/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)];
+    }
+
+    .guest-bottom-nav-item {
+        @apply relative flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-bold text-lumut-400 transition-colors duration-150 hover:text-krem-300;
+    }
+
+    .guest-bottom-nav-item.is-active {
+        @apply text-emas-400;
+    }
+
+    .guest-bottom-nav-indicator {
+        @apply absolute inset-x-3 top-0 h-0.5 rounded-full bg-transparent transition-colors duration-150;
+    }
+
+    .guest-bottom-nav-item.is-active .guest-bottom-nav-indicator {
+        @apply bg-emas-400;
+    }
+
+    /* Logo ambalan dengan ukuran responsif. */
+    .guest-logo {
+        @apply object-contain p-2 sm:p-3;
+    }
+
+    .guest-logo-sm {
+        @apply h-10 w-10 sm:h-12 sm:w-12;
+    }
+
+    .guest-logo-md {
+        @apply h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24;
+    }
+
+    .guest-logo-lg {
+        @apply h-24 w-24 sm:h-32 sm:w-32 md:h-36 md:w-36 lg:h-44 lg:w-44;
+    }
+
+    /* Efek noise/dekoratif untuk kedalaman. */
+    .guest-noise-overlay {
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        pointer-events: none;
+    }
+
+    /* Tombol dengan efek mengkilap. */
+    .guest-btn-shimmer {
+        @apply relative overflow-hidden;
+    }
+
+    .guest-btn-shimmer::after {
+        content: '';
+        @apply absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent;
+        animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+        100% { transform: translateX(100%); }
+    }
+
+    /* Kartu dengan efek hover glow yang konsisten. */
+    .guest-card-glow {
+        @apply pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-emas-400/10 blur-2xl transition duration-300;
+    }
+
+    .group:hover .guest-card-glow {
+        @apply scale-125 opacity-100;
+    }
+
+    /* Animasi masuk untuk elemen guest. */
+    .guest-animate-in {
+        animation: guestFadeInUp 0.7s ease-out both;
+    }
+
+    @keyframes guestFadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Delay utilities untuk animasi berurutan. */
+    .guest-delay-100 { animation-delay: 0.1s; }
+    .guest-delay-200 { animation-delay: 0.2s; }
+    .guest-delay-300 { animation-delay: 0.3s; }
+    .guest-delay-400 { animation-delay: 0.4s; }
+    .guest-delay-500 { animation-delay: 0.5s; }
+}
+
+/* Scroll reveal dengan stagger index yang benar. */
+.scroll-reveal.stagger-children > * {
+    opacity: 0;
+    animation: none;
+}
+
+.scroll-reveal.stagger-children.is-visible > * {
+    animation: var(--reveal-animation, fadeUp) 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    animation-delay: calc(var(--stagger-index, 0) * var(--stagger-delay, 100ms));
+}
+
+/* Pastikan scroll reveal menghormati reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+    .scroll-reveal {
+        opacity: 1 !important;
+    }
+
+    .scroll-reveal.stagger-children > * {
+        opacity: 1 !important;
+        animation: none !important;
+    }
+}
+
+/* Guliran halus untuk seluruh aplikasi. */
+html.guest-scroll {
+    scroll-behavior: smooth;
+}
+
+/* Scrollbar tersembunyi untuk galeri. */
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Fokus yang terlihat untuk keyboard navigation. */
+*:focus-visible {
+    outline: 2px solid var(--color-emas-400);
+    outline-offset: 2px;
+}
+
+/* Hilangkan outline default untuk mouse click. */
+*:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* PWA standalone mode adjustments. */
+@media (display-mode: standalone) {
+    .guest-bottom-nav {
+        @apply pb-[env(safe-area-inset-bottom)];
+    }
+}
