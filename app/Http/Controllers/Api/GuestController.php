@@ -17,7 +17,7 @@ class GuestController extends Controller
 {
     public function home(Request $request): JsonResponse
     {
-        $cached = Cache::tags(['guest'])->remember('guest.home.api', 300, function () {
+        $cached = Cache::remember('guest.home.api', 300, function () {
             $ambalan = Ambalan::first();
 
             $announcements = Announcement::whereNotNull('published_at')
