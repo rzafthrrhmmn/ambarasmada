@@ -54,6 +54,39 @@ Route::get('/debug/db', function () {
     }
 })->name('debug.db');
 
+Route::get('/debug/api-guest', function () {
+    try {
+        $ambalan = \App\Models\Ambalan::first();
+        $announcements = \App\Models\Announcement::whereNotNull('published_at')
+            ->where('published_at', '<=', now())
+            ->latest('published_at')
+            ->take(5)
+            ->get();
+        $gallery = \App\Models\Gallery::whereNotNull('image')
+            ->latest('created_at')
+            ->take(12)
+            ->get();
+        $stats = [
+            'total_members' => \App\Models\Member::where('status_aktif', 'Aktif')->count(),
+            'total_alumni' => \App\Models\Member::where('status_aktif', 'Alumni')->count(),
+        ];
+        return response()->json([
+            'success' => true,
+            'ambalan' => $ambalan,
+            'announcements' => $announcements,
+            'gallery' => $gallery,
+            'stats' => $stats,
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'class' => get_class($e),
+            'trace' => $e->getTraceAsString(),
+        ], 500);
+    }
+})->name('debug.api-guest');
+
 // Public API v1 — guest-facing JSON endpoints with CDN-friendly cache headers.
 Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('/guest/home', [App\Http\Controllers\Api\GuestController::class, 'home'])->name('guest.home');
