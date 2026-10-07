@@ -314,19 +314,14 @@ self.addEventListener('fetch', (event) => {
 });
 
 /**
- * Navigasi: jaringan dulu, lalu shell yang dicache, lalu /offline.html.
+ * Navigasi: jaringan dulu, lalu cache, lalu /offline.html.
  *
- * Shell yang dicache adalah halaman tamu, jadi bukan pengganti halaman
- *enggota. Gunanya hanya memberi entry point agar aplikasi tidak menampilkan
- * error browser; OfflineBanner memberi tahu pengguna sedang offline.
+ * Setiap respons HTML yang sukses disimpan di cache dengan URL-nya sendiri,
+ * sehingga halaman yang pernah dibuka bisa ditampilkan ulang saat offline.
  */
 async function handleNavigate(request) {
-    // Halaman peta offline hanya ada di Cache Storage, tidak pernah di origin:
-    // /offline-map.html akan jatuh ke catch-all Laravel dan membalas 404, jadi
-    // harus dilayani dari cache sebelum jaringan dicoba.
     if (new URL(request.url).pathname === OFFLINE_MAP_HTML) {
         const generated = await caches.match(OFFLINE_MAP_HTML);
-
         if (generated) return generated;
 
         return new Response(
@@ -338,13 +333,17 @@ async function handleNavigate(request) {
         );
     }
 
-    try {
-        return await fetch(request);
-    } catch {
-        const cache = await caches.open(CACHE_NAME);
-        const shell = await cache.match(APP_SHELL);
+    const cache = await caches.open(CACHE_NAME);
 
-        if (shell) return shell;
+    try {
+        const networkResponse = await fetch(request);
+        if (networkResponse && networkResponse.ok) {
+            await cache.put(request, networkResponse.clone());
+        }
+        return networkResponse;
+    } catch {
+        const cachedResponse = await cache.match(request);
+        if (cachedResponse) return cachedResponse;
 
         const fallback = await cache.match(OFFLINE_FALLBACK);
         if (fallback) return fallback;
