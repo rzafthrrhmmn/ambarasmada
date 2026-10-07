@@ -657,15 +657,17 @@ function easeOutExpo(t) {
 }
 
 function animateCounter(target, key, duration = 1800) {
+  if (typeof target !== 'number') {
+    animatedStats.value[key] = target;
+    return;
+  }
+
   const startTime = performance.now();
-  const isNumber = typeof target === 'number';
-  const numTarget = isNumber ? target : 0;
+  const numTarget = target;
   const step = (timestamp) => {
     const elapsed = timestamp - startTime;
     const progress = Math.min(elapsed / duration, 1);
-    if (isNumber) {
-      animatedStats.value[key] = Math.floor(numTarget * easeOutExpo(progress));
-    }
+    animatedStats.value[key] = Math.floor(numTarget * easeOutExpo(progress));
     if (progress < 1) animationFrameId = requestAnimationFrame(step);
   };
   requestAnimationFrame(step);

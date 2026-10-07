@@ -90,7 +90,13 @@ function initObserver() {
 }
 
 onMounted(() => {
-  nextTick(initObserver);
+  nextTick(() => {
+    try {
+      initObserver();
+    } catch (e) {
+      isVisible.value = true;
+    }
+  });
 
   fallbackTimer = setTimeout(() => {
     if (!isVisible.value) {
@@ -111,9 +117,11 @@ onUnmounted(() => {
 watch(() => props.disabled, (disabled) => {
   if (disabled) {
     isVisible.value = true;
-    if (observer) observer.disconnect();
+    if (observer) {
+      try { observer.disconnect(); } catch (e) {}
+    }
   } else {
-    initObserver();
+    try { initObserver(); } catch (e) { isVisible.value = true; }
   }
 });
 </script>
