@@ -13,7 +13,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 
 const props = defineProps({
   threshold: { type: Number, default: 0.1 },
