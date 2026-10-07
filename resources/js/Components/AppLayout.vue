@@ -253,11 +253,17 @@ onBeforeUnmount(() => {
 });
 
 async function logout() {
-    // Antrean presensi milik pengguna ini tidak boleh terkirim sebagai akun lain,
-    // dan cache halaman berisi data pribadi harus hilang dari perangkat.
     clearQueue();
     await purgeUserScopedCaches();
 
-    router.post('/logout');
+    try {
+        await router.post('/logout');
+    } catch (error) {
+        // Offline atau gagal jaringan: logout dari sisi lokal dan
+        // arahkan ke halaman tamu. Server tidak bisa dihubungi, jadi
+        // session di server tetap ada sampai user online lagi;
+        // yang penting data pribadi di perangkat sudah dihapus.
+        window.location.href = '/';
+    }
 }
 </script>

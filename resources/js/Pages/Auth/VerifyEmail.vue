@@ -129,6 +129,8 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
+import { purgeUserScopedCaches } from '@/ServiceWorker.js';
+import { clear as clearQueue } from '@/OfflineQueue.js';
 
 const props = defineProps({
   email: { type: String, default: null },
@@ -169,8 +171,15 @@ function resendVerification() {
   });
 }
 
-function logout() {
-  router.post('/logout');
+async function logout() {
+  clearQueue();
+  await purgeUserScopedCaches();
+
+  try {
+    await router.post('/logout');
+  } catch {
+    window.location.href = '/';
+  }
 }
 
 onMounted(() => startCooldown());

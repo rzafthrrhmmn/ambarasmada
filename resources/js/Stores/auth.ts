@@ -18,6 +18,10 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null;
   }
 
+  function clear() {
+    user.value = null;
+  }
+
   function updateUser(partial: Partial<User>) {
     if (user.value) {
       user.value = { ...user.value, ...partial };
