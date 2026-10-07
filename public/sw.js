@@ -70,14 +70,14 @@ async function precacheViteBuildAssets(cache) {
         const response = await fetch('/build/manifest.json');
         if (!response.ok) return;
         const manifest = await response.json();
-        const urls: string[] = [];
+        const urls = [];
         for (const key in manifest) {
             const entry = manifest[key];
-            if (entry?.file) {
+            if (entry && entry.file) {
                 urls.push('/build/' + entry.file);
             }
-            if (Array.isArray(entry?.css)) {
-                entry.css.forEach((cssPath) => {
+            if (Array.isArray(entry && entry.css)) {
+                entry.css.forEach(function(cssPath) {
                     urls.push('/build/' + cssPath);
                 });
             }
@@ -88,8 +88,6 @@ async function precacheViteBuildAssets(cache) {
         // asset Vite tetap akan di-cache on-demand oleh fetch handler.
     }
 }
-
-const OFFLINE_FALLBACK = '/offline.html';
 
 // Pola URL tile peta offline yang dilayani dari IndexedDB. Dipakai juga oleh
 // handleOfflineTileRequest(), jadi keduanya tidak boleh berbeda.
