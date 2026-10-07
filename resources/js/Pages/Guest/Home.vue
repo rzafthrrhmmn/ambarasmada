@@ -588,8 +588,20 @@ let revealObserver = null;
 let lastFocusedElement = null;
 let resizeObserver = null;
 
-const ambalanNama = computed(() => $page.props.ambalan?.nama || 'Ambalan UPT SMAN 2 Maros');
-const logoUrl = computed(() => $page.props.ambalan?.logo_url || '/images/Logo_Ambalan.png');
+const ambalanNama = computed(() => {
+  try {
+    return $page?.props?.ambalan?.nama || 'Ambalan UPT SMAN 2 Maros';
+  } catch (e) {
+    return 'Ambalan UPT SMAN 2 Maros';
+  }
+});
+const logoUrl = computed(() => {
+  try {
+    return $page?.props?.ambalan?.logo_url || '/images/Logo_Ambalan.png';
+  } catch (e) {
+    return '/images/Logo_Ambalan.png';
+  }
+});
 
 const howItWorks = [
   { emoji: '📝', title: 'Daftar', description: 'Buat akun dengan email atau NISN. Proses pendaftaran hanya membutuhkan waktu 2 menit.' },
