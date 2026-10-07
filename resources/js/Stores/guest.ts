@@ -24,6 +24,10 @@ export const useGuestStore = defineStore('guest', () => {
       return data.value;
     }
 
+    if (!force && typeof navigator !== 'undefined' && navigator.onLine === false && data.value) {
+      return data.value;
+    }
+
     isLoading.value = true;
     error.value = null;
 
@@ -55,6 +59,26 @@ export const useGuestStore = defineStore('guest', () => {
     }
   }
 
+  function setFromProps(payload: {
+    announcements?: Announcement[];
+    gallery?: GalleryItem[];
+    sliderSlides?: GuestHomeData['sliderSlides'];
+    stats?: GuestStats;
+  }) {
+    if (payload.announcements) {
+      announcements.value = payload.announcements;
+    }
+    if (payload.gallery) {
+      gallery.value = payload.gallery;
+    }
+    if (payload.sliderSlides) {
+      sliderSlides.value = payload.sliderSlides;
+    }
+    if (payload.stats) {
+      stats.value = payload.stats;
+    }
+  }
+
   function updateStats(newStats: Partial<GuestStats>) {
     stats.value = { ...stats.value, ...newStats };
   }
@@ -82,5 +106,6 @@ export const useGuestStore = defineStore('guest', () => {
     fetchGuestData,
     updateStats,
     clear,
+    setFromProps,
   };
 });

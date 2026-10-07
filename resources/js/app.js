@@ -30,6 +30,9 @@ createInertiaApp({
         app.use(ZiggyVue);
         app.use(Toast, { position: 'top-center', timeout: 4000, closeOnClick: true, pauseOnHover: true, draggable: true, showCloseButton: 'onError', transition: 'Vue-Toastification__bounce' });
         app.mount(el);
+        if (typeof window !== 'undefined' && typeof window.hidePwaLoadingScreen === 'function') {
+            window.hidePwaLoadingScreen();
+        }
     },
     progress: {
         color: '#6F9435',

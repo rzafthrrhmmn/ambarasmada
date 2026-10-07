@@ -65,6 +65,32 @@ const EXTERNAL_LIBS = [
 
 const OFFLINE_FALLBACK = '/offline.html';
 
+async function precacheViteBuildAssets(cache) {
+    try {
+        const response = await fetch('/build/manifest.json');
+        if (!response.ok) return;
+        const manifest = await response.json();
+        const urls: string[] = [];
+        for (const key in manifest) {
+            const entry = manifest[key];
+            if (entry?.file) {
+                urls.push('/build/' + entry.file);
+            }
+            if (Array.isArray(entry?.css)) {
+                entry.css.forEach((cssPath) => {
+                    urls.push('/build/' + cssPath);
+                });
+            }
+        }
+        await precache(cache, urls);
+    } catch {
+        // Silent fail: jika manifest tidak ada atau gagal diunduh,
+        // asset Vite tetap akan di-cache on-demand oleh fetch handler.
+    }
+}
+
+const OFFLINE_FALLBACK = '/offline.html';
+
 // Pola URL tile peta offline yang dilayani dari IndexedDB. Dipakai juga oleh
 // handleOfflineTileRequest(), jadi keduanya tidak boleh berbeda.
 const OFFLINE_TILE_PATTERN = /^\/offline-tiles\/(\d+)\/(\d+)\/(\d+)\.pbf$/;
@@ -151,6 +177,9 @@ self.addEventListener('install', (event) => {
                     )
                 )
             ),
+            // Cache Vite build assets (JS/CSS chunks) from manifest
+            caches.open(CACHE_NAME).then((cache) => precacheViteBuildAssets(cache)),
+            caches.open(ASSETS_CACHE).then((cache) => precacheViteBuildAssets(cache)),
             // Shell aplikasi sebagai entry point saat offline.
             caches.open(CACHE_NAME).then((cache) =>
                 fetch(APP_SHELL).then((response) => {

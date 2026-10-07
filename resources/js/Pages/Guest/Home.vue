@@ -103,6 +103,10 @@
       </Transition>
     </Teleport>
 
+    <div v-if="!isOnline" class="fixed top-0 inset-x-0 z-50 bg-emas-400 text-hutan-800 text-center text-xs font-bold py-1.5 px-4 shadow-lg">
+      Anda sedang offline — menampilkan data yang tersimpan di perangkat
+    </div>
+
     <main id="main-content" class="relative mx-auto w-full px-4 py-8 sm:px-6 sm:py-12 lg:px-[50px] lg:py-20">
       <header class="mb-10 sm:mb-16" data-parallax-hero>
         <section v-if="guestStore.sliderSlides.length > 0" class="mb-10">
@@ -551,6 +555,7 @@ const props = defineProps({
 });
 
 const isMobile = ref(false);
+const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true);
 const container = ref(null);
 const galleryContainer = ref(null);
 const galleryScrollLeft = ref(0);
@@ -815,18 +820,20 @@ onMounted(() => {
   setMetaTags();
   handleResize();
   window.addEventListener('resize', handleResize);
+  window.addEventListener('online', () => { isOnline.value = true; });
+  window.addEventListener('offline', () => { isOnline.value = false; });
 
   if (props.announcements?.length) {
-    guestStore.$patch({ announcements: props.announcements });
+    guestStore.setFromProps({ announcements: props.announcements });
   }
   if (props.gallery?.length) {
-    guestStore.$patch({ gallery: props.gallery });
+    guestStore.setFromProps({ gallery: props.gallery });
   }
   if (props.sliderSlides?.length) {
-    guestStore.$patch({ sliderSlides: props.sliderSlides });
+    guestStore.setFromProps({ sliderSlides: props.sliderSlides });
   }
   if (props.stats) {
-    guestStore.$patch({ stats: props.stats });
+    guestStore.setFromProps({ stats: props.stats });
   }
 
   void guestStore.fetchGuestData().catch((err) => {
@@ -895,6 +902,8 @@ watch(
 onUnmounted(() => {
   window.removeEventListener('scroll', scrollHandler);
   window.removeEventListener('resize', handleResize);
+  window.removeEventListener('online', () => { isOnline.value = true; });
+  window.removeEventListener('offline', () => { isOnline.value = false; });
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   revealObserver?.disconnect();
   window.removeEventListener('keydown', trapFocus);
