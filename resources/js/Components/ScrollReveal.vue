@@ -16,8 +16,8 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 
 const props = defineProps({
-  threshold: { type: Number, default: 0.1 },
-  rootMargin: { type: String, default: '0px 0px -50px 0px' },
+  threshold: { type: Number, default: 0 },
+  rootMargin: { type: String, default: '0px 0px 0px 0px' },
   delay: { type: Number, default: 0 },
   stagger: { type: Boolean, default: false },
   staggerDelay: { type: Number, default: 100 },
@@ -102,7 +102,7 @@ onMounted(() => {
     if (!isVisible.value) {
       isVisible.value = true;
     }
-  }, 800);
+  }, 50);
 });
 
 onUnmounted(() => {
@@ -129,64 +129,59 @@ watch(() => props.disabled, (disabled) => {
 <style scoped>
 .scroll-reveal {
   opacity: 1;
-  transition: opacity 0.6s ease;
 }
 
-.scroll-reveal:not(.is-visible) {
-  opacity: 0;
-  visibility: hidden;
+.scroll-reveal.is-visible {
+  animation: var(--reveal-animation, none) 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 .scroll-reveal.stagger-children > * {
-  opacity: 0;
-  visibility: hidden;
-  animation: none;
+  opacity: 1;
 }
 
 .scroll-reveal.stagger-children.is-visible > * {
-  visibility: visible;
   animation: var(--reveal-animation, fadeUp) 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
   animation-delay: calc(var(--stagger-index, 0) * var(--stagger-delay));
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { transform: translateY(30px); }
+  to { transform: translateY(0); }
 }
 
 @keyframes fadeDown {
-  from { opacity: 0; transform: translateY(-30px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { transform: translateY(-30px); }
+  to { transform: translateY(0); }
 }
 
 @keyframes fadeLeft {
-  from { opacity: 0; transform: translateX(30px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { transform: translateX(30px); }
+  to { transform: translateX(0); }
 }
 
 @keyframes fadeRight {
-  from { opacity: 0; transform: translateX(-30px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { transform: translateX(-30px); }
+  to { transform: translateX(0); }
 }
 
 @keyframes zoomIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
+  from { transform: scale(0.9); }
+  to { transform: scale(1); }
 }
 
 @keyframes zoomOut {
-  from { opacity: 0; transform: scale(1.1); }
-  to { opacity: 1; transform: scale(1); }
+  from { transform: scale(1.1); }
+  to { transform: scale(1); }
 }
 
 @keyframes flipUp {
-  from { opacity: 0; transform: rotateX(-90deg); transform-origin: bottom; }
-  to { opacity: 1; transform: rotateX(0); transform-origin: bottom; }
+  from { transform: rotateX(-90deg); transform-origin: bottom; }
+  to { transform: rotateX(0); transform-origin: bottom; }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(50px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { transform: translateY(50px); }
+  to { transform: translateY(0); }
 }
 
 .animate-fade-up { --reveal-animation: fadeUp; }
