@@ -878,7 +878,7 @@
     }
 
     .guest-bottom-nav-item {
-        @apply relative flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-bold text-lumut-400 transition-colors duration-150 hover:text-krem-300;
+        @apply relative flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-bold text-lumut-400 transition-colors duration-150 hover:text-krem-300;
     }
 
     .guest-bottom-nav-item.is-active {

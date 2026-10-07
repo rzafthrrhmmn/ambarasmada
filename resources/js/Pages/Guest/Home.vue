@@ -200,9 +200,9 @@
               <div class="absolute -top-4 left-1/2 -translate-x-1/2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-daun-400 bg-hutan-800 text-sm font-black text-emas-400">
                 {{ idx + 1 }}
               </div>
-              <div class="mt-4 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-daun-500/30 bg-hutan-800 text-2xl font-black text-emas-400 transition-transform hover:rotate-6">
-                {{ step.emoji }}
-              </div>
+               <div class="mt-4 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-daun-500/30 bg-hutan-800 transition-transform hover:rotate-6">
+                 <AppIcon :name="step.iconName" class="h-8 w-8 text-emas-400" />
+               </div>
               <h3 class="text-xl font-extrabold text-krem-100">{{ step.title }}</h3>
               <p class="mt-3 text-sm leading-relaxed font-medium text-krem-300/80">{{ step.description }}</p>
             </div>
@@ -512,33 +512,28 @@
 
     <nav v-if="isMobile" class="guest-bottom-nav" aria-label="Navigasi bawah">
       <a href="#fitur" class="guest-bottom-nav-item" :class="{ 'is-active': activeSection === 'fitur' }" @click.prevent="scrollToSection('fitur')">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-        </svg>
+        <AppIcon name="tools" class="h-5 w-5" />
+        <div class="guest-bottom-nav-indicator"></div>
         <span>Fitur</span>
       </a>
       <a href="#dokumentasi" class="guest-bottom-nav-item" :class="{ 'is-active': activeSection === 'dokumentasi' }" @click.prevent="scrollToSection('dokumentasi')">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.25-5.25a2.25 2.25 0 013 0l3.75 3.75M9.75 12.75l.75.75m0 0l.75.75m-.75-.75v-6.75m-.75 6.75h6" />
-        </svg>
+        <AppIcon name="galleries" class="h-5 w-5" />
+        <div class="guest-bottom-nav-indicator"></div>
         <span>Galeri</span>
       </a>
       <a href="#testimoni" class="guest-bottom-nav-item" :class="{ 'is-active': activeSection === 'testimoni' }" @click.prevent="scrollToSection('testimoni')">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.282 48.282 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.012z" />
-        </svg>
+        <AppIcon name="star" class="h-5 w-5" />
+        <div class="guest-bottom-nav-indicator"></div>
         <span>Testimoni</span>
       </a>
       <a href="#pengumatan" class="guest-bottom-nav-item" :class="{ 'is-active': activeSection === 'pengumatan' }" @click.prevent="scrollToSection('pengumatan')">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-        </svg>
+        <AppIcon name="bell" class="h-5 w-5" />
+        <div class="guest-bottom-nav-indicator"></div>
         <span>Pengumuman</span>
       </a>
       <Link href="/login" class="guest-bottom-nav-item">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-        </svg>
+        <AppIcon name="login" class="h-5 w-5" />
+        <div class="guest-bottom-nav-indicator"></div>
         <span>Masuk</span>
       </Link>
     </nav>
@@ -603,9 +598,9 @@ const logoUrl = computed(() => {
 });
 
 const howItWorks = [
-  { emoji: '📝', title: 'Daftar', description: 'Buat akun dengan email atau NISN. Proses pendaftaran hanya membutuhkan waktu 2 menit.' },
-  { emoji: '✅', title: 'Verifikasi', description: 'Aktivasi akun melalui tautan yang dikirim ke email. Pembina melakukan validasi data.' },
-  { emoji: '🚀', title: 'Akses Fitur', description: 'Setelah disetujui, Anda bisa menggunakan SKU, presensi, kas, inventaris, dan dashboard.' },
+  { iconName: 'note', title: 'Daftar', description: 'Buat akun dengan email atau NISN. Proses pendaftaran hanya membutuhkan waktu 2 menit.' },
+  { iconName: 'checkCircle', title: 'Verifikasi', description: 'Aktivasi akun melalui tautan yang dikirim ke email. Pembina melakukan validasi data.' },
+  { iconName: 'rocket', title: 'Akses Fitur', description: 'Setelah disetujui, Anda bisa menggunakan SKU, presensi, kas, inventaris, dan dashboard.' },
 ];
 
 const features = [
