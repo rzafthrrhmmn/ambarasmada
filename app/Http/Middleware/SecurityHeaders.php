@@ -48,17 +48,7 @@ class SecurityHeaders
             "style-src 'self' 'unsafe-inline' {$viteSources} https://unpkg.com https://fonts.googleapis.com",
             "font-src 'self' data: https://fonts.gstatic.com {$viteSources}",
             "img-src 'self' data: https: blob:",
-            // Nominatim dipakai pencarian lokasi pada LocationPicker; tanpa ini
-            // fetch-nya diblokir CSP dan muncul sebagai "Failed to fetch".
-            // OpenTopoMap (basemap Terrain + hillshade) dan Stadia (basemap Dark)
-            // juga wajib ada, kalau tidak memilih basemap itu menghasilkan kanvas kosong.
-            // MapLibre membuat worker dari URL same-origin, jadi 'self' cukup.
-            // https://*.supabase.co menutupi endpoint Storage mana pun untuk
-            // bucket publik, sehingga PMTILES_URL tidak harus ditulis ulang
-            // di sini setiap kali project Supabase diganti.
-            // fonts.openmaptiles.org melayani glyph untuk layer symbol dan
-            // s3.amazonaws.com melayani DEM terrarium untuk hillshade; tanpa
-            // keduanya di sini, label dan hillshade gagal dimuat.
+            "manifest-src 'self'",
             "connect-src 'self' {$viteSources} https://tile.openstreetmap.org https://nominatim.openstreetmap.org https://server.arcgisonline.com https://tile.opentopomap.org https://tiles.stadiamaps.com https://unpkg.com https://fonts.openmaptiles.org https://s3.amazonaws.com https://*.supabase.co {$pmtilesSource}",
             "worker-src 'self' blob:",
             // Pratinjau surat ditampilkan di dalam <iframe> yang sumbernya

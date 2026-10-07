@@ -41,9 +41,9 @@ export const useGuestStore = defineStore('guest', () => {
       const json: GuestHomeData = await response.json();
       data.value = json;
       stats.value = json.stats;
-      announcements.value = json.announcements || [];
-      gallery.value = json.gallery || [];
-      sliderSlides.value = json.sliderSlides || [];
+      announcements.value = Array.isArray(json.announcements) ? json.announcements : [];
+      gallery.value = Array.isArray(json.gallery) ? json.gallery : [];
+      sliderSlides.value = Array.isArray(json.sliderSlides) ? json.sliderSlides : [];
       lastFetched.value = Date.now();
 
       return json;

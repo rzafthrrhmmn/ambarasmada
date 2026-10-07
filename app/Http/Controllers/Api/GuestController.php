@@ -125,9 +125,9 @@ class GuestController extends Controller
                 'kode' => $ambalan->kode,
                 'logo_url' => $ambalan->logo_url ?: asset('images/Logo_Ambalan.png'),
             ] : null,
-            'announcements' => $announcements,
-            'sliderSlides' => $sliderAnnouncements->isNotEmpty() ? $sliderAnnouncements : [],
-            'gallery' => $gallery->isNotEmpty() ? $gallery : [],
+            'announcements' => $announcements->all(),
+            'sliderSlides' => $sliderAnnouncements->isNotEmpty() ? $sliderAnnouncements->all() : [],
+            'gallery' => $gallery->isNotEmpty() ? $gallery->all() : [],
             'stats' => [
                 'members' => Member::where('status_aktif', 'Aktif')->count(),
                 'alumni' => Member::where('status_aktif', 'Alumni')->count(),
