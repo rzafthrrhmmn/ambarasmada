@@ -18,6 +18,7 @@
             class="h-full w-full object-cover"
             :draggable="false"
             loading="lazy"
+            @error="e => { e.target.onerror = null; e.target.src = '/images/Logo_Ambalan.png'; }"
           />
           <div class="absolute inset-0 bg-gradient-to-t from-hutan-800/95 via-hutan-800/30 to-transparent" />
           <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-7 md:p-10">

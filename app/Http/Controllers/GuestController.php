@@ -43,7 +43,8 @@ class GuestController extends Controller
                 'title' => $item->judul,
                 'description' => Str::limit(strip_tags($item->isi), 100),
                 'alt' => $item->judul,
-            ]);
+            ])
+            ->filter(fn ($slide) => ! empty($slide['src']));
 
         $gallery = Gallery::whereNotNull('image')
             ->orderByDesc('created_at')
@@ -54,7 +55,8 @@ class GuestController extends Controller
                 'title' => $item->judul,
                 'description' => $item->deskripsi,
                 'kategori' => $item->kategori,
-            ]);
+            ])
+            ->filter(fn ($item) => ! empty($item['src']));
 
         return Inertia::render('Guest/Home', [
             'ambalan' => $ambalan ? [
@@ -62,7 +64,7 @@ class GuestController extends Controller
                 'nama' => $ambalan->nama,
                 'kode' => $ambalan->kode,
                 'logo_path' => $ambalan->logo_path,
-                'logo_url' => $ambalan->logo_url,
+                'logo_url' => $ambalan->logo_url ?: asset('images/Logo_Ambalan.png'),
             ] : null,
             'announcements' => $announcements,
             'sliderSlides' => $sliderAnnouncements->isNotEmpty() ? $sliderAnnouncements : [],

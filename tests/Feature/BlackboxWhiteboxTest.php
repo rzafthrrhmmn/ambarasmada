@@ -60,6 +60,38 @@ class BlackboxWhiteboxTest extends TestCase
         $response->assertInertia(fn ($page) => $page->component('Guest/Home'));
     }
 
+    public function test_guest_home_api_returns_home_data(): void
+    {
+        $response = $this->get('/v1/guest/home');
+
+        $response->assertOk();
+        $response->assertHeader('Cache-Control');
+        $response->assertJsonStructure([
+            'ambalan',
+            'announcements',
+            'sliderSlides',
+            'gallery',
+            'stats' => ['members', 'alumni'],
+        ]);
+        $this->assertNotNull($response->decodeResponseJson('$.ambalan'));
+    }
+
+    public function test_guest_newsletter_rejects_invalid_email(): void
+    {
+        $response = $this->post('/v1/guest/newsletter', ['email' => 'bukan-email']);
+
+        $response->assertStatus(422);
+        $response->assertJson(['success' => false]);
+    }
+
+    public function test_guest_newsletter_accepts_valid_email(): void
+    {
+        $response = $this->post('/v1/guest/newsletter', ['email' => 'langganan@test.com']);
+
+        $response->assertOk();
+        $response->assertJson(['success' => true]);
+    }
+
     public function test_guest_can_access_login_page(): void
     {
         $this->get('/login')->assertOk();

@@ -10,9 +10,10 @@ use App\Models\Member;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use Inertia\Response;
+use Illuminate\Validation\ValidationException;
 
 class GuestController extends Controller
 {
@@ -48,6 +49,32 @@ class GuestController extends Controller
         }
     }
 
+    public function newsletter(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'email' => ['required', 'string', 'email', 'max:255'],
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal. Periksa kembali alamat email Anda.',
+                'errors' => $e->validator->errors(),
+            ], 422);
+        }
+
+        Log::info('Guest newsletter subscription', [
+            'email' => $validated['email'],
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Email Anda berhasil terdaftar. Terima kasih telah berlangganan.',
+        ]);
+    }
+
     private function buildGuestHomeData(): array
     {
         $ambalan = Ambalan::first();
@@ -76,7 +103,8 @@ class GuestController extends Controller
                 'title' => $item->judul,
                 'description' => Str::limit(strip_tags($item->isi), 100),
                 'alt' => $item->judul,
-            ]);
+            ])
+            ->filter(fn ($slide) => ! empty($slide['src']));
 
         $gallery = Gallery::whereNotNull('image')
             ->orderByDesc('created_at')
@@ -87,14 +115,15 @@ class GuestController extends Controller
                 'title' => $item->judul,
                 'description' => $item->deskripsi,
                 'kategori' => $item->kategori,
-            ]);
+            ])
+            ->filter(fn ($item) => ! empty($item['src']));
 
         return [
             'ambalan' => $ambalan ? [
                 'id' => $ambalan->id,
                 'nama' => $ambalan->nama,
                 'kode' => $ambalan->kode,
-                'logo_url' => $ambalan->logo_url,
+                'logo_url' => $ambalan->logo_url ?: asset('images/Logo_Ambalan.png'),
             ] : null,
             'announcements' => $announcements,
             'sliderSlides' => $sliderAnnouncements->isNotEmpty() ? $sliderAnnouncements : [],

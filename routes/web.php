@@ -115,6 +115,7 @@ Route::get('/debug/cache', function () {
 // Public API v1 — guest-facing JSON endpoints with CDN-friendly cache headers.
 Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('/guest/home', [App\Http\Controllers\Api\GuestController::class, 'home'])->name('guest.home');
+    Route::post('/guest/newsletter', [App\Http\Controllers\Api\GuestController::class, 'newsletter'])->name('guest.newsletter')->middleware('throttle:8,1');
 });
 
 Route::get('/favicon.ico', function () {

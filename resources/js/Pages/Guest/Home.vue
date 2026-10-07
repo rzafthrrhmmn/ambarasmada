@@ -26,6 +26,7 @@
               :src="logoUrl"
               alt="Logo Ambalan UPT SMAN 2 Maros"
               class="guest-logo guest-logo-sm"
+              @error="e => { e.target.onerror = null; e.target.src = '/images/Logo_Ambalan.png'; }"
             />
           </div>
           <div class="hidden sm:block">
@@ -73,7 +74,7 @@
           <div class="mx-4 w-full max-w-sm rounded-3xl border-2 border-daun-500/40 bg-hutan-800 p-6 shadow-2xl">
             <div class="mb-6 flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <img :src="logoUrl" alt="Logo Ambalan" class="h-10 w-10 object-contain p-1" />
+                <img :src="logoUrl" alt="Logo Ambalan" class="h-10 w-10 object-contain p-1" @error="e => { e.target.onerror = null; e.target.src = '/images/Logo_Ambalan.png'; }" />
                 <span class="text-lg font-black text-krem-100">Menu</span>
               </div>
               <button
@@ -102,8 +103,8 @@
 
     <main id="main-content" class="relative mx-auto w-full px-4 py-10 sm:px-6 sm:py-14 lg:px-[50px] lg:py-20">
       <header class="mb-16" data-parallax-hero>
-        <section v-if="sliderSlides.length > 0" class="mb-10">
-          <PhotoSlider :slides="sliderSlides" :interval="6000" />
+        <section v-if="guestStore.sliderSlides.length > 0" class="mb-10">
+          <PhotoSlider :slides="guestStore.sliderSlides" :interval="6000" />
         </section>
 
         <div class="flex flex-col items-center text-center">
@@ -113,6 +114,7 @@
                 :src="logoUrl"
                 alt="Logo Ambalan UPT SMAN 2 Maros"
                 class="guest-logo guest-logo-lg"
+                @error="e => { e.target.onerror = null; e.target.src = '/images/Logo_Ambalan.png'; }"
               />
               <div class="absolute -inset-1 rounded-3xl bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 opacity-0 blur transition-opacity duration-500 group-hover:opacity-60"></div>
             </div>
@@ -239,13 +241,14 @@
                 :aria-label="`Lihat ${item.title || 'foto'}`"
               >
                 <div class="relative h-52 overflow-hidden">
-                  <img
-                    v-if="item.src"
-                    :src="item.src"
-                    :alt="item.title"
-                    class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    loading="lazy"
-                  />
+              <img
+                     v-if="item.src"
+                     :src="item.src"
+                     :alt="item.title"
+                     class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                     loading="lazy"
+                     @error="e => { e.target.onerror = null; e.target.src = '/images/Logo_Ambalan.png'; }"
+                   />
                   <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-hutan-800 to-hutan-600">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-8 w-8 text-lumut-400">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.25-5.25a2.25 2.25 0 013 0l3.75 3.75M9.75 12.75l.75.75m0 0l.75.75m-.75-.75v-6.75m-.75 6.75h6" />
@@ -474,11 +477,13 @@
                 placeholder="email@contoh.com"
                 class="guest-focus-ring flex-1 rounded-xl border-2 border-daun-500/40 bg-hutan-800 px-4 py-3 text-sm font-semibold text-krem-100 outline-none transition focus:border-emas-400 focus:shadow-lg focus:shadow-emas-400/10"
               />
-              <button type="submit" class="btn-primary rounded-xl px-6 py-3 text-sm font-black">
-                Berlangganan
-              </button>
-            </form>
-            <p v-if="newsletterSubscribed" class="mt-3 text-xs font-bold text-daun-400">Terima kasih, Anda berhasil berlangganan.</p>
+               <button type="submit" :disabled="newsletterLoading" class="btn-primary rounded-xl px-6 py-3 text-sm font-black disabled:opacity-60 disabled:cursor-not-allowed">
+                 <span v-if="newsletterLoading">Mengirim…</span>
+                 <span v-else>Berlangganan</span>
+               </button>
+             </form>
+             <p v-if="newsletterSubscribed" class="mt-3 text-xs font-bold text-daun-400">Terima kasih, Anda berhasil berlangganan.</p>
+             <p v-if="newsletterError" class="mt-3 text-xs font-bold text-[#ef4419]">{{ newsletterError }}</p>
           </div>
         </ScrollReveal>
       </section>
@@ -487,7 +492,7 @@
         <div class="flex flex-col items-center justify-center gap-5">
           <div class="flex items-center gap-3">
             <div class="flex h-12 w-12 items-center justify-center rounded-xl overflow-hidden border-2 border-daun-500/40 bg-hutan-800 text-emas-400">
-              <img :src="logoUrl" alt="Logo Ambalan" class="h-8 w-8 object-contain" />
+              <img :src="logoUrl" alt="Logo Ambalan" class="h-8 w-8 object-contain" @error="e => { e.target.onerror = null; e.target.src = '/images/Logo_Ambalan.png'; }" />
             </div>
             <span class="text-base font-bold text-krem-300">{{ ambalanNama }}</span>
           </div>
@@ -547,8 +552,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { Link, usePage } from '@inertiajs/vue3';
 import PhotoSlider from '@/Components/PhotoSlider.vue';
 import AppIcon from '@/Components/AppIcon.vue';
 import ParticleBackground from '@/Components/ParticleBackground.vue';
@@ -560,25 +565,24 @@ import { useUIStore } from '@/Stores/ui';
 
 const guestStore = useGuestStore();
 const uiStore = useUIStore();
+const page = usePage();
 
 const props = defineProps({
-  announcements: Array,
+  announcements: { type: Array, default: () => [] },
   stats: { type: Object, default: () => ({ members: 0, alumni: 0 }) },
-  sliderSlides: Array,
+  sliderSlides: { type: Array, default: () => [] },
   gallery: { type: Array, default: () => [] },
 });
 
 const isMobile = ref(false);
-const mobileMenuOpen = computed({
-  get: () => uiStore.mobileMenuOpen,
-  set: (v) => uiStore.setMobileMenuOpen(v),
-});
 const container = ref(null);
 const galleryContainer = ref(null);
 const galleryScrollLeft = ref(0);
 const galleryScrollRight = ref(0);
 const newsletterEmail = ref('');
 const newsletterSubscribed = ref(false);
+const newsletterLoading = ref(false);
+const newsletterError = ref('');
 const animatedStats = ref({ members: 0, alumni: 0, services: 0, access: 0 });
 const lightboxOpen = ref(false);
 const lightboxIndex = ref(0);
@@ -589,18 +593,10 @@ let lastFocusedElement = null;
 let resizeObserver = null;
 
 const ambalanNama = computed(() => {
-  try {
-    return $page?.props?.ambalan?.nama || 'Ambalan UPT SMAN 2 Maros';
-  } catch (e) {
-    return 'Ambalan UPT SMAN 2 Maros';
-  }
+  return page.props?.ambalan?.nama || 'Ambalan UPT SMAN 2 Maros';
 });
 const logoUrl = computed(() => {
-  try {
-    return $page?.props?.ambalan?.logo_url || '/images/Logo_Ambalan.png';
-  } catch (e) {
-    return '/images/Logo_Ambalan.png';
-  }
+  return page.props?.ambalan?.logo_url || '/images/Logo_Ambalan.png';
 });
 
 const howItWorks = [
@@ -631,13 +627,12 @@ const partners = [
 ];
 
 const statsItems = computed(() => [
-  { label: 'Anggota Aktif', key: 'members', value: props.stats.members, icon: 'members' },
-  { label: 'Alumni Tercatat', key: 'alumni', value: props.stats.alumni, icon: 'alumni' },
+  { label: 'Anggota Aktif', key: 'members', value: guestStore.stats.value?.members ?? props.stats.members, icon: 'members' },
+  { label: 'Alumni Tercatat', key: 'alumni', value: guestStore.stats.value?.alumni ?? props.stats.alumni, icon: 'alumni' },
   { label: 'Layanan Digital', key: 'services', value: '5+', icon: 'tools' },
   { label: 'Akses Ponsel', key: 'access', value: 'PWA', icon: 'download' },
 ]);
 
-const logoFallback = '/images/Logo_Ambalan.png';
 const currentYear = computed(() => new Date().getFullYear());
 
 function categoryIcon(kategori) {
@@ -731,10 +726,34 @@ function trapFocus(event) {
   if (event.key === 'Escape') closeMobileMenu();
 }
 
-function subscribeNewsletter() {
-  newsletterSubscribed.value = true;
-  newsletterEmail.value = '';
-  setTimeout(() => { newsletterSubscribed.value = false; }, 4000);
+async function subscribeNewsletter() {
+  newsletterError.value = '';
+  if (!newsletterEmail.value) return;
+
+  newsletterLoading.value = true;
+  try {
+    const res = await fetch('/v1/guest/newsletter', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+      },
+      body: JSON.stringify({ email: newsletterEmail.value }),
+    });
+
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(payload.message || `Permintaan gagal (HTTP ${res.status})`);
+    }
+
+    newsletterSubscribed.value = true;
+    newsletterEmail.value = '';
+  } catch (err) {
+    newsletterError.value = err instanceof Error ? err.message : 'Tidak dapat mengirimkan langganan.';
+  } finally {
+    newsletterLoading.value = false;
+  }
 }
 
 function openLightbox(idx) {
@@ -742,11 +761,16 @@ function openLightbox(idx) {
   lightboxOpen.value = true;
 }
 
-function onLightboxNavigate(direction) {
-  if (direction === 'prev') {
-    lightboxIndex.value = (lightboxIndex.value - 1 + guestStore.gallery.length) % guestStore.gallery.length;
-  } else if (direction === 'next') {
-    lightboxIndex.value = (lightboxIndex.value + 1) % guestStore.gallery.length;
+function onLightboxNavigate(payload) {
+  const len = guestStore.gallery.length;
+  if (len === 0) return;
+
+  if (typeof payload === 'number') {
+    lightboxIndex.value = Math.max(0, Math.min(payload, len - 1));
+  } else if (payload === 'prev') {
+    lightboxIndex.value = (lightboxIndex.value - 1 + len) % len;
+  } else if (payload === 'next') {
+    lightboxIndex.value = (lightboxIndex.value + 1) % len;
   }
 }
 
@@ -760,55 +784,43 @@ function handleResize() {
 }
 
 function setMetaTags() {
-  const url = window.location.origin + '/';
+  const baseUrl = window.location.origin.replace(/\/+$/, '');
+  const homeUrl = baseUrl + '/';
+  const logoImg = baseUrl + '/images/Logo_Ambalan.png';
   const title = 'AMBARA — Sistem Digital Ambalan SMA 2 Maros';
   const description = 'Ekosistem digital kepramukaan: SKU, presensi, kas, inventaris, dan dashboard dalam satu platform untuk anggota SMA 2 Maros.';
 
   document.title = title;
 
-  const setMeta = (attr, content) => {
-    let tag = document.querySelector(`meta[${attr}="${content}"]`);
+  const ensureTag = (selector, attr, attrValue) => {
+    let tag = document.querySelector(selector);
     if (!tag) {
       tag = document.createElement('meta');
-      tag.setAttribute(attr, content);
+      tag.setAttribute(attr, attrValue);
       document.head.appendChild(tag);
     }
-    tag.setAttribute('content', description);
+    return tag;
   };
 
-  setMeta('name', 'description');
+  ensureTag('meta[name="description"]', 'name', 'description').setAttribute('content', description);
 
-  let ogTitle = document.querySelector('meta[property="og:title"]');
-  if (!ogTitle) { ogTitle = document.createElement('meta'); ogTitle.setAttribute('property', 'og:title'); document.head.appendChild(ogTitle); }
-  ogTitle.setAttribute('content', title);
+  ensureTag('meta[property="og:title"]', 'property', 'og:title').setAttribute('content', title);
+  ensureTag('meta[property="og:description"]', 'property', 'og:description').setAttribute('content', description);
+  ensureTag('meta[property="og:image"]', 'property', 'og:image').setAttribute('content', logoImg);
+  ensureTag('meta[property="og:url"]', 'property', 'og:url').setAttribute('content', homeUrl);
 
-  let ogDesc = document.querySelector('meta[property="og:description"]');
-  if (!ogDesc) { ogDesc = document.createElement('meta'); ogDesc.setAttribute('property', 'og:description'); document.head.appendChild(ogDesc); }
-  ogDesc.setAttribute('content', description);
+  ensureTag('meta[name="twitter:card"]', 'name', 'twitter:card').setAttribute('content', 'summary_large_image');
+  ensureTag('meta[name="twitter:title"]', 'name', 'twitter:title').setAttribute('content', title);
+  ensureTag('meta[name="twitter:description"]', 'name', 'twitter:description').setAttribute('content', description);
 
-  let ogImage = document.querySelector('meta[property="og:image"]');
-  if (!ogImage) { ogImage = document.createElement('meta'); ogImage.setAttribute('property', 'og:image'); document.head.appendChild(ogImage); }
-  ogImage.setAttribute('content', url + 'images/Logo_Ambalan.png');
-
-  let ogUrl = document.querySelector('meta[property="og:url"]');
-  if (!ogUrl) { ogUrl = document.createElement('meta'); ogUrl.setAttribute('property', 'og:url'); document.head.appendChild(ogUrl); }
-  ogUrl.setAttribute('content', url);
-
-  let twCard = document.querySelector('meta[name="twitter:card"]');
-  if (!twCard) { twCard = document.createElement('meta'); twCard.setAttribute('name', 'twitter:card'); document.head.appendChild(twCard); }
-  twCard.setAttribute('content', 'summary_large_image');
-
-  let twTitle = document.querySelector('meta[name="twitter:title"]');
-  if (!twTitle) { twTitle = document.createElement('meta'); twTitle.setAttribute('name', 'twitter:title'); document.head.appendChild(twTitle); }
-  twTitle.setAttribute('content', title);
-
-  let twDesc = document.querySelector('meta[name="twitter:description"]');
-  if (!twDesc) { twDesc = document.createElement('meta'); twDesc.setAttribute('name', 'twitter:description'); document.head.appendChild(twDesc); }
-  twDesc.setAttribute('content', description);
-
-  let canonical = document.querySelector('link[rel="canonical"]');
-  if (!canonical) { canonical = document.createElement('link'); canonical.setAttribute('rel', 'canonical'); document.head.appendChild(canonical); }
-  canonical.setAttribute('href', url);
+  const canonicalSelector = 'link[rel="canonical"]';
+  let canonical = document.querySelector(canonicalSelector);
+  if (!canonical) {
+    canonical = document.createElement('link');
+    canonical.setAttribute('rel', 'canonical');
+    document.head.appendChild(canonical);
+  }
+  canonical.setAttribute('href', homeUrl);
 
   let jsonLd = document.getElementById('guest-jsonld');
   if (!jsonLd) {
@@ -821,8 +833,8 @@ function setMetaTags() {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'Ambalan UPT SMAN 2 Maros',
-    url: url,
-    logo: url + 'images/Logo_Ambalan.png',
+    url: homeUrl,
+    logo: logoImg,
     description: description,
     address: { '@type': 'PostalAddress', addressLocality: 'Maros', addressRegion: 'Sulawesi Selatan', addressCountry: 'ID' },
   });
@@ -842,8 +854,13 @@ onMounted(() => {
   if (props.sliderSlides?.length) {
     guestStore.$patch({ sliderSlides: props.sliderSlides });
   }
+  if (props.stats) {
+    guestStore.$patch({ stats: props.stats });
+  }
 
-  guestStore.fetchGuestData();
+  void guestStore.fetchGuestData().catch((err) => {
+    console.error('[Guest/Home] Gagal memuat data tamu dari API:', err?.message ?? err);
+  });
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -852,12 +869,13 @@ onMounted(() => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           entry.target.classList.add('is-visible');
-          if (entry.target.dataset.animate === 'stats') {
-            animateCounter(props.stats.members, 'members');
-            animateCounter(props.stats.alumni, 'alumni');
-            animateCounter('5+', 'services');
-            animateCounter('PWA', 'access');
-          }
+           if (entry.target.dataset.animate === 'stats') {
+             const s = guestStore.stats.value || props.stats;
+             animateCounter(s?.members, 'members');
+             animateCounter(s?.alumni, 'alumni');
+             animateCounter('5+', 'services');
+             animateCounter('PWA', 'access');
+           }
           revealObserver.unobserve(entry.target);
         }
       });
@@ -882,10 +900,17 @@ onMounted(() => {
   });
 
   galleryContainer.value?.addEventListener('scroll', updateGalleryScrollState, { passive: true });
-  updateGalleryScrollState();
+  nextTick(() => {
+    updateGalleryScrollState();
+  });
 
   window.addEventListener('keydown', trapFocus);
 });
+
+watch(
+  () => guestStore.gallery.length,
+  () => nextTick(updateGalleryScrollState),
+);
 
 onUnmounted(() => {
   window.removeEventListener('scroll', scrollHandler);

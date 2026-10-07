@@ -44,13 +44,14 @@
               :key="item.id || index"
               class="lightbox-slide"
             >
-              <img
-                v-if="item.src"
-                :src="item.src"
-                :alt="item.title || 'Foto dokumentasi'"
-                class="lightbox-image"
-                @load="onImageLoad(index)"
-              />
+               <img
+                 v-if="item.src"
+                 :src="item.src"
+                 :alt="item.title || 'Foto dokumentasi'"
+                 class="lightbox-image"
+                 @load="onImageLoad(index)"
+                 @error="e => { e.target.onerror = null; e.target.src = '/images/Logo_Ambalan.png'; }"
+               />
               <div v-else class="lightbox-placeholder">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-16 w-16 text-lumut-400">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.25-5.25a2.25 2.25 0 013 0l3.75 3.75M9.75 12.75l.75.75m0 0l.75.75m-.75-.75v-6.75m-.75 6.75h6" />
@@ -145,7 +146,8 @@ function next() {
 }
 
 function goTo(index) {
-  emit('navigate', index > props.currentIndex ? 'next' : 'prev');
+  if (index === props.currentIndex) return;
+  emit('navigate', index);
 }
 
 function onImageLoad(index) {

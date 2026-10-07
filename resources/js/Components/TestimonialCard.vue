@@ -6,10 +6,10 @@
     </div>
     
     <div class="author-info">
-      <div class="avatar" :style="avatarStyle">
-        <span v-if="!testimonial.avatar" class="avatar-initials">{{ testimonial.initials }}</span>
-        <img v-else :src="testimonial.avatar" :alt="testimonial.name" class="avatar-img" />
-      </div>
+  <div class="avatar" :style="avatarStyle">
+    <span v-if="!testimonial.avatar" class="avatar-initials">{{ computedInitials }}</span>
+    <img v-else :src="testimonial.avatar" :alt="testimonial.name" class="avatar-img" />
+  </div>
       <div class="author-details">
         <h4 class="author-name">{{ testimonial.name }}</h4>
         <p class="author-role">{{ testimonial.role }}</p>
@@ -37,6 +37,14 @@ const props = defineProps({
 const avatarStyle = computed(() => ({
   '--avatar-hue': (props.index * 60) % 360,
 }));
+
+const computedInitials = computed(() => {
+  if (props.testimonial.initials) return props.testimonial.initials;
+  const parts = (props.testimonial.name || '').trim().split(/\s+/);
+  if (parts.length === 0 || (parts.length === 1 && !parts[0])) return '?';
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+});
 </script>
 
 <style scoped>
