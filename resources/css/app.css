@@ -874,15 +874,21 @@
 
     /* Navigasi bawah untuk mobile. */
     .guest-bottom-nav {
-        @apply fixed inset-x-0 bottom-0 z-40 border-t-2 border-daun-500/20 bg-hutan-800/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)];
+        @apply fixed inset-x-0 bottom-0 z-40 flex flex-nowrap items-center border-t-2 border-daun-500/20 bg-hutan-800/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)];
         padding-top: 6px;
         padding-bottom: max(6px, env(safe-area-inset-bottom));
     }
 
     .guest-bottom-nav-item {
-        @apply relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-lumut-400 transition-colors duration-150 hover:text-krem-300;
+        @apply relative flex flex-1 shrink-0 flex-col items-center justify-center gap-0.5 whitespace-nowrap text-[9px] font-bold text-lumut-400 transition-colors duration-150 hover:text-krem-300;
         padding-top: 4px;
         padding-bottom: 4px;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .guest-bottom-nav-item span {
+        @apply truncate;
     }
 
     .guest-bottom-nav-item.is-active {

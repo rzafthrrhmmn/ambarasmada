@@ -512,27 +512,27 @@
 
     <nav v-if="isMobile" class="guest-bottom-nav" aria-label="Navigasi bawah">
       <a href="#fitur" class="guest-bottom-nav-item" :class="{ 'is-active': activeSection === 'fitur' }" @click.prevent="scrollToSection('fitur')">
-        <AppIcon name="tools" class="h-5 w-5" />
+        <AppIcon name="tools" class="h-4 w-4" />
         <div class="guest-bottom-nav-indicator"></div>
         <span>Fitur</span>
       </a>
       <a href="#dokumentasi" class="guest-bottom-nav-item" :class="{ 'is-active': activeSection === 'dokumentasi' }" @click.prevent="scrollToSection('dokumentasi')">
-        <AppIcon name="galleries" class="h-5 w-5" />
+        <AppIcon name="galleries" class="h-4 w-4" />
         <div class="guest-bottom-nav-indicator"></div>
         <span>Galeri</span>
       </a>
       <a href="#testimoni" class="guest-bottom-nav-item" :class="{ 'is-active': activeSection === 'testimoni' }" @click.prevent="scrollToSection('testimoni')">
-        <AppIcon name="star" class="h-5 w-5" />
+        <AppIcon name="star" class="h-4 w-4" />
         <div class="guest-bottom-nav-indicator"></div>
         <span>Testimoni</span>
       </a>
       <a href="#pengumatan" class="guest-bottom-nav-item" :class="{ 'is-active': activeSection === 'pengumatan' }" @click.prevent="scrollToSection('pengumatan')">
-        <AppIcon name="bell" class="h-5 w-5" />
+        <AppIcon name="bell" class="h-4 w-4" />
         <div class="guest-bottom-nav-indicator"></div>
         <span>Pengumuman</span>
       </a>
       <Link href="/login" class="guest-bottom-nav-item">
-        <AppIcon name="login" class="h-5 w-5" />
+        <AppIcon name="login" class="h-4 w-4" />
         <div class="guest-bottom-nav-indicator"></div>
         <span>Masuk</span>
       </Link>
