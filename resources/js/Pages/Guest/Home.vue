@@ -412,27 +412,6 @@
         </div>
       </section>
 
-      <section id="trust" class="guest-section scroll-mt-24">
-        <div class="mb-10 text-center">
-          <ScrollReveal animation="fade-up">
-            <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
-              <span class="h-1.5 w-1.5 rounded-full bg-daun-400 animate-pulse"></span>
-              Didukung Oleh
-            </div>
-          </ScrollReveal>
-        </div>
-        <ScrollReveal animation="fade-up" :delay="100">
-          <div class="flex flex-wrap items-center justify-center gap-8 md:gap-12">
-            <div v-for="(partner, idx) in partners" :key="idx" class="group flex flex-col items-center gap-2 opacity-80 transition hover:opacity-100">
-              <div class="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-daun-500/40 bg-hutan-700 text-emas-400 transition-all duration-300 group-hover:border-emas-400/60 group-hover:bg-hutan-600 group-hover:shadow-lg group-hover:shadow-emas-400/10">
-                <AppIcon :name="partner.icon" class="h-7 w-7 transition-transform duration-300 group-hover:scale-110" />
-              </div>
-              <span class="text-xs font-bold text-krem-300">{{ partner.name }}</span>
-            </div>
-          </div>
-        </ScrollReveal>
-      </section>
-
       <section class="guest-section">
         <ScrollReveal animation="zoom-in">
           <div class="relative isolate overflow-hidden rounded-3xl border-2 border-emas-400/40 bg-gradient-to-r from-daun-400 via-daun-500 to-hutan-800 p-8 text-center shadow-2xl sm:p-12">
@@ -616,12 +595,6 @@ const testimonials = [
   { quote: 'Sistem ini membuat administrasi ambalan jauh lebih mudah. Semua data tersedia dalam satu platform.', name: 'Pembina A', role: 'Pembina Ambalan SMA 2 Maros', rating: 5 },
   { quote: 'Presensi digital dan SKU elektronik sangat membantu. Tidak perlu lagi formulir kertas yang mudah hilang.', name: 'Ketua Ambalan', role: 'Pengurus Ambalan', rating: 5 },
   { quote: 'Sebagai alumni, saya tetap bisa mengikuti perkembangan dan berkontribusi melalui fitur donasi.', name: 'Alumni B', role: 'Anggota Alumni', rating: 5 },
-];
-
-const partners = [
-  { name: 'Kwartir Cabang Maros', icon: 'teams' },
-  { name: 'SMA Negeri 2 Maros', icon: 'dashboard' },
-  { name: 'Kwarcab', icon: 'members' },
 ];
 
 const statsItems = computed(() => [
