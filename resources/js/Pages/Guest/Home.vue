@@ -21,7 +21,7 @@
     <nav class="sticky top-4 z-40 mx-auto w-full max-w-[1400px] guest-container">
       <div class="glass-panel flex items-center justify-between px-4 py-2.5 sm:px-6 sm:py-3">
         <Link href="/" class="flex items-center gap-3 group">
-          <div class="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-daun-500/60 bg-hutan-800 transition-all duration-300 group-hover:border-emas-400/60">
+          <div class="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-daun-500/60 bg-hutan-800 transition-all duration-300 group-hover:border-emas-400/60">
             <img
               :src="logoUrl"
               alt="Logo Ambalan UPT SMAN 2 Maros"
@@ -103,15 +103,15 @@
       </Transition>
     </Teleport>
 
-    <main id="main-content" class="relative mx-auto w-full px-4 py-10 sm:px-6 sm:py-14 lg:px-[50px] lg:py-20">
-      <header class="mb-16" data-parallax-hero>
+    <main id="main-content" class="relative mx-auto w-full px-4 py-8 sm:px-6 sm:py-12 lg:px-[50px] lg:py-20">
+      <header class="mb-10 sm:mb-16" data-parallax-hero>
         <section v-if="guestStore.sliderSlides.length > 0" class="mb-10">
           <PhotoSlider :slides="guestStore.sliderSlides" :interval="6000" />
         </section>
 
         <div class="flex flex-col items-center text-center">
           <ScrollReveal animation="zoom-in" :delay="100">
-            <div class="group relative mb-8 flex h-36 w-36 items-center justify-center rounded-3xl border-2 border-daun-500/50 bg-hutan-800/80 shadow-2xl shadow-daun-400/20 transition-all duration-500 hover:rotate-[5deg] hover:scale-105 sm:h-44 sm:w-44">
+            <div class="group relative mb-6 flex h-32 w-32 items-center justify-center rounded-3xl border-2 border-daun-500/50 bg-hutan-800/80 shadow-2xl shadow-daun-400/20 transition-all duration-500 hover:rotate-[5deg] hover:scale-105 sm:h-44 sm:w-44">
               <img
                 :src="logoUrl"
                 alt="Logo Ambalan UPT SMAN 2 Maros"
@@ -180,7 +180,7 @@
       </section>
 
       <section id="cara-kerja" class="guest-section scroll-mt-24">
-        <div class="mb-12 text-center">
+        <div class="mb-8 sm:mb-12 text-center">
           <ScrollReveal animation="fade-up">
             <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
               <span class="h-1.5 w-1.5 rounded-full bg-daun-400 animate-pulse"></span>
@@ -194,9 +194,9 @@
             </h2>
           </ScrollReveal>
         </div>
-        <div class="grid gap-6 sm:grid-cols-3">
+        <div class="grid gap-4 sm:grid-cols-3">
           <ScrollReveal v-for="(step, idx) in howItWorks" :key="idx" :delay="idx * 150" :stagger="true" :style="`--stagger-index: ${idx}`" animation="fade-up">
-            <div class="relative flex h-full flex-col items-center rounded-3xl border-2 border-daun-500/30 bg-hutan-600/60 p-8 text-center shadow-lg transition-all duration-300 hover:-translate-y-2 hover:border-daun-400/60 hover:bg-hutan-600/80">
+            <div class="relative flex h-full flex-col items-center rounded-3xl border-2 border-daun-500/30 bg-hutan-600/60 p-6 text-center shadow-lg transition-all duration-300 hover:-translate-y-2 hover:border-daun-400/60 hover:bg-hutan-600/80">
               <div class="absolute -top-4 left-1/2 -translate-x-1/2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-daun-400 bg-hutan-800 text-sm font-black text-emas-400">
                 {{ idx + 1 }}
               </div>
@@ -300,7 +300,7 @@
       </section>
 
       <section id="fitur" class="guest-section scroll-mt-24">
-        <div class="mb-12 text-center">
+        <div class="mb-8 sm:mb-12 text-center">
           <ScrollReveal animation="fade-up">
             <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
               <span class="h-1.5 w-1.5 rounded-full bg-daun-400 animate-pulse"></span>
@@ -317,7 +317,7 @@
             </p>
           </ScrollReveal>
         </div>
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <ScrollReveal v-for="(feature, idx) in features" :key="idx" :delay="idx * 100" :stagger="true" :style="`--stagger-index: ${idx}`" animation="fade-up">
             <div class="guest-feature-card group">
               <div class="absolute inset-0 rounded-3xl bg-gradient-to-br from-daun-400/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
@@ -337,7 +337,7 @@
       </section>
 
       <section id="testimoni" class="guest-section scroll-mt-24">
-        <div class="mb-12 text-center">
+        <div class="mb-8 sm:mb-12 text-center">
           <ScrollReveal animation="fade-up">
             <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
               <span class="h-1.5 w-1.5 rounded-full bg-daun-400 animate-pulse"></span>
@@ -357,7 +357,7 @@
       </section>
 
       <section id="pengumatan" class="guest-section scroll-mt-24">
-        <div class="mb-12 text-center">
+        <div class="mb-8 sm:mb-12 text-center">
           <ScrollReveal animation="fade-up">
             <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
               <span class="h-1.5 w-1.5 rounded-full bg-emas-400 animate-pulse"></span>
@@ -374,7 +374,7 @@
             </p>
           </ScrollReveal>
         </div>
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <ScrollReveal v-for="(item, idx) in guestStore.announcements.slice(0, 6)" :key="item.id" :delay="idx * 80" :stagger="true" :style="`--stagger-index: ${idx}`" animation="fade-up">
             <article
               class="guest-announcement-card group"
@@ -435,7 +435,7 @@
 
       <section class="guest-section">
         <ScrollReveal animation="zoom-in">
-          <div class="relative isolate overflow-hidden rounded-3xl border-2 border-emas-400/40 bg-gradient-to-r from-daun-400 via-daun-500 to-hutan-800 p-10 text-center shadow-2xl sm:p-16">
+          <div class="relative isolate overflow-hidden rounded-3xl border-2 border-emas-400/40 bg-gradient-to-r from-daun-400 via-daun-500 to-hutan-800 p-8 text-center shadow-2xl sm:p-12">
             <div class="absolute -top-24 -left-24 h-80 w-80 rounded-full bg-emas-400/20 blur-3xl"></div>
             <div class="absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-daun-400/20 blur-3xl"></div>
             <div class="relative">

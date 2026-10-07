@@ -793,7 +793,7 @@
 
     /* Spacing vertikal konsisten antar section. */
     .guest-section {
-        @apply py-16 sm:py-24 lg:py-32;
+        @apply py-10 sm:py-16 lg:py-24;
     }
 
     .guest-section + .guest-section {
@@ -875,10 +875,14 @@
     /* Navigasi bawah untuk mobile. */
     .guest-bottom-nav {
         @apply fixed inset-x-0 bottom-0 z-40 border-t-2 border-daun-500/20 bg-hutan-800/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)];
+        padding-top: 6px;
+        padding-bottom: max(6px, env(safe-area-inset-bottom));
     }
 
     .guest-bottom-nav-item {
-        @apply relative flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-bold text-lumut-400 transition-colors duration-150 hover:text-krem-300;
+        @apply relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-lumut-400 transition-colors duration-150 hover:text-krem-300;
+        padding-top: 4px;
+        padding-bottom: 4px;
     }
 
     .guest-bottom-nav-item.is-active {
@@ -886,7 +890,7 @@
     }
 
     .guest-bottom-nav-indicator {
-        @apply absolute inset-x-3 top-0 h-0.5 rounded-full bg-transparent transition-colors duration-150;
+        @apply absolute inset-x-3 top-0 h-[3px] rounded-full bg-transparent transition-colors duration-150;
     }
 
     .guest-bottom-nav-item.is-active .guest-bottom-nav-indicator {
@@ -899,7 +903,7 @@
     }
 
     .guest-logo-sm {
-        @apply h-10 w-10 sm:h-12 sm:w-12;
+        @apply h-12 w-12 sm:h-14 sm:w-14;
     }
 
     .guest-logo-md {
