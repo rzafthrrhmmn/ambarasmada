@@ -70,8 +70,10 @@
           role="dialog"
           aria-modal="true"
           aria-label="Menu navigasi"
+          aria-labelledby="mobile-menu-title"
         >
           <div class="mx-4 w-full max-w-sm rounded-3xl border-2 border-daun-500/40 bg-hutan-800 p-6 shadow-2xl">
+            <h2 id="mobile-menu-title" class="sr-only">Navigasi menu utama</h2>
             <div class="mb-6 flex items-center justify-between">
               <div class="flex items-center gap-3">
                 <img :src="logoUrl" alt="Logo Ambalan" class="h-10 w-10 object-contain p-1" @error="e => { e.target.onerror = null; e.target.src = '/images/Logo_Ambalan.png'; }" />
@@ -232,11 +234,11 @@
               ref="galleryContainer"
               class="guest-gallery-track"
             >
-              <button
-                v-for="(item, idx) in guestStore.gallery"
-                :key="idx"
-                class="guest-gallery-item"
-                style="width: min(300px, 80vw);"
+                <button
+                  v-for="(item, idx) in guestStore.gallery"
+                  :key="idx"
+                  class="guest-gallery-item group"
+                  style="width: min(300px, 80vw);"
                 @click="openLightbox(idx)"
                 :aria-label="`Lihat ${item.title || 'foto'}`"
               >
@@ -317,7 +319,7 @@
         </div>
         <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <ScrollReveal v-for="(feature, idx) in features" :key="idx" :delay="idx * 100" :stagger="true" :style="`--stagger-index: ${idx}`" animation="fade-up">
-            <div class="guest-feature-card">
+            <div class="guest-feature-card group">
               <div class="absolute inset-0 rounded-3xl bg-gradient-to-br from-daun-400/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
               <div class="relative flex items-start gap-5">
                 <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-hutan-800 to-hutan-600 border-2 border-daun-500/30 text-emas-400 shadow-lg shadow-daun-500/10 transition-all duration-300 group-hover:rotate-[5deg] group-hover:border-emas-400/50 group-hover:shadow-xl group-hover:shadow-daun-500/20">
@@ -375,7 +377,7 @@
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <ScrollReveal v-for="(item, idx) in guestStore.announcements.slice(0, 6)" :key="item.id" :delay="idx * 80" :stagger="true" :style="`--stagger-index: ${idx}`" animation="fade-up">
             <article
-              class="guest-announcement-card"
+              class="guest-announcement-card group"
             >
               <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-daun-400/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
               <div class="relative mb-4 flex items-center justify-between">
@@ -509,25 +511,25 @@
     </main>
 
     <nav v-if="isMobile" class="guest-bottom-nav" aria-label="Navigasi bawah">
-      <a href="#fitur" class="guest-bottom-nav-item" @click.prevent="scrollToSection('fitur')">
+      <a href="#fitur" class="guest-bottom-nav-item" :class="{ 'is-active': activeSection === 'fitur' }" @click.prevent="scrollToSection('fitur')">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
         </svg>
         <span>Fitur</span>
       </a>
-      <a href="#dokumentasi" class="guest-bottom-nav-item" @click.prevent="scrollToSection('dokumentasi')">
+      <a href="#dokumentasi" class="guest-bottom-nav-item" :class="{ 'is-active': activeSection === 'dokumentasi' }" @click.prevent="scrollToSection('dokumentasi')">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.25-5.25a2.25 2.25 0 013 0l3.75 3.75M9.75 12.75l.75.75m0 0l.75.75m-.75-.75v-6.75m-.75 6.75h6" />
         </svg>
         <span>Galeri</span>
       </a>
-      <a href="#testimoni" class="guest-bottom-nav-item" @click.prevent="scrollToSection('testimoni')">
+      <a href="#testimoni" class="guest-bottom-nav-item" :class="{ 'is-active': activeSection === 'testimoni' }" @click.prevent="scrollToSection('testimoni')">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.012z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.282 48.282 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.012z" />
         </svg>
         <span>Testimoni</span>
       </a>
-      <a href="#pengumatan" class="guest-bottom-nav-item" @click.prevent="scrollToSection('pengumatan')">
+      <a href="#pengumatan" class="guest-bottom-nav-item" :class="{ 'is-active': activeSection === 'pengumatan' }" @click.prevent="scrollToSection('pengumatan')">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
         </svg>
@@ -579,6 +581,7 @@ const container = ref(null);
 const galleryContainer = ref(null);
 const galleryScrollLeft = ref(0);
 const galleryScrollRight = ref(0);
+const activeSection = ref('');
 const newsletterEmail = ref('');
 const newsletterSubscribed = ref(false);
 const newsletterLoading = ref(false);
@@ -870,12 +873,12 @@ onMounted(() => {
         if (entry.isIntersecting) {
           entry.target.classList.add('is-visible');
            if (entry.target.dataset.animate === 'stats') {
-             const s = guestStore.stats.value || props.stats;
-             animateCounter(s?.members, 'members');
-             animateCounter(s?.alumni, 'alumni');
-             animateCounter('5+', 'services');
-             animateCounter('PWA', 'access');
-           }
+              const s = guestStore.stats.value || props.stats || { members: 0, alumni: 0 };
+              animateCounter(s.members ?? 0, 'members');
+              animateCounter(s.alumni ?? 0, 'alumni');
+              animateCounter('5+', 'services');
+              animateCounter('PWA', 'access');
+            }
           revealObserver.unobserve(entry.target);
         }
       });
@@ -892,6 +895,15 @@ onMounted(() => {
     if (bg) bg.style.transform = `translateY(${scrollY * 0.3}px)`;
     const hero = container.value.querySelector('[data-parallax-hero]');
     if (hero) hero.style.transform = `translateY(${scrollY * 0.1}px)`;
+
+    const sections = ['fitur', 'dokumentasi', 'testimoni', 'pengumatan'];
+    const viewMiddle = scrollY + window.innerHeight * 0.4;
+    let current = '';
+    sections.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el && el.offsetTop <= viewMiddle) current = id;
+    });
+    activeSection.value = current;
   };
   window.addEventListener('scroll', scrollHandler, { passive: true });
 

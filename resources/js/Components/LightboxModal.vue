@@ -121,6 +121,7 @@ const content = ref(null);
 const track = ref(null);
 let touchStartX = 0;
 let isDragging = false;
+let contentEl = null;
 
 const currentItem = computed(() => props.items[props.currentIndex] || null);
 
@@ -180,15 +181,21 @@ function handleKeydown(e) {
 
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown);
-  if (content.value) {
-    content.value.addEventListener('touchstart', handleTouchStart, { passive: true });
-    content.value.addEventListener('touchmove', handleTouchMove, { passive: true });
-    content.value.addEventListener('touchend', handleTouchEnd);
+  contentEl = content.value;
+  if (contentEl) {
+    contentEl.addEventListener('touchstart', handleTouchStart, { passive: true });
+    contentEl.addEventListener('touchmove', handleTouchMove, { passive: true });
+    contentEl.addEventListener('touchend', handleTouchEnd);
   }
 });
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown);
+  if (contentEl) {
+    contentEl.removeEventListener('touchstart', handleTouchStart);
+    contentEl.removeEventListener('touchmove', handleTouchMove);
+    contentEl.removeEventListener('touchend', handleTouchEnd);
+  }
 });
 
 function formatDate(value) {

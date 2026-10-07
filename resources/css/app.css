@@ -802,18 +802,18 @@
 
     /* Teks gradient untuk elemen branding. */
     .guest-text-gradient {
+        color: var(--color-krem-100);
         background: linear-gradient(to right, var(--color-krem-100), var(--color-krem-300), var(--color-daun-400));
         -webkit-background-clip: text;
         background-clip: text;
-        color: transparent;
     }
 
     /* Teks gradient emas untuk aksen. */
     .guest-text-gradient-gold {
+        color: var(--color-daun-400);
         background: linear-gradient(to right, var(--color-daun-400), var(--color-emas-400), var(--color-daun-400));
         -webkit-background-clip: text;
         background-clip: text;
-        color: transparent;
     }
 
     /* Indikator fokus yang terlihat untuk aksesibilitas. */
@@ -961,10 +961,12 @@
 /* Scroll reveal dengan stagger index yang benar. */
 .scroll-reveal.stagger-children > * {
     opacity: 0;
+    visibility: hidden;
     animation: none;
 }
 
 .scroll-reveal.stagger-children.is-visible > * {
+    visibility: visible;
     animation: var(--reveal-animation, fadeUp) 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
     animation-delay: calc(var(--stagger-index, 0) * var(--stagger-delay, 100ms));
 }
@@ -977,6 +979,7 @@
 
     .scroll-reveal.stagger-children > * {
         opacity: 1 !important;
+        visibility: visible !important;
         animation: none !important;
     }
 }

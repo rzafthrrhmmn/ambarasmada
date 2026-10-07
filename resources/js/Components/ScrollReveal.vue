@@ -128,19 +128,23 @@ watch(() => props.disabled, (disabled) => {
 
 <style scoped>
 .scroll-reveal {
-  opacity: 0;
+  opacity: 1;
+  transition: opacity 0.6s ease;
 }
 
-.scroll-reveal.is-visible {
-  opacity: 1;
+.scroll-reveal:not(.is-visible) {
+  opacity: 0;
+  visibility: hidden;
 }
 
 .scroll-reveal.stagger-children > * {
   opacity: 0;
+  visibility: hidden;
   animation: none;
 }
 
 .scroll-reveal.stagger-children.is-visible > * {
+  visibility: visible;
   animation: var(--reveal-animation, fadeUp) 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
   animation-delay: calc(var(--stagger-index, 0) * var(--stagger-delay));
 }

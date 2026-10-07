@@ -132,6 +132,8 @@ function animate() {
 function resize() {
   if (!canvas.value || !canvasContainer.value) return;
   
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  
   width = canvasContainer.value.offsetWidth;
   height = canvasContainer.value.offsetHeight;
   
