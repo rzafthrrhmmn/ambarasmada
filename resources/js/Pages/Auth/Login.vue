@@ -48,6 +48,9 @@
       </div>
 
       <div class="col-span-3 flex flex-col justify-center p-6 md:p-10">
+        <div v-if="!isOnline" class="mb-4 rounded-lg border border-[#EDD330]/40 bg-[#EDD330]/10 p-3 text-sm font-bold text-[#EDD330]">
+          Anda sedang offline. Masuk memerlukan koneksi internet.
+        </div>
         <div class="w-full max-w-md mx-auto">
           <div class="mb-8 md:hidden">
             <div class="flex items-center justify-center gap-3">
@@ -141,7 +144,7 @@
               <span for="remember" class="cursor-pointer">Ingat saya</span>
             </label>
 
-            <button id="login-submit" name="login-submit" type="submit" :disabled="form.processing || regForm.processing" :class="['group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#EDD330] px-4 py-3 font-extrabold text-[#263D26] shadow-lg shadow-[#EDD330]/30 transition hover:shadow-xl hover:shadow-[#EDD330]/40 hover:-translate-y-0.5 disabled:cursor-wait border-2 border-[#EDD330]', (form.processing || regForm.processing) ? 'animate-pulse shadow-[#EDD330]/50' : '']">
+            <button id="login-submit" name="login-submit" type="submit" :disabled="form.processing || regForm.processing || !isOnline" :class="['group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#EDD330] px-4 py-3 font-extrabold text-[#263D26] shadow-lg shadow-[#EDD330]/30 transition hover:shadow-xl hover:shadow-[#EDD330]/40 hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60 border-2 border-[#EDD330]', (form.processing || regForm.processing || !isOnline) ? 'animate-pulse shadow-[#EDD330]/50' : '']">
               <span class="relative z-10 flex items-center justify-center gap-2">
                 <svg v-if="form.processing || regForm.processing" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-5 w-5 animate-spin text-[#263D26]">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" opacity="0.25"></circle>
@@ -155,9 +158,13 @@
                     <span class="animate-bounce inline-block h-1.5 w-1.5 rounded-full bg-[#263D26]" style="animation-delay: 300ms;"></span>
                   </span>
                 </span>
+                <span v-else-if="!isOnline" class="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3" /></svg>
+                  Tidak ada koneksi
+                </span>
                 <span v-else>{{ isRegistration ? 'Daftar Akun' : 'Masuk' }}</span>
-                <svg v-if="!form.processing && !regForm.processing && !isRegistration" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-4 w-4 transition group-hover:translate-x-1"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
-                <svg v-else-if="!form.processing && !regForm.processing && isRegistration" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-4 w-4 transition group-hover:translate-x-1"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m-7.5-7.5H21" /></svg>
+                <svg v-if="!form.processing && !regForm.processing && !isOnline && !isRegistration" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3" /></svg>
+                <svg v-if="!form.processing && !regForm.processing && !isOnline && isRegistration" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3" /></svg>
               </span>
             </button>
           </form>
@@ -269,6 +276,7 @@ const regForm = useForm({ nama_lengkap: '', email: '', password: '', password_co
 const activationForm = useForm({ email: '' });
 const hasSavedCredentials = ref(false);
 const showResendActivation = ref(false);
+const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
 function toggleMode() {
   const url = props.isRegistration ? '/login' : '/register';
@@ -335,5 +343,7 @@ function loadSavedCredentials() {
 
 onMounted(() => {
   loadSavedCredentials();
+  window.addEventListener('online', () => { isOnline.value = true; });
+  window.addEventListener('offline', () => { isOnline.value = false; });
 });
 </script>
