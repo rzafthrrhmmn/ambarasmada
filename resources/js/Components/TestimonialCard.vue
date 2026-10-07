@@ -53,7 +53,7 @@ const computedInitials = computed(() => {
   background: linear-gradient(145deg, var(--color-hutan-700) 0%, var(--color-hutan-800) 100%);
   border: 2px solid var(--color-daun-500);
   border-radius: 1.5rem;
-  padding: 2rem;
+  padding: 1.5rem;
   height: 100%;
   display: flex;
   flex-direction: column;

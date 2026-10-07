@@ -1015,3 +1015,29 @@ html.guest-scroll {
         @apply pb-[env(safe-area-inset-bottom)];
     }
 }
+
+/* Produksi mobile: optimasi sentuhan dan gulir untuk perangkat kecil. */
+@media (max-width: 640px) {
+    .guest-gallery-track {
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+    }
+
+    .guest-gallery-item {
+        scroll-snap-align: start;
+    }
+
+    .guest-bottom-nav-item {
+        min-height: 48px;
+    }
+
+    .guest-gallery-nav {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .carousel-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}

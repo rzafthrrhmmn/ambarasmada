@@ -254,21 +254,16 @@ watch(() => props.testimonials, () => {
   cursor: not-allowed;
 }
 
-.carousel-btn-prev { left: -24px; }
-.carousel-btn-next { right: -24px; }
-
-@media (max-width: 1024px) {
-  .carousel-btn-prev { left: -12px; }
-  .carousel-btn-next { right: -12px; }
-}
+.carousel-btn-prev { left: 0; }
+.carousel-btn-next { right: 0; }
 
 @media (max-width: 640px) {
   .carousel-btn {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
   }
-  .carousel-btn-prev { left: -8px; }
-  .carousel-btn-next { right: -8px; }
+  .carousel-btn-prev { left: 4px; }
+  .carousel-btn-next { right: 4px; }
 }
 
 .carousel-dots {

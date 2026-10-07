@@ -4,7 +4,7 @@
     @mouseenter="pause"
     @mouseleave="resume"
   >
-    <div class="relative h-[260px] sm:h-[340px] md:h-[420px] lg:h-[480px] overflow-hidden">
+    <div class="relative h-[220px] sm:h-[340px] md:h-[420px] lg:h-[480px] overflow-hidden">
       <TransitionGroup name="slider">
         <div
           v-for="(slide, index) in slides"
@@ -21,11 +21,11 @@
             @error="e => { e.target.onerror = null; e.target.src = '/images/Logo_Ambalan.png'; }"
           />
           <div class="absolute inset-0 bg-gradient-to-t from-hutan-800/95 via-hutan-800/30 to-transparent" />
-          <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-7 md:p-10">
-            <p v-if="slide.label" class="mb-2 text-xs font-bold tracking-widest text-daun-400 uppercase">
+          <div class="absolute bottom-0 left-0 right-0 p-4 sm:p-7 md:p-10">
+            <p v-if="slide.label" class="mb-1 text-xs font-bold tracking-widest text-daun-400 uppercase">
               {{ slide.label }}
             </p>
-            <h2 class="text-xl font-extrabold text-krem-100 sm:text-2xl md:text-3xl" style="text-shadow: 2px 2px 0 rgba(0,0,0,0.4);">
+            <h2 class="text-lg font-extrabold text-krem-100 sm:text-2xl md:text-3xl" style="text-shadow: 2px 2px 0 rgba(0,0,0,0.4);">
               {{ slide.title }}
             </h2>
             <p v-if="slide.description" class="mt-2 max-w-lg text-sm font-medium text-krem-300/80 sm:text-base">
