@@ -1,0 +1,38 @@
+/*
+| Stylesheet cetak khusus KTA (86mm × 54mm).
+|
+| Disisipkan sebagai string mentah ke dokumen cetak (import ...?raw),
+| sehingga @page di sini hanya berlaku di jendela cetak KTA dan
+| tidak pernah memengaruhi pencetakan halaman lain.
+*/
+
+@page {
+    size: 86mm 54mm;
+    margin: 0;
+}
+
+*,
+*::before,
+*::after {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background: #263d26;
+}
+
+.kta-stage {
+    height: auto !important;
+    overflow: visible !important;
+    max-width: none !important;
+}
+
+.kta-card {
+    position: static !important;
+    transform: none !important;
+    box-shadow: none !important;
+}

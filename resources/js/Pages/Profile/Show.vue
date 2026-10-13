@@ -60,7 +60,10 @@
               </span>
               <span v-else>Perbarui Profil</span>
             </button>
-            <button type="button" @click="printKTA" :disabled="form.processing" class="rounded-lg border-2 border-[#EDD330] px-4 py-2 text-sm font-semibold text-[#EDD330] transition hover:bg-[#EDD330]/10 disabled:opacity-50">Cetak KTA</button>
+            <button type="button" @click="printKTA" :disabled="printing" class="rounded-lg border-2 border-[#EDD330] px-4 py-2 text-sm font-semibold text-[#EDD330] transition hover:bg-[#EDD330]/10 disabled:opacity-50">
+              <span v-if="printing">Mempersiapkan...</span>
+              <span v-else>Cetak KTA</span>
+            </button>
             <button type="button" @click="toggleKtaPreview" class="rounded-lg border-2 border-[#A7B92A] px-4 py-2 text-sm font-semibold text-[#A7B92A] transition hover:bg-[#A7B92A]/10">{{ showKtaPreview ? 'Sembunyikan Preview' : 'Tampilkan Preview' }}</button>
           </div>
         </form>
@@ -89,14 +92,8 @@
           <button @click="toggleKtaPreview" class="text-xs text-[#8fa06a] hover:text-[#EDD330] transition">Tutup</button>
         </div>
         <div class="flex justify-center">
-          <KtaCard ref="ktaPreviewCard" :member="member" :ambalan="ambalan" />
+          <KtaCard ref="ktaCard" :member="member" :ambalan="ambalan" />
         </div>
-      </div>
-    </section>
-
-    <section class="mt-6 print-only">
-      <div class="flex justify-center">
-        <KtaCard ref="ktaCard" :member="member" :ambalan="ambalan" />
       </div>
     </section>
 
@@ -120,22 +117,24 @@
   </AppLayout>
 </template>
 <script setup>
-import { computed, ref, nextTick, onUnmounted, watch } from 'vue';
+import { computed, onUnmounted, ref } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 import AppLayout from '@/Components/AppLayout.vue';
 import KtaCard from '@/Components/KtaCard.vue';
 import CropModal from '@/Components/CropModal.vue';
 import { useAccess } from '@/Composables/useAccess.js';
+import ktaCardCss from '../../../css/kta-card.css?raw';
+import printCss from '../../../css/print.css?raw';
 
 const props = defineProps({ member: Object });
 const page = usePage();
 const { can } = useAccess(page);
 const ambalan = computed(() => page.props.ambalan || null);
 const ktaCard = ref(null);
-const ktaPreviewCard = ref(null);
 const member = computed(() => props.member);
-const showKtaPreview = ref(false);
+const showKtaPreview = ref(true);
+const printing = ref(false);
 const toast = useToast();
 // Tulisannya pernah 'pembina' huruf kecil, sedangkan server mengirim 'Pembina',
 // sehingga kelas, tingkatan, dan status aktif selalu terkunci termasuk untuk
@@ -248,7 +247,6 @@ onUnmounted(() => {
   if (photoObjectUrl.value) {
     URL.revokeObjectURL(photoObjectUrl.value);
   }
-  if (debounceTimer.value) clearTimeout(debounceTimer.value);
 });
 
 const validateFile = (file) => {
@@ -295,114 +293,77 @@ const closeCropModal = () => {
 function formatDate(value) { return value ? new Date(value).toLocaleDateString('id-ID') : '-'; }
 
 function printKTA() {
-  if (printState.value.pending) return;
+  const card = ktaCard.value?.$el;
+  if (!card || printing.value) return;
 
-  let card = ktaPreviewCard.value?.$el;
+  printing.value = true;
 
-  if (!card) {
-    printState.value = { pending: true, shouldRestore: true };
-    showKtaPreview.value = true;
-    nextTick(() => {
-      card = ktaPreviewCard.value?.$el;
-      doPrint(card);
-      if (printState.value.shouldRestore) {
-        showKtaPreview.value = false;
-      }
-      printState.value = { pending: false, shouldRestore: false };
+  waitForCardImages(card)
+    .then(() => openPrintWindow(card.outerHTML))
+    .catch(() => openPrintWindow(card.outerHTML))
+    .finally(() => {
+      printing.value = false;
     });
-    return;
-  }
-
-  printState.value = { pending: true, shouldRestore: false };
-  doPrint(card);
-  printState.value = { pending: false, shouldRestore: false };
 }
 
-function doPrint(card) {
-  if (!card) return;
+function waitForCardImages(card) {
+  const images = Array.from(card.querySelectorAll('img'));
+  return Promise.all(images.map((img) => (img.complete
+    ? Promise.resolve()
+    : new Promise((resolve) => {
+      img.addEventListener('load', resolve, { once: true });
+      img.addEventListener('error', resolve, { once: true });
+    }))));
+}
 
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[char]));
+}
 
-  const cardHtml = card.outerHTML;
-  const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-    .map(el => el.outerHTML)
-    .join('\n');
+function openPrintWindow(cardHtml) {
+  const memberName = escapeHtml(props.member?.nama_lengkap ?? 'Anggota');
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Cetak KTA - ${memberName}</title>
+  <style>${ktaCardCss}</style>
+  <style>${printCss}</style>
+</head>
+<body>
+  ${cardHtml}
+  <script>
+    document.querySelectorAll('img').forEach(function (img) {
+      img.addEventListener('error', function () { img.style.display = 'none'; });
+    });
+  <\/script>
+</body>
+</html>`;
 
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Cetak KTA</title>
-      <meta charset="UTF-8">
-      ${styles}
-      <style>
-        @page {
-          size: 86mm 54mm;
-          margin: 0;
-        }
-        * {
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        body {
-          margin: 0;
-          padding: 0;
-          font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 100vh;
-          background: #263D26;
-        }
-        .kta-wrapper {
-          width: 86mm;
-          height: 54mm;
-          overflow: hidden;
-          transform-origin: top left;
-        }
-        @media print {
-          body { padding: 0; margin: 0; background: #263D26; }
-          .kta-wrapper { width: 86mm; height: 54mm; }
-          @page { margin: 0; size: 86mm 54mm; }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="kta-wrapper">${cardHtml}</div>
-    </body>
-    </html>
-  `);
-  printWindow.document.close();
-  printWindow.focus();
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+  document.body.appendChild(iframe);
+
+  const win = iframe.contentWindow;
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+
   setTimeout(() => {
-    printWindow.print();
-  }, 300);
+    win.focus();
+    win.print();
+    setTimeout(() => iframe.remove(), 1000);
+  }, 350);
 }
 
 function toggleKtaPreview() {
   showKtaPreview.value = !showKtaPreview.value;
 }
 </script>
-<style scoped>
-.print-only {
-  display: none;
-}
-@media print {
-  .print-only {
-    display: block !important;
-  }
-  body * {
-    visibility: hidden;
-  }
-  .print-only, .print-only * {
-    visibility: visible !important;
-  }
-  .print-only {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-  }
-}
-</style>
