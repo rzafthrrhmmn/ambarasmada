@@ -98,7 +98,7 @@ return [
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
             'options' => extension_loaded('pdo_pgsql') ? array_filter([
-                'prepared_statements' => env('DB_PREPARED_STATEMENTS', false),
+                'prepared_statements' => filter_var(env('DB_PREPARED_STATEMENTS', false), FILTER_VALIDATE_BOOLEAN),
             ]) : [],
         ],
 
