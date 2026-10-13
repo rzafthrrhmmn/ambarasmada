@@ -14,4 +14,6 @@ return [
     'send_default_pii' => env('SENTRY_SEND_DEFAULT_PII', false),
 
     'enable_logs' => env('SENTRY_ENABLE_LOGS', false),
+
+    'before_send' => null,
 ];

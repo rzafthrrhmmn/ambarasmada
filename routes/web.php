@@ -37,15 +37,35 @@ use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TkkPointController;
 use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\UserPermissionController;
+use App\Models\Ambalan;
+use App\Models\Announcement;
+use App\Models\Gallery;
+use App\Models\Member;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
+use Laravel\Fortify\Fortify;
+use Laravel\Fortify\Http\Controllers\ConfirmedTwoFactorAuthenticationController;
+use Laravel\Fortify\Http\Controllers\PasswordController;
+use Laravel\Fortify\Http\Controllers\ProfileInformationController;
+use Laravel\Fortify\Http\Controllers\RecoveryCodeController;
+use Laravel\Fortify\Http\Controllers\TwoFactorAuthenticatedSessionController;
+use Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController;
+use Laravel\Fortify\Http\Controllers\TwoFactorQrCodeController;
+use Laravel\Fortify\Http\Controllers\TwoFactorSecretKeyController;
+use Laravel\Passkeys\Http\Controllers\PasskeyConfirmationController;
+use Laravel\Passkeys\Http\Controllers\PasskeyLoginController;
+use Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController;
 
 Route::get('/up', fn () => response()->json(['status' => 'ok', 'time' => now()]))->name('up');
 
 Route::get('/debug/db', function () {
     try {
-        $result = \Illuminate\Support\Facades\DB::select('SELECT 1 as test');
+        $result = DB::select('SELECT 1 as test');
+
         return response()->json(['success' => true, 'result' => $result]);
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         return response()->json([
             'success' => false,
             'error' => $e->getMessage(),
@@ -56,20 +76,23 @@ Route::get('/debug/db', function () {
 
 Route::get('/debug/api-guest', function () {
     try {
-        $ambalan = \App\Models\Ambalan::first();
-        $announcements = \App\Models\Announcement::whereNotNull('published_at')
+        $ambalan = Ambalan::first();
+        $hasKategoriColumn = Schema::hasColumn('announcements', 'kategori');
+
+        $announcements = Announcement::whereNotNull('published_at')
             ->where('published_at', '<=', now())
             ->latest('published_at')
             ->take(5)
-            ->get();
-        $gallery = \App\Models\Gallery::whereNotNull('image')
+            ->get($hasKategoriColumn ? ['id', 'judul', 'isi', 'published_at', 'kategori'] : ['id', 'judul', 'isi', 'published_at']);
+        $gallery = Gallery::whereNotNull('image')
             ->latest('created_at')
             ->take(12)
             ->get();
         $stats = [
-            'total_members' => \App\Models\Member::where('status_aktif', 'Aktif')->count(),
-            'total_alumni' => \App\Models\Member::where('status_aktif', 'Alumni')->count(),
+            'total_members' => Member::where('status_aktif', 'Aktif')->count(),
+            'total_alumni' => Member::where('status_aktif', 'Alumni')->count(),
         ];
+
         return response()->json([
             'success' => true,
             'ambalan' => $ambalan,
@@ -77,7 +100,7 @@ Route::get('/debug/api-guest', function () {
             'gallery' => $gallery,
             'stats' => $stats,
         ]);
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         return response()->json([
             'success' => false,
             'error' => $e->getMessage(),
@@ -90,19 +113,19 @@ Route::get('/debug/api-guest', function () {
 Route::get('/debug/cache', function () {
     try {
         // Test if cache table exists
-        $tableExists = \Illuminate\Support\Facades\DB::select("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'cache')");
-        
+        $tableExists = DB::select("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'cache')");
+
         // Test cache write/read
-        \Illuminate\Support\Facades\Cache::put('test_key', 'test_value', 60);
-        $cached = \Illuminate\Support\Facades\Cache::get('test_key');
-        \Illuminate\Support\Facades\Cache::forget('test_key');
-        
+        Cache::put('test_key', 'test_value', 60);
+        $cached = Cache::get('test_key');
+        Cache::forget('test_key');
+
         return response()->json([
             'success' => true,
             'cache_table_exists' => $tableExists[0]->exists ?? false,
             'cache_write_read' => $cached === 'test_value',
         ]);
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         return response()->json([
             'success' => false,
             'error' => $e->getMessage(),
@@ -165,68 +188,68 @@ Route::middleware(['auth'])->group(function () {
 
 // Fortify features: 2FA, passkeys, profile, password updates.
 Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(function () {
-    \Laravel\Fortify\Fortify::ignoreRoutes();
+    Fortify::ignoreRoutes();
 
-    Route::put('/user/profile-information', [\Laravel\Fortify\Http\Controllers\ProfileInformationController::class, 'update'])
+    Route::put('/user/profile-information', [ProfileInformationController::class, 'update'])
         ->name('user-profile-information.update');
 
-    Route::put('/user/password', [\Laravel\Fortify\Http\Controllers\PasswordController::class, 'update'])
+    Route::put('/user/password', [PasswordController::class, 'update'])
         ->name('user-password.update');
 
-    Route::post('/user/two-factor-authentication', [\Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::class, 'store'])
+    Route::post('/user/two-factor-authentication', [TwoFactorAuthenticationController::class, 'store'])
         ->name('two-factor.enable');
 
-    Route::post('/user/confirmed-two-factor-authentication', [\Laravel\Fortify\Http\Controllers\ConfirmedTwoFactorAuthenticationController::class, 'store'])
+    Route::post('/user/confirmed-two-factor-authentication', [ConfirmedTwoFactorAuthenticationController::class, 'store'])
         ->name('two-factor.confirm');
 
-    Route::delete('/user/two-factor-authentication', [\Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::class, 'destroy'])
+    Route::delete('/user/two-factor-authentication', [TwoFactorAuthenticationController::class, 'destroy'])
         ->name('two-factor.disable');
 
-    Route::get('/user/two-factor-qr-code', [\Laravel\Fortify\Http\Controllers\TwoFactorQrCodeController::class, 'show'])
+    Route::get('/user/two-factor-qr-code', [TwoFactorQrCodeController::class, 'show'])
         ->name('two-factor.qr-code');
 
-    Route::get('/user/two-factor-secret-key', [\Laravel\Fortify\Http\Controllers\TwoFactorSecretKeyController::class, 'show'])
+    Route::get('/user/two-factor-secret-key', [TwoFactorSecretKeyController::class, 'show'])
         ->name('two-factor.secret-key');
 
-    Route::get('/user/two-factor-recovery-codes', [\Laravel\Fortify\Http\Controllers\RecoveryCodeController::class, 'index'])
+    Route::get('/user/two-factor-recovery-codes', [RecoveryCodeController::class, 'index'])
         ->name('two-factor.recovery-codes');
 
-    Route::post('/user/two-factor-recovery-codes', [\Laravel\Fortify\Http\Controllers\RecoveryCodeController::class, 'store'])
+    Route::post('/user/two-factor-recovery-codes', [RecoveryCodeController::class, 'store'])
         ->name('two-factor.regenerate-recovery-codes');
 
-    Route::get('/two-factor-challenge', [\Laravel\Fortify\Http\Controllers\TwoFactorAuthenticatedSessionController::class, 'create'])
+    Route::get('/two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'create'])
         ->middleware('guest:web')
         ->name('two-factor.login');
 
-    Route::post('/two-factor-challenge', [\Laravel\Fortify\Http\Controllers\TwoFactorAuthenticatedSessionController::class, 'store'])
+    Route::post('/two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'store'])
         ->middleware('guest:web')
         ->name('two-factor.login.store');
 
-    Route::get('/passkeys/login/options', [\Laravel\Passkeys\Http\Controllers\PasskeyLoginController::class, 'index'])
+    Route::get('/passkeys/login/options', [PasskeyLoginController::class, 'index'])
         ->middleware('guest:web')
         ->name('passkey.login-options');
 
-    Route::post('/passkeys/login', [\Laravel\Passkeys\Http\Controllers\PasskeyLoginController::class, 'store'])
+    Route::post('/passkeys/login', [PasskeyLoginController::class, 'store'])
         ->middleware('guest:web')
         ->name('passkey.login');
 
-    Route::get('/passkeys/confirm/options', [\Laravel\Passkeys\Http\Controllers\PasskeyConfirmationController::class, 'index'])
+    Route::get('/passkeys/confirm/options', [PasskeyConfirmationController::class, 'index'])
         ->middleware('auth:web')
         ->name('passkey.confirm-options');
 
-    Route::post('/passkeys/confirm', [\Laravel\Passkeys\Http\Controllers\PasskeyConfirmationController::class, 'store'])
+    Route::post('/passkeys/confirm', [PasskeyConfirmationController::class, 'store'])
         ->middleware('auth:web')
         ->name('passkey.confirm');
 
-    Route::get('/user/passkeys/options', [\Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController::class, 'index'])
+    Route::get('/user/passkeys/options', [PasskeyRegistrationController::class, 'index'])
         ->middleware('auth:web')
         ->name('passkey.registration-options');
 
-    Route::post('/user/passkeys', [\Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController::class, 'store'])
+    Route::post('/user/passkeys', [PasskeyRegistrationController::class, 'store'])
         ->middleware('auth:web')
         ->name('passkey.store');
 
-    Route::delete('/user/passkeys/{passkey}', [\Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController::class, 'destroy'])
+    Route::delete('/user/passkeys/{passkey}', [PasskeyRegistrationController::class, 'destroy'])
         ->middleware('auth:web')
         ->name('passkey.destroy');
 });
@@ -354,8 +377,6 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
     Route::middleware(['role:Anggota,Admin,Pembina,Pengurus'])->group(function () {
         Route::get('/sku', [SkuController::class, 'index'])->name('sku.index');
         Route::post('/sku', [SkuController::class, 'store'])->name('sku.store')->middleware('throttle:10,1');
-        Route::post('/sku/points', [SkuController::class, 'storePoint'])->name('sku.points.store')->middleware('throttle:10,1');
-        Route::patch('/sku/points/{skuPoint}', [SkuController::class, 'update'])->name('sku.points.update')->middleware('throttle:20,1');
         Route::post('/sku/{skuSubmission}/approve', [SkuController::class, 'approve'])->name('sku.approve')->middleware('throttle:20,1');
         Route::post('/sku/{skuSubmission}/reject', [SkuController::class, 'reject'])->name('sku.reject')->middleware('throttle:20,1');
         Route::post('/sku/{skuSubmission}/cancel', [SkuController::class, 'cancel'])->name('sku.cancel')->middleware('throttle:10,1');
