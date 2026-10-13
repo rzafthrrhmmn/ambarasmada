@@ -661,11 +661,20 @@ class AttendanceController extends Controller
     public function scanPage(string $qr_token): Response
     {
         $this->guardMember(request()->user());
-        $session = AttendanceSession::where('qr_token', strtoupper($qr_token))->firstOrFail();
+
+        // Try to find as session QR token first
+        $session = AttendanceSession::where('qr_token', strtoupper($qr_token))->first();
+
+        // If not found, try as member QR code (KTA)
+        $member = null;
+        if (! $session) {
+            $member = Member::where('qr_code', strtoupper($qr_token))->first();
+        }
 
         return Inertia::render('Attendance/Scan', [
             'session' => $session,
             'member' => request()->user()->member,
+            'scannedMember' => $member,
         ]);
     }
 
@@ -687,6 +696,7 @@ class AttendanceController extends Controller
             // login. Sebelumnya nilai ini hanya dicek exists:members,id, jadi
             // seorang anggota bisa menulis atau menimpa presensi orang lain.
             'member_id' => ['nullable', 'integer'],
+            'scanned_member_id' => ['nullable', 'integer', 'exists:members,id'],
             'keterangan' => ['required', 'in:Hadir,Izin,Sakit,Alpa'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
@@ -704,12 +714,35 @@ class AttendanceController extends Controller
             return back()->withErrors(['member_id' => $message]);
         }
 
-        $session = AttendanceSession::where('qr_token', strtoupper($data['qr_token']))->first();
+        $qrToken = strtoupper($data['qr_token']);
+
+        // Try to find session by QR token
+        $session = AttendanceSession::where('qr_token', $qrToken)->first();
+
+        // If not found, try as member QR code (KTA) - check if scanned member has active session today
+        $scannedMember = null;
+        if (! $session) {
+            $scannedMember = Member::where('qr_code', $qrToken)->first();
+
+            if ($scannedMember) {
+                // Find active session for today that the scanned member can attend
+                $today = now()->toDateString();
+                $session = AttendanceSession::where('tanggal', $today)
+                    ->where('ambalan_id', $scannedMember->ambalan_id)
+                    ->whereHas('ambalan', function ($q) {
+                        $q->where('status', 'Aktif');
+                    })
+                    ->first();
+            }
+        } elseif (isset($data['scanned_member_id'])) {
+            // Session QR token was used, but scanned_member_id was also provided (manual entry)
+            $scannedMember = Member::find($data['scanned_member_id']);
+        }
 
         if (! $session) {
             if ($wantsJson) {
                 return response()->json([
-                    'message' => 'Sesi presensi tidak ditemukan. Kode QR mungkin sudah tidak berlaku.',
+                    'message' => 'Sesi presensi tidak ditemukan. Kode QR mungkin sudah tidak berlaku atau tidak ada sesi aktif hari ini.',
                 ], 404);
             }
 
@@ -763,12 +796,16 @@ class AttendanceController extends Controller
 
         // updateOrCreate membuat endpoint ini idempoten: pengiriman ulang dari
         // antrean offline memperbarui baris yang sama, bukan membuat duplikat.
+        $catatan = $scannedMember
+            ? 'KTA QR Code: '.$scannedMember->nama_lengkap.' ('.$scannedMember->nta.')'.($clientSentCoords ? ' + GPS' : '')
+            : 'QR Code'.($clientSentCoords ? ' + GPS' : '');
+
         Attendance::updateOrCreate(
             ['attendance_session_id' => $session->id, 'member_id' => $memberId],
             [
                 'keterangan' => $data['keterangan'],
                 'checked_at' => now(),
-                'catatan' => 'QR Code'.($clientSentCoords ? ' + GPS' : ''),
+                'catatan' => $catatan,
             ]
         );
 

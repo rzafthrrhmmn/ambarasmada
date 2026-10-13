@@ -3,7 +3,17 @@
     <div class="mb-6">
       <p class="text-sm font-medium text-[#EDD330]">Latihan Rutin</p>
       <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Scan QR Presensi</h1>
-      <p class="mt-1 text-sm text-[#8fa06a]">{{ session.nama }} | {{ formatDate(session.tanggal) }}</p>
+      <p class="mt-1 text-sm text-[#8fa06a]">
+        <template v-if="session">{{ session.nama }} | {{ formatDate(session.tanggal) }}</template>
+        <template v-else-if="scannedMember">KTA Anggota: {{ scannedMember.nama_lengkap }} ({{ scannedMember.nta }})</template>
+        <template v-else>Memuat sesi...</template>
+      </p>
+    </div>
+
+    <div v-if="scannedMember && !session" class="mb-6 rounded-2xl border border-[#EDD330]/40 bg-[#263D26] p-5">
+      <p class="text-sm font-semibold text-[#EDD330]">KTA Anggota Terdeteksi</p>
+      <p class="mt-1 text-xs text-[#8fa06a]">{{ scannedMember.nama_lengkap }} - {{ scannedMember.tingkatan }} - {{ scannedMember.kelas }}</p>
+      <p class="mt-1 text-xs text-[#8fa06a]">Mencari sesi latihan aktif hari ini...</p>
     </div>
 
     <div v-if="scanResult" class="mb-6 rounded-2xl border border-[#A7B92B]/40 bg-[#263D26] p-5">
@@ -100,10 +110,16 @@
       <h2 class="mb-3 font-semibold text-[#f0ead8]">Cetak Kehadiran</h2>
       <form @submit.prevent="submitCheckIn" class="grid gap-3">
         <input v-model="form.qr_token" type="hidden" />
+        <input v-model="form.scanned_member_id" type="hidden" />
         <label class="block">
           <span class="text-xs font-medium">Nama sesi presensi</span>
           <input v-model="form.nama" type="text" readonly class="mt-1 w-full rounded-lg border border-[#6F9435]/30 bg-[#263D26] px-3 py-2 text-sm text-[#8fa06a]" />
         </label>
+        <div v-if="scannedMember" class="rounded-lg border border-[#EDD330]/40 bg-[#263D26] p-3">
+          <p class="text-xs font-medium text-[#EDD330]">Anggota yang dipindai (KTA)</p>
+          <p class="mt-1 text-sm text-[#d4dc9a]">{{ scannedMember.nama_lengkap }}</p>
+          <p class="text-xs text-[#8fa06a]">{{ scannedMember.nta }} • {{ scannedMember.tingkatan }} • {{ scannedMember.kelas }}</p>
+        </div>
         <label class="block">
           <span class="text-xs font-medium">Keterangan</span>
           <select v-model="form.keterangan" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8]">
@@ -160,6 +176,7 @@ import {
 const props = defineProps({
   session: Object,
   member: Object,
+  scannedMember: { type: Object, default: null },
 });
 const { can } = useAccess();
 const toast = useToast();
@@ -307,8 +324,9 @@ const form = useForm({
   // mengabaikannya: yang menentukan adalah profil anggota milik pengguna yang
   // sedang login. Jadi field ini kini kosmetik, bukan pembuka celah.
   member_id: props.member?.id ?? '',
+  scanned_member_id: props.scannedMember?.id ?? '',
   keterangan: 'Hadir',
-  nama: props.session?.nama ?? '',
+  nama: props.session?.nama ?? (props.scannedMember ? 'Presensi via KTA' : ''),
   latitude: null,
   longitude: null,
 });

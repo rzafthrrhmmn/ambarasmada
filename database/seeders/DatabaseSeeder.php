@@ -32,7 +32,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CreateAdminUserSeeder::class);
         $this->call(LearningMaterialSeeder::class);
         $this->call(PengurusPositionSeeder::class);
-        $this->call(SkuPenegakPointSeeder::class);
         $this->call(TkkWajibPenegakSeeder::class);
 
         $ambalan = Ambalan::updateOrCreate(

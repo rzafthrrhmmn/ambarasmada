@@ -8,21 +8,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['member_id', 'sku_point_id', 'bukti_kegiatan', 'status', 'catatan', 'verified_by', 'tgl_verifikasi'])]
+#[Fillable(['member_id', 'sku_point_key', 'bukti_kegiatan', 'status', 'catatan', 'verified_by', 'tgl_verifikasi'])]
 class SkuSubmission extends Model
 {
-    protected $fillable = ['member_id', 'sku_point_id', 'bukti_kegiatan', 'status', 'catatan', 'verified_by', 'tgl_verifikasi'];
+    protected $fillable = ['member_id', 'sku_point_key', 'bukti_kegiatan', 'status', 'catatan', 'verified_by', 'tgl_verifikasi'];
 
     use SoftDeletes;
 
     public function member(): BelongsTo
     {
         return $this->belongsTo(Member::class);
-    }
-
-    public function skuPoint(): BelongsTo
-    {
-        return $this->belongsTo(SkuPoint::class);
     }
 
     public function verifiedBy(): BelongsTo

@@ -131,7 +131,6 @@ class InertiaCheckInTest extends TestCase
             'keterangan' => 'Hadir',
         ], $this->inertiaHeaders());
 
-
         $this->assertSame(1, Attendance::count(), 'Presensi tidak tercatat lewat jalur Inertia.');
     }
 
@@ -147,7 +146,6 @@ class InertiaCheckInTest extends TestCase
             'latitude' => -5.14942,
             'longitude' => 119.4324,
         ], $this->inertiaHeaders());
-
 
         $this->assertSame(1, Attendance::count());
     }
@@ -167,7 +165,6 @@ class InertiaCheckInTest extends TestCase
         ], $this->inertiaHeaders());
 
         $errors = $this->sessionErrors();
-
 
         $this->assertSame(0, Attendance::count());
         $this->assertArrayHasKey('location', $errors, 'Pesan geofence tidak terkirim ke klien.');
@@ -190,7 +187,6 @@ class InertiaCheckInTest extends TestCase
 
         $errors = $this->sessionErrors();
 
-
         $this->assertSame(0, Attendance::count());
         $this->assertArrayHasKey('location', $errors);
     }
@@ -204,7 +200,6 @@ class InertiaCheckInTest extends TestCase
             'member_id' => $member->id,
             'keterangan' => 'Hadir',
         ], $this->inertiaHeaders());
-
 
         // 404 tanpa header Inertia akan ditampilkan sebagai halaman error biasa,
         // bukan error formulir. Klien harus tetap bisa membaca JSON-nya.

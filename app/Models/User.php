@@ -14,8 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Fortify\TwoFactorAuthenticatable;
 use Illuminate\Support\Facades\Log;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 use Throwable;
 
 #[Fillable(['username', 'name', 'email', 'password', 'role', 'is_active', 'status', 'foto', 'email_verified_at'])]

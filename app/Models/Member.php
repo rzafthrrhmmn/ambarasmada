@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
-#[Fillable(['ambalan_id', 'user_id', 'nta', 'angkatan', 'nomor_urut', 'nta_username', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'kelas', 'tingkatan', 'tahun_lulus', 'status_aktif', 'no_hp'])]
+#[Fillable(['ambalan_id', 'user_id', 'nta', 'angkatan', 'nomor_urut', 'nta_username', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'kelas', 'tingkatan', 'tahun_lulus', 'status_aktif', 'no_hp', 'qr_code'])]
 class Member extends Model
 {
-    protected $fillable = ['ambalan_id', 'user_id', 'nta', 'angkatan', 'nomor_urut', 'nta_username', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'kelas', 'tingkatan', 'tahun_lulus', 'status_aktif', 'no_hp'];
+    protected $fillable = ['ambalan_id', 'user_id', 'nta', 'angkatan', 'nomor_urut', 'nta_username', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'kelas', 'tingkatan', 'tahun_lulus', 'status_aktif', 'no_hp', 'qr_code'];
 
     use SoftDeletes;
 
@@ -48,6 +49,11 @@ class Member extends Model
 
             if ($member->nta === null) {
                 $member->nta = $member->nta_username;
+            }
+
+            // Generate unique QR code for KTA (1 per account)
+            if ($member->qr_code === null) {
+                $member->qr_code = 'KTA-'.Str::upper(Str::random(12));
             }
         });
     }
@@ -133,5 +139,22 @@ class Member extends Model
     public function approvedSkuCount(): int
     {
         return $this->skuSubmissions()->where('status', 'Approved')->count();
+    }
+
+    public function generateQrCode(): string
+    {
+        if ($this->qr_code) {
+            return $this->qr_code;
+        }
+
+        $code = 'KTA-'.Str::upper(Str::random(12));
+        $this->update(['qr_code' => $code]);
+
+        return $code;
+    }
+
+    public function getQrCodeUrl(): string
+    {
+        return route('attendance.scan', $this->qr_code);
     }
 }

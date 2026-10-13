@@ -12,7 +12,6 @@ use App\Models\Letter;
 use App\Models\Meeting;
 use App\Models\Member;
 use App\Models\Reminder;
-use App\Models\SkuPoint;
 use App\Models\SkuSubmission;
 use App\Models\Team;
 use App\Models\TeamMember;
@@ -180,31 +179,14 @@ class SecurityAuditTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_sku_update_allows_admin(): void
-    {
-        $skuPoint = SkuPoint::create([
-            'tingkatan' => 'Bantara', 'nomor_poin' => 1,
-            'deskripsi_poin' => 'Test point', 'is_active' => true,
-        ]);
-
-        $this->actingAs($this->getAdmin())
-            ->patch("/sku/points/{$skuPoint->id}", [
-                'tingkatan' => 'Bantara', 'nomor_poin' => 1,
-                'deskripsi_poin' => 'Updated', 'is_active' => true,
-            ])
-            ->assertRedirect();
-    }
-
     public function test_sku_approve_forbidden_for_anggota(): void
     {
         $member = $this->getAnggota()->member;
-        $point = SkuPoint::create([
-            'tingkatan' => 'Bantara', 'nomor_poin' => 1,
-            'deskripsi_poin' => 'Test', 'is_active' => true,
-        ]);
         $submission = SkuSubmission::create([
-            'member_id' => $member->id, 'sku_point_id' => $point->id,
-            'bukti_kegiatan' => 'test.pdf', 'status' => 'Pending',
+            'member_id' => $member->id,
+            'sku_point_key' => 'Bantara.1',
+            'bukti_kegiatan' => 'test.pdf',
+            'status' => 'Pending',
             'catatan' => 'Test submission',
         ]);
 

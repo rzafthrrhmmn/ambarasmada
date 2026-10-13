@@ -73,8 +73,11 @@ class RegistrationController extends Controller
         if ($member) {
             $member->update($memberData);
         } else {
-            Member::create(['user_id' => $user->id, ...$memberData]);
+            $member = Member::create(['user_id' => $user->id, ...$memberData]);
         }
+
+        // Generate QR code for KTA (Kartu Tanda Anggota) - 1 QR per account
+        $member->generateQrCode();
 
         return redirect()->route('members.pending')->with('success', "Akun {$user->email} disetujui dengan NTA {$nta}.");
     }

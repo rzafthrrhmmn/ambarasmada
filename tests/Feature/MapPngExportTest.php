@@ -1021,7 +1021,7 @@ class MapPngExportTest extends TestCase
         );
     }
 
-/**
+    /**
      * Angka skala di subjudul harus benar-benar muncul di PNG.
      *
      * exportMapPng menghitung "Skala 1:N" memakai scaleDenominator(), lalu
@@ -1588,7 +1588,7 @@ class MapPngExportTest extends TestCase
         );
     }
 
-/**
+    /**
      * Header lembar memakai lambang urutan organisasi Kepramukaan, dan
      * kegagalan memuatnya tidak boleh menggagalkan PNG.
      *

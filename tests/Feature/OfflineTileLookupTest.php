@@ -600,7 +600,7 @@ class OfflineTileLookupTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            ".setDOMContent(popupWilayah(",
+            '.setDOMContent(popupWilayah(',
             $pencarian,
             'Popup harus dipasang dari node, bukan dari string HTML.'
         );
