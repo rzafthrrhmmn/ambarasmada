@@ -114,7 +114,7 @@ try {
         config([
             'database.connections.pgsql.options' => array_merge(
                 config('database.connections.pgsql.options', []),
-                [\PDO::ATTR_EMULATE_PREPARES => true]
+                [PDO::ATTR_EMULATE_PREPARES => true]
             ),
         ]);
     });
