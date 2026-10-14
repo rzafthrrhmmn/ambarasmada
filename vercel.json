@@ -110,6 +110,7 @@
     "DB_HOST": "aws-0-ap-southeast-1.pooler.supabase.com",
     "DB_PORT": "6543",
     "DB_DATABASE": "postgres",
+    "DB_PREPARED_STATEMENTS": "false",
 
     "REDIS_CLIENT": "phpredis",
     "REDIS_HOST": "127.0.0.1",
