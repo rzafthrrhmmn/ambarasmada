@@ -96,7 +96,7 @@
     "LOG_LEVEL": "error",
     "SESSION_DRIVER": "database",
     "SESSION_LIFETIME": "120",
-    "SESSION_ENCRYPT": "true",
+    "SESSION_ENCRYPT": "false",
     "SESSION_PATH": "/",
 
     "SESSION_SECURE_COOKIE": "true",
