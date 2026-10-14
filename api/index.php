@@ -29,6 +29,7 @@ try {
     $cacheStore = trim((string) (getenv('CACHE_STORE') ?: getenv('CACHE_DRIVER'))) ?: 'file';
     $dbConnection = trim((string) getenv('DB_CONNECTION')) ?: 'pgsql';
     $queueConnection = trim((string) getenv('QUEUE_CONNECTION')) ?: 'sync';
+    $dbPreparedStatements = trim((string) getenv('DB_PREPARED_STATEMENTS'));
 
     putenv('APP_STORAGE='.$storagePath);
     $_ENV['APP_STORAGE'] = $storagePath;
@@ -45,6 +46,9 @@ try {
     putenv('CACHE_DRIVER='.$cacheStore);
     putenv('DB_CONNECTION='.$dbConnection);
     putenv('QUEUE_CONNECTION='.$queueConnection);
+    if ($dbPreparedStatements !== '') {
+        putenv('DB_PREPARED_STATEMENTS='.$dbPreparedStatements);
+    }
 
     $_ENV['SESSION_DRIVER'] = $sessionDriver;
     $_SERVER['SESSION_DRIVER'] = $sessionDriver;
@@ -56,6 +60,10 @@ try {
     $_SERVER['DB_CONNECTION'] = $dbConnection;
     $_ENV['QUEUE_CONNECTION'] = $queueConnection;
     $_SERVER['QUEUE_CONNECTION'] = $queueConnection;
+    if ($dbPreparedStatements !== '') {
+        $_ENV['DB_PREPARED_STATEMENTS'] = $dbPreparedStatements;
+        $_SERVER['DB_PREPARED_STATEMENTS'] = $dbPreparedStatements;
+    }
 
     $cacheFiles = [
         $storagePath.'/../bootstrap/cache/config.php',
@@ -98,6 +106,16 @@ try {
             'cache.default' => $cacheStore,
             'database.default' => $dbConnection,
             'queue.default' => $queueConnection,
+        ]);
+
+        // Supabase pooler (PgBouncer) doesn't support server-side prepared
+        // statements across pooled connections. Override PDO options to
+        // use emulated prepares which sends SQL as-is without prepare/bind.
+        config([
+            'database.connections.pgsql.options' => array_merge(
+                config('database.connections.pgsql.options', []),
+                [\PDO::ATTR_EMULATE_PREPARES => true]
+            ),
         ]);
     });
 
