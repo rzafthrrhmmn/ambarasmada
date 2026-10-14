@@ -74,6 +74,7 @@
     "APP_NAME": "AMBARA-SISTEM DIGITAL",
     "APP_ENV": "production",
     "APP_DEBUG": "0",
+    "APP_KEY": "base64:42RhQGqnl6apnWJWcRn58DVLAfHhNpFDnn0DHCB/eGo=",
     "APP_URL": "https://${VERCEL_PROJECT_PRODUCTION_URL}",
 
     "APP_LOCALE": "en",
@@ -93,7 +94,7 @@
     "LOG_CHANNEL": "stderr",
     "LOG_DEPRECATIONS_CHANNEL": "null",
     "LOG_LEVEL": "error",
-    "SESSION_DRIVER": "file",
+    "SESSION_DRIVER": "database",
     "SESSION_LIFETIME": "120",
     "SESSION_ENCRYPT": "true",
     "SESSION_PATH": "/",
