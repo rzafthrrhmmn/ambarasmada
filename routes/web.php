@@ -21,12 +21,14 @@ use App\Http\Controllers\HealthSafetyController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LearningMaterialController;
 use App\Http\Controllers\LetterController;
+use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberPositionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PwaController;
+use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ReminderController;
 use App\Http\Controllers\ReportController;
@@ -146,30 +148,18 @@ Route::get('/favicon.ico', function () {
 })->name('favicon');
 
 Route::get('/', GuestController::class)->name('home');
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->middleware('throttle:5,1');
-Route::post('/login', [AuthController::class, 'login'])->name('login.post')->middleware('throttle:5,1');
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Kirim ulang tautan aktivasi tanpa harus login (hanya Knowing email).
-Route::post('/email/resend-activation', [AuthController::class, 'resendActivationLink'])
-    ->name('verification.resend.guest')
-    ->middleware('throttle:5,5');
+// Login — simplified auth system. CSRF protection is handled by Laravel's
+// standard middleware; sessions use the database driver to avoid the 419
+// mismatch caused by cookie-based sessions with SameSite=None + partitioned
+// cookies on Vercel serverless.
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login')->middleware('throttle:5,1');
+Route::post('/login', [LoginController::class, 'login'])->name('login.post')->middleware('throttle:5,1');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-// Email Verification Routes
-Route::middleware(['auth'])->group(function () {
-    Route::get('/email/verify', [AuthController::class, 'showVerificationNotice'])->name('verification.notice');
-
-    // Middleware `signed` sengaja tidak dipakai: tautan yang kedaluwarsa akan
-    // berakhir pada halaman 403 yang tidak offers jalan keluar. Validasi
-    // signature dilakukan di AuthController@verifyEmail dengan pemeriksaan
-    // HMAC yang sama, namun hasilnya ditangani ramah lewat flash message.
-    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify')->middleware('throttle:6,1');
-
-    Route::post('/email/verification-notification', [AuthController::class, 'sendVerificationEmail'])->name('verification.send')->middleware('throttle:6,1');
-});
-
-Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('register')->middleware('throttle:3,1');
-Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:3,1');
+// Registration
+Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register')->middleware('throttle:3,1');
+Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:3,1');
 
 // Password Reset
 Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request')->middleware('throttle:3,1');
@@ -177,8 +167,25 @@ Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset')->middleware('throttle:3,1');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update')->middleware('throttle:3,1');
 
+// Kirim ulang tautan aktivasi tanpa harus login (hanya dengan knowing email).
+Route::post('/email/resend-activation', [AuthController::class, 'resendActivationLink'])
+    ->name('verification.resend.guest')
+    ->middleware('throttle:5,5');
+
+// Email Verification + Pending Approval — Layer 1: auth middleware
 Route::middleware(['auth'])->group(function () {
+    Route::get('/email/verify', [AuthController::class, 'showVerificationNotice'])->name('verification.notice');
+
+    // Middleware `signed` sengaja tidak dipakai: tautan yang kedaluwarsa akan
+    // berakhir pada halaman 403 yang tidak menyediakan jalan keluar. Validasi
+    // signature dilakukan di AuthController@verifyEmail dengan pemeriksaan
+    // HMAC yang sama, namun hasilnya ditangani ramah lewat flash message.
+    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify')->middleware('throttle:6,1');
+
+    Route::post('/email/verification-notification', [AuthController::class, 'sendVerificationEmail'])->name('verification.send')->middleware('throttle:6,1');
+
     Route::get('/pending-approval', [AuthController::class, 'pendingApproval'])->name('pending-approval');
+
     Route::middleware('pembina')->group(function () {
         Route::get('/members/pending', [RegistrationController::class, 'pendingUsers'])->name('members.pending');
         Route::post('/members/pending/{user}/approve', [RegistrationController::class, 'approve'])->name('members.pending.approve');
@@ -186,7 +193,11 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-// Fortify features: 2FA, passkeys, profile, password updates.
+// Protected application area — middleware applied incrementally:
+//   Layer 1: auth       — must be logged in
+//   Layer 2: approved   — must be approved by Pembina (not pending/rejected)
+//   Layer 3: verified   — email must be verified
+//   Layer 4: not-alumni — Alumni role routed to /alumni/* namespace
 Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(function () {
     Fortify::ignoreRoutes();
 

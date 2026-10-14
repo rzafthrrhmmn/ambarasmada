@@ -99,7 +99,7 @@ class BlackboxWhiteboxTest extends TestCase
 
     public function test_guest_can_access_registration_page(): void
     {
-        $this->get('/login?isRegistration=1')->assertOk();
+        $this->get('/register')->assertOk();
     }
 
     public function test_dashboard_requires_auth(): void
