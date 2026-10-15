@@ -9,7 +9,7 @@ define('LARAVEL_START', microtime(true));
 $storagePath = getenv('APP_STORAGE') ?: '/tmp/storage';
 
 $baseDir = getenv('LAMBDA_TASK_ROOT') ?: __DIR__;
-$baseDir = rtrim($baseDir, '/' . DIRECTORY_SEPARATOR);
+$baseDir = rtrim($baseDir, '/'.DIRECTORY_SEPARATOR);
 
 $directories = [
     $storagePath.'/app/public',
@@ -113,13 +113,6 @@ $app->booting(function () use ($sessionDriver, $cacheStore, $dbConnection, $queu
         'cache.default' => $cacheStore,
         'database.default' => $dbConnection,
         'queue.default' => $queueConnection,
-    ]);
-
-    config([
-        'database.connections.pgsql.options' => array_merge(
-            config('database.connections.pgsql.options', []),
-            [PDO::ATTR_EMULATE_PREPARES => true]
-        ),
     ]);
 });
 
