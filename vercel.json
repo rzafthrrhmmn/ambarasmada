@@ -100,7 +100,7 @@
     "SESSION_SECURE_COOKIE": "true",
     "SESSION_SAMESITE": "lax",
     "SESSION_PARTITIONED_COOKIE": "false",
-    "VENDOR_PATH": "/var/task/node_modules/laravel-vendor/vendor",
+    "VENDOR_PATH": "/tmp/vendor",
     "BROADCAST_CONNECTION": "log",
     "FILESYSTEM_DISK": "local",
     "LETTERS_DISK": "s3",

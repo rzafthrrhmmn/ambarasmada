@@ -36,14 +36,15 @@ APP_PACKAGES_CACHE=/tmp/bootstrap/cache/packages.php \
 APP_SERVICES_CACHE=/tmp/bootstrap/cache/services.php \
 $PHP_BIN -c $INI_FILE -d extension_dir="$PHP_INI_EXTENSION_DIR" ./artisan package:discover --ansi || true
 
-# Create a node_modules package to bundle vendor/ + server.php via @vercel/nft
-# @vercel/nft traces import/require calls, so we wrap vendor/ and server.php
-# in a fake npm package that api/index.js imports
+# Create a node_modules package to bundle vendor/ + server.php + vendor.tar.gz via @vercel/nft
+# Since vendor/ has ~16000 files (exceeds Vercel's 15000 file limit), we bundle it
+# into a tarball. The index.js requires the tarball to force @vercel/nft to include it.
+# At runtime, api/index.js extracts it to /tmp/vendor/.
 echo "Packaging vendor/ for Lambda..."
 mkdir -p node_modules/laravel-vendor
-echo '{"name":"laravel-vendor","main":"index.js","files":["index.js","vendor","server.php"]}' > node_modules/laravel-vendor/package.json
-echo 'module.exports = {};' > node_modules/laravel-vendor/index.js
-cp -r vendor node_modules/laravel-vendor/vendor
+echo '{"name":"laravel-vendor","main":"index.js","files":["index.js","vendor.tar.gz","server.php"]}' > node_modules/laravel-vendor/package.json
+echo 'try { require("./vendor.tar.gz"); } catch (e) {} module.exports = {};' > node_modules/laravel-vendor/index.js
 cp server.php node_modules/laravel-vendor/server.php
+tar -czf node_modules/laravel-vendor/vendor.tar.gz -C vendor .
 
 echo "Build complete."

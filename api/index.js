@@ -1,7 +1,8 @@
 import { createRequire } from 'module';
-import { spawn } from 'child_process';
+import { spawn, execFileSync } from 'child_process';
 import http from 'http';
 import path from 'path';
+import fs from 'fs';
 
 // Import @libphp to force @vercel/nft to bundle the native/ directory
 import libphp from '@libphp/almalinux-9-v85';
@@ -27,6 +28,26 @@ const PHP_PORT = 3000;
 const docroot = LAMBDA_TASK_ROOT;
 const serverPhpPath = require.resolve('laravel-vendor/server.php');
 const router = path.resolve(serverPhpPath);
+const vendorTarballPath = require.resolve('laravel-vendor/vendor.tar.gz');
+
+const VENDOR_EXTRACT_DIR = '/tmp/vendor';
+
+function extractVendorTarball() {
+    if (fs.existsSync(path.join(VENDOR_EXTRACT_DIR, 'autoload.php'))) {
+        return;
+    }
+
+    fs.mkdirSync(VENDOR_EXTRACT_DIR, { recursive: true });
+
+    const { stdout, stderr } = execFileSync('tar', ['-xzf', vendorTarballPath, '-C', VENDOR_EXTRACT_DIR], {
+        stdio: 'pipe',
+    });
+
+    if (stderr) {
+        console.error('[VENDOR] tar stderr:', stderr.toString());
+    }
+    console.log('[VENDOR] Extracted vendor/ to', VENDOR_EXTRACT_DIR);
+}
 
 let serverProcess = null;
 let readyResolvers = [];
@@ -161,6 +182,7 @@ let serverStarted = false;
 export default async function handler(req, res) {
     try {
         if (!serverStarted || !serverProcess || serverProcess.killed) {
+            extractVendorTarball();
             await startPhpServer();
             serverStarted = true;
         }
