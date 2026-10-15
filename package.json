@@ -6,7 +6,7 @@
     "node": "22.x"
   },
   "scripts": {
-    "build": "vite build",
+    "build": "@php artisan package:discover --ansi && vite build",
     "dev": "vite"
   },
   "dependencies": {
