@@ -67,13 +67,9 @@ try {
 
     $cacheFiles = [
         $storagePath.'/../bootstrap/cache/config.php',
-        $storagePath.'/../bootstrap/cache/services.php',
-        $storagePath.'/../bootstrap/cache/packages.php',
         $storagePath.'/../bootstrap/cache/routes.php',
         $storagePath.'/../bootstrap/cache/events.php',
         __DIR__.'/../bootstrap/cache/config.php',
-        __DIR__.'/../bootstrap/cache/services.php',
-        __DIR__.'/../bootstrap/cache/packages.php',
         __DIR__.'/../bootstrap/cache/routes.php',
         __DIR__.'/../bootstrap/cache/events.php',
         __DIR__.'/../bootstrap/cache/app.php',
@@ -82,6 +78,18 @@ try {
     foreach ($cacheFiles as $cacheFile) {
         if (is_file($cacheFile)) {
             @unlink($cacheFile);
+        }
+    }
+
+    $buildTimeCacheFiles = [
+        __DIR__.'/../bootstrap/cache/packages.php',
+        __DIR__.'/../bootstrap/cache/services.php',
+    ];
+
+    foreach ($buildTimeCacheFiles as $cacheFile) {
+        $tmpFile = $storagePath.'/../bootstrap/cache/'.basename($cacheFile);
+        if (is_file($cacheFile)) {
+            @copy($cacheFile, $tmpFile);
         }
     }
 

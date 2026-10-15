@@ -1,2 +1,8 @@
+# Ignore all generated cache files by default
 *
 !.gitignore
+
+# But allow package manifest and services cache to be deployed to Vercel
+# (api/index.php copies these to /tmp/bootstrap/cache/ at runtime)
+!packages.php
+!services.php
