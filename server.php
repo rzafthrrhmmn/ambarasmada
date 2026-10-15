@@ -8,6 +8,9 @@ define('LARAVEL_START', microtime(true));
 
 $storagePath = getenv('APP_STORAGE') ?: '/tmp/storage';
 
+$baseDir = getenv('LAMBDA_TASK_ROOT') ?: __DIR__;
+$baseDir = rtrim($baseDir, '/' . DIRECTORY_SEPARATOR);
+
 $directories = [
     $storagePath.'/app/public',
     $storagePath.'/framework/cache/data',
@@ -63,10 +66,10 @@ $cacheFiles = [
     $storagePath.'/../bootstrap/cache/config.php',
     $storagePath.'/../bootstrap/cache/routes.php',
     $storagePath.'/../bootstrap/cache/events.php',
-    __DIR__.'/bootstrap/cache/config.php',
-    __DIR__.'/bootstrap/cache/routes.php',
-    __DIR__.'/bootstrap/cache/events.php',
-    __DIR__.'/bootstrap/cache/app.php',
+    $baseDir.'/bootstrap/cache/config.php',
+    $baseDir.'/bootstrap/cache/routes.php',
+    $baseDir.'/bootstrap/cache/events.php',
+    $baseDir.'/bootstrap/cache/app.php',
 ];
 
 foreach ($cacheFiles as $cacheFile) {
@@ -76,8 +79,8 @@ foreach ($cacheFiles as $cacheFile) {
 }
 
 $buildTimeCacheFiles = [
-    __DIR__.'/bootstrap/cache/packages.php',
-    __DIR__.'/bootstrap/cache/services.php',
+    $baseDir.'/bootstrap/cache/packages.php',
+    $baseDir.'/bootstrap/cache/services.php',
 ];
 
 foreach ($buildTimeCacheFiles as $cacheFile) {
@@ -92,7 +95,7 @@ $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?: '127.0.0.1';
 
 $vendorPath = getenv('VENDOR_PATH') ?: __DIR__.'/vendor';
 
-$maintenance = __DIR__.'/storage/framework/maintenance.php';
+$maintenance = $baseDir.'/storage/framework/maintenance.php';
 if (file_exists($maintenance)) {
     require $maintenance;
 }
@@ -100,7 +103,7 @@ if (file_exists($maintenance)) {
 require $vendorPath.'/autoload.php';
 
 /** @var Application $app */
-$app = require_once __DIR__.'/bootstrap/app.php';
+$app = require_once $baseDir.'/bootstrap/app.php';
 
 $app->useStoragePath($storagePath);
 

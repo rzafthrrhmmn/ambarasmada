@@ -36,15 +36,21 @@ APP_PACKAGES_CACHE=/tmp/bootstrap/cache/packages.php \
 APP_SERVICES_CACHE=/tmp/bootstrap/cache/services.php \
 $PHP_BIN -c $INI_FILE -d extension_dir="$PHP_INI_EXTENSION_DIR" ./artisan package:discover --ansi || true
 
-# Create a node_modules package to bundle vendor/ + server.php + vendor.tar.gz via @vercel/nft
-# Since vendor/ has ~16000 files (exceeds Vercel's 15000 file limit), we bundle it
-# into a tarball. The index.js requires the tarball to force @vercel/nft to include it.
-# At runtime, api/index.js extracts it to /tmp/vendor/.
-echo "Packaging vendor/ for Lambda..."
+# Create a node_modules package to bundle vendor/ + app files via @vercel/nft
+# vendor/ has ~16000 files (exceeds Vercel's 15000 file limit), so we tar it.
+# Application PHP files are also tar'd since @vercel/nft only traces JS imports.
+echo "Packaging for Lambda..."
 mkdir -p node_modules/laravel-vendor
-echo '{"name":"laravel-vendor","main":"index.js","files":["index.js","vendor.tar.gz","server.php"]}' > node_modules/laravel-vendor/package.json
-echo 'try { require("./vendor.tar.gz"); } catch (e) {} module.exports = {};' > node_modules/laravel-vendor/index.js
-cp server.php node_modules/laravel-vendor/server.php
+echo '{"name":"laravel-vendor","main":"index.js","files":["index.js","vendor.tar.gz","app-files.tar.gz"]}' > node_modules/laravel-vendor/package.json
+echo 'try { require.resolve("./vendor.tar.gz"); } catch (e) {} try { require.resolve("./app-files.tar.gz"); } catch (e) {} module.exports = {};' > node_modules/laravel-vendor/index.js
+
+# Create vendor tarball
 tar -czf node_modules/laravel-vendor/vendor.tar.gz -C vendor .
+
+# Create app files tarball (exclude vendor, node_modules, .git, tests, debug files, pmtiles)
+tar -czf node_modules/laravel-vendor/app-files.tar.gz \
+    --exclude=vendor --exclude=node_modules --exclude=.git --exclude=.kilo \
+    --exclude=tests --exclude='_probe*' --exclude=test_hash* --exclude=check_login.php \
+    --exclude='*.pmtiles' --exclude='.github' .
 
 echo "Build complete."

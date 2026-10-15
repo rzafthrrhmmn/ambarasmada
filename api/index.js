@@ -21,33 +21,35 @@ const phpIni = path.join(pkgDir, 'native', 'php', 'php.ini');
 const phpModules = path.join(pkgDir, 'native', 'php', 'modules');
 const phpLibs = path.join(pkgDir, 'native', 'lib');
 
-const LAMBDA_TASK_ROOT = process.env.LAMBDA_TASK_ROOT || '/var/task';
-process.env.LAMBDA_TASK_ROOT = LAMBDA_TASK_ROOT;
-
-const PHP_PORT = 3000;
-const docroot = LAMBDA_TASK_ROOT;
-const serverPhpPath = require.resolve('laravel-vendor/server.php');
-const router = path.resolve(serverPhpPath);
-const vendorTarballPath = require.resolve('laravel-vendor/vendor.tar.gz');
-
+const APP_EXTRACT_DIR = '/tmp';
 const VENDOR_EXTRACT_DIR = '/tmp/vendor';
 
-function extractVendorTarball() {
-    if (fs.existsSync(path.join(VENDOR_EXTRACT_DIR, 'autoload.php'))) {
-        return;
+const vendorTarballPath = require.resolve('laravel-vendor/vendor.tar.gz');
+const appTarballPath = require.resolve('laravel-vendor/app-files.tar.gz');
+
+function extractTarballs() {
+    if (!fs.existsSync(path.join(VENDOR_EXTRACT_DIR, 'autoload.php'))) {
+        fs.mkdirSync(VENDOR_EXTRACT_DIR, { recursive: true });
+        execFileSync('tar', ['-xzf', vendorTarballPath, '-C', VENDOR_EXTRACT_DIR], {
+            stdio: 'pipe',
+        });
+        console.log('[VENDOR] Extracted vendor/ to', VENDOR_EXTRACT_DIR);
     }
 
-    fs.mkdirSync(VENDOR_EXTRACT_DIR, { recursive: true });
-
-    const { stdout, stderr } = execFileSync('tar', ['-xzf', vendorTarballPath, '-C', VENDOR_EXTRACT_DIR], {
-        stdio: 'pipe',
-    });
-
-    if (stderr) {
-        console.error('[VENDOR] tar stderr:', stderr.toString());
+    if (!fs.existsSync(path.join(APP_EXTRACT_DIR, 'server.php'))) {
+        execFileSync('tar', ['-xzf', appTarballPath, '-C', APP_EXTRACT_DIR], {
+            stdio: 'pipe',
+        });
+        console.log('[APP] Extracted application files to', APP_EXTRACT_DIR);
     }
-    console.log('[VENDOR] Extracted vendor/ to', VENDOR_EXTRACT_DIR);
+
+    process.env.LAMBDA_TASK_ROOT = APP_EXTRACT_DIR;
+    process.env.VENDOR_PATH = VENDOR_EXTRACT_DIR;
 }
+
+const PHP_PORT = 3000;
+let docroot = APP_EXTRACT_DIR;
+let router = path.join(APP_EXTRACT_DIR, 'server.php');
 
 let serverProcess = null;
 let readyResolvers = [];
@@ -182,7 +184,9 @@ let serverStarted = false;
 export default async function handler(req, res) {
     try {
         if (!serverStarted || !serverProcess || serverProcess.killed) {
-            extractVendorTarball();
+            extractTarballs();
+            docroot = APP_EXTRACT_DIR + '/public';
+            router = path.join(APP_EXTRACT_DIR, 'server.php');
             await startPhpServer();
             serverStarted = true;
         }
