@@ -126,15 +126,7 @@ try {
             'queue.default' => $queueConnection,
         ]);
 
-        // Supabase pooler (PgBouncer) doesn't support server-side prepared
-        // statements across pooled connections. Override PDO options to
-        // use emulated prepares which sends SQL as-is without prepare/bind.
-        config([
-            'database.connections.pgsql.options' => array_merge(
-                config('database.connections.pgsql.options', []),
-                [PDO::ATTR_EMULATE_PREPARES => true]
-            ),
-        ]);
+
     });
 
     $app->booted(function () use ($app) {
