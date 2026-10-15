@@ -35,12 +35,4 @@ APP_PACKAGES_CACHE=/tmp/bootstrap/cache/packages.php \
 APP_SERVICES_CACHE=/tmp/bootstrap/cache/services.php \
 $PHP_BIN -c $INI_FILE -d extension_dir="$PHP_INI_EXTENSION_DIR" ./artisan package:discover --ansi || true
 
-# Copy PHP runtime to php-runtime/ so it's included in the Vercel Lambda
-echo "Copying PHP runtime for Lambda..."
-mkdir -p php-runtime/php/modules
-cp -r "$LIBPHP_DIR/native/php/php" php-runtime/php/
-cp "$LIBPHP_DIR/native/php/php.ini" php-runtime/php/
-cp -r "$LIBPHP_DIR/native/php/modules/"* php-runtime/php/modules/
-cp -r "$LIBPHP_DIR/native/lib/" php-runtime/lib/
-
 echo "Build complete."

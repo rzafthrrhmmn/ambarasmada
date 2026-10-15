@@ -3,47 +3,22 @@ import { spawn } from 'child_process';
 import http from 'http';
 import path from 'path';
 
+// Import @libphp to force @vercel/nft to bundle the native/ directory
+// (dist/index.js references ../native via path.resolve(__dirname, "../native"))
+import libphp from '@libphp/almalinux-9-v85';
+void libphp;
+
 const require = createRequire(import.meta.url);
 
-function findPhpBin() {
-    const lambdaRoot = process.env.LAMBDA_TASK_ROOT || '/var/task';
-    const require = createRequire(import.meta.url);
-    const fs = require('fs');
-
-    // Runtime: PHP binary was copied to php-runtime/ during build
-    const runtimePhp = path.join(lambdaRoot, 'php-runtime', 'php', 'php');
-    if (fs.existsSync(runtimePhp)) {
-        return {
-            phpBin: runtimePhp,
-            phpIni: path.join(lambdaRoot, 'php-runtime', 'php', 'php.ini'),
-            phpModules: path.join(lambdaRoot, 'php-runtime', 'php', 'modules'),
-            phpLibs: path.join(lambdaRoot, 'php-runtime', 'lib'),
-            pkgDir: path.join(lambdaRoot, 'php-runtime'),
-        };
-    }
-
-    // Fallback: @libphp package in node_modules (local dev or if bundled)
-    try {
-        const pkgJsonPath = require.resolve('@libphp/almalinux-9-v85/package.json');
-        const pkgDir = path.dirname(pkgJsonPath);
-        const phpBin = path.join(pkgDir, 'native/php/php');
-        const phpIni = path.join(pkgDir, 'native/php/php.ini');
-        const phpModules = path.join(pkgDir, 'native/php/modules');
-        const phpLibs = path.join(pkgDir, 'native/lib');
-        return { phpBin, phpIni, phpModules, phpLibs, pkgDir };
-    } catch (e) {
-        const phpBin = process.env.PHP_BIN || 'php';
-        const phpIni = process.env.PHP_INI || '';
-        const phpModules = '';
-        const phpLibs = '';
-        return { phpBin, phpIni, phpModules, phpLibs, pkgDir: '' };
-    }
-}
+const pkgJsonPath = require.resolve('@libphp/almalinux-9-v85/package.json');
+const pkgDir = path.dirname(pkgJsonPath);
+const phpBin = path.join(pkgDir, 'native', 'php', 'php');
+const phpIni = path.join(pkgDir, 'native', 'php', 'php.ini');
+const phpModules = path.join(pkgDir, 'native', 'php', 'modules');
+const phpLibs = path.join(pkgDir, 'native', 'lib');
 
 const LAMBDA_TASK_ROOT = process.env.LAMBDA_TASK_ROOT || '/var/task';
 process.env.LAMBDA_TASK_ROOT = LAMBDA_TASK_ROOT;
-
-const { phpBin, phpIni, phpModules, phpLibs } = findPhpBin();
 
 const PHP_PORT = 3000;
 const docroot = LAMBDA_TASK_ROOT;
