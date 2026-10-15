@@ -44,14 +44,14 @@ echo '{"name":"laravel-vendor","main":"index.js","files":["index.js","vendor.tar
 echo 'try { require.resolve("./vendor.tar.gz"); } catch (e) {} try { require.resolve("./app-files.tar.gz"); } catch (e) {} module.exports = {};' > node_modules/laravel-vendor/index.js
 
 # Create vendor tarball (exclude tests, docs, .git, etc. to reduce size/time)
-tar -czf node_modules/laravel-vendor/vendor.tar.gz -C vendor . \
-    --exclude='*/tests/*' --exclude='*/test/*' --exclude='*/test/' \
+tar -czf node_modules/laravel-vendor/vendor.tar.gz \
+    --exclude='*/tests/*' --exclude='*/test/*' \
     --exclude='*/Test.php' --exclude='*/phpunit.xml*' \
-    --exclude='*/.git' --exclude='.git' \
-    --exclude='*/docs/*' --exclude='*/examples/*' --exclude='*/example/*' \
+    --exclude='*/.git' --exclude='*/docs/*' --exclude='*/examples/*' \
     --exclude='*/README*' --exclude='*/CHANGELOG*' --exclude='*/UPGRADE*' \
     --exclude='*/LICENSE*' --exclude='*/composer.lock' \
-    --exclude='*/.github/*' --exclude='*/.gitattributes' --exclude='*/.gitignore'
+    --exclude='*/.github/*' --exclude='*/.gitattributes' --exclude='*/.gitignore' \
+    -C vendor .
 
 # Create app files tarball (exclude vendor, node_modules, .git, tests, debug files, pmtiles)
 tar -czf node_modules/laravel-vendor/app-files.tar.gz \
