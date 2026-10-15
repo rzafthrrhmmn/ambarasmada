@@ -35,4 +35,13 @@ APP_PACKAGES_CACHE=/tmp/bootstrap/cache/packages.php \
 APP_SERVICES_CACHE=/tmp/bootstrap/cache/services.php \
 $PHP_BIN -c $INI_FILE -d extension_dir="$PHP_INI_EXTENSION_DIR" ./artisan package:discover --ansi || true
 
+# Create a node_modules package to bundle vendor/ via @vercel/nft
+# @vercel/nft only includes require()'d files, so we wrap vendor/
+# in a fake npm package that api/index.js requires
+echo "Packaging vendor/ for Lambda..."
+mkdir -p node_modules/laravel-vendor
+echo '{"name":"laravel-vendor","main":"index.js","files":["index.js","vendor"]}' > node_modules/laravel-vendor/package.json
+echo 'module.exports = {};' > node_modules/laravel-vendor/index.js
+cp -r vendor node_modules/laravel-vendor/vendor
+
 echo "Build complete."

@@ -2,11 +2,17 @@ import { createRequire } from 'module';
 import { spawn } from 'child_process';
 import http from 'http';
 import path from 'path';
+import fs from 'fs';
 
 // Import @libphp to force @vercel/nft to bundle the native/ directory
 // (dist/index.js references ../native via path.resolve(__dirname, "../native"))
 import libphp from '@libphp/almalinux-9-v85';
 void libphp;
+
+// Force @vercel/nft to include server.php and vendor/ in the Lambda
+// @vercel/nft tracks fs.readFileSync with string literal arguments
+fs.readFileSync('../server.php', 'utf8');
+require('laravel-vendor'); // Forces @vercel/nft to include node_modules/laravel-vendor/vendor/
 
 const require = createRequire(import.meta.url);
 

@@ -90,12 +90,14 @@ foreach ($buildTimeCacheFiles as $cacheFile) {
 $_SERVER['REMOTE_ADDR'] ??= '127.0.0.1';
 $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?: '127.0.0.1';
 
+$vendorPath = getenv('VENDOR_PATH') ?: __DIR__.'/vendor';
+
 $maintenance = __DIR__.'/storage/framework/maintenance.php';
 if (file_exists($maintenance)) {
     require $maintenance;
 }
 
-require __DIR__.'/vendor/autoload.php';
+require $vendorPath.'/autoload.php';
 
 /** @var Application $app */
 $app = require_once __DIR__.'/bootstrap/app.php';

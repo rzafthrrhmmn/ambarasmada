@@ -35,6 +35,8 @@ api/status.php
 # node_modules is excluded. Vercel Node.js function uses require.resolve()
 # to locate the PHP binary at runtime.
 !node_modules/@libphp/almalinux-9-v85
+# Include laravel-vendor package (wraps vendor/ for @vercel/nft)
+!node_modules/laravel-vendor
 
 # Skrip debug sekali pakai dan wireframe desain
 check_login.php
