@@ -29,11 +29,10 @@ $PHP_BIN -c $INI_FILE -d extension_dir="$PHP_INI_EXTENSION_DIR" "$COMPOSER_CMD" 
   --prefer-dist \
   --optimize-autoloader
 
-# Run package discover for Laravel
+# Run package discover for Laravel (writes to bootstrap/cache/ so they're
+# included in app-files.tar.gz; without dev packages pail/tinker/collision)
 echo "Running package:discover..."
-mkdir -p /tmp/bootstrap/cache /tmp/storage/framework/views
-APP_PACKAGES_CACHE=/tmp/bootstrap/cache/packages.php \
-APP_SERVICES_CACHE=/tmp/bootstrap/cache/services.php \
+rm -f bootstrap/cache/packages.php bootstrap/cache/services.php
 $PHP_BIN -c $INI_FILE -d extension_dir="$PHP_INI_EXTENSION_DIR" ./artisan package:discover --ansi || true
 
 # Create a node_modules package to bundle vendor/ + app files via @vercel/nft
