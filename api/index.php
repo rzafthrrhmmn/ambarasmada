@@ -125,8 +125,6 @@ try {
             'database.default' => $dbConnection,
             'queue.default' => $queueConnection,
         ]);
-
-
     });
 
     $app->booted(function () use ($app) {
