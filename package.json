@@ -7,10 +7,12 @@
   },
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@inertiajs/vue3": "^2.0",
+    "@libphp/almalinux-9-v85": "^0.0.3",
     "@pinia/nuxt": "^1.0.2",
     "@tanstack/vue-query": "^5.104.1",
     "@vercel/analytics": "^2.0.1",

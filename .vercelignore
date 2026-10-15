@@ -20,12 +20,21 @@ tests
 coverage
 /.git
 
-# Bootstrap cache files are auto-generated at runtime by api/index.php,
-# but packages.php and services.php are precomputed and deployed because
-# vendor/ is excluded so PackageManifest::build() cannot run on Vercel.
-# api/index.php copies these to /tmp/bootstrap/cache/ at runtime.
+# Vercel PHP files are no longer Serverless Functions
+# Node.js function in api/index.js handles all PHP requests via built-in server
+api/index.php
+api/status.php
+
+# Include bootstrap cache prebuilt at build time (vendor/ is excluded, so
+# PackageManifest::build() cannot run on Vercel). server.php copies these
+# to /tmp/bootstrap/cache/ at runtime.
 !bootstrap/cache/packages.php
 !bootstrap/cache/services.php
+
+# Include @libphp PHP runtime (Linux binary for built-in server) even though
+# node_modules is excluded. Vercel Node.js function uses require.resolve()
+# to locate the PHP binary at runtime.
+!node_modules/@libphp/almalinux-9-v85
 
 # Skrip debug sekali pakai dan wireframe desain
 check_login.php
