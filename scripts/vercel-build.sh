@@ -43,10 +43,10 @@ mkdir -p node_modules/laravel-vendor
 echo '{"name":"laravel-vendor","main":"index.js","files":["index.js","vendor.tar.gz","app-files.tar.gz"]}' > node_modules/laravel-vendor/package.json
 echo 'try { require.resolve("./vendor.tar.gz"); } catch (e) {} try { require.resolve("./app-files.tar.gz"); } catch (e) {} module.exports = {};' > node_modules/laravel-vendor/index.js
 
-# Create vendor tarball (exclude tests, docs, .git, etc. to reduce size/time)
+# Create vendor tarball (exclude tests, docs, .git, etc. to reduce size)
 tar -czf node_modules/laravel-vendor/vendor.tar.gz \
     --exclude='*/tests/*' --exclude='*/test/*' \
-    --exclude='*/Test.php' --exclude='*/phpunit.xml*' \
+    --exclude='*/phpunit.xml*' \
     --exclude='*/.git' --exclude='*/docs/*' --exclude='*/examples/*' \
     --exclude='*/README*' --exclude='*/CHANGELOG*' --exclude='*/UPGRADE*' \
     --exclude='*/LICENSE*' --exclude='*/composer.lock' \
