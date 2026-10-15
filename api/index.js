@@ -3,7 +3,6 @@ import { spawn } from 'child_process';
 import http from 'http';
 import path from 'path';
 import fs from 'fs';
-import tar from 'tar';
 
 // Import @libphp to force @vercel/nft to bundle the native/ directory
 import libphp from '@libphp/almalinux-9-v85';
@@ -14,6 +13,7 @@ void libphp;
 import 'laravel-vendor';
 
 const require = createRequire(import.meta.url);
+const tar = require('tar');
 
 const pkgJsonPath = require.resolve('@libphp/almalinux-9-v85/package.json');
 const pkgDir = path.dirname(pkgJsonPath);
@@ -31,12 +31,12 @@ const appTarballPath = require.resolve('laravel-vendor/app-files.tar.gz');
 function extractTarballs() {
     if (!fs.existsSync(path.join(VENDOR_EXTRACT_DIR, 'autoload.php'))) {
         fs.mkdirSync(VENDOR_EXTRACT_DIR, { recursive: true });
-        tar.extractSync(['-xzf', vendorTarballPath, '-C', VENDOR_EXTRACT_DIR]);
+        tar.x({ file: vendorTarballPath, cwd: VENDOR_EXTRACT_DIR, sync: true });
         console.log('[VENDOR] Extracted vendor/ to', VENDOR_EXTRACT_DIR);
     }
 
     if (!fs.existsSync(path.join(APP_EXTRACT_DIR, 'server.php'))) {
-        tar.extractSync(['-xzf', appTarballPath, '-C', APP_EXTRACT_DIR]);
+        tar.x({ file: appTarballPath, cwd: APP_EXTRACT_DIR, sync: true });
         console.log('[APP] Extracted application files to', APP_EXTRACT_DIR);
     }
 
