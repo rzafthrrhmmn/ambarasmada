@@ -6,7 +6,7 @@
     "node": "22.x"
   },
   "scripts": {
-    "build": "php scripts/generate-package-cache.php && vite build",
+    "build": "php scripts/generate-package-cache.php; vite build",
     "dev": "vite"
   },
   "dependencies": {
