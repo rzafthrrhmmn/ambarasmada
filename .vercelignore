@@ -8,7 +8,7 @@ public/storage/maps/*.pmtiles
 
 # Other common exclusions
 node_modules
-# Note: vendor is excluded via includeFiles in vercel.json for api/index.js function only
+vendor
 .vercel
 .kilo
 .env

@@ -2,20 +2,16 @@ import { createRequire } from 'module';
 import { spawn } from 'child_process';
 import http from 'http';
 import path from 'path';
-import fs from 'fs';
 
 // Import @libphp to force @vercel/nft to bundle the native/ directory
-// (dist/index.js references ../native via path.resolve(__dirname, "../native"))
 import libphp from '@libphp/almalinux-9-v85';
 void libphp;
 
-const require = createRequire(import.meta.url);
+// Import laravel-vendor package to force @vercel/nft to include vendor/ and server.php
+// ESM import is statically analyzed by @vercel/nft, unlike require() through createRequire
+import 'laravel-vendor';
 
-// Force @vercel/nft to include server.php and vendor/ in the Lambda.
-// @vercel/nft tracks fs.readFileSync with string literal arguments and
-// require() calls through createRequire.
-try { fs.readFileSync('../server.php', 'utf8'); } catch (e) {}
-try { require('laravel-vendor'); } catch (e) {}
+const require = createRequire(import.meta.url);
 
 const pkgJsonPath = require.resolve('@libphp/almalinux-9-v85/package.json');
 const pkgDir = path.dirname(pkgJsonPath);
@@ -29,7 +25,8 @@ process.env.LAMBDA_TASK_ROOT = LAMBDA_TASK_ROOT;
 
 const PHP_PORT = 3000;
 const docroot = LAMBDA_TASK_ROOT;
-const router = path.join(LAMBDA_TASK_ROOT, 'server.php');
+const serverPhpPath = require.resolve('laravel-vendor/server.php');
+const router = path.resolve(serverPhpPath);
 
 let serverProcess = null;
 let readyResolvers = [];
