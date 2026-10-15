@@ -49,7 +49,6 @@ let docroot = APP_EXTRACT_DIR;
 let router = path.join(APP_EXTRACT_DIR, 'server.php');
 
 let serverProcess = null;
-let readyResolvers = [];
 let isStarting = false;
 
 function getPhpEnv() {
@@ -69,8 +68,8 @@ function checkServerReady() {
             hostname: '127.0.0.1',
             port: PHP_PORT,
             method: 'GET',
-            path: '/',
-            timeout: 200,
+            path: '/api/status',
+            timeout: 500,
         }, (res) => {
             res.resume();
             resolve(true);
@@ -94,99 +93,107 @@ async function waitForServer(maxAttempts = 50) {
     return false;
 }
 
-function startPhpServer() {
-    return new Promise((resolve, reject) => {
-        if (isStarting) {
-            readyResolvers.push({ resolve, reject });
-            return;
-        }
+async function startPhpServer() {
+    if (serverProcess && !serverProcess.killed) {
+        return;
+    }
 
-        if (serverProcess && !serverProcess.killed) {
-            resolve();
-            return;
-        }
-
-        isStarting = true;
-
-        const args = [
-            '-c', phpIni,
-            '-d', `extension_dir=${phpModules}`,
-            '-d', 'display_errors=stderr',
-            '-S', `127.0.0.1:${PHP_PORT}`,
-            '-t', docroot,
-            router
-        ];
-
-        serverProcess = spawn(phpBin, args, {
-            env: getPhpEnv(),
-            stdio: ['ignore', 'pipe', 'pipe'],
+    if (isStarting) {
+        return new Promise((resolve) => {
+            const check = () => {
+                if (!isStarting) resolve();
+                else setTimeout(check, 100);
+            };
+            check();
         });
+    }
 
-        serverProcess.stdout.on('data', (data) => {
-            const output = data.toString();
-            process.stdout.write(`[PHP] ${output}`);
-        });
+    isStarting = true;
 
-        serverProcess.stderr.on('data', (data) => {
-            const output = data.toString();
-            process.stderr.write(`[PHP] ${output}`);
-        });
+    const finalDocroot = APP_EXTRACT_DIR + '/public';
+    const finalRouter = path.join(APP_EXTRACT_DIR, 'server.php');
 
-        serverProcess.on('error', (err) => {
-            console.error('[PHP] Server error:', err);
-            serverProcess = null;
-            isStarting = false;
-            readyResolvers.forEach(({ reject }) => reject(err));
-            readyResolvers = [];
-            reject(err);
-        });
+    const args = [
+        '-c', phpIni,
+        '-d', `extension_dir=${phpModules}`,
+        '-d', 'display_errors=stderr',
+        '-S', `127.0.0.1:${PHP_PORT}`,
+        '-t', finalDocroot,
+        finalRouter
+    ];
 
-        serverProcess.on('exit', (code, signal) => {
-            console.error(`[PHP] Server exited (code: ${code}, signal: ${signal})`);
-            serverProcess = null;
-            isStarting = false;
-            readyResolvers = [];
-            serverProcess = null;
-        });
-
-        setTimeout(async () => {
-            if (isStarting) {
-                const ready = await waitForServer(50);
-                if (ready) {
-                    isStarting = false;
-                    const resolvers = [...readyResolvers];
-                    readyResolvers = [];
-                    resolvers.forEach(({ resolve }) => resolve());
-                    if (serverProcess && !serverProcess.killed) {
-                        resolve();
-                    } else {
-                        reject(new Error('PHP server process died during startup'));
-                    }
-                } else {
-                    if (serverProcess && !serverProcess.killed) {
-                        isStarting = false;
-                        const resolvers = [...readyResolvers];
-                        readyResolvers = [];
-                        resolvers.forEach(({ resolve }) => resolve());
-                        resolve();
-                    }
-                }
-            }
-        }, 2000);
+    serverProcess = spawn(phpBin, args, {
+        env: getPhpEnv(),
+        stdio: ['ignore', 'pipe', 'pipe'],
     });
+
+    serverProcess.stdout.on('data', (data) => {
+        const output = data.toString();
+        process.stdout.write(`[PHP] ${output}`);
+    });
+
+    serverProcess.stderr.on('data', (data) => {
+        const output = data.toString();
+        process.stderr.write(`[PHP] ${output}`);
+    });
+
+    serverProcess.on('error', (err) => {
+        console.error('[PHP] Server error:', err);
+        serverProcess = null;
+        isStarting = false;
+    });
+
+    serverProcess.on('exit', (code, signal) => {
+        console.error(`[PHP] Server exited (code: ${code}, signal: ${signal})`);
+        serverProcess = null;
+        isStarting = false;
+    });
+
+    // Wait for server to be ready
+    const ready = await waitForServer(100);
+    isStarting = false;
+    if (!ready && serverProcess && !serverProcess.killed) {
+        console.warn('[PHP] Server not responding but process still running');
+    }
 }
 
-let serverStarted = false;
+// Module-level initialization: extract tarballs and start PHP server during cold start
+let initPromise = null;
+
+async function initialize() {
+    if (initPromise) return initPromise;
+    
+    initPromise = (async () => {
+        console.log('[INIT] Starting cold start initialization');
+        console.time('[INIT] extractTarballs');
+        extractTarballs();
+        console.timeEnd('[INIT] extractTarballs');
+        
+        console.time('[INIT] startPhpServer');
+        await startPhpServer();
+        console.timeEnd('[INIT] startPhpServer');
+        
+        console.log('[INIT] Cold start initialization complete');
+    })();
+    
+    return initPromise;
+}
+
+// Kick off initialization immediately
+initialize().catch(err => {
+    console.error('[INIT] Failed:', err);
+});
+
+let serverReady = false;
+
+function ensureServerReady() {
+    if (serverReady) return Promise.resolve();
+    return initPromise;
+}
 
 export default async function handler(req, res) {
     try {
-        if (!serverStarted || !serverProcess || serverProcess.killed) {
-            extractTarballs();
-            docroot = APP_EXTRACT_DIR + '/public';
-            router = path.join(APP_EXTRACT_DIR, 'server.php');
-            await startPhpServer();
-            serverStarted = true;
-        }
+        await ensureServerReady();
 
         const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
         const headers = { ...req.headers };
