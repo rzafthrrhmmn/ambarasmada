@@ -25,6 +25,16 @@ try {
         }
     }
 
+    $appUrl = $_SERVER['VERCEL_PROJECT_PRODUCTION_URL']
+        ?? $_SERVER['VERCEL_URL']
+        ?? '';
+    if ($appUrl) {
+        $appUrl = 'https://'.$appUrl;
+        putenv('APP_URL='.$appUrl);
+        $_ENV['APP_URL'] = $appUrl;
+        $_SERVER['APP_URL'] = $appUrl;
+    }
+
     $sessionDriver = trim((string) getenv('SESSION_DRIVER')) ?: 'file';
     $cacheStore = trim((string) (getenv('CACHE_STORE') ?: getenv('CACHE_DRIVER'))) ?: 'file';
     $dbConnection = trim((string) getenv('DB_CONNECTION')) ?: 'pgsql';

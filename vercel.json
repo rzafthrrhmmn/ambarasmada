@@ -75,7 +75,7 @@
     "APP_ENV": "production",
     "APP_DEBUG": "0",
     "APP_KEY": "base64:42RhQGqnl6apnWJWcRn58DVLAfHhNpFDnn0DHCB/eGo=",
-    "APP_URL": "https://${VERCEL_PROJECT_PRODUCTION_URL}",
+    "APP_URL": "https://ambarasmada.vercel.app",
 
     "APP_LOCALE": "en",
     "APP_FALLBACK_LOCALE": "en",
