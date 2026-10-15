@@ -31,6 +31,7 @@ $PHP_BIN -c $INI_FILE -d extension_dir="$PHP_INI_EXTENSION_DIR" "$COMPOSER_CMD" 
 
 # Run package discover for Laravel
 echo "Running package:discover..."
+mkdir -p /tmp/bootstrap/cache /tmp/storage/framework/views
 APP_PACKAGES_CACHE=/tmp/bootstrap/cache/packages.php \
 APP_SERVICES_CACHE=/tmp/bootstrap/cache/services.php \
 $PHP_BIN -c $INI_FILE -d extension_dir="$PHP_INI_EXTENSION_DIR" ./artisan package:discover --ansi || true

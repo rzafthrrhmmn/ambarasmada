@@ -9,12 +9,13 @@ import fs from 'fs';
 import libphp from '@libphp/almalinux-9-v85';
 void libphp;
 
-// Force @vercel/nft to include server.php and vendor/ in the Lambda
-// @vercel/nft tracks fs.readFileSync with string literal arguments
-fs.readFileSync('../server.php', 'utf8');
-require('laravel-vendor'); // Forces @vercel/nft to include node_modules/laravel-vendor/vendor/
-
 const require = createRequire(import.meta.url);
+
+// Force @vercel/nft to include server.php and vendor/ in the Lambda.
+// @vercel/nft tracks fs.readFileSync with string literal arguments and
+// require() calls through createRequire.
+try { fs.readFileSync('../server.php', 'utf8'); } catch (e) {}
+try { require('laravel-vendor'); } catch (e) {}
 
 const pkgJsonPath = require.resolve('@libphp/almalinux-9-v85/package.json');
 const pkgDir = path.dirname(pkgJsonPath);
