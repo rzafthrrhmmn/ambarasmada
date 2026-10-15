@@ -6,6 +6,23 @@ import path from 'path';
 const require = createRequire(import.meta.url);
 
 function findPhpBin() {
+    const lambdaRoot = process.env.LAMBDA_TASK_ROOT || '/var/task';
+    const require = createRequire(import.meta.url);
+    const fs = require('fs');
+
+    // Runtime: PHP binary was copied to php-runtime/ during build
+    const runtimePhp = path.join(lambdaRoot, 'php-runtime', 'php', 'php');
+    if (fs.existsSync(runtimePhp)) {
+        return {
+            phpBin: runtimePhp,
+            phpIni: path.join(lambdaRoot, 'php-runtime', 'php', 'php.ini'),
+            phpModules: path.join(lambdaRoot, 'php-runtime', 'php', 'modules'),
+            phpLibs: path.join(lambdaRoot, 'php-runtime', 'lib'),
+            pkgDir: path.join(lambdaRoot, 'php-runtime'),
+        };
+    }
+
+    // Fallback: @libphp package in node_modules (local dev or if bundled)
     try {
         const pkgJsonPath = require.resolve('@libphp/almalinux-9-v85/package.json');
         const pkgDir = path.dirname(pkgJsonPath);
