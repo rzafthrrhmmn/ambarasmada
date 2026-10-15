@@ -21,6 +21,7 @@ use Illuminate\Pipeline\PipelineServiceProvider;
 use Illuminate\Queue\QueueServiceProvider;
 use Illuminate\Redis\RedisServiceProvider;
 use Illuminate\Session\SessionServiceProvider;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
@@ -109,7 +110,7 @@ return [
         AppServiceProvider::class,
     ],
     'aliases' => [
-        'App' => Illuminate\Support\Facades\App::class,
+        'App' => App::class,
         'Artisan' => Artisan::class,
         'Auth' => Auth::class,
         'Blade' => Blade::class,
