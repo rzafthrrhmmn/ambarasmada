@@ -3,7 +3,7 @@
 // cache versi sebelumnya tidak boleh dipakai ulang. v1.5.1 menambahkan lambang
 // urutan organisasi Kepramukaan ke precache supaya header lembar PNG tetap ada
 // saat peta diunduh tanpa jaringan.
-const CACHE_VERSION = 'v1.5.1';
+const CACHE_VERSION = 'v1.5.2';
 const CACHE_NAME = 'jaya-jaya-jaya-' + CACHE_VERSION;
 const ASSETS_CACHE = 'jaya-jaya-jaya-assets-' + CACHE_VERSION;
 const TILES_CACHE = 'jaya-jaya-jaya-tiles-' + CACHE_VERSION;
