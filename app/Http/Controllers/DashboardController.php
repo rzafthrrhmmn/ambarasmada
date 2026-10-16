@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -53,7 +53,7 @@ class DashboardController extends Controller
         $teams = Team::whereHas('ambalan')->orderBy('nama')->get();
 
         $unreadCount = Notification::where('user_id', $user->id)
-            ->where('is_read', false)
+            ->whereRaw('is_read = false')
             ->count();
 
         $attendedSessionIds = $member
@@ -186,3 +186,4 @@ class DashboardController extends Controller
             ->toArray();
     }
 }
+
