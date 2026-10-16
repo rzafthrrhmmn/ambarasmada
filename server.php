@@ -38,11 +38,18 @@ $dbConnection = trim((string) getenv('DB_CONNECTION')) ?: 'pgsql';
 $queueConnection = trim((string) getenv('QUEUE_CONNECTION')) ?: 'sync';
 $dbPreparedStatements = trim((string) getenv('DB_PREPARED_STATEMENTS'));
 
+$sessionSameSite = trim((string) getenv('SESSION_SAMESITE')) ?: 'lax';
+$sessionSecureCookie = trim((string) getenv('SESSION_SECURE_COOKIE')) ?: 'true';
+$sessionDomain = trim((string) getenv('SESSION_DOMAIN'));
+
 putenv('SESSION_DRIVER='.$sessionDriver);
 putenv('CACHE_STORE='.$cacheStore);
 putenv('CACHE_DRIVER='.$cacheStore);
 putenv('DB_CONNECTION='.$dbConnection);
 putenv('QUEUE_CONNECTION='.$queueConnection);
+putenv('SESSION_SAMESITE='.$sessionSameSite);
+putenv('SESSION_SECURE_COOKIE='.$sessionSecureCookie);
+putenv('SESSION_DOMAIN='.$sessionDomain);
 if ($dbPreparedStatements !== '') {
     putenv('DB_PREPARED_STATEMENTS='.$dbPreparedStatements);
 }
@@ -57,6 +64,12 @@ $_ENV['DB_CONNECTION'] = $dbConnection;
 $_SERVER['DB_CONNECTION'] = $dbConnection;
 $_ENV['QUEUE_CONNECTION'] = $queueConnection;
 $_SERVER['QUEUE_CONNECTION'] = $queueConnection;
+$_ENV['SESSION_SAMESITE'] = $sessionSameSite;
+$_SERVER['SESSION_SAMESITE'] = $sessionSameSite;
+$_ENV['SESSION_SECURE_COOKIE'] = $sessionSecureCookie;
+$_SERVER['SESSION_SECURE_COOKIE'] = $sessionSecureCookie;
+$_ENV['SESSION_DOMAIN'] = $sessionDomain;
+$_SERVER['SESSION_DOMAIN'] = $sessionDomain;
 if ($dbPreparedStatements !== '') {
     $_ENV['DB_PREPARED_STATEMENTS'] = $dbPreparedStatements;
     $_SERVER['DB_PREPARED_STATEMENTS'] = $dbPreparedStatements;
@@ -107,12 +120,16 @@ $app = require_once $baseDir.'/bootstrap/app.php';
 
 $app->useStoragePath($storagePath);
 
-$app->booting(function () use ($sessionDriver, $cacheStore, $dbConnection, $queueConnection) {
+$app->booting(function () use ($sessionDriver, $cacheStore, $dbConnection, $queueConnection, $sessionSameSite, $sessionSecureCookie) {
     config([
         'session.driver' => $sessionDriver,
         'cache.default' => $cacheStore,
         'database.default' => $dbConnection,
         'queue.default' => $queueConnection,
+        'session.same_site' => $sessionSameSite,
+        'session.secure' => $sessionSecureCookie === 'true' || $sessionSecureCookie === '1',
+        'session.domain' => null,
+        'session.partitioned' => false,
     ]);
 });
 

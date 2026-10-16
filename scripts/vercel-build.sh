@@ -57,6 +57,6 @@ tar -czf node_modules/laravel-vendor/vendor.tar.gz \
 tar -czf node_modules/laravel-vendor/app-files.tar.gz \
     --exclude=vendor --exclude=node_modules --exclude=.git --exclude=.kilo \
     --exclude=tests --exclude='_probe*' --exclude=test_hash* --exclude=check_login.php \
-    --exclude='*.pmtiles' --exclude='.github' .
+    --exclude='*.pmtiles' --exclude='.github' --exclude='.env*' .
 
 echo "Build complete."
