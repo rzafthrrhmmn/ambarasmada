@@ -19,8 +19,9 @@
               </div>
               <div>
                 <input type="file" @change="handleFileChange" accept="image/jpeg,image/png,image/webp" class="block w-full text-sm text-[#d4dc9a] file:mr-3 file:rounded-lg file:border-0 file:bg-[#6F9435] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white" />
-                <button v-if="member.user?.foto" type="button" @click="form.foto = null; form.delete_foto = true" class="mt-1 text-xs text-[#ef4419] hover:underline">Hapus foto</button>
-                <p v-if="form.errors.foto" class="text-xs text-[#ef4419] mt-1">{{ form.errors.foto }}</p>
+                <button v-if="member.user?.foto || form.foto" type="button" @click="form.foto = null; form.delete_foto = true; if (photoObjectUrl.value) { URL.revokeObjectURL(photoObjectUrl.value); photoObjectUrl.value = null; }" class="mt-1 text-xs text-[#ef4419] hover:underline">Hapus foto</button>
+          <p v-if="form.errors.foto" class="text-xs text-[#ef4419] mt-1">{{ form.errors.foto }}</p>
+          <p v-else class="text-xs text-[#8fa06a] mt-1">Format: JPG, PNG, WebP • Maks 2MB • Rasio 3:4</p>
               </div>
             </div>
           </div>
@@ -139,7 +140,10 @@ const toast = useToast();
 // Tulisannya pernah 'pembina' huruf kecil, sedangkan server mengirim 'Pembina',
 // sehingga kelas, tingkatan, dan status aktif selalu terkunci termasuk untuk
 // Pembina. Sekarang aturan yang sama dipakai server lewat MemberController.
-const canEditAcademic = computed(() => can('members.profile.edit_academic'));
+const canEditAcademic = computed(() => {
+  const user = page.props.auth?.user;
+  return can('members.profile.edit_academic') || user?.role === 'Pembina' || user?.role === 'Admin';
+});
 const photoObjectUrl = ref(null);
 const showCropModal = ref(false);
 const cropImageUrl = ref(null);
@@ -264,9 +268,14 @@ const handleFileChange = (event) => {
     if (error) {
       form.errors.foto = error;
       event.target.value = '';
+      toast.error(error);
       return;
     }
+    if (cropImageUrl.value) {
+      URL.revokeObjectURL(cropImageUrl.value);
+    }
     cropImageUrl.value = URL.createObjectURL(file);
+    form.errors.foto = null;
     showCropModal.value = true;
     event.target.value = '';
   }
@@ -284,7 +293,7 @@ const handleCrop = (croppedFile) => {
 
 const closeCropModal = () => {
   showCropModal.value = false;
-  if (cropImageUrl.value) {
+  if (cropImageUrl.value && !form.foto) {
     URL.revokeObjectURL(cropImageUrl.value);
     cropImageUrl.value = null;
   }

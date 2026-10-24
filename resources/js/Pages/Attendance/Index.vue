@@ -227,6 +227,8 @@ import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
 import LocationPicker from '@/Components/LocationPicker.vue';
+import { queueSubmission, isOfflineSubmissionSupported } from '@/offline-queue';
+import { useToast } from 'vue-toastification';
 import { useAccess } from '@/Composables/useAccess.js';
 
 /**
@@ -245,6 +247,7 @@ const props = defineProps({
 });
 
 const { can } = useAccess();
+const toast = useToast();
 
 const canCreate = computed(() => can('attendance.session.create'));
 const canEdit = computed(() => can('attendance.session.edit'));
@@ -342,6 +345,37 @@ function submitCreate() {
   form.latitude = location.value.latitude;
   form.longitude = location.value.longitude;
   form.radius = location.value.latitude === null ? null : location.value.radius;
+
+  if (!navigator.onLine && isOfflineSubmissionSupported()) {
+    const bodyObj = {};
+    Object.keys(form.data()).forEach(key => {
+      if (form[key] !== null && form[key] !== undefined) {
+        bodyObj[key] = form[key];
+      }
+    });
+    bodyObj['_token'] = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+    queueSubmission({
+      url: '/attendance',
+      method: 'POST',
+      headers: {
+        'X-Inertia': 'true',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(bodyObj),
+      isFormData: false,
+      tag: 'sync-offline-submissions'
+    }).then(() => {
+      toast.success('Sesi presensi tersimpan offline. Akan dikirim otomatis saat koneksi kembali.');
+      showCreate.value = false;
+      showMapPicker.value = false;
+      form.reset();
+    }).catch((err) => {
+      toast.error('Gagal menyimpan sesi offline.');
+      console.error(err);
+    });
+    return;
+  }
 
   form.post('/attendance', {
     onSuccess: () => {

@@ -149,7 +149,10 @@ const OFFLINE_MAP_HTML = '/offline-map.html';
 // v2: histogram tidak lagi memakai angka elevasi karangan.
 // v3: halaman peta offline menggambar batas kecamatan dan menyorot kecamatan yang diunduh.
 // v4: sumber OSM pada halaman offline punya atribusi, jadi paket lama tanpa kredit dibuang.
-const OFFLINE_MAP_GENERATOR = 'v4';
+// Database for offline form submissions queue
+const QUEUE_DB_NAME = 'offline-forms-queue';
+const QUEUE_DB_VERSION = 1;
+const QUEUE_STORE_NAME = 'submissions';
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
@@ -496,12 +499,179 @@ function getTileFromDB(db, z, x, y) {
     });
 }
 
+// Open IndexedDB for offline form submissions queue
+function openQueueDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(QUEUE_DB_NAME, QUEUE_DB_VERSION);
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(QUEUE_STORE_NAME)) {
+                const store = db.createObjectStore(QUEUE_STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                store.createIndex('status', 'status', { unique: false });
+                store.createIndex('createdAt', 'createdAt', { unique: false });
+                store.createIndex('tag', 'tag', { unique: false });
+            }
+        };
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (e) => reject(e.target.error);
+    });
+}
+
+// Get all pending submissions
+function getPendingSubmissions(db) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(QUEUE_STORE_NAME, 'readonly');
+        const store = tx.objectStore(QUEUE_STORE_NAME);
+        const request = store.getAll();
+        request.onsuccess = () => {
+            const results = request.result || [];
+            resolve(results.filter(item => item.status === 'pending'));
+        };
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// Update submission status
+function updateSubmissionStatus(db, id, status) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(QUEUE_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(QUEUE_STORE_NAME);
+        const getRequest = store.get(id);
+        getRequest.onsuccess = () => {
+            const item = getRequest.result;
+            if (!item) {
+                resolve();
+                return;
+            }
+            item.status = status;
+            item.updatedAt = Date.now();
+            const putRequest = store.put(item);
+            putRequest.onsuccess = () => resolve();
+            putRequest.onerror = () => reject(putRequest.error);
+        };
+        getRequest.onerror = () => reject(getRequest.error);
+    });
+}
+
+// Delete submission
+function deleteSubmission(db, id) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(QUEUE_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(QUEUE_STORE_NAME);
+        const request = store.delete(id);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// Flush all pending submissions
+async function flushQueue() {
+    let db = null;
+    try {
+        db = await openQueueDB();
+        const pending = await getPendingSubmissions(db);
+        if (pending.length === 0) return;
+        
+        for (const item of pending) {
+            try {
+                const headers = new Headers(item.headers || {});
+                // Ensure we have content type
+                let body = item.body;
+                
+                // Reconstruct FormData if it was stored as object
+                if (item.isFormData && typeof item.body === 'object') {
+                    const formData = new FormData();
+                    for (const [key, value] of Object.entries(item.body)) {
+                        if (Array.isArray(value)) {
+                            value.forEach(v => formData.append(key + '[]', v));
+                        } else if (value instanceof File || value instanceof Blob) {
+                            formData.append(key, value);
+                        } else {
+                            formData.append(key, value);
+                        }
+                    }
+                    body = formData;
+                    // Remove Content-Type to let browser set boundary
+                    headers.delete('Content-Type');
+                } else if (typeof item.body === 'string') {
+                    body = item.body;
+                } else if (typeof item.body === 'object') {
+                    body = JSON.stringify(item.body);
+                    if (!headers.has('Content-Type')) {
+                        headers.set('Content-Type', 'application/json');
+                    }
+                }
+                
+                const response = await fetch(item.url, {
+                    method: item.method,
+                    headers: headers,
+                    body: body,
+                    credentials: 'same-origin'
+                });
+                
+                if (response.ok) {
+                    await deleteSubmission(db, item.id);
+                } else {
+                    // If client error, delete to avoid retry loop
+                    if (response.status >= 400 && response.status < 500) {
+                        await deleteSubmission(db, item.id);
+                    } else {
+                        await updateSubmissionStatus(db, item.id, 'failed');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to sync submission:', error);
+                await updateSubmissionStatus(db, item.id, 'failed');
+            }
+        }
+    } catch (error) {
+        console.error('Flush queue error:', error);
+    } finally {
+        if (db) db.close();
+    }
+}
+
 self.addEventListener('message', (event) => {
     if (event.data?.type === 'SKIP_WAITING') {
         self.skipWaiting();
     }
-
-    if (event.data?.type === 'DOWNLOAD_OFFLINE_TILES') {
+    
+    // Queue a form submission for offline sync
+    if (event.data?.type === 'QUEUE_OFFLINE_SUBMISSION') {
+        const { submission } = event.data;
+        event.waitUntil(
+            openQueueDB().then(db => {
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(QUEUE_STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(QUEUE_STORE_NAME);
+                    const item = {
+                        ...submission,
+                        status: 'pending',
+                        createdAt: Date.now(),
+                        tag: submission.tag || 'sync-offline-submissions'
+                    };
+                    const request = store.add(item);
+                    request.onsuccess = () => {
+                        db.close();
+                        resolve();
+                        // Try to register sync if supported
+                        if (self.registration && 'sync' in self.registration) {
+                            self.registration.sync.register(item.tag).catch(() => {});
+                        }
+                    };
+                    request.onerror = () => {
+                        db.close();
+                        reject(request.error);
+                    };
+                });
+            })
+        );
+    }
+    
+    // Manually flush queue
+    if (event.data?.type === 'FLUSH_OFFLINE_QUEUE') {
+        event.waitUntil(flushQueue());
+    }
         const { bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName, protocol, kecamatanGeojsonUrl, highlightKecId } = event.data;
         const port = event.ports[0];
 
@@ -1317,7 +1487,13 @@ const histogramHtml = !layoutOptions.histogram ? '' : (elevStats ? `
 </html>`;
 }
 
-// Database operations for offline tiles
+// Background Sync event handler
+self.addEventListener('sync', (event) => {
+    if (event.tag === 'sync-offline-submissions') {
+        event.waitUntil(flushQueue());
+    }
+});
+
 async function storeTile(db, z, x, y, data) {
     return new Promise((resolve, reject) => {
         const tx = db.transaction('tiles', 'readwrite');

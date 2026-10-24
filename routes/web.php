@@ -39,6 +39,7 @@ use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TkkPointController;
 use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\UserPermissionController;
+use App\Http\Controllers\SettingsController;
 use App\Models\Ambalan;
 use App\Models\Announcement;
 use App\Models\Gallery;
@@ -403,8 +404,8 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.member.check-in')->middleware('throttle:30,1');
     });
 
-    Route::get('/profile', [MemberController::class, 'profile'])->name('profile.show');
-    Route::patch('/profile', [MemberController::class, 'updateProfile'])->name('profile.update')->middleware('throttle:10,1');
+    Route::get('/profile', [MemberController::class, 'profile'])->name('member.profile.show');
+    Route::patch('/profile', [MemberController::class, 'updateProfile'])->name('member.profile.update')->middleware('throttle:10,1');
 
     Route::post('/pwa/devices', [PwaController::class, 'registerDevice'])->name('pwa.devices.store')->middleware('throttle:20,1');
 
@@ -413,6 +414,11 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    // Settings
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update')->middleware('throttle:10,1');
+    Route::patch('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update')->middleware('throttle:5,1');
     Route::post('/notifications/broadcast', [NotificationController::class, 'createNotificationForUsers'])->name('notifications.broadcast')->middleware('throttle:5,1');
 
     // Events/Kegiatan

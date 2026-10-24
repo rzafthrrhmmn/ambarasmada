@@ -18,11 +18,11 @@ use Illuminate\Support\Facades\Log;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Throwable;
 
-#[Fillable(['username', 'name', 'email', 'password', 'role', 'is_active', 'status', 'foto', 'email_verified_at'])]
+#[Fillable(['username', 'name', 'email', 'password', 'role', 'is_active', 'status', 'foto', 'email_verified_at', 'settings'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
-    protected $fillable = ['username', 'name', 'email', 'password', 'role', 'is_active', 'status', 'foto', 'email_verified_at'];
+    protected $fillable = ['username', 'name', 'email', 'password', 'role', 'is_active', 'status', 'foto', 'email_verified_at', 'settings'];
 
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
@@ -202,6 +202,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'is_active' => 'boolean',
             'status' => 'string',
             'password' => 'hashed',
+            'settings' => 'array',
         ];
     }
 }

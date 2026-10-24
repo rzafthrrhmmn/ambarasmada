@@ -5,7 +5,10 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from 'ziggy-js';
 import Toast from 'vue-toastification';
 import 'vue-toastification/dist/index.css';
+import './offline-queue';
+import PageTransition from './Components/PageTransition.vue';
 import { createPinia } from 'pinia';
+
 import { VueQueryPlugin, QueryClient } from '@tanstack/vue-query';
 
 const appName = import.meta.env.VITE_APP_NAME || 'AMBARA-SISTEM DIGITAL';
@@ -23,7 +26,11 @@ createInertiaApp({
     title: (title) => (title ? title + ' - ' + appName : appName),
     resolve: (name) => resolvePageComponent('./Pages/' + name + '.vue', import.meta.glob('./Pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
-        const app = createApp({ render: () => h(App, props) });
+        const app = createApp({
+            render: () => h(PageTransition, {
+                component: h(App, props),
+            }),
+        });
         app.use(plugin);
         app.use(createPinia());
         app.use(VueQueryPlugin, { queryClient });

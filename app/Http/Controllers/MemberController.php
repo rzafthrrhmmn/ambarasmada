@@ -420,6 +420,10 @@ class MemberController extends Controller
         // menaikkan dirinya sendiri menjadi Laksana atau mengubah status aktifnya sendiri.
         // Nilai yang dikirim diabaikan; hanya Pembina dan Admin yang boleh mengubah.
         $canEditAcademic = in_array($request->user()->role, ['Pembina', 'Admin'], true);
+        $user = $request->user();
+        if ($user && method_exists($user, 'can') && $user->can('members.profile.edit_academic')) {
+            $canEditAcademic = true;
+        }
 
         $member->update([
             'nama_lengkap' => $data['nama_lengkap'],
@@ -440,6 +444,14 @@ class MemberController extends Controller
         } elseif ($request->hasFile('foto')) {
             $file = $request->file('foto');
             $this->validateFileContent($file);
+            // Additional client-side tampering check
+            $allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!in_array($file->getMimeType(), $allowedMimes, true)) {
+                throw ValidationException::withMessages(['foto' => 'Tipe file tidak diizinkan.']);
+            }
+            if ($file->getSize() > 2 * 1024 * 1024) {
+                throw ValidationException::withMessages(['foto' => 'Ukuran file maksimal 2MB.']);
+            }
             $base64 = 'data:'.$file->getMimeType().';base64,'.base64_encode(file_get_contents($file->getRealPath()));
             $member->user->update(['foto' => $base64]);
         }
@@ -448,7 +460,7 @@ class MemberController extends Controller
             $member->user->update(['name' => $data['nama_lengkap']]);
         }
 
-        return redirect()->route('profile.show')->with('success', 'Profil berhasil diperbarui.');
+        return redirect()->route('member.profile.show')->with('success', 'Profil berhasil diperbarui.');
     }
 
     protected function validateFileContent(UploadedFile $file): void

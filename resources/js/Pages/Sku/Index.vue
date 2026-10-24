@@ -300,6 +300,8 @@ import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useAccess } from '@/Composables/useAccess.js';
+import { queueSubmission, isOfflineSubmissionSupported } from '@/offline-queue';
+import { useToast } from 'vue-toastification';
 
 const props = defineProps({
   submissions: Object,
@@ -380,7 +382,49 @@ function closeSubmission() {
   fotoFiles.value = [];
 }
 
+const toast = useToast();
+
 function submitSku() {
+  if (!navigator.onLine && isOfflineSubmissionSupported()) {
+    // Queue for offline submission
+    const formData = new FormData();
+    formData.append('sku_point_id', form.sku_point_id);
+    formData.append('keterangan', form.keterangan);
+    formData.append('_token', form._token || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'));
+    if (form.bukti_kegiatan) {
+      formData.append('bukti_kegiatan', form.bukti_kegiatan);
+    }
+    if (form.foto && form.foto.length > 0) {
+      form.foto.forEach((f, i) => {
+        formData.append(`foto[${i}]`, f);
+      });
+    }
+    
+    // Convert FormData to object for storage
+    const bodyObj = {};
+    for (const [key, value] of formData.entries()) {
+      bodyObj[key] = value;
+    }
+    
+    queueSubmission({
+      url: '/sku',
+      method: 'POST',
+      headers: {
+        'X-Inertia': 'true'
+      },
+      body: bodyObj,
+      isFormData: true,
+      tag: 'sync-offline-submissions'
+    }).then(() => {
+      toast.success('Pengajuan SKU tersimpan offline. Akan dikirim otomatis saat koneksi kembali.');
+      closeSubmission();
+    }).catch((err) => {
+      toast.error('Gagal menyimpan pengajuan offline.');
+      console.error(err);
+    });
+    return;
+  }
+  
   form.post('/sku', {
     onSuccess: () => {
       closeSubmission();

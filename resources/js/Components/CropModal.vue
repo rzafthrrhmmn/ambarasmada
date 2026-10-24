@@ -99,17 +99,27 @@ const destroyCropper = () => {
 
 watch(() => props.show, (val) => {
   if (val && props.imageUrl) {
-    nextTick(() => initCropper());
+    nextTick(() => {
+      setTimeout(() => initCropper(), 100);
+    });
   } else {
     destroyCropper();
   }
 });
 
 watch(() => props.imageUrl, (val) => {
-  if (props.show && val && cropper) {
+  if (props.show && val && cropper && cropperImage.value) {
     const img = cropperImage.value;
+    img.src = val;
     img.onload = () => {
-      if (cropper) cropper.replace(val);
+      if (cropper) {
+        try {
+          cropper.replace(val);
+        } catch (e) {
+          destroyCropper();
+          nextTick(() => initCropper());
+        }
+      }
     };
   }
 });
@@ -125,7 +135,7 @@ const reset = () => {
 };
 
 const confirmCrop = async () => {
-  if (!cropper) return;
+  if (!cropper || cropping.value) return;
   
   cropping.value = true;
   
@@ -137,12 +147,21 @@ const confirmCrop = async () => {
       imageSmoothingQuality: 'high',
     });
     
+    if (!canvas) {
+      throw new Error('Gagal membuat canvas crop');
+    }
+    
     canvas.toBlob((blob) => {
+      if (!blob) {
+        cropping.value = false;
+        return;
+      }
       const file = new File([blob], 'profile-crop.jpg', { type: 'image/jpeg', lastModified: Date.now() });
       emit('crop', file);
       emit('close');
     }, 'image/jpeg', 0.9);
-  } finally {
+  } catch (e) {
+    console.error('Crop error:', e);
     cropping.value = false;
   }
 };
