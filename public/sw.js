@@ -1,9 +1,9 @@
-﻿// Naikkan setiap kali format respons yang disimpan berubah. Tile kini disimpan
+// Naikkan setiap kali format respons yang disimpan berubah. Tile kini disimpan
 // tanpa header Content-Encoding dan halaman peta offline punya cache sendiri, jadi
 // cache versi sebelumnya tidak boleh dipakai ulang. v1.5.1 menambahkan lambang
 // urutan organisasi Kepramukaan ke precache supaya header lembar PNG tetap ada
 // saat peta diunduh tanpa jaringan.
-const CACHE_VERSION = 'v1.5.4';
+const CACHE_VERSION = 'v1.5.5';
 const CACHE_NAME = 'jaya-jaya-jaya-' + CACHE_VERSION;
 const ASSETS_CACHE = 'jaya-jaya-jaya-assets-' + CACHE_VERSION;
 const TILES_CACHE = 'jaya-jaya-jaya-tiles-' + CACHE_VERSION;
@@ -1375,7 +1375,7 @@ const histogramHtml = !layoutOptions.histogram ? '' : (elevStats ? `
                         // menulisnya ke AttributionControl di atas kanvas, jadi
                         // tanpa property ini tile OSM tampil tanpa kredit sama
                         // sekali.
-                        attribution: '© OpenStreetMap contributors',
+                        attribution: '� OpenStreetMap contributors',
                     }
                 },
                 layers: [
