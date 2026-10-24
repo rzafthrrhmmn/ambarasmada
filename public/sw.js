@@ -148,7 +148,7 @@ const OFFLINE_MAP_HTML = '/offline-map.html';
 // berubah, supaya activate bisa membuang peta lama yang isinya sudah usang.
 // v2: histogram tidak lagi memakai angka elevasi karangan.
 // v3: halaman peta offline menggambar batas kecamatan dan menyorot kecamatan yang diunduh.
-// v4: sumber OSM pada halaman offline punya atribusi, jadi paket lama tanpa kredit dibuang.
+const OFFLINE_MAP_GENERATOR = 'v4';
 // Database for offline form submissions queue
 const QUEUE_DB_NAME = 'offline-forms-queue';
 const QUEUE_DB_VERSION = 1;
@@ -695,6 +695,9 @@ self.addEventListener('message', (event) => {
     if (event.data?.type === 'FLUSH_OFFLINE_QUEUE') {
         event.waitUntil(flushQueue());
     }
+
+    // Offline map download
+    if (event.data?.type === 'START_OFFLINE_DOWNLOAD') {
         const { bbox, zoomMin, zoomMax, pmtilesUrl, geojsonUrl, layoutOptions, areaName, protocol, kecamatanGeojsonUrl, highlightKecId } = event.data;
         const port = event.ports[0];
 
@@ -707,6 +710,7 @@ self.addEventListener('message', (event) => {
                 protocol: SW_PROTOCOL,
                 error: `Halaman dan service worker memakai protokol berbeda (${protocol}/${SW_PROTOCOL}). Muat ulang halaman lalu ulangi unduhan.`,
             });
+            }
             return;
         }
 
