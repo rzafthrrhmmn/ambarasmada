@@ -572,7 +572,8 @@ let animationFrameId = null;
 let scrollHandler = null;
 let revealObserver = null;
 let lastFocusedElement = null;
-let resizeObserver = null;
+let onlineHandler = null;
+let offlineHandler = null;
 
 const ambalanNama = computed(() => {
   return page.props?.ambalan?.nama || 'Ambalan UPT SMAN 2 Maros';
@@ -705,6 +706,10 @@ function trapFocus(event) {
 async function subscribeNewsletter() {
   newsletterError.value = '';
   if (!newsletterEmail.value) return;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newsletterEmail.value)) {
+    newsletterError.value = 'Email tidak valid.';
+    return;
+  }
 
   newsletterLoading.value = true;
   try {
@@ -820,8 +825,10 @@ onMounted(() => {
   setMetaTags();
   handleResize();
   window.addEventListener('resize', handleResize);
-  window.addEventListener('online', () => { isOnline.value = true; });
-  window.addEventListener('offline', () => { isOnline.value = false; });
+  onlineHandler = () => { isOnline.value = true; };
+  offlineHandler = () => { isOnline.value = false; };
+  window.addEventListener('online', onlineHandler);
+  window.addEventListener('offline', offlineHandler);
 
   if (props.announcements?.length) {
     guestStore.setFromProps({ announcements: props.announcements });
@@ -902,8 +909,8 @@ watch(
 onUnmounted(() => {
   window.removeEventListener('scroll', scrollHandler);
   window.removeEventListener('resize', handleResize);
-  window.removeEventListener('online', () => { isOnline.value = true; });
-  window.removeEventListener('offline', () => { isOnline.value = false; });
+  if (onlineHandler) window.removeEventListener('online', onlineHandler);
+  if (offlineHandler) window.removeEventListener('offline', offlineHandler);
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   revealObserver?.disconnect();
   window.removeEventListener('keydown', trapFocus);
