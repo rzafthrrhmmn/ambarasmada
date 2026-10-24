@@ -1,4 +1,6 @@
-﻿html { scroll-behavior: smooth; }
+﻿@import "tailwindcss";
+
+html { scroll-behavior: smooth; }
 .page-transitioning * { pointer-events: none !important; }
 .page-transitioning { overflow-x: hidden; }
 
