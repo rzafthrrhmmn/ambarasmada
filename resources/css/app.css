@@ -1,6 +1,17 @@
 ﻿@import "tailwindcss";
 
+@theme {
+  --color-hutan-600: #335233;
+  --color-hutan-700: #2d4a2d;
+  --color-hutan-800: #263D26;
+  --color-hutan-900: #1a2e1a;
+  --color-krem-100: #f0ead8;
+  --color-krem-300: #8fa06a;
+  --color-daun-400: #A7B92B;
+  --color-daun-500: #6F9435;
+  --color-emas-400: #EDD330;
+}
+
 html { scroll-behavior: smooth; }
 .page-transitioning * { pointer-events: none !important; }
 .page-transitioning { overflow-x: hidden; }
-
