@@ -702,7 +702,7 @@ self.addEventListener('message', (event) => {
         // boleh dijawab dengan format yang salah. Bilas dengan pesan yang jelas
         // supaya pengguna tahu perlu memuat ulang, bukan melihat angka 0 tile.
         if (protocol !== undefined && protocol !== SW_PROTOCOL) {
-            port?.postMessage({
+            if (port) { port.postMessage({
                 type: 'DOWNLOAD_ERROR',
                 protocol: SW_PROTOCOL,
                 error: `Halaman dan service worker memakai protokol berbeda (${protocol}/${SW_PROTOCOL}). Muat ulang halaman lalu ulangi unduhan.`,
