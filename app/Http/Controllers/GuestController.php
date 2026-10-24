@@ -7,6 +7,7 @@ use App\Models\Announcement;
 use App\Models\Gallery;
 use App\Models\Member;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -17,7 +18,7 @@ class GuestController extends Controller
     public function __invoke(Request $request): Response
     {
         $ambalan = Ambalan::first();
-        $hasKategoriColumn = Schema::hasColumn('announcements', 'kategori');
+        $hasKategoriColumn = Cache::remember('announcements_has_kategori', 3600, fn () => Schema::hasColumn('announcements', 'kategori'));
 
         $announcements = Announcement::whereNotNull('published_at')
             ->orderByDesc('published_at')
@@ -69,10 +70,10 @@ class GuestController extends Controller
             'announcements' => $announcements,
             'sliderSlides' => $sliderAnnouncements->isNotEmpty() ? $sliderAnnouncements : [],
             'gallery' => $gallery->isNotEmpty() ? $gallery : [],
-            'stats' => [
+            'stats' => Cache::remember('guest_stats', 300, fn () => [
                 'members' => Member::where('status_aktif', 'Aktif')->count(),
                 'alumni' => Member::where('status_aktif', 'Alumni')->count(),
-            ],
+            ]),
         ]);
     }
 }
