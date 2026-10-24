@@ -116,7 +116,7 @@ class DashboardController extends Controller
             return [];
         }
 
-        return TkkPoint::where('is_active', true)
+        return TkkPoint::whereRaw('is_active = true')
             ->orderBy('nama')
             ->get()
             ->map(function ($point) {
@@ -159,7 +159,7 @@ class DashboardController extends Controller
 
     private function skuPointsByLevel(): array
     {
-        return SkuPoint::where('is_active', true)
+        return SkuPoint::whereRaw('is_active = true')
             ->orderBy('tingkatan')
             ->orderBy('nomor_poin')
             ->get()
