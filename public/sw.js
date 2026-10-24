@@ -3,7 +3,7 @@
 // cache versi sebelumnya tidak boleh dipakai ulang. v1.5.1 menambahkan lambang
 // urutan organisasi Kepramukaan ke precache supaya header lembar PNG tetap ada
 // saat peta diunduh tanpa jaringan.
-const CACHE_VERSION = 'v1.5.2';
+const CACHE_VERSION = 'v1.5.4';
 const CACHE_NAME = 'jaya-jaya-jaya-' + CACHE_VERSION;
 const ASSETS_CACHE = 'jaya-jaya-jaya-assets-' + CACHE_VERSION;
 const TILES_CACHE = 'jaya-jaya-jaya-tiles-' + CACHE_VERSION;
@@ -275,6 +275,29 @@ self.addEventListener('fetch', (event) => {
     }
 
     if (request.method !== 'GET' || url.origin !== location.origin) {
+        return;
+    }
+
+    // Navigation requests - Network first for fresh HTML
+    if (request.mode === 'navigate' || (request.headers.get('accept') || '').includes('text/html')) {
+        event.respondWith(
+            fetch(request, { cache: 'no-store' })
+                .then((response) => {
+                    if (response && response.status === 200) {
+                        const clone = response.clone();
+                        caches.open(INERTIA_CACHE).then((cache) => {
+                            cache.put(request, clone).catch(() => {});
+                        });
+                    }
+                    return response;
+                })
+                .catch(() => {
+                    return caches.match(request).then((cached) => {
+                        if (cached) return cached;
+                        return caches.match('/').then((cachedHome) => cachedHome || caches.match('/offline.html'));
+                    });
+                })
+        );
         return;
     }
 
