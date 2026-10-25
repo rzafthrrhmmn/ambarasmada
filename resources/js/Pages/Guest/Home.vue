@@ -108,80 +108,18 @@
     </div>
 
     <main id="main-content" class="relative mx-auto w-full px-4 py-8 sm:px-6 sm:py-12 lg:px-[50px] lg:py-20">
-      <header class="mb-10 sm:mb-16" data-parallax-hero>
-        <section v-if="guestStore.sliderSlides.length > 0" class="mb-10">
-          <PhotoSlider :slides="guestStore.sliderSlides" :interval="6000" />
-        </section>
+      <HeroSection
+        :slider-slides="guestStore.sliderSlides"
+        :logo-url="logoUrl"
+        :ambalan-nama="ambalanNama"
+        :is-mobile="isMobile"
+      />
 
-        <div class="flex flex-col items-center text-center">
-          <ScrollReveal animation="zoom-in" :delay="100">
-            <div class="group relative mb-4 flex h-28 w-28 items-center justify-center rounded-3xl border-2 border-daun-500/50 bg-hutan-800/80 shadow-2xl shadow-daun-400/20 transition-all duration-500 hover:rotate-[5deg] hover:scale-105 sm:h-44 sm:w-44">
-              <img
-                :src="logoUrl"
-                alt="Logo Ambalan UPT SMAN 2 Maros"
-                class="guest-logo guest-logo-lg"
-                @error="e => { e.target.onerror = null; e.target.src = '/images/Logo_Ambalan.png'; }"
-              />
-              <div class="absolute -inset-1 rounded-3xl bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 opacity-0 blur transition-opacity duration-500 group-hover:opacity-60"></div>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal animation="fade-up" :delay="200">
-            <h1 class="text-3xl font-black text-transparent sm:text-5xl lg:text-6xl xl:text-7xl mb-3">
-              <span class="guest-text-gradient">Satya dan Darma</span>
-              <br class="sm:hidden" />
-              <span class="relative inline-block guest-text-gradient-gold"> dalam satu genggaman.</span>
-            </h1>
-          </ScrollReveal>
-
-          <ScrollReveal animation="fade-up" :delay="300">
-            <p class="mx-auto mt-3 max-w-2xl text-base leading-relaxed font-medium text-krem-300/80 sm:text-xl">
-              Ekosistem digital untuk anggota, pembina, pengurus, dan alumni. Pantau SKU, presensi, kas, inventaris, dan kabar ambalan dengan lebih tertib.
-            </p>
-          </ScrollReveal>
-
-          <ScrollReveal animation="fade-up" :delay="400">
-            <div class="mt-6 flex flex-col sm:flex-row flex-wrap justify-center gap-3">
-              <Link
-                href="/register"
-                class="guest-focus-ring group relative isolate overflow-hidden rounded-2xl bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-6 py-3.5 text-sm font-black text-hutan-800 shadow-xl shadow-emas-400/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-emas-400/40 active:scale-95 before:absolute before:inset-0 before:bg-white before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-20 w-full sm:w-auto"
-              >
-                <span class="relative z-10 flex items-center gap-2">
-                  Bergabung Sekarang
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-4 w-4 transition group-hover:translate-x-1">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                  </svg>
-                </span>
-              </Link>
-               <Link
-                href="/login"
-                class="guest-focus-ring rounded-2xl border-2 border-daun-500 bg-hutan-800/40 px-6 py-3.5 text-sm font-bold text-krem-300 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-emas-400 hover:bg-daun-500/20 hover:text-emas-400 hover:shadow-lg hover:shadow-daun-500/20 active:scale-95 w-full sm:w-auto"
-              >
-                Masuk
-              </Link>
-            </div>
-          </ScrollReveal>
-        </div>
-      </header>
-
-      <section class="guest-section" data-animate="stats" id="stats">
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <ScrollReveal v-for="(stat, idx) in statsItems" :key="stat.label" :delay="idx * 100" :stagger="true" :style="`--stagger-index: ${idx}`">
-            <div class="guest-stat-card group">
-              <span aria-hidden="true" class="guest-stat-card-glow" />
-              <div class="relative flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="text-xs font-bold uppercase tracking-wide text-lumut-400">{{ stat.label }}</p>
-                  <p class="mt-2 text-3xl font-extrabold text-emas-400 sm:text-4xl">{{ animatedStats[stat.key] }}</p>
-                </div>
-                <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 border-daun-500/40 bg-hutan-800 text-emas-400 transition duration-200 group-hover:border-emas-400/50 group-hover:text-emas-400">
-                  <AppIcon :name="stat.icon" class="h-6 w-6" />
-                </span>
-              </div>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
+      <StatsSection
+        :stats-items="statsItems"
+        :animated-stats="animatedStats"
+        :is-loading="guestStore.isLoading"
+      />
 
       <section id="cara-kerja" class="guest-section scroll-mt-24">
         <div class="mb-8 sm:mb-12 text-center">
@@ -205,8 +143,8 @@
                 {{ idx + 1 }}
               </div>
                <div class="mt-4 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-daun-500/30 bg-hutan-800 transition-transform hover:rotate-6">
-                 <AppIcon :name="step.iconName" class="h-8 w-8 text-emas-400" />
-               </div>
+                <AppIcon :name="step.iconName" class="h-8 w-8 text-emas-400" />
+              </div>
               <h3 class="text-xl font-extrabold text-krem-100">{{ step.title }}</h3>
               <p class="mt-3 text-sm leading-relaxed font-medium text-krem-300/80">{{ step.description }}</p>
             </div>
@@ -214,207 +152,22 @@
         </div>
       </section>
 
-      <section v-if="guestStore.gallery.length > 0" id="dokumentasi" class="guest-section scroll-mt-24">
-        <div class="mb-8 flex items-end justify-between">
-          <div>
-            <ScrollReveal animation="fade-up">
-              <span class="section-eyebrow text-daun-400">Dokumentasi Kegiatan</span>
-              <h2 class="text-2xl font-black text-transparent sm:text-3xl">
-                <span class="guest-text-gradient">Dokumentasi</span>
-                <span class="guest-text-gradient-gold"> Kegiatan</span>
-              </h2>
-              <p class="mt-1 text-sm font-medium text-lumut-400">Foto-foto dokumentasi dari kegiatan kepramukaan terbaru.</p>
-            </ScrollReveal>
-          </div>
-          <ScrollReveal animation="fade-up" :delay="100">
-            <Link href="/galleries" class="text-sm font-bold text-daun-400 opacity-70 transition-opacity hover:opacity-100 hover:text-emas-400">
-              Lihat semua &rarr;
-            </Link>
-          </ScrollReveal>
-        </div>
-        <ScrollReveal animation="fade-up" :delay="150">
-          <div class="relative">
-            <div
-              ref="galleryContainer"
-              class="guest-gallery-track"
-            >
-                <button
-                  v-for="(item, idx) in guestStore.gallery"
-                  :key="idx"
-                  class="guest-gallery-item group"
-                  style="width: min(300px, 80vw);"
-                @click="openLightbox(idx)"
-                :aria-label="`Lihat ${item.title || 'foto'}`"
-              >
-                <div class="relative h-52 overflow-hidden">
-              <img
-                     v-if="item.src"
-                     :src="item.src"
-                     :alt="item.title"
-                     class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                     loading="lazy"
-                     @error="e => { e.target.onerror = null; e.target.src = '/images/Logo_Ambalan.png'; }"
-                   />
-                  <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-hutan-800 to-hutan-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-8 w-8 text-lumut-400">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.25-5.25a2.25 2.25 0 013 0l3.75 3.75M9.75 12.75l.75.75m0 0l.75.75m-.75-.75v-6.75m-.75 6.75h6" />
-                    </svg>
-                  </div>
-                  <div class="absolute inset-0 bg-gradient-to-t from-hutan-800/95 via-hutan-800/20 to-transparent opacity-60 transition-opacity group-hover:opacity-80"></div>
-                  <div class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-full border-2 border-emas-400 bg-hutan-800/90 text-emas-400 backdrop-blur-sm">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-6 w-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-                <div class="p-4">
-                  <span class="mb-1 inline-block rounded-full bg-daun-400/15 px-2.5 py-0.5 text-xs font-bold text-emas-400">{{ item.kategori || 'Dokumentasi' }}</span>
-                  <h3 class="text-sm font-extrabold text-krem-100 transition-colors group-hover:text-emas-400">{{ item.title || 'Tanpa judul' }}</h3>
-                  <p v-if="item.description" class="mt-1 line-clamp-2 text-xs leading-relaxed font-medium text-krem-300/70">{{ item.description }}</p>
-                </div>
-              </button>
-            </div>
+      <GallerySection
+        :gallery="guestStore.gallery"
+        :is-loading="guestStore.isLoading"
+        @open-lightbox="openLightbox"
+      />
 
-            <button
-              v-if="guestStore.gallery.length > 1"
-              @click="scrollGallery('left')"
-              :disabled="galleryScrollLeft <= 0"
-              class="guest-gallery-nav left-2"
-              aria-label="Gulir kiri"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-5 w-5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-              </svg>
-            </button>
-            <button
-              v-if="guestStore.gallery.length > 1"
-              @click="scrollGallery('right')"
-              :disabled="galleryScrollRight <= 0"
-              class="guest-gallery-nav right-2"
-              aria-label="Gulir kanan"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-5 w-5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
-            </button>
-          </div>
-        </ScrollReveal>
-      </section>
+      <FeaturesSection :features="features" />
 
-      <section id="fitur" class="guest-section scroll-mt-24">
-        <div class="mb-8 sm:mb-12 text-center">
-          <ScrollReveal animation="fade-up">
-            <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
-              <span class="h-1.5 w-1.5 rounded-full bg-daun-400 animate-pulse"></span>
-              Layanan Unggulan
-            </div>
-          </ScrollReveal>
-          <ScrollReveal animation="fade-up" :delay="100">
-            <h2 class="mt-5 text-3xl font-black text-transparent sm:text-4xl lg:text-5xl">
-              <span class="guest-text-gradient">Sistem Informasi</span>
-              <span class="guest-text-gradient-gold"> Terintegrasi</span>
-            </h2>
-            <p class="mx-auto mt-4 max-w-lg text-sm font-medium text-krem-300/80 sm:text-base">
-              Lima layanan digital yang saling terhubung untuk mendukung operasional ambalan secara efisien.
-            </p>
-          </ScrollReveal>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <ScrollReveal v-for="(feature, idx) in features" :key="idx" :delay="idx * 100" :stagger="true" :style="`--stagger-index: ${idx}`" animation="fade-up">
-            <div class="guest-feature-card group">
-              <div class="absolute inset-0 rounded-3xl bg-gradient-to-br from-daun-400/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
-              <div class="relative flex items-start gap-5">
-                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-hutan-800 to-hutan-600 border-2 border-daun-500/30 text-emas-400 shadow-lg shadow-daun-500/10 transition-all duration-300 group-hover:rotate-[5deg] group-hover:border-emas-400/50 group-hover:shadow-xl group-hover:shadow-daun-500/20">
-                  <AppIcon :name="feature.iconName" class="h-7 w-7 transition-transform duration-300 group-hover:scale-110" />
-                </div>
-                <div>
-                  <h3 class="text-xl font-extrabold text-krem-100 transition-colors duration-300 group-hover:text-emas-400">{{ feature.title }}</h3>
-                  <p class="mt-2 text-sm leading-relaxed font-medium text-krem-300/80">{{ feature.description }}</p>
-                </div>
-              </div>
-              <div class="absolute bottom-0 right-0 h-24 w-24 rounded-full bg-daun-400/5 blur-2xl transition-all duration-500 group-hover:bg-daun-400/10 group-hover:scale-150"></div>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
+      <TestimonialsSection :testimonials="testimonials" />
 
-      <section id="testimoni" class="guest-section scroll-mt-24">
-        <div class="mb-8 sm:mb-12 text-center">
-          <ScrollReveal animation="fade-up">
-            <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
-              <span class="h-1.5 w-1.5 rounded-full bg-daun-400 animate-pulse"></span>
-              Testimoni
-            </div>
-          </ScrollReveal>
-          <ScrollReveal animation="fade-up" :delay="100">
-            <h2 class="mt-5 text-3xl font-black text-transparent sm:text-4xl lg:text-5xl">
-              <span class="guest-text-gradient">Apa Kata</span>
-              <span class="guest-text-gradient-gold"> Mereka</span>
-            </h2>
-          </ScrollReveal>
-        </div>
-        <ScrollReveal animation="fade-up" :delay="150">
-          <TestimonialsCarousel :testimonials="testimonials" :auto-play="true" :interval="5000" />
-        </ScrollReveal>
-      </section>
-
-      <section id="pengumatan" class="guest-section scroll-mt-24">
-        <div class="mb-8 sm:mb-12 text-center">
-          <ScrollReveal animation="fade-up">
-            <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
-              <span class="h-1.5 w-1.5 rounded-full bg-emas-400 animate-pulse"></span>
-              Aktivitas Terbaru
-            </div>
-          </ScrollReveal>
-          <ScrollReveal animation="fade-up" :delay="100">
-            <h2 class="mt-5 text-3xl font-black text-transparent sm:text-4xl">
-              <span class="guest-text-gradient">Pengumuman</span>
-              <span class="guest-text-gradient-gold"> Terbaru</span>
-            </h2>
-            <p class="mx-auto mt-4 max-w-lg text-sm font-medium text-krem-300/80">
-              Ikuti perkembangan terbaru dari ambalan.
-            </p>
-          </ScrollReveal>
-        </div>
-        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <ScrollReveal v-for="(item, idx) in guestStore.announcements.slice(0, 6)" :key="item.id" :delay="idx * 80" :stagger="true" :style="`--stagger-index: ${idx}`" animation="fade-up">
-            <article
-              class="guest-announcement-card group"
-            >
-              <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-daun-400/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
-              <div class="relative mb-4 flex items-center justify-between">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-daun-400/15 px-3 py-1 text-xs font-bold text-emas-400">
-                  <AppIcon :name="categoryIcon(item.kategori)" class="h-3.5 w-3.5" />
-                  {{ item.kategori || 'Pengumuman' }}
-                </span>
-                <time class="text-xs font-bold text-lumut-400" :datetime="item.published_at">
-                  {{ formatDate(item.published_at) }}
-                </time>
-              </div>
-              <div class="relative flex-1">
-                <h3 class="text-lg font-extrabold text-krem-100 transition-colors duration-300 group-hover:text-emas-400">{{ item.judul }}</h3>
-                <p class="mt-2 text-sm leading-relaxed font-medium text-krem-300/70 line-clamp-3">{{ item.isi }}</p>
-                <span class="mt-4 inline-flex items-center gap-1 text-xs font-bold text-daun-400 transition-all duration-300 group-hover:text-emas-400 group-hover:translate-x-1">
-                  Baca selengkapnya
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-3.5 w-3.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                  </svg>
-                </span>
-              </div>
-            </article>
-          </ScrollReveal>
-          <div v-if="!guestStore.announcements.length" class="empty-state md:col-span-2 lg:col-span-3">
-            <div class="empty-state-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-              </svg>
-            </div>
-            <p class="empty-state-text">Belum ada pengumuman.</p>
-          </div>
-        </div>
-      </section>
+      <AnnouncementsSection
+        :announcements="guestStore.announcements"
+        :is-loading="guestStore.isLoading"
+        :format-date="formatDate"
+        :category-icon="categoryIcon"
+      />
 
       <section class="guest-section">
         <ScrollReveal animation="zoom-in">
@@ -447,31 +200,14 @@
         </ScrollReveal>
       </section>
 
-      <section id="newsletter" class="guest-section scroll-mt-24">
-        <ScrollReveal animation="fade-up">
-          <div class="mx-auto max-w-2xl rounded-3xl border-2 border-daun-500/30 bg-hutan-600/60 p-8 text-center shadow-lg backdrop-blur-sm sm:p-10">
-            <h2 class="text-2xl font-black text-krem-100 sm:text-3xl">Dapatkan Kabar Terbaru</h2>
-            <p class="mt-2 text-sm font-medium text-krem-300/80">
-              Berlangganan buletin kami untuk kabar kegiatan, pengumuman, dan update sistem.
-            </p>
-            <form @submit.prevent="subscribeNewsletter" class="mt-6 flex flex-col gap-3 sm:flex-row">
-              <input
-                v-model="newsletterEmail"
-                type="email"
-                required
-                placeholder="email@contoh.com"
-                class="guest-focus-ring flex-1 rounded-xl border-2 border-daun-500/40 bg-hutan-800 px-4 py-3 text-sm font-semibold text-krem-100 outline-none transition focus:border-emas-400 focus:shadow-lg focus:shadow-emas-400/10"
-              />
-               <button type="submit" :disabled="newsletterLoading" class="btn-primary rounded-xl px-6 py-3 text-sm font-black disabled:opacity-60 disabled:cursor-not-allowed">
-                 <span v-if="newsletterLoading">Mengirim…</span>
-                 <span v-else>Berlangganan</span>
-               </button>
-             </form>
-             <p v-if="newsletterSubscribed" class="mt-3 text-xs font-bold text-daun-400">Terima kasih, Anda berhasil berlangganan.</p>
-             <p v-if="newsletterError" class="mt-3 text-xs font-bold text-[#ef4419]">{{ newsletterError }}</p>
-          </div>
-        </ScrollReveal>
-      </section>
+      <NewsletterSection
+        :newsletter-email="newsletterEmail"
+        :newsletter-subscribed="newsletterSubscribed"
+        :newsletter-loading="newsletterLoading"
+        :newsletter-error="newsletterError"
+        @update:newsletter-email="newsletterEmail = $event"
+        @subscribe="subscribeNewsletter"
+      />
 
       <footer class="guest-section border-t border-daun-500/20">
         <div class="flex flex-col items-center justify-center gap-5">
@@ -532,16 +268,22 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import PhotoSlider from '@/Components/PhotoSlider.vue';
 import AppIcon from '@/Components/AppIcon.vue';
 import ParticleBackground from '@/Components/ParticleBackground.vue';
 import ScrollReveal from '@/Components/ScrollReveal.vue';
-import TestimonialsCarousel from '@/Components/TestimonialsCarousel.vue';
 import LightboxModal from '@/Components/LightboxModal.vue';
 import { useGuestStore } from '@/Stores/guest';
 import { useUIStore } from '@/Stores/ui';
+
+import HeroSection from '@/Components/Guest/HeroSection.vue';
+import StatsSection from '@/Components/Guest/StatsSection.vue';
+import GallerySection from '@/Components/Guest/GallerySection.vue';
+import FeaturesSection from '@/Components/Guest/FeaturesSection.vue';
+import TestimonialsSection from '@/Components/Guest/TestimonialsSection.vue';
+import AnnouncementsSection from '@/Components/Guest/AnnouncementsSection.vue';
+import NewsletterSection from '@/Components/Guest/NewsletterSection.vue';
 
 const guestStore = useGuestStore();
 const uiStore = useUIStore();
@@ -557,9 +299,6 @@ const props = defineProps({
 const isMobile = ref(false);
 const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true);
 const container = ref(null);
-const galleryContainer = ref(null);
-const galleryScrollLeft = ref(0);
-const galleryScrollRight = ref(0);
 const activeSection = ref('');
 const newsletterEmail = ref('');
 const newsletterSubscribed = ref(false);
@@ -643,24 +382,6 @@ function animateCounter(target, key, duration = 1800) {
     if (progress < 1) animationFrameId = requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
-}
-
-function updateGalleryScrollState() {
-  if (!galleryContainer.value) return;
-  const { scrollLeft, scrollWidth, clientWidth } = galleryContainer.value;
-  galleryScrollLeft.value = scrollLeft;
-  galleryScrollRight.value = Math.max(0, scrollWidth - clientWidth - scrollLeft);
-}
-
-function scrollGallery(direction) {
-  if (!galleryContainer.value) return;
-  const { scrollWidth, clientWidth } = galleryContainer.value;
-  const scrollAmount = Math.min(300, clientWidth * 0.8);
-  galleryContainer.value.scrollBy({
-    left: direction === 'right' ? scrollAmount : -scrollAmount,
-    behavior: 'smooth',
-  });
-  setTimeout(updateGalleryScrollState, 400);
 }
 
 function formatDate(value) {
@@ -855,12 +576,12 @@ onMounted(() => {
         if (entry.isIntersecting) {
           entry.target.classList.add('is-visible');
            if (entry.target.dataset.animate === 'stats') {
-              const s = guestStore.stats.value || props.stats || { members: 0, alumni: 0 };
-              animateCounter(s.members ?? 0, 'members');
-              animateCounter(s.alumni ?? 0, 'alumni');
-              animateCounter('5+', 'services');
-              animateCounter('PWA', 'access');
-            }
+             const s = guestStore.stats.value || props.stats || { members: 0, alumni: 0 };
+             animateCounter(s.members ?? 0, 'members');
+             animateCounter(s.alumni ?? 0, 'alumni');
+             animateCounter('5+', 'services');
+             animateCounter('PWA', 'access');
+           }
           revealObserver.unobserve(entry.target);
         }
       });
@@ -893,18 +614,8 @@ onMounted(() => {
     scrollHandler();
   });
 
-  galleryContainer.value?.addEventListener('scroll', updateGalleryScrollState, { passive: true });
-  nextTick(() => {
-    updateGalleryScrollState();
-  });
-
   window.addEventListener('keydown', trapFocus);
 });
-
-watch(
-  () => guestStore.gallery.length,
-  () => nextTick(updateGalleryScrollState),
-);
 
 onUnmounted(() => {
   window.removeEventListener('scroll', scrollHandler);
@@ -934,7 +645,6 @@ onUnmounted(() => {
 .skip-link:focus {
   top: 0;
 }
-
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -942,7 +652,6 @@ onUnmounted(() => {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;

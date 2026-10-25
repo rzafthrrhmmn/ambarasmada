@@ -2,16 +2,16 @@
   <AppLayout>
     <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <p class="text-sm font-medium text-[#EDD330]">Persuratan Digital</p>
-        <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Template Surat</h1>
-        <p class="mt-1 text-sm text-[#8fa06a]">
+        <p class="text-sm font-medium text-emas-400">Persuratan Digital</p>
+        <h1 class="mt-1 text-2xl font-bold text-krem-100">Template Surat</h1>
+        <p class="mt-1 text-sm text-krem-300">
           Unggah acuan .docx sekali saja, lalu pakai berulang saat membuat surat.
         </p>
       </div>
       <div class="flex flex-wrap gap-2">
         <Link
           href="/letters"
-          class="inline-flex items-center rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a] transition hover:bg-[#6F9435]/20"
+          class="inline-flex items-center rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a] transition hover:bg-daun-500/20"
         >
           Kembali ke surat
         </Link>
@@ -19,7 +19,7 @@
           type="button"
           data-test="btn-unggah-template"
           @click="showCreate = true"
-          class="inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white"
+          class="inline-flex items-center rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-4 py-2 text-sm font-semibold text-white"
         >
           + Unggah template
         </button>
@@ -28,25 +28,25 @@
 
     <div
       v-if="storage && (!storage.persistent || !storage.writable)"
-      class="mb-6 rounded-2xl border border-[#EDD330]/70 bg-[#EDD330]/10 p-4"
+      class="mb-6 rounded-2xl border border-emas-400/70 bg-emas-400/10 p-4"
       data-test="peringatan-penyimpanan"
     >
-      <p class="text-sm font-bold text-[#EDD330]">Penyimpanan template belum siap</p>
-      <p v-if="!storage.writable" class="mt-1 text-xs text-[#f0ead8]">
-        Disk <code class="rounded bg-[#263D26] px-1">{{ storage.disk }}</code> tidak bisa ditulis,
+      <p class="text-sm font-bold text-emas-400">Penyimpanan template belum siap</p>
+      <p v-if="!storage.writable" class="mt-1 text-xs text-krem-100">
+        Disk <code class="rounded bg-hutan-800 px-1">{{ storage.disk }}</code> tidak bisa ditulis,
         jadi template dan lampiran tidak akan tersimpan. Periksa izin folder atau kredensial storage.
       </p>
-      <p v-else-if="!storage.persistent" class="mt-1 text-xs text-[#f0ead8]">
-        Disk <code class="rounded bg-[#263D26] px-1">{{ storage.disk }}</code> menyimpan berkas di
+      <p v-else-if="!storage.persistent" class="mt-1 text-xs text-krem-100">
+        Disk <code class="rounded bg-hutan-800 px-1">{{ storage.disk }}</code> menyimpan berkas di
         folder sementara. Berkas akan hilang setiap kali server dinyalakan ulang atau di-deploy ulang.
-        Isi <code class="rounded bg-[#263D26] px-1">LETTERS_DISK=s3</code> beserta kunci S3 Supabase
+        Isi <code class="rounded bg-hutan-800 px-1">LETTERS_DISK=s3</code> beserta kunci S3 Supabase
         supaya template tersimpan permanen.
       </p>
     </div>
 
-    <div class="mb-6 rounded-2xl border border-[#6F9435] bg-[#335233] p-5">
-      <p class="text-sm font-bold text-[#EDD330]">Cara memakai template</p>
-      <ol class="mt-2 list-decimal space-y-1 pl-5 text-xs text-[#8fa06a]">
+    <div class="mb-6 rounded-2xl border border-[#6F9435] bg-hutan-600 p-5">
+      <p class="text-sm font-bold text-emas-400">Cara memakai template</p>
+      <ol class="mt-2 list-decimal space-y-1 pl-5 text-xs text-krem-300">
         <li>Buka dokumen di Microsoft Word, lalu sisipkan penanda di bagian yang akan berubah, contoh <code class="text-[#d4dc9a]">${perihal}</code>.</li>
         <li>Unggah berkas .docx di bawah. Penanda dideteksi otomatis dan disimpan bersama template.</li>
         <li>Saat membuat surat, form otomatis memuat isian untuk setiap penanda yang belum punya kolom di form utama.</li>
@@ -58,7 +58,7 @@
           <code
             v-for="(label, key) in catalog"
             :key="key"
-            class="rounded bg-[#263D26] px-1.5 py-0.5 text-[10px] text-[#8fa06a]"
+            class="rounded bg-hutan-800 px-1.5 py-0.5 text-[10px] text-krem-300"
           >{{ '${' + key + '}' }} &mdash; {{ label }}</code>
         </div>
       </div>
@@ -73,11 +73,11 @@
       <article
         v-for="template in templates"
         :key="template.id"
-        class="flex flex-col rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm"
+        class="flex flex-col rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm"
       >
-        <h2 class="text-lg font-semibold text-[#f0ead8]">{{ template.name }}</h2>
-        <p v-if="template.description" class="mt-1 text-sm text-[#8fa06a]">{{ template.description }}</p>
-        <p class="mt-2 text-xs text-[#8fa06a]">
+        <h2 class="text-lg font-semibold text-krem-100">{{ template.name }}</h2>
+        <p v-if="template.description" class="mt-1 text-sm text-krem-300">{{ template.description }}</p>
+        <p class="mt-2 text-xs text-krem-300">
           {{ template.placeholders.length }} penanda
           <span v-if="template.created_at">&bull; diunggah {{ formatDate(template.created_at) }}</span>
         </p>
@@ -86,7 +86,7 @@
           <code
             v-for="name in template.placeholders"
             :key="name"
-            class="rounded bg-[#263D26] px-1.5 py-0.5 text-[10px] text-[#d4dc9a]"
+            class="rounded bg-hutan-800 px-1.5 py-0.5 text-[10px] text-[#d4dc9a]"
           >{{ '${' + name + '}' }}</code>
         </div>
         <p v-else class="mt-3 rounded-lg border border-[#ef4419]/60 p-2 text-xs text-[#ef4419]">
@@ -94,7 +94,7 @@
         </p>
 
         <div class="mt-auto flex items-center gap-3 border-t border-[#6F9435]/40 pt-3 text-xs">
-          <a :href="template.download_url" class="font-semibold text-[#EDD330] hover:underline">Unduh</a>
+          <a :href="template.download_url" class="font-semibold text-emas-400 hover:underline">Unduh</a>
           <span class="flex-1"></span>
           <button type="button" @click="deleteTemplate(template)" class="text-[#ef4419] hover:underline">Hapus</button>
         </div>
@@ -108,7 +108,7 @@
           <input
             v-model="form.name"
             required
-            class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
+            class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]"
           />
           <p v-if="form.errors.name" class="mt-1 text-xs text-[#ef4419]">{{ form.errors.name }}</p>
         </label>
@@ -117,7 +117,7 @@
           <textarea
             v-model="form.description"
             rows="2"
-            class="mt-1 w-full resize-y rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
+            class="mt-1 w-full resize-y rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]"
           ></textarea>
           <p v-if="form.errors.description" class="mt-1 text-xs text-[#ef4419]">{{ form.errors.description }}</p>
         </label>
@@ -126,7 +126,7 @@
           <input
             type="file"
             accept=".docx"
-            class="mt-1 w-full text-sm text-[#d4dc9a] file:mr-3 file:rounded-lg file:border-0 file:bg-[#6F9435] file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
+            class="mt-1 w-full text-sm text-[#d4dc9a] file:mr-3 file:rounded-lg file:border-0 file:bg-daun-500 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
             @change="selectFile"
           />
           <p v-if="form.errors.file" class="mt-1 text-xs text-[#ef4419]">{{ form.errors.file }}</p>
@@ -136,7 +136,7 @@
           <button
             type="submit"
             :disabled="form.processing || !form.file"
-            class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            class="rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
             {{ form.processing ? 'Mengunggah...' : 'Unggah' }}
           </button>

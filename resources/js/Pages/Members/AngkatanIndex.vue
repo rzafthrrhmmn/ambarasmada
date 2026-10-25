@@ -2,9 +2,9 @@
   <AppLayout>
     <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <p class="text-sm font-medium text-[#EDD330]">Manajemen Anggota</p>
-        <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Daftar Angkatan</h1>
-        <p class="mt-1 text-sm text-[#8fa06a]">Kelola tahun, nomor, dan status angkatan anggota.</p>
+        <p class="text-sm font-medium text-emas-400">Manajemen Anggota</p>
+        <h1 class="mt-1 text-2xl font-bold text-krem-100">Daftar Angkatan</h1>
+        <p class="mt-1 text-sm text-krem-300">Kelola tahun, nomor, dan status angkatan anggota.</p>
       </div>
       <button v-if="canManage" type="button" class="btn-primary" @click="openCreate">
         <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
@@ -12,32 +12,32 @@
       </button>
     </div>
 
-    <div class="overflow-hidden rounded-2xl border border-[#6F9435] bg-[#335233] shadow-sm">
+    <div class="overflow-hidden rounded-2xl border border-[#6F9435] bg-hutan-600 shadow-sm">
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-[#6F9435]/30">
-          <thead class="bg-[#263D26]">
+          <thead class="bg-hutan-800">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#8fa06a]">Nomor</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#8fa06a]">Tahun</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#8fa06a]">Nama</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#8fa06a]">Anggota</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#8fa06a]">Status</th>
-              <th v-if="canManage" class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#8fa06a]">Aksi</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-krem-300">Nomor</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-krem-300">Tahun</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-krem-300">Nama</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-krem-300">Anggota</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-krem-300">Status</th>
+              <th v-if="canManage" class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-krem-300">Aksi</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[#6F9435]/30">
-            <tr v-for="item in angkatan.data" :key="item.id" class="hover:bg-[#263D26]/60">
-              <td class="px-4 py-3 text-sm font-semibold text-[#EDD330]">{{ item.nomor }}</td>
+            <tr v-for="item in angkatan.data" :key="item.id" class="hover:bg-hutan-800/60">
+              <td class="px-4 py-3 text-sm font-semibold text-emas-400">{{ item.nomor }}</td>
               <td class="px-4 py-3 text-sm text-[#d4dc9a]">{{ item.angkatan }}</td>
-              <td class="px-4 py-3 text-sm text-[#f0ead8]">{{ item.nama }}</td>
+              <td class="px-4 py-3 text-sm text-krem-100">{{ item.nama }}</td>
               <td class="px-4 py-3 text-sm text-[#d4dc9a]">{{ item.members_count ?? 0 }}</td>
               <td class="px-4 py-3 text-sm">
-                <span v-if="item.is_current" class="rounded-full bg-[#EDD330]/20 px-2.5 py-1 text-xs font-semibold text-[#EDD330]">Berjalan</span>
-                <span v-else-if="item.is_active" class="rounded-full bg-[#A7B92A]/20 px-2.5 py-1 text-xs font-semibold text-[#A7B92A]">Aktif</span>
+                <span v-if="item.is_current" class="rounded-full bg-emas-400/20 px-2.5 py-1 text-xs font-semibold text-emas-400">Berjalan</span>
+                <span v-else-if="item.is_active" class="rounded-full bg-daun-400/20 px-2.5 py-1 text-xs font-semibold text-daun-400">Aktif</span>
                 <span v-else class="rounded-full bg-[#ef4419]/20 px-2.5 py-1 text-xs font-semibold text-[#ef4419]">Arsip</span>
               </td>
               <td v-if="canManage" class="px-4 py-3 text-right text-sm whitespace-nowrap">
-                <button @click="openEdit(item)" class="text-[#EDD330] hover:underline">Edit</button>
+                <button @click="openEdit(item)" class="text-emas-400 hover:underline">Edit</button>
                 <button v-if="item.is_active" @click="archive(item)" class="ml-3 text-[#ef4419] hover:underline">Arsipkan</button>
               </td>
             </tr>
@@ -55,16 +55,16 @@
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="block">
             <span class="text-xs font-medium text-[#d4dc9a]">Tahun angkatan</span>
-            <input v-model="form.tahun" required inputmode="numeric" maxlength="4" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]" />
+            <input v-model="form.tahun" required inputmode="numeric" maxlength="4" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]" />
           </label>
           <label class="block">
             <span class="text-xs font-medium text-[#d4dc9a]">Nomor angkatan</span>
-            <input v-model="form.nomor" required inputmode="numeric" maxlength="3" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]" />
+            <input v-model="form.nomor" required inputmode="numeric" maxlength="3" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]" />
           </label>
         </div>
         <label class="block">
           <span class="text-xs font-medium text-[#d4dc9a]">Nama angkatan</span>
-          <input v-model="form.nama" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]" />
+          <input v-model="form.nama" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]" />
         </label>
         <div class="flex flex-wrap gap-4 text-sm text-[#d4dc9a]">
           <label class="flex items-center gap-2"><input v-model="form.is_active" type="checkbox" class="accent-[#EDD330]" /> Aktif</label>
@@ -72,7 +72,7 @@
         </div>
         <div class="flex justify-end gap-2">
           <button type="button" @click="closeModal" class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm text-[#d4dc9a]">Batal</button>
-          <button :disabled="form.processing" class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Simpan</button>
+          <button :disabled="form.processing" class="rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Simpan</button>
         </div>
       </form>
     </Modal>

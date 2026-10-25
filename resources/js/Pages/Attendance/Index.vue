@@ -2,9 +2,9 @@
   <AppLayout>
     <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <p class="text-sm font-medium text-[#EDD330]">Latihan Rutin</p>
-        <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Presensi Anggota</h1>
-        <p class="mt-1 text-sm text-[#8fa06a]">Buat sesi latihan, gunakan QR Code, dan lihat rekap kehadiran.</p>
+        <p class="text-sm font-medium text-emas-400">Latihan Rutin</p>
+        <h1 class="mt-1 text-2xl font-bold text-krem-100">Presensi Anggota</h1>
+        <p class="mt-1 text-sm text-krem-300">Buat sesi latihan, gunakan QR Code, dan lihat rekap kehadiran.</p>
       </div>
       <button v-if="canCreate" type="button" class="btn-primary" @click="openCreate">
         <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
@@ -12,23 +12,23 @@
       </button>
     </div>
 
-    <section v-if="canBulkDelete" class="mb-5 rounded-2xl border border-[#6F9435] bg-[#335233] p-4">
+    <section v-if="canBulkDelete" class="mb-5 rounded-2xl border border-[#6F9435] bg-hutan-600 p-4">
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5" @submit.prevent="applyFilters">
         <label class="block lg:col-span-2">
-          <span class="text-xs font-medium text-[#8fa06a]">Cari</span>
-          <input v-model="filters.q" type="search" placeholder="Nama sesi, lokasi, atau kode QR" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8]" />
+          <span class="text-xs font-medium text-krem-300">Cari</span>
+          <input v-model="filters.q" type="search" placeholder="Nama sesi, lokasi, atau kode QR" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100" />
         </label>
         <label class="block">
-          <span class="text-xs font-medium text-[#8fa06a]">Dari tanggal</span>
-          <input v-model="filters.from" type="date" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8]" />
+          <span class="text-xs font-medium text-krem-300">Dari tanggal</span>
+          <input v-model="filters.from" type="date" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100" />
         </label>
         <label class="block">
-          <span class="text-xs font-medium text-[#8fa06a]">Sampai tanggal</span>
-          <input v-model="filters.to" type="date" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8]" />
+          <span class="text-xs font-medium text-krem-300">Sampai tanggal</span>
+          <input v-model="filters.to" type="date" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100" />
         </label>
         <label class="block">
-          <span class="text-xs font-medium text-[#8fa06a]">Presensi</span>
-          <select v-model="filters.status" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8]">
+          <span class="text-xs font-medium text-krem-300">Presensi</span>
+          <select v-model="filters.status" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100">
             <option value="all">Semua</option>
             <option value="ada">Sudah ada</option>
             <option value="kosong">Belum ada</option>
@@ -36,18 +36,18 @@
         </label>
       </form>
       <div class="mt-3 flex flex-wrap items-center gap-2">
-        <button @click="applyFilters" class="rounded-lg bg-[#6F9435] px-3 py-1.5 text-xs font-semibold text-white">Terapkan</button>
+        <button @click="applyFilters" class="rounded-lg bg-daun-500 px-3 py-1.5 text-xs font-semibold text-white">Terapkan</button>
         <button v-if="hasActiveFilter" @click="resetFilters" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Reset</button>
-        <span class="text-xs text-[#8fa06a]">{{ sessions?.total ?? 0 }} sesi ditemukan</span>
+        <span class="text-xs text-krem-300">{{ sessions?.total ?? 0 }} sesi ditemukan</span>
       </div>
     </section>
 
     <div class="grid gap-5 lg:grid-cols-3">
-      <section class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm lg:col-span-2">
+      <section class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm lg:col-span-2">
         <div class="mb-4 flex items-center justify-between">
-          <h2 class="font-semibold text-[#f0ead8]">Riwayat sesi</h2>
-          <label v-if="canBulkDelete && allSelected" class="flex items-center gap-2 text-xs text-[#8fa06a]">
-            <input type="checkbox" checked class="h-4 w-4 rounded border-[#6F9435] bg-[#263D26] text-[#EDD330]" disabled />
+          <h2 class="font-semibold text-krem-100">Riwayat sesi</h2>
+          <label v-if="canBulkDelete && allSelected" class="flex items-center gap-2 text-xs text-krem-300">
+            <input type="checkbox" checked class="h-4 w-4 rounded border-[#6F9435] bg-hutan-800 text-emas-400" disabled />
             Semua di halaman ini dipilih
           </label>
           <button v-else-if="canBulkDelete" @click="selectAllOnPage" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Pilih semua di halaman</button>
@@ -55,14 +55,14 @@
 
         <div class="space-y-3">
           <SkeletonLoader v-if="!sessions || !sessions.data" variant="list" :lines="5" />
-          <div v-else-if="!sessions.data.length" class="rounded-xl border border-dashed border-[#6F9435] bg-[#263D26] p-6 text-center">
-            <p class="text-sm text-[#8fa06a]">Tidak ada sesi yang cocok dengan filter ini.</p>
+          <div v-else-if="!sessions.data.length" class="rounded-xl border border-dashed border-[#6F9435] bg-hutan-800 p-6 text-center">
+            <p class="text-sm text-krem-300">Tidak ada sesi yang cocok dengan filter ini.</p>
           </div>
           <div
             v-for="session in sessions.data"
             :key="session.id"
             class="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
-            :class="isSelected(session.id) ? 'border-[#EDD330] bg-[#3d5c3b]' : 'border-[#6F9435] bg-[#335233]'"
+            :class="isSelected(session.id) ? 'border-emas-400 bg-[#3d5c3b]' : 'border-[#6F9435] bg-hutan-600'"
           >
             <div class="flex items-start gap-3">
               <input
@@ -70,18 +70,18 @@
                 type="checkbox"
                 :checked="isSelected(session.id)"
                 @change="toggleSelect(session.id)"
-                class="mt-1 h-4 w-4 rounded border-[#6F9435] bg-[#263D26] text-[#EDD330]"
+                class="mt-1 h-4 w-4 rounded border-[#6F9435] bg-hutan-800 text-emas-400"
                 :aria-label="`Pilih sesi ${session.nama}`"
               />
               <div>
-                <Link :href="`/attendance/${session.id}`" class="font-semibold text-[#EDD330] hover:underline">{{ session.nama }}</Link>
-                <p class="mt-1 text-xs text-[#8fa06a]">{{ formatDate(session.tanggal) }} • {{ session.lokasi || '-' }} • {{ session.attendances_count }} presensi</p>
-                <p v-if="session.materi_nama" class="mt-1 text-xs text-[#8fa06a]">Materi: {{ session.materi_nama }}</p>
-                <p v-if="session.latitude !== null" class="mt-1 text-xs text-[#8fa06a]">Geofence aktif • radius {{ session.radius }} m</p>
+                <Link :href="`/attendance/${session.id}`" class="font-semibold text-emas-400 hover:underline">{{ session.nama }}</Link>
+                <p class="mt-1 text-xs text-krem-300">{{ formatDate(session.tanggal) }} • {{ session.lokasi || '-' }} • {{ session.attendances_count }} presensi</p>
+                <p v-if="session.materi_nama" class="mt-1 text-xs text-krem-300">Materi: {{ session.materi_nama }}</p>
+                <p v-if="session.latitude !== null" class="mt-1 text-xs text-krem-300">Geofence aktif • radius {{ session.radius }} m</p>
               </div>
             </div>
             <div class="flex flex-wrap gap-2 items-center">
-              <span class="rounded-full bg-[#263D26] px-2.5 py-1 text-xs text-[#EDD330]">{{ session.qr_token }}</span>
+              <span class="rounded-full bg-hutan-800 px-2.5 py-1 text-xs text-emas-400">{{ session.qr_token }}</span>
               <Link v-if="canEdit" :href="`/attendance/${session.id}`" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Detail</Link>
               <button v-if="canEdit" @click="openEdit(session)" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Edit</button>
               <button v-if="canDelete" @click="openDelete(session)" class="rounded-lg border border-[#ef4419]/60 px-3 py-1.5 text-xs font-semibold text-[#ef4419]">Hapus</button>
@@ -92,42 +92,42 @@
         <Pagination :links="sessions.links" class="mt-4 border-t border-[#6F9435] p-3" />
       </section>
 
-      <aside class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm">
-        <h2 class="font-semibold text-[#f0ead8]">QR Code presensi</h2>
-        <p class="mt-2 text-sm leading-6 text-[#8fa06a]">Tampilkan QR Code ini kepada anggota untuk memindai kehadiran.</p>
-        <div v-if="selectedQr" class="mt-4 rounded-xl bg-[#263D26] p-4 text-center">
-          <p class="mb-2 text-xs text-[#8fa06a]">{{ selectedQr.nama }}</p>
+      <aside class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm">
+        <h2 class="font-semibold text-krem-100">QR Code presensi</h2>
+        <p class="mt-2 text-sm leading-6 text-krem-300">Tampilkan QR Code ini kepada anggota untuk memindai kehadiran.</p>
+        <div v-if="selectedQr" class="mt-4 rounded-xl bg-hutan-800 p-4 text-center">
+          <p class="mb-2 text-xs text-krem-300">{{ selectedQr.nama }}</p>
           <img :src="selectedQr.imageDataUrl" alt="QR Code presensi" class="mx-auto h-48 w-48" />
-          <p class="mt-2 text-xs text-[#8fa06a]">Kode: {{ selectedQr.qr_token }}</p>
-          <p class="mt-1 text-[10px] text-[#8fa06a]">Scan via halaman /attendance/scan/{{ selectedQr.qr_token }}</p>
+          <p class="mt-2 text-xs text-krem-300">Kode: {{ selectedQr.qr_token }}</p>
+          <p class="mt-1 text-[10px] text-krem-300">Scan via halaman /attendance/scan/{{ selectedQr.qr_token }}</p>
         </div>
-        <div v-else class="mt-4 rounded-xl bg-[#263D26] p-4 text-center">
-          <p class="text-xs text-[#8fa06a]">Pilih sesi di atas untuk menampilkan QR Code</p>
+        <div v-else class="mt-4 rounded-xl bg-hutan-800 p-4 text-center">
+          <p class="text-xs text-krem-300">Pilih sesi di atas untuk menampilkan QR Code</p>
         </div>
       </aside>
     </div>
 
-    <div v-if="canBulkDelete && selectedIds.length" class="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[#EDD330]/60 bg-[#335233] px-4 py-3">
-      <p class="text-sm text-[#f0ead8]">{{ selectedIds.length }} sesi dipilih</p>
+    <div v-if="canBulkDelete && selectedIds.length" class="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-emas-400/60 bg-hutan-600 px-4 py-3">
+      <p class="text-sm text-krem-100">{{ selectedIds.length }} sesi dipilih</p>
       <button @click="openBulkDelete" class="rounded-lg bg-[#ef4419] px-3 py-1.5 text-xs font-semibold text-white">Hapus terpilih</button>
       <button @click="clearSelection" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Batalkan pilihan</button>
     </div>
 
     <Modal v-if="showCreate && canCreate" title="Buat sesi latihan" @close="closeCreate">
       <form @submit.prevent="submitCreate" class="grid gap-3">
-        <label class="block"><span class="text-xs font-medium">Nama sesi</span><input v-model="form.nama" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label>
+        <label class="block"><span class="text-xs font-medium">Nama sesi</span><input v-model="form.nama" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm" /></label>
         <div class="grid gap-3 sm:grid-cols-2">
-          <label class="block"><span class="text-xs font-medium">Tanggal</span><input v-model="form.tanggal" type="date" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label>
-          <label class="block"><span class="text-xs font-medium">Lokasi</span><input v-model="form.lokasi" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label>
+          <label class="block"><span class="text-xs font-medium">Tanggal</span><input v-model="form.tanggal" type="date" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm" /></label>
+          <label class="block"><span class="text-xs font-medium">Lokasi</span><input v-model="form.lokasi" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm" /></label>
         </div>
         <label class="block"><span class="text-xs font-medium">Materi latihan (opsional)</span><input @change="onMateriChange" type="file" class="mt-1 text-sm" accept=".pdf,.jpg,.jpeg,.png,.mp4,.webm,.doc,.docx" /></label>
         <p v-if="form.errors.materi" class="text-xs text-[#ef4419]">{{ form.errors.materi }}</p>
 
         <div class="mt-1">
           <span class="text-xs font-medium">Titik lokasi &amp; radius presensi</span>
-          <p class="mb-2 mt-1 text-xs text-[#8fa06a]">Presensi hanya diterima jika anggota berada dalam radius dari titik ini.</p>
+          <p class="mb-2 mt-1 text-xs text-krem-300">Presensi hanya diterima jika anggota berada dalam radius dari titik ini.</p>
           <LocationPicker v-if="showMapPicker" v-model="location" />
-          <button v-else type="button" class="w-full rounded-lg border border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/20 hover:text-[#EDD330]" @click="showMapPicker = true">
+          <button v-else type="button" class="w-full rounded-lg border border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-daun-500/20 hover:text-emas-400" @click="showMapPicker = true">
             Tentukan lokasi di peta
           </button>
           <p v-if="form.errors.latitude || form.errors.longitude || form.errors.radius" class="mt-1 text-xs text-[#ef4419]">
@@ -141,25 +141,25 @@
 
     <Modal v-if="showEdit && canEdit && editTarget" title="Edit sesi latihan" @close="closeEdit">
       <form @submit.prevent="submitEdit" class="grid gap-3">
-        <label class="block"><span class="text-xs font-medium">Nama sesi</span><input v-model="editForm.nama" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8]" /></label>
+        <label class="block"><span class="text-xs font-medium">Nama sesi</span><input v-model="editForm.nama" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100" /></label>
         <div class="grid gap-3 sm:grid-cols-2">
-          <label class="block"><span class="text-xs font-medium">Tanggal</span><input v-model="editForm.tanggal" type="date" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8]" /></label>
-          <label class="block"><span class="text-xs font-medium">Lokasi</span><input v-model="editForm.lokasi" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8]" /></label>
+          <label class="block"><span class="text-xs font-medium">Tanggal</span><input v-model="editForm.tanggal" type="date" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100" /></label>
+          <label class="block"><span class="text-xs font-medium">Lokasi</span><input v-model="editForm.lokasi" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100" /></label>
         </div>
         <label class="block"><span class="text-xs font-medium">Ganti materi (opsional)</span><input @change="onEditMateriChange" type="file" class="mt-1 text-sm" accept=".pdf,.jpg,.jpeg,.png,.mp4,.webm,.doc,.docx" /></label>
         <p v-if="editForm.errors.materi" class="text-xs text-[#ef4419]">{{ editForm.errors.materi }}</p>
-        <div v-if="editTarget.materi_nama" class="flex items-center gap-2 rounded-lg border border-[#6F9435]/30 bg-[#263D26] px-3 py-2">
+        <div v-if="editTarget.materi_nama" class="flex items-center gap-2 rounded-lg border border-[#6F9435]/30 bg-hutan-800 px-3 py-2">
           <label class="flex items-center gap-2">
-            <input v-model="editForm.remove_materi" type="checkbox" class="h-4 w-4 rounded border-[#6F9435] bg-[#335233] text-[#ef4419]" />
-            <span class="text-xs text-[#8fa06a]">Hapus materi saat ini ({{ editTarget.materi_nama }})</span>
+            <input v-model="editForm.remove_materi" type="checkbox" class="h-4 w-4 rounded border-[#6F9435] bg-hutan-600 text-[#ef4419]" />
+            <span class="text-xs text-krem-300">Hapus materi saat ini ({{ editTarget.materi_nama }})</span>
           </label>
         </div>
 
         <div>
           <span class="text-xs font-medium">Titik lokasi &amp; radius presensi</span>
-          <p class="mb-2 mt-1 text-xs text-[#8fa06a]">Presensi hanya diterima jika anggota berada dalam radius dari titik ini.</p>
+          <p class="mb-2 mt-1 text-xs text-krem-300">Presensi hanya diterima jika anggota berada dalam radius dari titik ini.</p>
           <LocationPicker v-if="showEditMapPicker" v-model="editLocation" />
-          <button v-else type="button" class="w-full rounded-lg border border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/20 hover:text-[#EDD330]" @click="showEditMapPicker = true">
+          <button v-else type="button" class="w-full rounded-lg border border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-daun-500/20 hover:text-emas-400" @click="showEditMapPicker = true">
             {{ editLocation.latitude === null ? 'Tentukan lokasi di peta' : 'Ubah titik lokasi' }}
           </button>
           <button v-if="editLocation.latitude !== null" type="button" @click="editLocation = { latitude: null, longitude: null, radius: null }" class="mt-2 w-full rounded-lg border border-[#ef4419]/50 px-3 py-2 text-xs font-bold text-[#ef4419]">Matikan geofence</button>
@@ -177,12 +177,12 @@
 
     <Modal v-if="showDelete && canDelete && deleteTarget" title="Hapus sesi latihan" @close="closeDelete">
       <div class="grid gap-3">
-        <p class="text-sm text-[#f0ead8]">Hapus sesi "<strong>{{ deleteTarget.nama }}</strong>"?</p>
+        <p class="text-sm text-krem-100">Hapus sesi "<strong>{{ deleteTarget.nama }}</strong>"?</p>
         <p v-if="deleteTarget.attendances_count" class="text-xs text-[#ef4419]">
           Sesi ini sudah punya {{ deleteTarget.attendances_count }} baris presensi sehingga tidak dapat dihapus.
           Hapus baris presensinya lebih dulu dari halaman detail sesi.
         </p>
-        <p v-else class="text-xs text-[#8fa06a]">Sesi dihapus permanen dari daftar. Tindakan ini tidak bisa dibatalkan.</p>
+        <p v-else class="text-xs text-krem-300">Sesi dihapus permanen dari daftar. Tindakan ini tidak bisa dibatalkan.</p>
         <div class="flex justify-end gap-2">
           <button @click="closeDelete" class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a]">Batal</button>
           <button
@@ -198,15 +198,15 @@
 
     <Modal v-if="showBulkDelete && canBulkDelete" title="Hapus sesi terpilih" @close="showBulkDelete = false">
       <div class="grid gap-3">
-        <p class="text-sm text-[#f0ead8]">Hapus {{ selectedIds.length }} sesi yang dipilih?</p>
-        <div v-if="blockedPreview.length" class="rounded-lg border border-[#ef4419]/50 bg-[#263D26] p-3">
+        <p class="text-sm text-krem-100">Hapus {{ selectedIds.length }} sesi yang dipilih?</p>
+        <div v-if="blockedPreview.length" class="rounded-lg border border-[#ef4419]/50 bg-hutan-800 p-3">
           <p class="text-xs font-semibold text-[#ef4419]">{{ blockedPreview.length }} sesi tidak akan dihapus</p>
-          <p class="mt-1 text-xs text-[#8fa06a]">Sesi berikut sudah punya presensi:</p>
+          <p class="mt-1 text-xs text-krem-300">Sesi berikut sudah punya presensi:</p>
           <ul class="mt-1 max-h-32 list-inside list-disc overflow-y-auto text-xs text-[#d4dc9a]">
             <li v-for="nama in blockedPreview" :key="nama">{{ nama }}</li>
           </ul>
         </div>
-        <p class="text-xs text-[#8fa06a]">Sesi tanpa presensi akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.</p>
+        <p class="text-xs text-krem-300">Sesi tanpa presensi akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.</p>
         <div class="flex justify-end gap-2">
           <button @click="showBulkDelete = false" class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a]">Batal</button>
           <button :disabled="deleteableCount === 0 || bulkForm.processing" @click="submitBulkDelete" class="rounded-lg bg-[#ef4419] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">

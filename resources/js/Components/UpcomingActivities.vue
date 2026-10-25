@@ -1,20 +1,20 @@
 <template>
-  <div class="rounded-2xl border-2 border-[#A7B92A]/40 bg-[#335233] p-5 shadow-lg">
+  <div class="rounded-2xl border-2 border-daun-400/40 bg-hutan-600 p-5 shadow-lg">
     <div class="mb-4 flex items-center justify-between">
       <div>
-        <h2 class="font-extrabold text-[#EDD330]">Aktivitas mendatang</h2>
-        <p class="text-xs font-medium text-[#8fa06a]">Latihan rutin &amp; kegiatan dalam 7 hari ke depan</p>
+        <h2 class="font-extrabold text-emas-400">Aktivitas mendatang</h2>
+        <p class="text-xs font-medium text-krem-300">Latihan rutin &amp; kegiatan dalam 7 hari ke depan</p>
       </div>
       <Link
         href="/attendance"
-        class="text-xs font-bold text-[#A7B92A] hover:text-[#EDD330]"
+        class="text-xs font-bold text-daun-400 hover:text-emas-400"
       >Lihat semua</Link>
     </div>
 
     <ReminderPermission v-if="!permissionResolved" @granted="requestPermission" />
 
     <div v-if="loading" class="space-y-3">
-      <p v-for="n in 3" :key="n" class="h-14 animate-pulse rounded-xl bg-[#263D26]"></p>
+      <p v-for="n in 3" :key="n" class="h-14 animate-pulse rounded-xl bg-hutan-800"></p>
     </div>
 
     <div
@@ -24,11 +24,11 @@
       <div
         v-for="session in upcoming"
         :key="session.id"
-        class="flex items-center justify-between rounded-xl border-2 border-[#6F9435]/40 bg-[#263D26] p-3"
+        class="flex items-center justify-between rounded-xl border-2 border-daun-500/40 bg-hutan-800 p-3"
       >
         <div class="min-w-0">
-          <p class="truncate text-sm font-bold text-[#f0ead8]">{{ session.nama }}</p>
-          <p class="truncate text-xs text-[#8fa06a]">
+          <p class="truncate text-sm font-bold text-krem-100">{{ session.nama }}</p>
+          <p class="truncate text-xs text-krem-300">
             {{ formatDate(session.tanggal) }} • {{ session.lokasi || '-' }}
           </p>
         </div>
@@ -43,11 +43,11 @@
             v-if="session.tanggal >= todayISO"
             @click="toggleReminder(session)"
             :title="isReminded(session.id) ? 'Batalkan pengingat' : 'Ingatkan 10 menit sebelumnya'"
-            class="rounded-lg border-2 border-[#6F9435] px-2.5 py-1 text-[10px] font-bold transition"
+            class="rounded-lg border-2 border-daun-500 px-2.5 py-1 text-[10px] font-bold transition"
             :class="
               isReminded(session.id)
-                ? 'bg-[#6F9435]/40 text-[#EDD330]'
-                : 'text-[#d4dc9a] hover:bg-[#6F9435]/30 hover:text-[#EDD330]'
+                ? 'bg-daun-500/40 text-emas-400'
+                : 'text-[#d4dc9a] hover:bg-daun-500/30 hover:text-emas-400'
             "
           >
             <BellIcon :filled="isReminded(session.id)" />
@@ -56,7 +56,7 @@
       </div>
     </div>
 
-    <p v-else class="py-4 text-center text-sm font-medium text-[#8fa06a]">
+    <p v-else class="py-4 text-center text-sm font-medium text-krem-300">
       Tidak ada kegiatan latihan dalam 7 hari ke depan.
     </p>
   </div>
@@ -135,7 +135,7 @@ const BellIcon = {
 const ReminderPermission = {
   emits: ['granted'],
   template:
-    '<p class="mb-3 text-[11px] text-[#8fa06a]">Aktifkan notifikasi untuk pengingat kegiatan. <button @click="req" class="font-bold text-[#A7B92A] hover:text-[#EDD330]">Izinkan</button></p>',
+    '<p class="mb-3 text-[11px] text-krem-300">Aktifkan notifikasi untuk pengingat kegiatan. <button @click="req" class="font-bold text-daun-400 hover:text-emas-400">Izinkan</button></p>',
   methods: {
     async req() {
       const result = await Notification.requestPermission();

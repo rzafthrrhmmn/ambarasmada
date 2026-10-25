@@ -24,7 +24,11 @@ class GuestController extends Controller
 
             if ($useCache) {
                 try {
-                    $cached = Cache::remember('guest.home.api', 300, function () {
+                    $cacheVersion = (string) max(
+                        (int) (Announcement::max('updated_at')?->timestamp ?? 0),
+                        (int) (Gallery::max('updated_at')?->timestamp ?? 0)
+                    );
+                    $cached = Cache::remember('guest.home.api.' . $cacheVersion, 300, function () {
                         return $this->buildGuestHomeData();
                     });
 
@@ -53,8 +57,9 @@ class GuestController extends Controller
     {
         try {
             $validated = $request->validate([
-                'email' => ['required', 'string', 'email', 'max:255'],
+                'email' => ['required', 'string', 'email:rfc', 'max:255'],
             ]);
+            $validated['email'] = Str::lower(trim($validated['email']));
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -75,6 +80,12 @@ class GuestController extends Controller
         ]);
     }
 
+    private function sanitize(?string $html): string
+    {
+        $clean = strip_tags((string) $html);
+        return trim(preg_replace('/\s+/', ' ', $clean));
+    }
+
     private function buildGuestHomeData(): array
     {
         $ambalan = Ambalan::first();
@@ -88,7 +99,7 @@ class GuestController extends Controller
             ->map(fn ($item) => [
                 'id' => $item->id,
                 'judul' => $item->judul,
-                'isi' => Str::limit(strip_tags($item->isi), 150),
+                'isi' => Str::limit($this->sanitize($item->isi), 150),
                 'published_at' => $item->published_at?->toIso8601String(),
                 'kategori' => $hasKategoriColumn ? ($item->kategori ?? null) : null,
             ]);
@@ -101,7 +112,7 @@ class GuestController extends Controller
             ->map(fn ($item) => [
                 'src' => $item->image_url,
                 'title' => $item->judul,
-                'description' => Str::limit(strip_tags($item->isi), 100),
+                'description' => Str::limit($this->sanitize($item->isi), 100),
                 'alt' => $item->judul,
             ])
             ->filter(fn ($slide) => ! empty($slide['src']));

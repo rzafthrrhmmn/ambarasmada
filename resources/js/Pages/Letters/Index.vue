@@ -2,15 +2,15 @@
   <AppLayout>
     <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <p class="text-sm font-medium text-[#EDD330]">Persuratan Digital</p>
-        <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Surat Masuk &amp; Keluar</h1>
-        <p class="mt-1 text-sm text-[#8fa06a]">Unggah template, isi form surat, lalu ekspor ke Word atau PDF.</p>
+        <p class="text-sm font-medium text-emas-400">Persuratan Digital</p>
+        <h1 class="mt-1 text-2xl font-bold text-krem-100">Surat Masuk &amp; Keluar</h1>
+        <p class="mt-1 text-sm text-krem-300">Unggah template, isi form surat, lalu ekspor ke Word atau PDF.</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <Link
           v-if="can('letters.templates.manage')"
           href="/letters/templates"
-          class="inline-flex items-center rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a] transition hover:bg-[#6F9435]/20"
+          class="inline-flex items-center rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a] transition hover:bg-daun-500/20"
         >
           Kelola template
         </Link>
@@ -18,7 +18,7 @@
           v-if="can('letters.templates.manage')"
           type="button"
           @click="showTemplate = true"
-          class="inline-flex items-center rounded-lg border border-[#A7B92A] px-4 py-2 text-sm font-semibold text-[#A7B92A] transition hover:bg-[#6F9435]/20"
+          class="inline-flex items-center rounded-lg border border-daun-400 px-4 py-2 text-sm font-semibold text-daun-400 transition hover:bg-daun-500/20"
         >
           + Unggah template
         </button>
@@ -26,7 +26,7 @@
           v-if="can('letters.manage')"
           data-test="btn-buat"
           @click="openCreate"
-          class="inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white"
+          class="inline-flex items-center rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-4 py-2 text-sm font-semibold text-white"
         >
           + Tambah surat
         </button>
@@ -38,9 +38,9 @@
         v-model="filters.search"
         type="search"
         placeholder="Cari perihal..."
-        class="w-full max-w-xs rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm"
+        class="w-full max-w-xs rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm"
       />
-      <select v-model="filters.jenis_surat" class="rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm">
+      <select v-model="filters.jenis_surat" class="rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm">
         <option value="">Semua jenis</option>
         <option v-for="jenis in jenisOptions" :key="jenis" :value="jenis">{{ jenis }}</option>
       </select>
@@ -55,7 +55,7 @@
       <article
         v-for="item in letters.data"
         :key="item.id"
-        class="flex flex-col rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm"
+        class="flex flex-col rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm"
       >
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
@@ -63,26 +63,26 @@
               class="rounded-full px-2.5 py-1 text-xs font-medium"
               :class="badgeClass(item.jenis_surat)"
             >{{ item.jenis_surat }}</span>
-            <p class="mt-2 text-xs text-[#8fa06a]">{{ item.nomor_surat || '-' }} &bull; {{ formatDate(item.tgl_surat) }}</p>
-            <h2 class="mt-1 text-lg font-semibold text-[#f0ead8]">{{ item.perihal }}</h2>
-            <p class="mt-1 text-xs text-[#8fa06a]">Tujuan: {{ item.tujuan_pengirim || '-' }}</p>
-            <p v-if="item.template" class="mt-2 text-xs text-[#A7B92A]">Template: {{ item.template.name }}</p>
+            <p class="mt-2 text-xs text-krem-300">{{ item.nomor_surat || '-' }} &bull; {{ formatDate(item.tgl_surat) }}</p>
+            <h2 class="mt-1 text-lg font-semibold text-krem-100">{{ item.perihal }}</h2>
+            <p class="mt-1 text-xs text-krem-300">Tujuan: {{ item.tujuan_pengirim || '-' }}</p>
+            <p v-if="item.template" class="mt-2 text-xs text-daun-400">Template: {{ item.template.name }}</p>
           </div>
         </div>
 
         <div class="mt-4 flex flex-wrap items-center gap-3 border-t border-[#6F9435]/40 pt-3 text-xs">
-          <Link :href="`/letters/${item.id}`" class="font-semibold text-[#f0ead8] hover:text-[#EDD330]">Detail</Link>
+          <Link :href="`/letters/${item.id}`" class="font-semibold text-krem-100 hover:text-emas-400">Detail</Link>
           <a
             :href="`/letters/${item.id}/generate?format=docx`"
-            class="text-[#A7B92A] hover:underline"
+            class="text-daun-400 hover:underline"
           >DOCX</a>
           <a
             :href="`/letters/${item.id}/generate?format=pdf`"
-            class="text-[#A7B92A] hover:underline"
+            class="text-daun-400 hover:underline"
           >PDF</a>
           <a v-if="item.file_path" :href="`/letters/${item.id}/download`" class="text-[#d4dc9a] hover:underline">Lampiran</a>
           <span class="flex-1"></span>
-          <button v-if="can('letters.manage')" @click="openEdit(item)" class="text-[#EDD330] hover:underline">Edit</button>
+          <button v-if="can('letters.manage')" @click="openEdit(item)" class="text-emas-400 hover:underline">Edit</button>
           <button v-if="can('letters.manage')" @click="confirmDelete(item)" class="text-[#ef4419] hover:underline">Hapus</button>
         </div>
       </article>
@@ -92,11 +92,11 @@
 
     <Modal v-if="showLetter && can('letters.manage')" :title="editItem ? 'Edit surat' : 'Surat baru'" @close="reset">
       <form @submit.prevent="submitForm" class="grid gap-4">
-        <section class="rounded-xl border border-[#6F9435]/60 bg-[#263D26] p-4">
-          <p class="mb-3 text-xs font-bold uppercase tracking-wide text-[#EDD330]">1. Template</p>
+        <section class="rounded-xl border border-[#6F9435]/60 bg-hutan-800 p-4">
+          <p class="mb-3 text-xs font-bold uppercase tracking-wide text-emas-400">1. Template</p>
           <label class="block">
             <span class="text-xs font-medium text-[#d4dc9a]">Pilih template (.docx)</span>
-            <select v-model="form.template_id" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm">
+            <select v-model="form.template_id" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm">
               <option :value="null">Tanpa template (tata letak bawaan)</option>
               <option v-for="tpl in templates" :key="tpl.id" :value="tpl.id">{{ tpl.name }}</option>
             </select>
@@ -105,11 +105,11 @@
 
           <div v-if="selectedTemplate" class="mt-3 rounded-lg border border-[#6F9435]/50 p-3">
             <div class="flex items-center justify-between gap-3">
-              <p class="text-sm text-[#f0ead8]">{{ selectedTemplate.name }}</p>
-              <a :href="selectedTemplate.download_url" class="text-xs text-[#EDD330] hover:underline">Unduh</a>
+              <p class="text-sm text-krem-100">{{ selectedTemplate.name }}</p>
+              <a :href="selectedTemplate.download_url" class="text-xs text-emas-400 hover:underline">Unduh</a>
             </div>
-            <p v-if="selectedTemplate.description" class="mt-1 text-xs text-[#8fa06a]">{{ selectedTemplate.description }}</p>
-            <p class="mt-2 text-xs text-[#8fa06a]">
+            <p v-if="selectedTemplate.description" class="mt-1 text-xs text-krem-300">{{ selectedTemplate.description }}</p>
+            <p class="mt-2 text-xs text-krem-300">
               {{ selectedTemplate.placeholders.length }} penanda &mdash; isian form dibuat otomatis dari penanda template.
             </p>
             <div class="mt-2 flex flex-wrap gap-1">
@@ -121,17 +121,17 @@
               <code
                 v-for="name in selectedTemplate.placeholders"
                 :key="name"
-                class="rounded bg-[#335233] px-1.5 py-0.5 text-[10px] text-[#d4dc9a]"
+                class="rounded bg-hutan-600 px-1.5 py-0.5 text-[10px] text-[#d4dc9a]"
               >{{ '${' + name + '}' }}</code>
             </div>
           </div>
-          <p v-else class="mt-3 text-xs text-[#8fa06a]">
+          <p v-else class="mt-3 text-xs text-krem-300">
             Tanpa template, surat memakai tata letak bawaan dan tetap bisa diekspor ke Word atau PDF.
           </p>
         </section>
 
-        <section class="rounded-xl border border-[#6F9435]/60 bg-[#263D26] p-4">
-          <p class="mb-3 text-xs font-bold uppercase tracking-wide text-[#EDD330]">2. Isi surat</p>
+        <section class="rounded-xl border border-[#6F9435]/60 bg-hutan-800 p-4">
+          <p class="mb-3 text-xs font-bold uppercase tracking-wide text-emas-400">2. Isi surat</p>
           <div class="grid gap-3 sm:grid-cols-2">
             <Field
               v-model="form.ambalan_id"
@@ -167,7 +167,7 @@
                 rows="6"
                 :error="form.errors.isi_surat"
               />
-              <p class="mt-1 text-[11px] text-[#8fa06a]">
+              <p class="mt-1 text-[11px] text-krem-300">
                 Baris baru pada isi surat menjadi paragraf baru di dokumen.
               </p>
             </div>
@@ -177,7 +177,7 @@
                 ref="fileInput"
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
-                class="mt-1 w-full text-sm text-[#d4dc9a] file:mr-3 file:rounded-lg file:border-0 file:bg-[#6F9435] file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
+                class="mt-1 w-full text-sm text-[#d4dc9a] file:mr-3 file:rounded-lg file:border-0 file:bg-daun-500 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
                 @change="pickAttachment"
               />
               <p v-if="form.errors.file" class="mt-1 text-xs text-[#ef4419]">{{ form.errors.file }}</p>
@@ -185,10 +185,10 @@
           </div>
         </section>
 
-        <section v-if="extraFields.length" class="rounded-xl border border-[#6F9435]/60 bg-[#263D26] p-4">
-          <p class="mb-1 text-xs font-bold uppercase tracking-wide text-[#EDD330]">3. Data penanda template</p>
-          <p class="mb-3 text-[11px] text-[#8fa06a]">
-            Isian di bawah dibaca dari penanda <code class="text-[#EDD330]">${nama_field}</code> pada template. Nilai disimpan pada surat, bukan pada data anggota.
+        <section v-if="extraFields.length" class="rounded-xl border border-[#6F9435]/60 bg-hutan-800 p-4">
+          <p class="mb-1 text-xs font-bold uppercase tracking-wide text-emas-400">3. Data penanda template</p>
+          <p class="mb-3 text-[11px] text-krem-300">
+            Isian di bawah dibaca dari penanda <code class="text-emas-400">${nama_field}</code> pada template. Nilai disimpan pada surat, bukan pada data anggota.
           </p>
           <div class="grid gap-3 sm:grid-cols-2">
             <Field
@@ -219,7 +219,7 @@
             data-test="btn-preview"
             :disabled="previewLoading"
             @click="previewLetter"
-            class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-medium text-[#d4dc9a] transition hover:bg-[#6F9435]/20 disabled:opacity-60"
+            class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-medium text-[#d4dc9a] transition hover:bg-daun-500/20 disabled:opacity-60"
           >
             {{ previewLoading ? 'Menyiapkan...' : 'Pratinjau' }}
           </button>
@@ -229,7 +229,7 @@
             type="submit"
             data-test="btn-simpan"
             :disabled="form.processing"
-            class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:to-[#6F9435] disabled:opacity-60"
+            class="rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:to-[#6F9435] disabled:opacity-60"
           >
             {{ form.processing ? 'Menyimpan...' : 'Simpan surat' }}
           </button>
@@ -239,32 +239,32 @@
 
     <Modal v-if="showPreview" title="Pratinjau surat" @close="closePreview">
       <div class="h-[65vh]">
-        <p v-if="previewLoading" class="p-6 text-center text-sm text-[#8fa06a]">Menyiapkan pratinjau...</p>
+        <p v-if="previewLoading" class="p-6 text-center text-sm text-krem-300">Menyiapkan pratinjau...</p>
         <p v-else-if="previewError" class="rounded-lg border border-[#ef4419] p-4 text-sm text-[#ef4419]">{{ previewError }}</p>
         <iframe v-else-if="previewUrl" :src="previewUrl" class="h-full w-full rounded-lg border border-[#6F9435] bg-white" title="Pratinjau surat"></iframe>
       </div>
       <div class="mt-4 flex justify-end gap-2">
         <button @click="previewLetter" class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm text-[#d4dc9a]">Muat ulang</button>
-        <button @click="closePreview" class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Tutup</button>
+        <button @click="closePreview" class="rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Tutup</button>
       </div>
     </Modal>
 
     <Modal v-if="showTemplate && can('letters.templates.manage')" title="Unggah template surat" @close="closeTemplate">
       <form @submit.prevent="submitTemplate" class="grid gap-3">
-        <p class="rounded-lg border border-[#6F9435]/60 bg-[#263D26] p-3 text-xs text-[#8fa06a]">
-          Berkas .docx boleh memuat penanda <code class="text-[#EDD330]">${perihal}</code>,
-          <code class="text-[#EDD330]">${isi_surat}</code>,
-          <code class="text-[#EDD330]">${nama_pradana_putra}</code>, dan setiap placeholder
+        <p class="rounded-lg border border-[#6F9435]/60 bg-hutan-800 p-3 text-xs text-krem-300">
+          Berkas .docx boleh memuat penanda <code class="text-emas-400">${perihal}</code>,
+          <code class="text-emas-400">${isi_surat}</code>,
+          <code class="text-emas-400">${nama_pradana_putra}</code>, dan setiap placeholder
           yang Anda buat sendiri. Penanda boleh berada di body, kop, maupun footer.
         </p>
         <label class="block">
           <span class="text-xs font-medium text-[#d4dc9a]">Nama template</span>
-          <input v-model="templateForm.name" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm" />
+          <input v-model="templateForm.name" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm" />
           <p v-if="templateForm.errors.name" class="mt-1 text-xs text-[#ef4419]">{{ templateForm.errors.name }}</p>
         </label>
         <label class="block">
           <span class="text-xs font-medium text-[#d4dc9a]">Deskripsi</span>
-          <input v-model="templateForm.description" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm" />
+          <input v-model="templateForm.description" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm" />
           <p v-if="templateForm.errors.description" class="mt-1 text-xs text-[#ef4419]">{{ templateForm.errors.description }}</p>
         </label>
         <label class="block">
@@ -272,7 +272,7 @@
           <input
             type="file"
             accept=".docx"
-            class="mt-1 w-full text-sm text-[#d4dc9a] file:mr-3 file:rounded-lg file:border-0 file:bg-[#6F9435] file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
+            class="mt-1 w-full text-sm text-[#d4dc9a] file:mr-3 file:rounded-lg file:border-0 file:bg-daun-500 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
             @change="templateForm.file = $event.target.files?.[0] ?? null"
           />
           <p v-if="templateForm.errors.file" class="mt-1 text-xs text-[#ef4419]">{{ templateForm.errors.file }}</p>
@@ -282,7 +282,7 @@
           <button
             type="submit"
             :disabled="templateForm.processing || !templateForm.file"
-            class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            class="rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
             {{ templateForm.processing ? 'Mengunggah...' : 'Unggah' }}
           </button>
@@ -667,9 +667,9 @@ function humanize(name) {
 }
 
 function badgeClass(jenis) {
-  if (jenis === 'Masuk') return 'bg-[#A7B92A]/20 text-[#A7B92A]';
-  if (jenis === 'Keluar') return 'bg-[#263D26] text-[#EDD330]';
-  return 'bg-[#EDD330]/20 text-[#EDD330]';
+  if (jenis === 'Masuk') return 'bg-daun-400/20 text-daun-400';
+  if (jenis === 'Keluar') return 'bg-hutan-800 text-emas-400';
+  return 'bg-emas-400/20 text-emas-400';
 }
 
 /**

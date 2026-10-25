@@ -2,9 +2,9 @@
   <AppLayout>
     <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <p class="text-sm font-medium text-[#EDD330]">Informasi Ambalan</p>
-        <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Pengumuman</h1>
-        <p class="mt-1 text-sm text-[#8fa06a]">Publikasikan kabar kegiatan dan informasi penting ambalan.</p>
+        <p class="text-sm font-medium text-emas-400">Informasi Ambalan</p>
+        <h1 class="mt-1 text-2xl font-bold text-krem-100">Pengumuman</h1>
+        <p class="mt-1 text-sm text-krem-300">Publikasikan kabar kegiatan dan informasi penting ambalan.</p>
       </div>
       <button v-if="canManage" type="button" class="btn-primary" @click="showCreate = true">
         <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
@@ -12,16 +12,16 @@
       </button>
     </div>
     <div class="grid gap-4 md:grid-cols-2">
-      <article v-for="item in announcements.data" :key="item.id" class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm">
+      <article v-for="item in announcements.data" :key="item.id" class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm">
         <div v-if="item.image_url" class="mb-3">
           <img :src="item.image_url" alt="Gambar pengumuman" class="h-48 w-full rounded-lg object-cover border-2 border-[#6F9435]/30" />
         </div>
         <div class="flex items-start justify-between gap-3">
           <div>
-            <p class="text-xs text-[#8fa06a]">{{ formatDate(item.published_at) }}</p>
-            <h2 class="mt-1 text-lg font-semibold text-[#f0ead8]">{{ item.judul }}</h2>
+            <p class="text-xs text-krem-300">{{ formatDate(item.published_at) }}</p>
+            <h2 class="mt-1 text-lg font-semibold text-krem-100">{{ item.judul }}</h2>
           </div>
-          <button v-if="canManage" @click="openEdit(item)" class="text-xs text-[#EDD330] hover:underline">Edit</button>
+          <button v-if="canManage" @click="openEdit(item)" class="text-xs text-emas-400 hover:underline">Edit</button>
         </div>
         <p class="mt-3 whitespace-pre-line text-sm leading-6 text-[#d4dc9a]">{{ item.isi }}</p>
       </article>
@@ -30,20 +30,20 @@
       <form @submit.prevent="form.post(editItem ? `/announcements/${editItem.id}` : '/announcements', { method: editItem ? 'patch' : 'post', onSuccess: reset })" class="grid gap-3">
         <label class="block">
           <span class="text-xs font-medium">Foto dokumentasi</span>
-          <input type="file" @change="form.image = $event.target.files[0]" accept="image/jpeg,image/png,image/webp" class="mt-1 block w-full text-sm text-[#d4dc9a] file:mr-3 file:rounded-lg file:border-0 file:bg-[#6F9435] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white" />
+          <input type="file" @change="form.image = $event.target.files[0]" accept="image/jpeg,image/png,image/webp" class="mt-1 block w-full text-sm text-[#d4dc9a] file:mr-3 file:rounded-lg file:border-0 file:bg-daun-500 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white" />
           <p v-if="form.errors.image" class="mt-1 text-xs text-[#ef4419]">{{ form.errors.image }}</p>
         </label>
         <label class="block">
           <span class="text-xs font-medium">Judul</span>
-          <input v-model="form.judul" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" />
+          <input v-model="form.judul" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm" />
           <p v-if="form.errors.judul" class="mt-1 text-xs text-[#ef4419]">{{ form.errors.judul }}</p>
         </label>
         <label class="block">
           <span class="text-xs font-medium">Isi pengumuman</span>
-          <textarea v-model="form.isi" required rows="7" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm"></textarea>
+          <textarea v-model="form.isi" required rows="7" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm"></textarea>
           <p v-if="form.errors.isi" class="mt-1 text-xs text-[#ef4419]">{{ form.errors.isi }}</p>
         </label>
-        <button type="submit" class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Terbitkan</button>
+        <button type="submit" class="rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Terbitkan</button>
       </form>
     </Modal>
   </AppLayout>

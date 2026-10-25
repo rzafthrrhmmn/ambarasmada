@@ -2,8 +2,8 @@
   <AppLayout>
     <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <p class="text-sm font-medium text-[#EDD330]">Keuangan</p>
-        <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Periode Keuangan</h1>
+        <p class="text-sm font-medium text-emas-400">Keuangan</p>
+        <h1 class="mt-1 text-2xl font-bold text-krem-100">Periode Keuangan</h1>
         <p class="mt-1 text-sm text-[#8fa06a">
           Kelola periode keuangan dan tutup periode ketika selesai.
         </p>
@@ -11,45 +11,45 @@
       <button
         v-if="!showForm && canManagePeriods"
         @click="showForm = true; editForm = null"
-        class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+        class="rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
       >
         + Tambah Periode
       </button>
     </div>
 
-    <div v-if="showForm && canManagePeriods" class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-5">
-      <p class="text-sm font-semibold text-[#EDD330]">{{ editForm ? 'Edit' : 'Tambah' }} Periode</p>
+    <div v-if="showForm && canManagePeriods" class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5">
+      <p class="text-sm font-semibold text-emas-400">{{ editForm ? 'Edit' : 'Tambah' }} Periode</p>
       <form @submit.prevent="savePeriod" class="mt-3 grid gap-3 sm:grid-cols-4">
         <input
           v-model="form.nama"
           placeholder="Nama periode (contoh: Agustus 2026)"
           required
-          class="rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
+          class="rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]"
         />
         <input
           v-model="form.starts_at"
           type="date"
           required
-          class="rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
+          class="rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]"
         />
         <input
           v-model="form.ends_at"
           type="date"
           required
-          class="rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
+          class="rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]"
         />
         <div class="flex items-end gap-2">
           <button
             type="submit"
             :disabled="form.processing"
-            class="rounded-lg bg-gradient-to-r from-[#6F9435] to-[#A7B92A] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
+            class="rounded-lg bg-gradient-to-r from-daun-500 to-daun-400 px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
           >
             Simpan
           </button>
           <button
             type="button"
             @click="showForm = false"
-            class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a] transition hover:bg-[#6F9435]/20"
+            class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a] transition hover:bg-daun-500/20"
           >
             Batal
           </button>
@@ -57,10 +57,10 @@
       </form>
     </div>
 
-    <div class="rounded-2xl border-2 border-[#A7B92B]/40 bg-[#335233] p-5 shadow-sm">
+    <div class="rounded-2xl border-2 border-[#A7B92B]/40 bg-hutan-600 p-5 shadow-sm">
       <div class="mb-4 flex items-center justify-between">
-        <h2 class="font-semibold text-[#f0ead8]">Daftar Periode</h2>
-        <span class="rounded-full bg-[#6F9435]/20 px-2.5 py-0.5 text-xs font-semibold text-[#EDD330]">{{ periods.total }} data</span>
+        <h2 class="font-semibold text-krem-100">Daftar Periode</h2>
+        <span class="rounded-full bg-daun-500/20 px-2.5 py-0.5 text-xs font-semibold text-emas-400">{{ periods.total }} data</span>
       </div>
 
       <div v-if="periods.data.length" class="space-y-2">
@@ -70,14 +70,14 @@
           class="flex flex-col gap-2 rounded-xl border border-[#6F9435] p-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div class="min-w-0 flex-1">
-            <p class="flex items-center gap-2 text-sm font-semibold text-[#f0ead8]">
+            <p class="flex items-center gap-2 text-sm font-semibold text-krem-100">
               {{ period.nama }}
               <span
                 class="rounded px-2 py-0.5 text-xs font-bold"
-                :class="period.is_closed ? 'bg-[#ef4419]/20 text-[#ef4419]' : 'bg-[#6F9435]/20 text-[#A7B92B]'"
+                :class="period.is_closed ? 'bg-[#ef4419]/20 text-[#ef4419]' : 'bg-daun-500/20 text-[#A7B92B]'"
               >{{ period.is_closed ? 'Ditutup' : 'Buka' }}</span>
             </p>
-            <p class="mt-1 inline-flex items-center gap-1.5 text-xs text-[#8fa06a]">
+            <p class="mt-1 inline-flex items-center gap-1.5 text-xs text-krem-300">
               {{ formatDate(period.starts_at) }}
               <AppIcon name="arrowRight" class="h-3 w-3 shrink-0 text-[#A7B92B]" />
               {{ formatDate(period.ends_at) }}
@@ -87,7 +87,7 @@
             <button
               v-if="!period.is_closed && canManagePeriods"
               @click="closePeriod(period)"
-              class="rounded-lg border border-[#6F9435] px-2.5 py-1.5 text-xs font-semibold text-[#d4dc9a] hover:bg-[#6F9435]/20"
+              class="rounded-lg border border-[#6F9435] px-2.5 py-1.5 text-xs font-semibold text-[#d4dc9a] hover:bg-daun-500/20"
               title="Tutup periode ini"
             >
               Tutup
@@ -95,7 +95,7 @@
             <button
               v-if="!period.is_closed && canManagePeriods"
               @click="editPeriod(period)"
-              class="rounded-lg border border-[#6F9435] px-2.5 py-1.5 text-xs font-semibold text-[#d4dc9a] hover:bg-[#6F9435]/20"
+              class="rounded-lg border border-[#6F9435] px-2.5 py-1.5 text-xs font-semibold text-[#d4dc9a] hover:bg-daun-500/20"
             >
               Edit
             </button>

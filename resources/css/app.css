@@ -10,8 +10,28 @@
   --color-daun-400: #A7B92B;
   --color-daun-500: #6F9435;
   --color-emas-400: #EDD330;
+  --color-lumut-400: #6b7a5c;
 }
 
 html { scroll-behavior: smooth; }
+
+/* Animasi kustom yang digunakan di halaman auth */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(-25%) animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+  50% { transform: translateY(0) animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+}
+
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+.animate-bounce { animation: bounce 1s infinite; }
+
 .page-transitioning * { pointer-events: none !important; }
 .page-transitioning { overflow-x: hidden; }

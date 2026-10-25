@@ -10,7 +10,7 @@
         <button
           v-if="hasPmtiles"
           @click="showOfflineModal = true"
-          class="inline-flex items-center rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-4 py-2 text-sm font-bold text-[#A7B92A] transition hover:bg-[#A7B92A]/20"
+          class="inline-flex items-center rounded-lg border-2 border-daun-400 bg-daun-400/10 text-daun-400 transition hover:bg-daun-400/20"
         >
           Unduh Peta Offline
         </button>
@@ -29,7 +29,7 @@
       </div>
     </div>
 
-    <div class="peta-shell relative overflow-hidden rounded-2xl border-2 border-[#A7B92A]/40 bg-[#263D26] shadow-lg">
+    <div class="peta-shell relative overflow-hidden rounded-2xl border-2 border-daun-400/40 bg-hutan-800 shadow-lg">
       <div ref="mapContainer" class="h-[70vh] w-full min-h-[400px]"></div>
 
       <!-- Coordinate display on mouse hover.
@@ -126,7 +126,7 @@
           <p class="mt-2 text-sm text-[#8fa06a]">{{ mapError }}</p>
           <button
             @click="initMap"
-            class="mt-4 inline-flex items-center rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-4 py-2 text-sm font-bold text-[#A7B92A] transition hover:bg-[#A7B92A]/20"
+            class="mt-4 inline-flex items-center rounded-lg border-2 border-daun-400 bg-daun-400/10 text-daun-400 transition hover:bg-daun-400/20"
           >
             Coba Lagi
           </button>
@@ -165,7 +165,7 @@
       <button
         @click="downloadOffline"
         :disabled="downloading"
-        class="w-full rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        class="w-full rounded-lg bg-gradient-to-r from-daun-400 to-daun-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
         {{ downloading ? 'Mengunduh...' : 'Mulai Unduh' }}
       </button>
@@ -491,8 +491,10 @@ async function initMap() {
     });
 
     // Offline/online detection
-    window.addEventListener('online', () => { isOffline.value = false; });
-    window.addEventListener('offline', () => { isOffline.value = true; });
+    const onlineHandler = () => { isOffline.value = false; };
+    const offlineHandler = () => { isOffline.value = true; };
+    window.addEventListener('online', onlineHandler);
+    window.addEventListener('offline', offlineHandler);
 
     // Overlay "Memuat peta..." tidak boleh menggantung selamanya, tapi juga tidak
     // boleh hilang sebelum kontennya benar-benar ada. Melepasnya dari
@@ -779,6 +781,8 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener('online', onlineHandler);
+  window.removeEventListener('offline', offlineHandler);
   if (map.value) {
     map.value.remove();
     map.value = null;

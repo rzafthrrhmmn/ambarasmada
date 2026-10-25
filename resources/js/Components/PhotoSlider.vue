@@ -25,7 +25,7 @@
             <p v-if="slide.label" class="mb-1 text-xs font-bold tracking-widest text-daun-400 uppercase">
               {{ slide.label }}
             </p>
-            <h2 class="text-lg font-extrabold text-krem-100 sm:text-2xl md:text-3xl" style="text-shadow: 2px 2px 0 rgba(0,0,0,0.4);">
+            <h2 class="text-lg font-extrabold text-krem-100 sm:text-2xl md:text-3xl drop-shadow-md">
               {{ slide.title }}
             </h2>
             <p v-if="slide.description" class="mt-2 max-w-lg text-sm font-medium text-krem-300/80 sm:text-base">

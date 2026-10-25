@@ -1,16 +1,16 @@
 <template>
   <Teleport to="body">
     <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div class="bg-[#335233] rounded-2xl border border-[#6F9435] w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div class="flex items-center justify-between p-4 border-b border-[#6F9435]/30">
-          <h3 class="text-lg font-semibold text-[#f0ead8]">Crop Foto Profil</h3>
-          <p class="text-xs text-[#8fa06a]">Aspect ratio 3:4 (KTA format)</p>
-          <button @click="close" class="text-[#8fa06a] hover:text-[#EDD330] transition">
+      <div class="bg-hutan-600 rounded-2xl border border-daun-500 w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div class="flex items-center justify-between p-4 border-b border-daun-500/30">
+          <h3 class="text-lg font-semibold text-krem-100">Crop Foto Profil</h3>
+          <p class="text-xs text-krem-300">Aspect ratio 3:4 (KTA format)</p>
+          <button @click="close" class="text-krem-300 hover:text-emas-400 transition">
             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
         
-        <div class="p-4 flex-1 overflow-auto flex items-center justify-center bg-[#263D26] min-h-[300px]">
+        <div class="p-4 flex-1 overflow-auto flex items-center justify-center bg-hutan-800 min-h-[300px]">
           <div ref="cropperContainer" class="w-full max-w-[600px]">
             <img ref="cropperImage" :src="imageUrl" alt="Crop preview" />
           </div>
@@ -18,19 +18,19 @@
 
         <div class="flex items-center justify-between p-4 border-t border-[#6F9435]/30 gap-3">
           <div class="flex gap-2">
-            <button @click="rotate(-90)" class="px-3 py-1.5 rounded-lg border border-[#6F9435] text-sm text-[#d4dc9a] hover:bg-[#6F9435]/20 transition" :disabled="cropping">
+            <button @click="rotate(-90)" class="px-3 py-1.5 rounded-lg border border-daun-500 text-sm text-[#d4dc9a] hover:bg-daun-500/20 transition" :disabled="cropping">
               <svg class="h-4 w-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.19 6.03A10.92 10.92 0 0121 12c0 2.06-.65 3.94-1.81 5.47L12 10.5V6.03z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v2.5m0 0l-7.5 4.5"/></svg>
               Putar
             </button>
-            <button @click="reset" class="px-3 py-1.5 rounded-lg border border-[#6F9435] text-sm text-[#d4dc9a] hover:bg-[#6F9435]/20 transition" :disabled="cropping">
+            <button @click="reset" class="px-3 py-1.5 rounded-lg border border-daun-500 text-sm text-[#d4dc9a] hover:bg-daun-500/20 transition" :disabled="cropping">
               Reset
             </button>
           </div>
           <div class="flex gap-2 ml-auto">
-            <button @click="close" class="px-4 py-2 rounded-lg border border-[#6F9435] text-sm font-medium text-[#d4dc9a] hover:bg-[#6F9435]/20 transition" :disabled="cropping">
+            <button @click="close" class="px-4 py-2 rounded-lg border border-daun-500 text-sm font-medium text-[#d4dc9a] hover:bg-daun-500/20 transition" :disabled="cropping">
               Batal
             </button>
-            <button @click="confirmCrop" class="px-4 py-2 rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] text-sm font-semibold text-white hover:brightness-110 transition" :disabled="cropping">
+            <button @click="confirmCrop" class="px-4 py-2 rounded-lg bg-gradient-to-r from-daun-400 to-daun-500 text-sm font-semibold text-white hover:brightness-110 transition" :disabled="cropping">
               <span v-if="cropping" class="flex items-center gap-2"><svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Memproses...</span>
               <span v-else>Gunakan Foto</span>
             </button>

@@ -2,9 +2,9 @@
   <AppLayout>
     <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <p class="text-sm font-medium text-[#EDD330]">Sistem</p>
-        <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Backup Database</h1>
-        <p class="mt-1 text-sm text-[#8fa06a]">Kelola backup database dan riwayatnya.</p>
+        <p class="text-sm font-medium text-emas-400">Sistem</p>
+        <h1 class="mt-1 text-2xl font-bold text-krem-100">Backup Database</h1>
+        <p class="mt-1 text-sm text-krem-300">Kelola backup database dan riwayatnya.</p>
       </div>
       <button v-if="canManageTools" type="button" class="btn-primary" :disabled="creating" @click="createBackupFn">
         <AppIcon v-if="creating" name="spinner" class="h-4 w-4 animate-spin" />
@@ -13,26 +13,26 @@
       </button>
     </div>
 
-    <div v-if="message" :class="messageType === 'success' ? 'border-[#A7B92A]' : 'border-[#ef4419]'" class="mb-4 rounded-xl border-2 bg-[#263D26] px-4 py-3 text-sm font-medium text-[#f0ead8]">
+    <div v-if="message" :class="messageType === 'success' ? 'border-daun-400' : 'border-[#ef4419]'" class="mb-4 rounded-xl border-2 bg-hutan-800 px-4 py-3 text-sm font-medium text-krem-100">
       {{ message }}
     </div>
 
-    <div class="rounded-2xl border-2 border-[#A7B92B]/40 bg-[#335233] p-5 shadow-sm">
-      <h2 class="mb-4 font-semibold text-[#f0ead8]">Daftar Backup</h2>
+    <div class="rounded-2xl border-2 border-[#A7B92B]/40 bg-hutan-600 p-5 shadow-sm">
+      <h2 class="mb-4 font-semibold text-krem-100">Daftar Backup</h2>
       <div v-if="logs.data.length" class="space-y-3">
         <div v-for="log in logs.data" :key="log.id" class="rounded-xl border border-[#6F9435] p-4">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div class="min-w-0">
-              <p class="text-sm font-semibold text-[#f0ead8]">{{ log.keterangan || 'Backup #' + log.id }}</p>
-              <p class="mt-1 text-xs text-[#8fa06a]">
+              <p class="text-sm font-semibold text-krem-100">{{ log.keterangan || 'Backup #' + log.id }}</p>
+              <p class="mt-1 text-xs text-krem-300">
                 {{ log.file_path }} • {{ formatSize(log.size) }} • {{ log.createdBy?.name || '-' }}
               </p>
-              <p class="text-xs text-[#8fa06a]">{{ formatDate(log.created_at) }}</p>
+              <p class="text-xs text-krem-300">{{ formatDate(log.created_at) }}</p>
             </div>
             <!-- Unduh dumping database hanya untuk pengelola sistem. Tautan ini menuju
              berkas statis, bukan rute download, jadi gate di sini satu-satunya
              penyaring sebelum berkas benar-benar terekspos. -->
-             <a v-if="canManageTools && log.file_path" :href="`/storage/${log.file_path}`" target="_blank" class="rounded-lg border border-[#EDD330] px-3 py-1.5 text-xs font-semibold text-[#EDD330] hover:bg-[#EDD330]/10">Unduh</a>
+             <a v-if="canManageTools && log.file_path" :href="`/storage/${log.file_path}`" target="_blank" class="rounded-lg border border-emas-400 px-3 py-1.5 text-xs font-semibold text-emas-400 hover:bg-[#EDD330]/10">Unduh</a>
           </div>
         </div>
         <Pagination :links="logs.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />

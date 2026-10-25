@@ -26,7 +26,7 @@
                     <span class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#A7B92A] to-[#EDD330] text-xl font-extrabold text-[#263D26] shadow-lg shadow-[#EDD330]/40 border-2 border-[#EDD330]">P</span>
                     <div>
                         <p class="text-sm font-bold text-[#EDD330]">Ambalan UPT SMAN 2 Maros</p>
-                        <h1 class="text-3xl font-extrabold text-[#f0ead8] sm:text-4xl" style="text-shadow: 2px 2px 0 rgba(0,0,0,0.3);">Satya dan Darma dalam satu genggaman.</h1>
+                        <h1 class="text-3xl font-extrabold text-krem-100 sm:text-4xl drop-shadow-md">Satya dan Darma dalam satu genggaman.</h1>
                     </div>
                 </div>
                 <div class="flex gap-3">

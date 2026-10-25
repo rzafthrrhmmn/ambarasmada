@@ -2,9 +2,9 @@
   <AppLayout>
     <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <p class="text-sm font-medium text-[#EDD330]">Panduan Operasional</p>
-        <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Panduan Kegiatan</h1>
-        <p class="mt-1 text-sm text-[#8fa06a]">SOP dan checklist pelaksanaan kegiatan utama ambalan.</p>
+        <p class="text-sm font-medium text-emas-400">Panduan Operasional</p>
+        <h1 class="mt-1 text-2xl font-bold text-krem-100">Panduan Kegiatan</h1>
+        <p class="mt-1 text-sm text-krem-300">SOP dan checklist pelaksanaan kegiatan utama ambalan.</p>
       </div>
       <button v-if="canManage" type="button" class="btn-primary" @click="showCreate = true">
         <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
@@ -13,18 +13,18 @@
     </div>
 
     <div class="mb-4 flex flex-wrap items-center gap-3">
-      <select v-model="filters.kecamatan" class="rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm">
+      <select v-model="filters.kecamatan" class="rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm">
         <option value="">Semua kecamatan</option>
         <option v-for="k in kecamatanOptions" :key="k" :value="k">{{ k }}</option>
       </select>
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <article v-for="item in guides.data" :key="item.id" class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm border-[#6F9435]">
-        <span class="rounded-full bg-[#335233] px-2.5 py-1 text-xs font-medium text-[#EDD330]">{{ item.kecamatan }}</span>
-        <h2 class="mt-3 text-lg font-semibold text-[#f0ead8]">{{ item.nama }}</h2>
+      <article v-for="item in guides.data" :key="item.id" class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm border-[#6F9435]">
+        <span class="rounded-full bg-hutan-600 px-2.5 py-1 text-xs font-medium text-emas-400">{{ item.kecamatan }}</span>
+        <h2 class="mt-3 text-lg font-semibold text-krem-100">{{ item.nama }}</h2>
         <div class="mt-4 flex gap-2">
-          <button @click="router.visit(`/guides/${item.id}`)" class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-3 py-2 text-xs font-semibold text-white">Baca</button>
+          <button @click="router.visit(`/guides/${item.id}`)" class="rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-3 py-2 text-xs font-semibold text-white">Baca</button>
           <button v-if="canManage" @click="openEdit(item)" class="rounded-lg border border-[#6F9435] px-3 py-2 text-xs font-semibold text-[#d4dc9a]">Edit</button>
         </div>
       </article>
@@ -38,11 +38,11 @@
 
     <Modal v-if="showCreate" :title="editItem ? 'Edit panduan' : 'Nama panduan'" @close="reset">
       <form @submit.prevent="submitForm" class="grid gap-3">
-        <label class="block"><span class="text-xs font-medium">Kecamatan</span><select v-model="form.kecamatan" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm"><option v-for="k in kecamatanOptions" :key="k" :value="k">{{ k }}</option></select></label>
-        <label class="block"><span class="text-xs font-medium">Nama</span><input v-model="form.nama" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label>
+        <label class="block"><span class="text-xs font-medium">Kecamatan</span><select v-model="form.kecamatan" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm"><option v-for="k in kecamatanOptions" :key="k" :value="k">{{ k }}</option></select></label>
+        <label class="block"><span class="text-xs font-medium">Nama</span><input v-model="form.nama" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm" /></label>
         <label class="block"><span class="text-xs font-medium">Susunan Upacara</span><textarea v-model="form.teks_susunan_upacara" rows="6" class="mt-1 w-full rounded-lg border border-[#6F9435] px-3 py-2 text-sm"></textarea></label>
         <label class="block"><span class="text-xs font-medium">Checklist Perlengkapan (satu per baris)</span><textarea v-model="checklistText" rows="4" class="mt-1 w-full rounded-lg border border-[#6F9435] px-3 py-2 text-sm"></textarea></label>
-        <button :disabled="form.processing" class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Simpan</button>
+        <button :disabled="form.processing" class="rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Simpan</button>
       </form>
     </Modal>
   </AppLayout>

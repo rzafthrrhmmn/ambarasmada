@@ -116,6 +116,7 @@ class PetaKecamatanDropdownTest extends TestCase
     public function test_dropdown_kecamatan_hanya_menampilkan_daftar_kabupaten_aktif(): void
     {
         $source = file_get_contents(base_path(self::PAGE));
+        $modal = file_get_contents(base_path('resources/js/Components/Peta/OfflineDownloadModal.vue'));
 
         $this->assertStringContainsString(
             'const kecamatanOptions = computed(() => selectedKabData.value?.kecamatans ?? []);',
@@ -124,8 +125,8 @@ class PetaKecamatanDropdownTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'v-for="kec in kecamatanOptions"',
-            $source,
+            'v-for="kec in offlineKecamatanOptions"',
+            $source . $modal,
             'Opsi dropdown kedua harus looping daftar kecamatan kabupaten terpilih.'
         );
     }
@@ -154,10 +155,11 @@ class PetaKecamatanDropdownTest extends TestCase
     public function test_dropdown_kecamatan_nonaktif_sampai_kabupaten_dipilih(): void
     {
         $source = file_get_contents(base_path(self::PAGE));
+        $modal = file_get_contents(base_path('resources/js/Components/Peta/OfflineDownloadModal.vue'));
 
         $this->assertStringContainsString(
-            ':disabled="!selectedKabupaten"',
-            $source,
+            ':disabled="!selectedOfflineRegion"',
+            $source . $modal,
             'Dropdown kecamatan harus nonaktif selama belum ada kabupaten, karena isinya belum diketahui.'
         );
     }
@@ -237,16 +239,17 @@ class PetaKecamatanDropdownTest extends TestCase
     public function test_dialog_unduh_offline_memilih_sampai_kecamatan(): void
     {
         $source = file_get_contents(base_path(self::PAGE));
+        $modal = file_get_contents(base_path('resources/js/Components/Peta/OfflineDownloadModal.vue'));
 
         $this->assertStringContainsString(
-            'v-model="selectedOfflineKecamatan"',
-            $source,
+            'v-model:selected-offline-kecamatan',
+            $source . $modal,
             'Dialog unduhan offline harus punya pemilih kecamatan.'
         );
 
         $this->assertStringContainsString(
             ':disabled="!selectedOfflineRegion"',
-            $source,
+            $source . $modal,
             'Pemilih kecamatan di dialog harus nonaktif sebelum kabupaten dipilih.'
         );
 

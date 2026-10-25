@@ -1,45 +1,45 @@
 <template>
   <AppLayout>
     <div class="mb-6">
-      <p class="text-sm font-medium text-[#EDD330]">Latihan Rutin</p>
-      <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Scan QR Presensi</h1>
-      <p class="mt-1 text-sm text-[#8fa06a]">
+      <p class="text-sm font-medium text-emas-400">Latihan Rutin</p>
+      <h1 class="mt-1 text-2xl font-bold text-krem-100">Scan QR Presensi</h1>
+      <p class="mt-1 text-sm text-krem-300">
         <template v-if="session">{{ session.nama }} | {{ formatDate(session.tanggal) }}</template>
         <template v-else-if="scannedMember">KTA Anggota: {{ scannedMember.nama_lengkap }} ({{ scannedMember.nta }})</template>
         <template v-else>Memuat sesi...</template>
       </p>
     </div>
 
-    <div v-if="scannedMember && !session" class="mb-6 rounded-2xl border border-[#EDD330]/40 bg-[#263D26] p-5">
-      <p class="text-sm font-semibold text-[#EDD330]">KTA Anggota Terdeteksi</p>
-      <p class="mt-1 text-xs text-[#8fa06a]">{{ scannedMember.nama_lengkap }} - {{ scannedMember.tingkatan }} - {{ scannedMember.kelas }}</p>
-      <p class="mt-1 text-xs text-[#8fa06a]">Mencari sesi latihan aktif hari ini...</p>
+    <div v-if="scannedMember && !session" class="mb-6 rounded-2xl border border-emas-400/40 bg-hutan-800 p-5">
+      <p class="text-sm font-semibold text-emas-400">KTA Anggota Terdeteksi</p>
+      <p class="mt-1 text-xs text-krem-300">{{ scannedMember.nama_lengkap }} - {{ scannedMember.tingkatan }} - {{ scannedMember.kelas }}</p>
+      <p class="mt-1 text-xs text-krem-300">Mencari sesi latihan aktif hari ini...</p>
     </div>
 
-    <div v-if="scanResult" class="mb-6 rounded-2xl border border-[#A7B92B]/40 bg-[#263D26] p-5">
+    <div v-if="scanResult" class="mb-6 rounded-2xl border border-[#A7B92B]/40 bg-hutan-800 p-5">
       <p class="text-sm font-semibold text-[#A7B92B]">QR berhasil discan!</p>
-      <p class="mt-1 text-xs text-[#8fa06a]">Token: {{ scanResult }}</p>
+      <p class="mt-1 text-xs text-krem-300">Token: {{ scanResult }}</p>
     </div>
 
     <div
       v-if="checkInSaved"
-      class="mb-6 rounded-2xl border border-[#6F9435] bg-[#263D26] p-5"
+      class="mb-6 rounded-2xl border border-[#6F9435] bg-hutan-800 p-5"
       role="status"
     >
       <p class="text-sm font-semibold text-[#A7B92B]">Presensi tercatat</p>
-      <p class="mt-1 text-xs text-[#8fa06a]">
+      <p class="mt-1 text-xs text-krem-300">
         Kehadiran Anda sudah tersimpan di sistem. Anda dapat kembali ke daftar sesi.
       </p>
     </div>
 
     <div
       v-if="checkInError"
-      class="mb-6 rounded-2xl border border-[#ef4419]/60 bg-[#263D26] p-5"
+      class="mb-6 rounded-2xl border border-[#ef4419]/60 bg-hutan-800 p-5"
       role="alert"
     >
       <p class="text-sm font-semibold text-[#ef4419]">Presensi BELUM tercatat</p>
       <p class="mt-1 text-xs leading-5 text-[#d4dc9a]">{{ checkInError }}</p>
-      <p class="mt-2 text-xs text-[#8fa06a]">
+      <p class="mt-2 text-xs text-krem-300">
         Perbaiki penyebabnya lalu tekan "Catat Kehadiran" lagi. Kode QR tidak perlu
         dipindai ulang.
       </p>
@@ -59,21 +59,21 @@
         <div
           id="scannerRef"
           ref="scannerRef"
-          class="min-h-[7rem] w-full rounded-xl border-2 border-dashed border-[#6F9435] bg-[#263D26]"
+          class="min-h-[7rem] w-full rounded-xl border-2 border-dashed border-[#6F9435] bg-hutan-800"
         ></div>
 
-        <div v-if="cameraLoading" class="absolute inset-0 flex items-center justify-center rounded-xl bg-[#263D26]/80">
+        <div v-if="cameraLoading" class="absolute inset-0 flex items-center justify-center rounded-xl bg-hutan-800/80">
           <SkeletonLoader variant="card" :lines="1" class="h-6 w-40" />
         </div>
         <p
           v-if="!scanning && !cameraError"
-          class="absolute inset-0 flex items-center justify-center px-4 text-center text-xs text-[#8fa06a]"
+          class="absolute inset-0 flex items-center justify-center px-4 text-center text-xs text-krem-300"
         >
           Klik untuk aktifkan kamera
         </p>
       </div>
       <p v-if="cameraError" class="mt-2 text-center text-xs leading-5 text-[#ef4419]">{{ cameraError }}</p>
-      <p v-if="scanning" class="mt-2 text-center text-xs text-[#8fa06a]">Arahkan kamera ke QR Code sesi</p>
+      <p v-if="scanning" class="mt-2 text-center text-xs text-krem-300">Arahkan kamera ke QR Code sesi</p>
       <div class="mt-3 flex justify-center gap-2">
         <button v-if="!scanning" @click="startScan" :disabled="cameraLoading" type="button" class="rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
           <span v-if="cameraLoading">Memulai kamera...</span>
@@ -83,21 +83,21 @@
       </div>
     </div>
 
-    <div class="mb-6 rounded-2xl border border-[#6F9435] bg-[#335233] p-5">
-      <h2 class="text-sm font-semibold text-[#f0ead8]">Izin perangkat yang dibutuhkan</h2>
+    <div class="mb-6 rounded-2xl border border-[#6F9435] bg-hutan-600 p-5">
+      <h2 class="text-sm font-semibold text-krem-100">Izin perangkat yang dibutuhkan</h2>
       <ul class="mt-3 grid gap-2 sm:grid-cols-2">
         <li
           v-for="izin in permissionList"
           :key="izin.key"
-          class="flex items-start gap-2 rounded-lg border border-[#6F9435]/60 bg-[#263D26] px-3 py-2"
+          class="flex items-start gap-2 rounded-lg border border-[#6F9435]/60 bg-hutan-800 px-3 py-2"
         >
           <span class="mt-0.5 shrink-0" :class="izinClass(izin.state)">
             <AppIcon :name="izinIcon(izin.state)" :stroke="2.4" class="h-3.5 w-3.5" />
           </span>
           <span class="text-xs">
             <span class="block font-medium text-[#d4dc9a]">{{ izin.label }}</span>
-            <span class="block text-[#8fa06a]">{{ izinNote(izin.state) }}</span>
-            <span v-if="izin.state !== 'not-needed'" class="mt-0.5 block text-[#8fa06a]/80">{{ izin.needed }}</span>
+            <span class="block text-krem-300">{{ izinNote(izin.state) }}</span>
+            <span v-if="izin.state !== 'not-needed'" class="mt-0.5 block text-krem-300/80">{{ izin.needed }}</span>
           </span>
         </li>
       </ul>
@@ -106,23 +106,23 @@
       </p>
     </div>
 
-    <div class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5">
-      <h2 class="mb-3 font-semibold text-[#f0ead8]">Cetak Kehadiran</h2>
+    <div class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5">
+      <h2 class="mb-3 font-semibold text-krem-100">Cetak Kehadiran</h2>
       <form @submit.prevent="submitCheckIn" class="grid gap-3">
         <input v-model="form.qr_token" type="hidden" />
         <input v-model="form.scanned_member_id" type="hidden" />
         <label class="block">
           <span class="text-xs font-medium">Nama sesi presensi</span>
-          <input v-model="form.nama" type="text" readonly class="mt-1 w-full rounded-lg border border-[#6F9435]/30 bg-[#263D26] px-3 py-2 text-sm text-[#8fa06a]" />
+          <input v-model="form.nama" type="text" readonly class="mt-1 w-full rounded-lg border border-[#6F9435]/30 bg-hutan-800 px-3 py-2 text-sm text-krem-300" />
         </label>
-        <div v-if="scannedMember" class="rounded-lg border border-[#EDD330]/40 bg-[#263D26] p-3">
-          <p class="text-xs font-medium text-[#EDD330]">Anggota yang dipindai (KTA)</p>
+        <div v-if="scannedMember" class="rounded-lg border border-emas-400/40 bg-hutan-800 p-3">
+          <p class="text-xs font-medium text-emas-400">Anggota yang dipindai (KTA)</p>
           <p class="mt-1 text-sm text-[#d4dc9a]">{{ scannedMember.nama_lengkap }}</p>
-          <p class="text-xs text-[#8fa06a]">{{ scannedMember.nta }} • {{ scannedMember.tingkatan }} • {{ scannedMember.kelas }}</p>
+          <p class="text-xs text-krem-300">{{ scannedMember.nta }} • {{ scannedMember.tingkatan }} • {{ scannedMember.kelas }}</p>
         </div>
         <label class="block">
           <span class="text-xs font-medium">Keterangan</span>
-          <select v-model="form.keterangan" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8]">
+          <select v-model="form.keterangan" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm text-krem-100">
             <option>Hadir</option>
             <option>Izin</option>
             <option>Sakit</option>
@@ -134,13 +134,13 @@
           <span v-if="isSubmitting">Menyimpan...</span>
           <span v-else>Catat Kehadiran</span>
         </button>
-        <p v-if="!form.qr_token" class="text-xs text-[#8fa06a]">
+        <p v-if="!form.qr_token" class="text-xs text-krem-300">
           Tombol aktif setelah QR Code sesi berhasil dipindai.
         </p>
       </form>
 
       <div v-if="cameraError" class="mt-4 border-t border-[#6F9435]/60 pt-4">
-        <p class="text-xs leading-5 text-[#8fa06a]">
+        <p class="text-xs leading-5 text-krem-300">
           Kamera tidak dapat dipakai. Untuk sementara Anda bisa mencatat kehadiran tanpa
           memindai QR Code, tetapi verifier jarak lokasi tetap diperiksa server bila sesi ini
           punya titik lokasi.
@@ -262,10 +262,10 @@ function izinIcon(state) {
 }
 
 function izinClass(state) {
-  if (state === 'granted') return 'text-[#A7B92A]';
+  if (state === 'granted') return 'text-daun-400';
   if (state === 'denied') return 'text-[#ef4419]';
-  if (state === 'not-needed') return 'text-[#8fa06a]';
-  return 'text-[#EDD330]';
+  if (state === 'not-needed') return 'text-krem-300';
+  return 'text-emas-400';
 }
 
 async function refreshPermissionStates(known = {}) {

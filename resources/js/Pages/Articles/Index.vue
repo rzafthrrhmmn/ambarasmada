@@ -17,7 +17,7 @@
         <span class="sr-only">Cari artikel</span>
         <AppIcon
           name="search"
-          class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8fa06a]"
+          class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-krem-300"
         />
         <input
           v-model="search"
@@ -77,23 +77,23 @@
             </span>
           </div>
 
-          <h3 class="mt-2 text-base font-bold leading-snug text-[#f0ead8]">
+          <h3 class="mt-2 text-base font-bold leading-snug text-krem-100">
             <Link
               :href="`/articles/${article.id}`"
-              class="transition-colors after:absolute after:inset-0 hover:text-[#EDD330]"
+              class="transition-colors after:absolute after:inset-0 hover:text-emas-400"
             >
               {{ article.judul }}
             </Link>
           </h3>
 
-          <p class="mt-2 line-clamp-3 flex-1 text-xs leading-5 text-[#8fa06a]">{{ article.konten }}</p>
+          <p class="mt-2 line-clamp-3 flex-1 text-xs leading-5 text-krem-300">{{ article.konten }}</p>
 
           <div class="mt-4 flex items-end justify-between gap-3 border-t border-[#6F9435]/25 pt-3">
-            <span class="inline-flex min-w-0 items-center gap-1.5 text-[10px] text-[#8fa06a]">
+            <span class="inline-flex min-w-0 items-center gap-1.5 text-[10px] text-krem-300">
               <AppIcon name="profile" class="h-3.5 w-3.5 shrink-0 text-[#A7B92B]" />
               <span class="truncate">{{ article.author?.name ?? 'Tanpa penulis' }}</span>
             </span>
-            <span class="inline-flex shrink-0 items-center gap-1.5 text-[10px] text-[#8fa06a]">
+            <span class="inline-flex shrink-0 items-center gap-1.5 text-[10px] text-krem-300">
               <AppIcon name="calendar" class="h-3.5 w-3.5 shrink-0 text-[#A7B92B]" />
               {{ formatDate(article.created_at) }}
             </span>
@@ -160,7 +160,7 @@
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            class="field mt-1 file:mr-3 file:rounded-lg file:border-0 file:bg-[#6F9435] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white"
+            class="field mt-1 file:mr-3 file:rounded-lg file:border-0 file:bg-daun-500 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white"
             @change="form.image = $event.target.files[0]"
           />
           <span v-if="form.errors.image" class="mt-1 block text-xs text-[#ef4419]">{{ form.errors.image }}</span>
@@ -169,9 +169,9 @@
           <input
             v-model="form.is_published"
             type="checkbox"
-            class="h-4 w-4 rounded border-[#6F9435] bg-[#263D26] text-[#A7B92B]"
+            class="h-4 w-4 rounded border-[#6F9435] bg-hutan-800 text-[#A7B92B]"
           />
-          <span class="text-xs font-medium text-[#f0ead8]">Terbitkan</span>
+          <span class="text-xs font-medium text-krem-100">Terbitkan</span>
         </label>
         <button type="submit" :disabled="form.processing" class="btn-primary">
           {{ editingArticle ? 'Simpan Perubahan' : 'Tambah Artikel' }}

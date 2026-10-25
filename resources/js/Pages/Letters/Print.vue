@@ -3,8 +3,8 @@
     <div class="mx-auto max-w-4xl">
       <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p class="text-sm font-medium text-[#EDD330]">Pratinjau cetak</p>
-          <p class="mt-1 text-sm text-[#8fa06a]">
+          <p class="text-sm font-medium text-emas-400">Pratinjau cetak</p>
+          <p class="mt-1 text-sm text-krem-300">
             {{ letter.perihal }} &bull; {{ letter.jenis_surat }}
             <span v-if="letter.template">&bull; template {{ letter.template.name }}</span>
           </p>
@@ -15,7 +15,7 @@
           </Link>
           <a
             :href="`/letters/${letter.id}/generate?format=pdf`"
-            class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#A7B92A]"
+            class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-daun-400"
           >
             Unduh PDF
           </a>
@@ -23,7 +23,7 @@
             type="button"
             data-test="btn-cetak"
             @click="printPage"
-            class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white"
+            class="rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-4 py-2 text-sm font-semibold text-white"
           >
             Cetak
           </button>
@@ -40,7 +40,7 @@
 
       <article class="rounded-2xl border border-[#6F9435] bg-white p-8 shadow-lg print:border-0 print:bg-white print:p-0 print:shadow-none">
         <div v-if="letter.file_path" class="mb-4">
-          <p class="rounded-lg bg-[#335233] p-3 text-xs text-[#f0ead8]">
+          <p class="rounded-lg bg-hutan-600 p-3 text-xs text-krem-100">
             Surat ini memiliki lampiran terpisah. Isi di bawah adalah isi yang diekspor dari template.
           </p>
         </div>

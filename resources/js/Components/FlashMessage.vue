@@ -5,8 +5,8 @@
         :class="[
           'w-full rounded-lg border-2 px-4 py-3 shadow-lg text-sm',
           type === 'success'
-            ? 'bg-[#263D26] text-[#EDD330] border-[#EDD330]/50'
-            : 'bg-[#263D26] text-[#ef4419] border-[#ef4419]/50',
+            ? 'bg-hutan-800 text-emas-400 border-emas-400/50'
+            : 'bg-hutan-800 text-[#ef4419] border-[#ef4419]/50',
         ]">
         <div class="flex items-start gap-3">
           <div class="mt-0.5 flex-shrink-0">
@@ -24,7 +24,7 @@
           <div class="flex-1 leading-tight">
             <span class="font-bold">{{ flashMessage }}</span>
           </div>
-          <button @click="showFlash = false" class="flex-shrink-0 rounded p-1 hover:bg-[#EDD330]/10">
+          <button @click="showFlash = false" class="flex-shrink-0 rounded p-1 hover:bg-emas-400/10">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M6 18L18 6M6 6l12 12" />

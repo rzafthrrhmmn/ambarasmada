@@ -2,8 +2,8 @@
   <AppLayout>
     <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <p class="text-sm font-medium text-[#EDD330]">Syarat Kecakapan Umum</p>
-        <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Digitalisasi SKU / TKU</h1>
+        <p class="text-sm font-medium text-emas-400">Syarat Kecakapan Umum</p>
+        <h1 class="mt-1 text-2xl font-bold text-krem-100">Digitalisasi SKU / TKU</h1>
         <p v-if="!can('sku.submit')" class="mt-1 text-sm text-[#8fa06a]">{{ can('sku.review') ? 'Kelola poin SKU dan TKK, serta verifikasi pengajuan anggota.' : 'Lihat pengajuan dan statistik SKU.' }}</p>
         <p v-else class="mt-1 text-sm text-[#8fa06a]">Pilih poin yang sudah diselesaikan, lalu kirim dokumentasi untuk diverifikasi.</p>
       </div>
@@ -13,19 +13,19 @@
       </button>
     </div>
 
-    <div v-if="progress" class="mb-6 rounded-2xl border border-[#6F9435]/50 bg-[#335233] p-5">
+    <div v-if="progress" class="mb-6 rounded-2xl border border-daun-500/50 bg-hutan-600 p-5">
       <div class="flex items-end justify-between">
         <div>
-          <p class="text-sm font-semibold text-[#EDD330]">Progress SKU anggota</p>
+          <p class="text-sm font-semibold text-emas-400">Progress SKU anggota</p>
           <p class="mt-1 text-xs text-[#8fa06a]">{{ progress.approved }} dari {{ progress.total }} poin disetujui</p>
         </div>
-        <strong class="text-2xl font-bold text-[#EDD330]">{{ progress.percentage }}%</strong>
+        <strong class="text-2xl font-bold text-emas-400">{{ progress.percentage }}%</strong>
       </div>
-      <div class="mt-3 h-3 overflow-hidden rounded-full bg-[#335233]"><div class="h-full rounded-full bg-gradient-to-r from-[#A7B92B] to-[#6F9435] transition-all" :style="{ width: progress.percentage + '%' }"></div></div>
+      <div class="mt-3 h-3 overflow-hidden rounded-full bg-hutan-800"><div class="h-full rounded-full bg-gradient-to-r from-daun-400 to-daun-500 transition-all" :style="{ width: progress.percentage + '%' }"></div></div>
     </div>
 
     <div class="grid gap-5 xl:grid-cols-3">
-      <section class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm border-[#6F9435] xl:col-span-2">
+      <section class="rounded-2xl border border-daun-500 bg-hutan-600 p-5 shadow-sm border-daun-500 xl:col-span-2">
         <h2 class="mb-4 font-semibold text-[#f0ead8]">Antrean pengajuan</h2>
         <div class="space-y-3">
           <div v-for="item in submissions.data" :key="item.id" class="flex flex-col gap-3 rounded-xl border border-[#6F9435] p-4 border-[#6F9435] sm:flex-row sm:items-center sm:justify-between">

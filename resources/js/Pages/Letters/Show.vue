@@ -1,11 +1,11 @@
 <template>
   <AppLayout>
-    <div class="rounded-2xl border border-[#6F9435] bg-[#335233] p-6 shadow-sm">
+    <div class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-6 shadow-sm">
       <div class="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-[#6F9435]/40 pb-4">
         <div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-[#EDD330]">Persuratan</p>
-          <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">{{ letter.perihal }}</h1>
-          <p class="mt-1 text-xs text-[#8fa06a]">
+          <p class="text-xs font-semibold uppercase tracking-wide text-emas-400">Persuratan</p>
+          <h1 class="mt-1 text-2xl font-bold text-krem-100">{{ letter.perihal }}</h1>
+          <p class="mt-1 text-xs text-krem-300">
             {{ letter.jenis_surat }} &bull; dibuat {{ formatDate(letter.created_at) }}
             <span v-if="letter.createdBy">&bull; {{ letter.createdBy.name }}</span>
           </p>
@@ -17,42 +17,42 @@
 
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <p class="text-xs text-[#8fa06a]">Nomor surat</p>
-          <p class="mt-1 text-sm font-medium text-[#f0ead8]">{{ letter.nomor_surat || '-' }}</p>
+          <p class="text-xs text-krem-300">Nomor surat</p>
+          <p class="mt-1 text-sm font-medium text-krem-100">{{ letter.nomor_surat || '-' }}</p>
         </div>
         <div>
-          <p class="text-xs text-[#8fa06a]">Tanggal surat</p>
-          <p class="mt-1 text-sm font-medium text-[#f0ead8]">{{ formatDate(letter.tgl_surat) }}</p>
+          <p class="text-xs text-krem-300">Tanggal surat</p>
+          <p class="mt-1 text-sm font-medium text-krem-100">{{ formatDate(letter.tgl_surat) }}</p>
         </div>
         <div>
-          <p class="text-xs text-[#8fa06a]">Tujuan / Pengirim</p>
-          <p class="mt-1 text-sm font-medium text-[#f0ead8]">{{ letter.tujuan_pengirim || '-' }}</p>
+          <p class="text-xs text-krem-300">Tujuan / Pengirim</p>
+          <p class="mt-1 text-sm font-medium text-krem-100">{{ letter.tujuan_pengirim || '-' }}</p>
         </div>
         <div>
-          <p class="text-xs text-[#8fa06a]">Ambalan</p>
-          <p class="mt-1 text-sm font-medium text-[#f0ead8]">{{ letter.ambalan?.nama || '-' }}</p>
+          <p class="text-xs text-krem-300">Ambalan</p>
+          <p class="mt-1 text-sm font-medium text-krem-100">{{ letter.ambalan?.nama || '-' }}</p>
         </div>
       </div>
 
       <div class="mt-4 grid gap-4 sm:grid-cols-2">
         <div>
-          <p class="text-xs text-[#8fa06a]">Waktu kegiatan</p>
-          <p class="mt-1 text-sm font-medium text-[#f0ead8]">{{ letter.waktu_kegiatan || '-' }}</p>
+          <p class="text-xs text-krem-300">Waktu kegiatan</p>
+          <p class="mt-1 text-sm font-medium text-krem-100">{{ letter.waktu_kegiatan || '-' }}</p>
         </div>
         <div>
-          <p class="text-xs text-[#8fa06a]">Lokasi kegiatan</p>
-          <p class="mt-1 text-sm font-medium text-[#f0ead8]">{{ letter.lokasi_kegiatan || '-' }}</p>
+          <p class="text-xs text-krem-300">Lokasi kegiatan</p>
+          <p class="mt-1 text-sm font-medium text-krem-100">{{ letter.lokasi_kegiatan || '-' }}</p>
         </div>
       </div>
 
       <div class="mt-4">
-        <p class="text-xs text-[#8fa06a]">Isi surat</p>
+        <p class="text-xs text-krem-300">Isi surat</p>
         <p class="mt-1 whitespace-pre-line text-sm leading-relaxed text-[#d4dc9a]">{{ letter.isi_surat || '-' }}</p>
       </div>
 
-      <div v-if="letter.template" class="mt-5 rounded-xl border border-[#6F9435]/60 bg-[#263D26] p-4">
-        <p class="text-xs font-bold uppercase tracking-wide text-[#EDD330]">Template: {{ letter.template.name }}</p>
-        <p v-if="letter.template.description" class="mt-1 text-xs text-[#8fa06a]">{{ letter.template.description }}</p>
+      <div v-if="letter.template" class="mt-5 rounded-xl border border-[#6F9435]/60 bg-hutan-800 p-4">
+        <p class="text-xs font-bold uppercase tracking-wide text-emas-400">Template: {{ letter.template.name }}</p>
+        <p v-if="letter.template.description" class="mt-1 text-xs text-krem-300">{{ letter.template.description }}</p>
 
         <div v-if="placeholders.length" class="mt-3">
           <p class="text-xs font-semibold text-[#d4dc9a]">Nilai penanda yang akan ditulis ke dokumen</p>
@@ -62,15 +62,15 @@
               :key="name"
               class="flex items-baseline gap-2 text-xs"
             >
-              <code class="shrink-0 text-[10px] text-[#8fa06a]">${name}</code>
-              <span :class="unfilled.includes(name) ? 'text-[#ef4419]' : 'text-[#f0ead8]'">
+              <code class="shrink-0 text-[10px] text-krem-300">${name}</code>
+              <span :class="unfilled.includes(name) ? 'text-[#ef4419]' : 'text-krem-100'">
                 {{ resolved[name] ?? '-' }}
                 <span v-if="unfilled.includes(name)" class="text-[10px]">(belum diisi)</span>
               </span>
             </div>
           </div>
         </div>
-        <p v-else class="mt-2 text-xs text-[#8fa06a]">
+        <p v-else class="mt-2 text-xs text-krem-300">
           Template ini tidak memiliki penanda, sehingga surat memakai tata letak bawaan.
         </p>
       </div>
@@ -85,7 +85,7 @@
           data-test="btn-docx"
           :aria-disabled="!canGenerate"
           :tabindex="canGenerate ? undefined : -1"
-          class="inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white"
+          class="inline-flex items-center rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-4 py-2 text-sm font-semibold text-white"
           :class="canGenerate ? '' : 'pointer-events-none cursor-not-allowed opacity-50'"
         >
           Ekspor DOCX
@@ -95,7 +95,7 @@
           data-test="btn-pdf"
           :aria-disabled="!canGenerate"
           :tabindex="canGenerate ? undefined : -1"
-          class="inline-flex items-center rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#A7B92A]"
+          class="inline-flex items-center rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-daun-400"
           :class="canGenerate ? '' : 'pointer-events-none cursor-not-allowed opacity-50'"
         >
           Ekspor PDF

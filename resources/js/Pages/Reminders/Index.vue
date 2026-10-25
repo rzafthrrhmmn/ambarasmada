@@ -1,27 +1,27 @@
 <template>
   <AppLayout>
     <div class="mb-6">
-      <p class="text-sm font-medium text-[#EDD330]">Pengingat</p>
-      <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Pengingat & Tugas</h1>
-      <p class="mt-1 text-sm text-[#8fa06a]">Atur pengingat untuk kegiatan dan tugas.</p>
+      <p class="text-sm font-medium text-emas-400">Pengingat</p>
+      <h1 class="mt-1 text-2xl font-bold text-krem-100">Pengingat & Tugas</h1>
+      <p class="mt-1 text-sm text-krem-300">Atur pengingat untuk kegiatan dan tugas.</p>
     </div>
 
     <div class="space-y-3">
-      <div v-for="r in reminders.data" :key="r.id" class="rounded-xl border-2 p-4" :class="r.is_sent ? 'border-[#6F9435]/30 bg-[#335233]' : 'border-[#EDD330]/50 bg-[#335233]/80'">
+      <div v-for="r in reminders.data" :key="r.id" class="rounded-xl border-2 p-4" :class="r.is_sent ? 'border-[#6F9435]/30 bg-hutan-600' : 'border-emas-400/50 bg-hutan-600/80'">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <h3 class="text-sm font-bold text-[#f0ead8]">{{ r.judul }}</h3>
-            <p class="text-xs text-[#8fa06a]">{{ r.deskripsi || '-' }}</p>
-            <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-[#EDD330]">
+            <h3 class="text-sm font-bold text-krem-100">{{ r.judul }}</h3>
+            <p class="text-xs text-krem-300">{{ r.deskripsi || '-' }}</p>
+            <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-emas-400">
               <span class="inline-flex items-center gap-1.5">
                 <AppIcon name="clock" class="h-3.5 w-3.5 shrink-0" />
                 {{ formatDateTime(r.jadwal) }}
               </span>
-              <span class="badge border border-[#EDD330]/40 bg-[#EDD330]/10 text-[#EDD330]">{{ r.jenis }}</span>
+              <span class="badge border border-emas-400/40 bg-emas-400/10 text-emas-400">{{ r.jenis }}</span>
             </p>
           </div>
           <div class="flex gap-2 shrink-0">
-            <button v-if="!r.is_sent && canManage" @click="$inertia.post(`/reminders/${r.id}/sent`)" class="rounded-lg border border-[#6F9435] px-2 py-1 text-[10px] font-bold text-[#d4dc9a] hover:bg-[#6F9435]/20">Kirim</button>
+            <button v-if="!r.is_sent && canManage" @click="$inertia.post(`/reminders/${r.id}/sent`)" class="rounded-lg border border-[#6F9435] px-2 py-1 text-[10px] font-bold text-[#d4dc9a] hover:bg-daun-500/20">Kirim</button>
             <button v-if="!r.is_sent" @click="$inertia.delete(`/reminders/${r.id}`)" class="rounded-lg border border-[#ef4419]/50 px-2 py-1 text-[10px] font-bold text-[#ef4419] hover:bg-[#ef4419]/20">Hapus</button>
           </div>
         </div>
@@ -34,12 +34,12 @@
 
     <Modal v-if="showCreate" :title="'Tambah Pengingat'" @close="reset">
       <form @submit.prevent="submit" class="grid gap-3">
-        <label class="block"><span class="text-xs font-medium">Untuk</span><select v-model="form.user_id" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm"><option value="">Pilih</option><option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }} ({{ u.role }})</option></select></label>
-        <label class="block"><span class="text-xs font-medium">Judul</span><input v-model="form.judul" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label>
-        <label class="block"><span class="text-xs font-medium">Deskripsi</span><textarea v-model="form.deskripsi" rows="2" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm"></textarea></label>
+        <label class="block"><span class="text-xs font-medium">Untuk</span><select v-model="form.user_id" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm"><option value="">Pilih</option><option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }} ({{ u.role }})</option></select></label>
+        <label class="block"><span class="text-xs font-medium">Judul</span><input v-model="form.judul" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm" /></label>
+        <label class="block"><span class="text-xs font-medium">Deskripsi</span><textarea v-model="form.deskripsi" rows="2" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm"></textarea></label>
         <div class="grid gap-3 sm:grid-cols-2">
-          <label class="block"><span class="text-xs font-medium">Jenis</span><select v-model="form.jenis" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm"><option value="Pengingat">Pengingat</option><option value="Tugas">Tugas</option><option value="Iuran">Iuran</option><option value="Kegiatan">Kegiatan</option><option value="Lainnya">Lainnya</option></select></label>
-          <label class="block"><span class="text-xs font-medium">Jadwal</span><input v-model="form.jadwal" type="datetime-local" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label>
+          <label class="block"><span class="text-xs font-medium">Jenis</span><select v-model="form.jenis" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm"><option value="Pengingat">Pengingat</option><option value="Tugas">Tugas</option><option value="Iuran">Iuran</option><option value="Kegiatan">Kegiatan</option><option value="Lainnya">Lainnya</option></select></label>
+          <label class="block"><span class="text-xs font-medium">Jadwal</span><input v-model="form.jadwal" type="datetime-local" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm" /></label>
         </div>
         <button type="submit" :disabled="form.processing" class="rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Tambah</button>
       </form>

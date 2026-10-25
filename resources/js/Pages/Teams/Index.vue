@@ -29,14 +29,14 @@
 
         <div class="relative flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <h2 class="flex flex-wrap items-center gap-2 text-base font-bold text-[#f0ead8]">
+            <h2 class="flex flex-wrap items-center gap-2 text-base font-bold text-krem-100">
               <AppIcon name="teams" class="h-4 w-4 shrink-0 text-[#A7B92B]" />
               {{ team.nama }}
-              <span class="rounded bg-[#6F9435]/20 px-1.5 py-0.5 text-[10px] font-medium text-[#8fa06a]">
+              <span class="rounded bg-daun-500/20 px-1.5 py-0.5 text-[10px] font-medium text-krem-300">
                 {{ team.kode }}
               </span>
             </h2>
-            <p class="mt-1 text-xs text-[#8fa06a]">{{ team.deskripsi || 'Tanpa deskripsi' }}</p>
+            <p class="mt-1 text-xs text-krem-300">{{ team.deskripsi || 'Tanpa deskripsi' }}</p>
           </div>
 
           <div v-if="canManage" class="flex shrink-0 flex-wrap justify-end gap-1.5">
@@ -56,7 +56,7 @@
         </div>
 
         <div class="relative mt-4">
-          <p class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-[#8fa06a]">
+          <p class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-krem-300">
             <AppIcon name="members" class="h-3.5 w-3.5 text-[#A7B92B]" />
             Anggota ({{ team.members?.length || 0 }})
           </p>
@@ -68,14 +68,14 @@
               class="badge-neutral border border-[#6F9435]/40"
             >
               {{ member.nama_lengkap }}
-              <span class="text-[#8fa06a]">{{ member.peran }}</span>
+              <span class="text-krem-300">{{ member.peran }}</span>
             </span>
           </div>
-          <p v-else class="mt-2 text-xs text-[#8fa06a]">Belum ada anggota di gugus depan ini.</p>
+          <p v-else class="mt-2 text-xs text-krem-300">Belum ada anggota di gugus depan ini.</p>
         </div>
 
         <div v-if="team.tasks?.length" class="relative mt-4 border-t border-[#6F9435]/30 pt-3">
-          <p class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-[#8fa06a]">
+          <p class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-krem-300">
             <AppIcon name="clipboard" class="h-3.5 w-3.5 text-[#A7B92B]" />
             Tugas ({{ team.tasks.length }})
           </p>
@@ -83,9 +83,9 @@
             <li
               v-for="task in team.tasks"
               :key="task.id"
-              class="flex items-center justify-between gap-3 rounded-lg border border-[#6F9435]/25 bg-[#263D26] px-3 py-2"
+              class="flex items-center justify-between gap-3 rounded-lg border border-[#6F9435]/25 bg-hutan-800 px-3 py-2"
             >
-              <span class="min-w-0 truncate text-xs text-[#f0ead8]">{{ task.judul }}</span>
+              <span class="min-w-0 truncate text-xs text-krem-100">{{ task.judul }}</span>
               <span class="badge shrink-0" :class="taskBadge(task.status)">
                 <AppIcon :name="taskIcon(task.status)" class="h-3 w-3" />
                 {{ task.status }}

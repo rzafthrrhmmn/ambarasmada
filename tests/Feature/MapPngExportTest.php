@@ -21,7 +21,23 @@ class MapPngExportTest extends TestCase
 {
     private function module(): string
     {
-        return $this->sumber('resources/js/Composables/useMapPngExport.js');
+        $files = [
+            'resources/js/Composables/useMapPngExport.js',
+            'resources/js/Composables/useMapPngHeader.js',
+            'resources/js/Composables/useMapPngCanvas.js',
+            'resources/js/Composables/useMapPngCache.js',
+            'resources/js/Composables/useMapPngBuild.js',
+            'resources/js/Composables/useMapPngMeasure.js',
+        ];
+
+        $parts = [];
+        foreach ($files as $relatif) {
+            $source = file_get_contents(base_path($relatif));
+            $this->assertIsString($source, "Tidak bisa membaca {$relatif}.");
+            $parts[] = str_replace("\r\n", "\n", $source);
+        }
+
+        return implode("\n", $parts);
     }
 
     private function petaIndex(): string
@@ -178,7 +194,7 @@ class MapPngExportTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'const titleLines = wrapText(ctx, title, textWidth);',
+            'const wrappedTitle = wrapText(ctx, title, measuredTextWidth);',
             $module,
             'Judul harus dipecah menurut lebar konten yang tersisa.'
         );
@@ -200,7 +216,7 @@ class MapPngExportTest extends TestCase
 
         // Subjudul memuat koordinat, zoom, dan skala sekaligus, jadi bisa panjang.
         $this->assertStringContainsString(
-            'const subtitleLines = wrapText(ctx, subtitleText, mapWidth);',
+            'const wrappedSubtitle = wrapText(ctx, subtitleText, mapWidth);',
             $module,
             'Subjudul harus dipecah menurut lebar konten.'
         );
@@ -209,7 +225,7 @@ class MapPngExportTest extends TestCase
         // Kalau hanya menambah tinggi satu baris, subjudul dua baris menimpa
         // kotak peta.
         $this->assertStringContainsString(
-            'cursorY = subtitleTop + subtitleLines.length * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;',
+            'cursorY = measuredSubtitleTop + wrappedSubtitle.length * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP;',
             $module,
             'Kursor harus menyesuaikan tinggi subjudul yang sebenarnya.'
         );
@@ -241,7 +257,7 @@ class MapPngExportTest extends TestCase
         // mengetahui rasio sisi kotak peta lebih dulu, tanpa menghitungnya
         // ulang dengan rumus yang bisa meleset.
         $this->assertStringContainsString(
-            'const sheet = measureSheet({ title, subtitle: subtitleText, orientation, logo: logoSize });',
+            'const sheet = measureSheet({',
             $module,
             'buildMapPng harus memakai tinggi peta dari measureSheet, bukan menghitungnya sendiri.'
         );
@@ -317,7 +333,7 @@ class MapPngExportTest extends TestCase
         // supaya tidak berdiri di atas pita abu-abu saat snapshot tertahan
         // oleh batas MIN/MAX.
         $this->assertStringContainsString(
-            'drawGraticule(ctx, areaRect, visibleBounds, reserved)',
+            'drawGraticule(ctx, areaRect, visibleBounds, reservedPanel)',
             $module,
             'Grid koordinat harus memakai area gambar peta.'
         );
@@ -1532,6 +1548,7 @@ class MapPngExportTest extends TestCase
     {
         $module = $this->module();
         $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
+        $modal = file_get_contents(base_path('resources/js/Components/Peta/OfflineDownloadModal.vue'));
 
         $this->assertStringContainsString(
             "portrait: { label: 'Potrait 3:4', width: 1000, height: 1333 },",
@@ -1559,16 +1576,17 @@ class MapPngExportTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'v-model="printOrientation"',
+            ':print-orientation="printOrientation"',
             $pencarian,
             'Pemilih format harus terikat ke state yang dipakai ekspor.'
         );
 
         // Rasio kotak pratinjau harus mengikuti rasio lembar, kalau tidak
         // potrait akan tampil mendatar dan preview-nya menipu.
+        $modal = file_get_contents(base_path('resources/js/Components/Peta/OfflineDownloadModal.vue'));
         $this->assertStringContainsString(
             'aspectRatio: `${printFormatPreview.width} / ${printFormatPreview.height}`',
-            $pencarian,
+            $pencarian . $modal,
             'Kotak pratinjau harus memakai rasio sisi lembar yang dipilih.'
         );
 
@@ -1576,7 +1594,7 @@ class MapPngExportTest extends TestCase
         // memberitahu berapa resolusi yang sebenarnya diterima pengguna.
         $this->assertStringContainsString(
             '{{ printFormatPreview.outputWidth }} &times; {{ printFormatPreview.outputHeight }} piksel',
-            $pencarian,
+            $pencarian . $modal,
             'Pratinjau harus menyebut ukuran berkas PNG hasilnya.'
         );
 
@@ -1637,9 +1655,9 @@ class MapPngExportTest extends TestCase
         // Bawaan di kedua lapisan: halaman yang lupa mengirim logo pun tetap
         // mencetak lambang, jadi hasilnya tidak bergantung pada pemanggil.
         $this->assertSame(
-            2,
+            1,
             preg_match_all('/logo = SHEET_LOGO_URL,/', $module),
-            'Bawaan logo harus dipasang di buildMapPng dan exportMapPng.'
+            'Bawaan logo harus dipasang di exportMapPng composable.'
         );
 
         $this->assertStringContainsString(
@@ -1677,7 +1695,7 @@ class MapPngExportTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'ctx.fillText(line, MARGIN, subtitleTop + index * SUBTITLE_LINE_HEIGHT);',
+            'ctx.fillText(line, MARGIN, measuredSubtitleTop + index * SUBTITLE_LINE_HEIGHT);',
             $module,
             'Baris subjudul harus digambar pada tinggi yang sudah diukur.'
         );
@@ -1772,7 +1790,7 @@ class MapPngExportTest extends TestCase
         // Garis pemisah header digambar di dalam jarak subjudul ke peta, bukan
         // di luar, supaya ruangnya sudah dipesan saat mengukur tinggi area peta.
         $this->assertStringContainsString(
-            'const headerRuleY = subtitleTop + subtitleLines.length * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP / 2;',
+            'const headerRuleY = measuredSubtitleTop + wrappedSubtitle.length * SUBTITLE_LINE_HEIGHT + SUBTITLE_GAP / 2;',
             $module,
             'Garis pemisah header harus digambar pada jarak yang sudah dipesan measureSheet.'
         );
@@ -1828,6 +1846,7 @@ class MapPngExportTest extends TestCase
     public function test_preview_dialog_bisa_mematikan_kontur_dan_mengikuti_peta_utama(): void
     {
         $pencarian = $this->sumber('resources/js/Pages/Peta/MapDenganPencarian.vue');
+        $modal = file_get_contents(base_path('resources/js/Components/Peta/OfflineDownloadModal.vue'));
 
         $this->assertStringContainsString(
             'const MINI_LAYER_MIRROR = {',
@@ -1871,14 +1890,14 @@ class MapPngExportTest extends TestCase
 
         // Dialog harus punya kendali yang memakai toggel yang sama.
         $this->assertStringContainsString(
-            '@change="toggleLayer"',
+            '@toggle-contour="toggleLayer"',
             $pencarian,
             'Dialog harus bisa menyembunyikan garis kontur lewat toggle yang sama.'
         );
 
         $this->assertStringContainsString(
             ':checked="showContour"',
-            $pencarian,
+            $pencarian . $modal,
             'Checkbox dialog harus menampilkan keadaan kontur yang sedang aktif.'
         );
 

@@ -28,7 +28,7 @@
         <div class="relative flex items-start justify-between gap-3">
           <div class="min-w-0">
             <p class="text-xs font-bold uppercase tracking-wide text-[#A7B92B]">{{ item.kode_barang }}</p>
-            <h2 class="mt-1 text-lg font-bold text-[#f0ead8]">{{ item.nama_barang }}</h2>
+            <h2 class="mt-1 text-lg font-bold text-krem-100">{{ item.nama_barang }}</h2>
           </div>
           <span class="badge shrink-0" :class="statusBadge(item.status_pinjam)">
             <AppIcon :name="statusIcon(item.status_pinjam)" class="h-3 w-3" />
@@ -37,9 +37,9 @@
         </div>
 
         <dl class="relative mt-5 grid grid-cols-3 gap-2 text-center">
-          <div v-for="stat in stats(item)" :key="stat.label" class="rounded-xl border border-[#6F9435]/25 bg-[#263D26] p-3">
-            <dt class="text-[11px] text-[#8fa06a]">{{ stat.label }}</dt>
-            <dd class="mt-1 text-xl font-bold text-[#f0ead8]">{{ stat.value }}</dd>
+          <div v-for="stat in stats(item)" :key="stat.label" class="rounded-xl border border-[#6F9435]/25 bg-hutan-800 p-3">
+            <dt class="text-[11px] text-krem-300">{{ stat.label }}</dt>
+            <dd class="mt-1 text-xl font-bold text-krem-100">{{ stat.value }}</dd>
           </div>
         </dl>
 

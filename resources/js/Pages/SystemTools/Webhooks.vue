@@ -2,54 +2,54 @@
   <AppLayout>
     <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <p class="text-sm font-medium text-[#EDD330]">Sistem</p>
-        <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Webhook Integration</h1>
-        <p class="mt-1 text-sm text-[#8fa06a]">Kelola webhook untuk integrasi eksternal.</p>
+        <p class="text-sm font-medium text-emas-400">Sistem</p>
+        <h1 class="mt-1 text-2xl font-bold text-krem-100">Webhook Integration</h1>
+        <p class="mt-1 text-sm text-krem-300">Kelola webhook untuk integrasi eksternal.</p>
       </div>
     </div>
 
     <!-- Mendaftarkan webhook berarti aplikasi akan mengirim data ke URL luar,
          jadi menambah, menguji, dan menghapus semuanya untuk pengelola sistem
          saja. -->
-    <div v-if="canManageTools" class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
-      <p class="text-sm font-semibold text-[#EDD330]">Tambah Webhook</p>
+    <div v-if="canManageTools" class="mb-5 rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-4">
+      <p class="text-sm font-semibold text-emas-400">Tambah Webhook</p>
       <form @submit.prevent="createWebhook" class="mt-3 grid gap-3 sm:grid-cols-3">
-        <input v-model="form.nama" placeholder="Nama webhook" required class="rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]" />
-        <input v-model="form.url" placeholder="URL endpoint" type="url" required class="rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]" />
-        <input v-model="form.event" placeholder="Event (opsional)" class="rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]" />
-        <textarea v-model="form.headers" placeholder="Headers (JSON, opsional)" rows="2" class="rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] resize-none sm:col-span-3"></textarea>
-        <label class="flex items-center gap-2 text-sm text-[#f0ead8] cursor-pointer">
-          <input v-model="form.is_active" type="checkbox" class="h-4 w-4 rounded border-[#6F9435] bg-[#263D26] text-[#A7B92A] focus:ring-[#A7B92A]" />
+        <input v-model="form.nama" placeholder="Nama webhook" required class="rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]" />
+        <input v-model="form.url" placeholder="URL endpoint" type="url" required class="rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]" />
+        <input v-model="form.event" placeholder="Event (opsional)" class="rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]" />
+        <textarea v-model="form.headers" placeholder="Headers (JSON, opsional)" rows="2" class="rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330] resize-none sm:col-span-3"></textarea>
+        <label class="flex items-center gap-2 text-sm text-krem-100 cursor-pointer">
+          <input v-model="form.is_active" type="checkbox" class="h-4 w-4 rounded border-[#6F9435] bg-hutan-800 text-daun-400 focus:ring-daun-400" />
           Aktif
         </label>
         <div class="sm:col-span-3">
-          <button type="submit" :disabled="form.processing" class="rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50">Simpan</button>
+          <button type="submit" :disabled="form.processing" class="rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50">Simpan</button>
         </div>
       </form>
     </div>
 
-    <div class="rounded-2xl border-2 border-[#A7B92B]/40 bg-[#335233] p-5 shadow-sm">
-      <h2 class="mb-4 font-semibold text-[#f0ead8]">Daftar Webhook</h2>
+    <div class="rounded-2xl border-2 border-[#A7B92B]/40 bg-hutan-600 p-5 shadow-sm">
+      <h2 class="mb-4 font-semibold text-krem-100">Daftar Webhook</h2>
       <div v-if="webhooks.data.length" class="space-y-3">
         <div v-for="w in webhooks.data" :key="w.id" class="rounded-xl border border-[#6F9435] p-4">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
-              <p class="text-sm font-semibold text-[#f0ead8]">{{ w.nama }}</p>
-              <p class="mt-1 break-all text-xs text-[#8fa06a]">{{ w.url }}</p>
-              <p v-if="w.event" class="text-xs text-[#8fa06a]">Event: {{ w.event }}</p>
+              <p class="text-sm font-semibold text-krem-100">{{ w.nama }}</p>
+              <p class="mt-1 break-all text-xs text-krem-300">{{ w.url }}</p>
+              <p v-if="w.event" class="text-xs text-krem-300">Event: {{ w.event }}</p>
               <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                 <span class="badge" :class="w.is_active ? 'badge-approved' : 'badge-rejected'">
                   <AppIcon name="statusDot" class="h-2.5 w-2.5" />
                   {{ w.is_active ? 'Aktif' : 'Nonaktif' }}
                 </span>
-                <span class="inline-flex items-center gap-1.5 text-[#8fa06a]">
+                <span class="inline-flex items-center gap-1.5 text-krem-300">
                   <AppIcon name="clipboard" class="h-3.5 w-3.5 shrink-0 text-[#A7B92B]" />
                   {{ w.logs?.length || 0 }} log
                 </span>
               </p>
             </div>
             <div class="flex gap-2">
-              <button v-if="canManageTools" @click="triggerWebhook(w)" class="rounded-lg border border-[#EDD330] px-3 py-1.5 text-xs font-semibold text-[#EDD330] hover:bg-[#EDD330]/10">Test</button>
+              <button v-if="canManageTools" @click="triggerWebhook(w)" class="rounded-lg border border-emas-400 px-3 py-1.5 text-xs font-semibold text-emas-400 hover:bg-[#EDD330]/10">Test</button>
               <button v-if="canManageTools" @click="deleteWebhook(w)" class="rounded-lg border border-[#ef4419]/50 px-3 py-1.5 text-xs font-semibold text-[#ef4419] hover:bg-[#ef4419]/10">Hapus</button>
             </div>
           </div>
@@ -62,9 +62,9 @@
       </p>
     </div>
 
-    <div v-if="triggerResult !== null" class="mt-4 rounded-xl border-2 bg-[#263D26] p-4 text-sm">
-      <p class="font-bold text-[#EDD330]">Hasil Test:</p>
-      <p :class="triggerResult.success ? 'text-[#A7B92A]' : 'text-[#ef4419]'">
+    <div v-if="triggerResult !== null" class="mt-4 rounded-xl border-2 bg-hutan-800 p-4 text-sm">
+      <p class="font-bold text-emas-400">Hasil Test:</p>
+      <p :class="triggerResult.success ? 'text-daun-400' : 'text-[#ef4419]'">
         Status: {{ triggerResult.status }} • {{ triggerResult.success ? 'Berhasil' : 'Gagal' }}
       </p>
     </div>

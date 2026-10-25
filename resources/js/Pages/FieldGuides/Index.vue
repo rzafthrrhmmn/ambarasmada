@@ -1,23 +1,23 @@
 <template>
   <AppLayout>
     <div class="mb-6">
-      <p class="text-sm font-medium text-[#EDD330]">Panduan Lapangan</p>
-      <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Buku Saku Digital</h1>
-      <p class="mt-1 text-sm text-[#8fa06a]">Referensi cepat tanda isyarat, simpul, teknik lapangan, dan lainnya.</p>
+      <p class="text-sm font-medium text-emas-400">Panduan Lapangan</p>
+      <h1 class="mt-1 text-2xl font-bold text-krem-100">Buku Saku Digital</h1>
+      <p class="mt-1 text-sm text-krem-300">Referensi cepat tanda isyarat, simpul, teknik lapangan, dan lainnya.</p>
     </div>
 
-    <div class="mb-4 rounded-xl border border-[#6F9435] bg-[#335233] p-3">
-      <input v-model="search" placeholder="Cari panduan..." class="w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]" />
+    <div class="mb-4 rounded-xl border border-[#6F9435] bg-hutan-600 p-3">
+      <input v-model="search" placeholder="Cari panduan..." class="w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]" />
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <div v-for="guide in filteredGuides" :key="guide.id" class="rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-5 transition hover:border-[#A7B92B]/60">
-        <span class="rounded-full bg-[#6F9435]/20 px-2.5 py-1 text-[10px] font-bold text-[#EDD330]">{{ guide.kategori }}</span>
-        <h3 class="mt-3 text-sm font-bold text-[#f0ead8]">{{ guide.judul }}</h3>
-        <p class="mt-2 line-clamp-3 text-xs leading-5 text-[#8fa06a]">{{ guide.konten }}</p>
+      <div v-for="guide in filteredGuides" :key="guide.id" class="rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5 transition hover:border-[#A7B92B]/60">
+        <span class="rounded-full bg-daun-500/20 px-2.5 py-1 text-[10px] font-bold text-emas-400">{{ guide.kategori }}</span>
+        <h3 class="mt-3 text-sm font-bold text-krem-100">{{ guide.judul }}</h3>
+        <p class="mt-2 line-clamp-3 text-xs leading-5 text-krem-300">{{ guide.konten }}</p>
         <div class="mt-3 flex items-center justify-between">
-          <span class="text-[10px] text-[#8fa06a]">{{ guide.createdBy?.name }}</span>
-          <button v-if="guide.is_favorited" class="text-[#EDD330]" aria-hidden="true">
+          <span class="text-[10px] text-krem-300">{{ guide.createdBy?.name }}</span>
+          <button v-if="guide.is_favorited" class="text-emas-400" aria-hidden="true">
             <svg class="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1.5l2.47 5.01 5.53.8-4 3.9.94 5.5L10 14.17l-4.94 2.6.94-5.5-4-3.9 5.53-.8L10 1.5z" /></svg>
           </button>
         </div>

@@ -10,7 +10,7 @@
       <p class="mt-3 text-base text-[#8fa06a] max-w-md">
         Akun Anda telah berhasil dibuat dengan email <strong class="text-[#EDD330]">{{ auth.user?.email }}</strong><span v-if="auth.user?.nta"> dan NTA <strong class="text-[#EDD330]">{{ auth.user.nta }}</strong></span>. Anda perlu menunggu persetujuan dari Pembina sebelum dapat mengakses seluruh fitur sistem.
       </p>
-      <div class="mt-8 rounded-xl border-2 border-[#A7B92A]/40 bg-[#335233] p-5 max-w-md">
+      <div class="mt-8 rounded-xl border-2 border-daun-400/40 bg-hutan-600 p-5 max-w-md">
         <p class="text-sm text-[#d4dc9a]">Langkah selanjutnya:</p>
         <ol class="mt-2 text-left text-sm text-[#d4dc9a] list-decimal list-inside space-y-1">
           <li v-if="auth.user?.nta">Simpan NTA Anda: <strong class="text-[#EDD330]">{{ auth.user.nta }}</strong></li>
@@ -29,7 +29,7 @@
           type="button"
           @click="resend"
           :disabled="form.processing || cooldown > 0"
-          :class="['mt-4 w-full rounded-lg border-2 border-[#EDD330] bg-gradient-to-r from-[#A7B92A] to-[#EDD330] px-4 py-2.5 text-sm font-extrabold text-[#263D26] transition hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60', form.processing ? 'animate-pulse' : '']"
+          :class="['mt-4 w-full rounded-lg border-2 border-emas-400 bg-gradient-to-r from-daun-400 to-emas-400 px-4 py-2.5 text-sm font-extrabold text-hutan-800 transition hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60', form.processing ? 'animate-pulse' : '']"
         >
           <span v-if="form.processing">Mengirim...</span>
           <span v-else-if="cooldown > 0">Tunggu {{ cooldown }} detik...</span>

@@ -125,18 +125,8 @@ export function isOfflineSubmissionSupported() {
     return 'serviceWorker' in navigator && 'indexedDB' in window;
 }
 
-// Auto-flush on online
-if (typeof window !== 'undefined') {
-    window.addEventListener('online', () => {
-        console.log('[OfflineQueue] Back online, flushing queue...');
-        flushQueue();
-        registerSync();
-    });
-    
-    window.addEventListener('offline', () => {
-        console.log('[OfflineQueue] Gone offline');
-    });
-}
+// Auto-flush on online — ditangani oleh useNetworkStatus.js sebagai single source of truth.
+// Listener di sini dihapus untuk menghindari duplikasi dengan useNetworkStatus.initialise().
 
 export default {
     queueSubmission,

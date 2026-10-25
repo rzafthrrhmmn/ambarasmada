@@ -1,5 +1,5 @@
 import { ref, readonly } from 'vue';
-import { pendingCount, subscribe, flush } from '@/OfflineQueue.js';
+import { flushQueue as offlineFlushQueue, getPendingCount, registerSync } from '@/offline-queue.js';
 
 /**
  * Status koneksi global.
@@ -33,18 +33,15 @@ export function initialise() {
     window.addEventListener('online', () => {
         isOnline.value = true;
         flushQueue();
+        registerSync();
     });
 
     window.addEventListener('offline', () => {
         isOnline.value = false;
     });
 
-    subscribe((items) => {
-        queued.value = items.length;
-    });
-
     if (navigator.onLine) {
-        flushQueue();
+        offlineFlushQueue();
     }
 }
 
@@ -53,9 +50,9 @@ export async function flushQueue() {
 
     flushing.value = true;
     try {
-        await flush();
+        await offlineFlushQueue();
     } finally {
         flushing.value = false;
-        queued.value = pendingCount();
+        queued.value = await getPendingCount();
     }
 }

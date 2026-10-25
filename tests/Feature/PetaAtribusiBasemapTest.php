@@ -171,7 +171,7 @@ class PetaAtribusiBasemapTest extends TestCase
             );
         }
 
-        $export = file_get_contents(base_path('resources/js/Composables/useMapPngExport.js'));
+        $export = file_get_contents(base_path('resources/js/Composables/useMapPngBuild.js'));
 
         $this->assertStringContainsString(
             'sources = ',

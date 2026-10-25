@@ -217,13 +217,15 @@ class OfflineTileLookupTest extends TestCase
                 $source,
                 "Halaman {$name} harus membaca rentang zoom arsip agar estimasi tile tidak menjanjikan tile yang tidak ada."
             );
-
-            $this->assertStringContainsString(
-                ':min="zoomBounds.min"',
-                $source,
-                "Slider di halaman {$name} harus dibatasi rentang zoom arsip."
-            );
         }
+
+        // Slider zoom juga ada di OfflineDownloadModal.vue.
+        $modal = file_get_contents(base_path('resources/js/Components/Peta/OfflineDownloadModal.vue'));
+        $this->assertStringContainsString(
+            ':min="zoomBounds.min"',
+            $modal,
+            'Slider di modal unduhan offline harus dibatasi rentang zoom arsip.'
+        );
     }
 
     public function test_service_worker_and_pages_agree_on_the_message_protocol(): void
@@ -446,7 +448,7 @@ class OfflineTileLookupTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            '@click="showElevationLegend = !showElevationLegend"',
+            '@toggle-legend="showElevationLegend = !showElevationLegend"',
             $pencarian,
             'Legenda harus bisa disembunyikan dan ditampilkan lagi.'
         );

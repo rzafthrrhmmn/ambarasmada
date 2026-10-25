@@ -2,10 +2,10 @@
   <AppLayout>
     <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <p class="text-sm font-medium text-[#EDD330]">Keuangan Ambalan</p>
-        <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">{{ isSelfView ? 'Iuran Saya' : 'Kas dan Tabungan' }}</h1>
-        <p v-if="isSelfView" class="mt-1 text-sm text-[#8fa06a]">Riwayat pembayaran iuran dan ajukan pembayaran baru.</p>
-        <p v-else class="mt-1 text-sm text-[#8fa06a]">Catat transaksi, pantau neraca, dan jaga transparansi kas ambalan.</p>
+        <p class="text-sm font-medium text-emas-400">Keuangan Ambalan</p>
+        <h1 class="mt-1 text-2xl font-bold text-krem-100">{{ isSelfView ? 'Iuran Saya' : 'Kas dan Tabungan' }}</h1>
+        <p v-if="isSelfView" class="mt-1 text-sm text-krem-300">Riwayat pembayaran iuran dan ajukan pembayaran baru.</p>
+        <p v-else class="mt-1 text-sm text-krem-300">Catat transaksi, pantau neraca, dan jaga transparansi kas ambalan.</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <button v-if="canPayIuran" @click="showPay = true" type="button" class="inline-flex items-center rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">Bayar iuran</button>
@@ -17,32 +17,32 @@
     </div>
 
     <section class="mb-6 grid gap-4 sm:grid-cols-3">
-      <div class="group rounded-2xl border border-[#6F9435] bg-[#335233] p-5 transition hover:border-[#A7B92B]/50">
+      <div class="group rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 transition hover:border-[#A7B92B]/50">
         <div class="mb-2 flex items-center gap-2">
-          <span class="rounded-lg bg-[#263D26] p-2 text-[#A7B92B]">
+          <span class="rounded-lg bg-hutan-800 p-2 text-[#A7B92B]">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 0V4m0 8v8" /></svg>
           </span>
-          <p class="text-xs text-[#8fa06a]">
+          <p class="text-xs text-krem-300">
             <span v-if="isSelfView">Total dibayarkan</span>
             <span v-else>Saldo kas</span>
           </p>
         </div>
-        <p class="text-2xl font-bold text-[#f0ead8]">{{ formatRupiah(isSelfView ? memberPayments : balance) }}</p>
+        <p class="text-2xl font-bold text-krem-100">{{ formatRupiah(isSelfView ? memberPayments : balance) }}</p>
       </div>
 
-      <div v-if="canManageFinance" class="group rounded-2xl border border-[#A7B92A]/50 bg-[#A7B92A]/20 p-5 transition hover:bg-[#A7B92A]/30">
+      <div v-if="canManageFinance" class="group rounded-2xl border border-daun-400/50 bg-daun-400/20 p-5 transition hover:bg-daun-400/30">
         <div class="mb-2 flex items-center gap-2">
-          <span class="rounded-lg bg-[#263D26] p-2 text-[#A7B92A]">
+          <span class="rounded-lg bg-hutan-800 p-2 text-daun-400">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v4m0 12v-4m6-6H6" /></svg>
           </span>
-          <p class="text-xs font-medium text-[#A7B92A]">Pemasukan</p>
+          <p class="text-xs font-medium text-daun-400">Pemasukan</p>
         </div>
-        <p class="text-2xl font-bold text-[#A7B92A]">{{ formatRupiah(income) }}</p>
+        <p class="text-2xl font-bold text-daun-400">{{ formatRupiah(income) }}</p>
       </div>
 
       <div v-if="canManageFinance" class="group rounded-2xl border border-[#ef4419]/50 bg-[#ef4419]/20 p-5 transition hover:bg-[#ef4419]/30">
         <div class="mb-2 flex items-center gap-2">
-          <span class="rounded-lg bg-[#263D26] p-2 text-[#ef4419]">
+          <span class="rounded-lg bg-hutan-800 p-2 text-[#ef4419]">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v4m0 12v-4m-6-6h12" /></svg>
           </span>
           <p class="text-xs font-medium text-[#ef4419]">Pengeluaran</p>
@@ -50,20 +50,20 @@
         <p class="text-2xl font-bold text-[#ef4419]">{{ formatRupiah(expense) }}</p>
       </div>
 
-      <div v-if="isSelfView" class="group rounded-2xl border border-[#6F9435] bg-[#335233] p-5 transition hover:border-[#A7B92B]/50">
+      <div v-if="isSelfView" class="group rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 transition hover:border-[#A7B92B]/50">
         <div class="mb-2 flex items-center gap-2">
-          <span class="rounded-lg bg-[#263D26] p-2 text-[#A7B92B]">
+          <span class="rounded-lg bg-hutan-800 p-2 text-[#A7B92B]">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m0 0v8m0-8V4" /></svg>
           </span>
-          <p class="text-xs text-[#8fa06a]">Riwayat pembayaran</p>
+          <p class="text-xs text-krem-300">Riwayat pembayaran</p>
         </div>
-        <p class="text-xl font-bold text-[#f0ead8]">{{ paidCount }} transaksi</p>
+        <p class="text-xl font-bold text-krem-100">{{ paidCount }} transaksi</p>
       </div>
     </section>
 
-    <section v-if="canManageFinance" class="mb-6 rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm">
+    <section v-if="canManageFinance" class="mb-6 rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm">
       <div class="mb-4 flex items-center justify-between">
-        <h2 class="font-semibold text-[#f0ead8]">Cash Flow 6 Bulan Terakhir</h2>
+        <h2 class="font-semibold text-krem-100">Cash Flow 6 Bulan Terakhir</h2>
         <div class="flex gap-3 text-xs">
           <div class="flex items-center gap-1.5"><span class="block h-3 w-3 rounded bg-[#A7B92B]"></span>Pemasukan</div>
           <div class="flex items-center gap-1.5"><span class="block h-3 w-3 rounded bg-[#ef4419]"></span>Pengeluaran</div>
@@ -74,33 +74,33 @@
       </div>
     </section>
 
-    <section class="rounded-2xl border border-[#6F9435] bg-[#335233] shadow-sm border-[#6F9435]">
+    <section class="rounded-2xl border border-[#6F9435] bg-hutan-600 shadow-sm border-[#6F9435]">
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-[#6F9435]/30">
-          <thead class="bg-[#263D26]">
+          <thead class="bg-hutan-800">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-[#8fa06a]">Tanggal</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-[#8fa06a]">Keterangan</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-[#8fa06a]">Nominal</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-[#8fa06a]">Status</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-[#8fa06a]">Aksi</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-krem-300">Tanggal</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-krem-300">Keterangan</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-krem-300">Nominal</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-krem-300">Status</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-krem-300">Aksi</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[#6F9435]/30">
-            <tr v-for="item in transactions.data" :key="item.id" class="transition hover:bg-[#335233]/40">
+            <tr v-for="item in transactions.data" :key="item.id" class="transition hover:bg-hutan-600/40">
               <td class="whitespace-nowrap px-4 py-3 text-sm">{{ formatDate(item.tgl_transaksi) }}</td>
               <td class="px-4 py-3 text-sm">
                 {{ item.keterangan }}
                 <br />
-                <span class="text-xs text-[#8fa06a]">{{ item.category?.nama || 'Umum' }}</span>
+                <span class="text-xs text-krem-300">{{ item.category?.nama || 'Umum' }}</span>
               </td>
               <td class="px-4 py-3 text-sm font-semibold" :class="item.jenis_transaksi === 'Masuk' ? 'text-[#A7B92B]' : 'text-[#ef4419]'">{{ item.jenis_transaksi }} {{ formatRupiah(item.nominal) }}</td>
               <td class="px-4 py-3 text-sm">
                 <span class="rounded-full px-2.5 py-1 text-xs" :class="statusClass(item.status)">{{ item.status }}</span>
               </td>
               <td class="whitespace-nowrap px-4 py-3 text-right text-sm">
-                <button v-if="item.status === 'Draft' && canManageFinance" @click="router.post(`/finance/${item.id}/post`)" class="mr-2 text-[#EDD330] hover:underline">Post</button>
-                <button v-if="item.status === 'Posted' && canManageFinance" @click="router.post(`/finance/${item.id}/reverse`)" class="mr-2 text-[#EDD330] hover:underline">Balik</button>
+                <button v-if="item.status === 'Draft' && canManageFinance" @click="router.post(`/finance/${item.id}/post`)" class="mr-2 text-emas-400 hover:underline">Post</button>
+                <button v-if="item.status === 'Posted' && canManageFinance" @click="router.post(`/finance/${item.id}/reverse`)" class="mr-2 text-emas-400 hover:underline">Balik</button>
                 <button v-if="item.status === 'Draft' && canManageFinance" @click="router.delete(`/finance/${item.id}`)" class="text-[#ef4419] hover:underline">Hapus</button>
               </td>
             </tr>
@@ -115,22 +115,22 @@
       <form @submit.prevent="form.post('/finance', { onSuccess: () => showCreate = false })" class="grid gap-4 sm:grid-cols-2">
         <label class="block sm:col-span-2">
           <span class="text-xs font-medium">Jenis transaksi</span>
-          <select v-model="form.jenis_transaksi" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8]">
+          <select v-model="form.jenis_transaksi" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm text-krem-100">
             <option>Masuk</option>
             <option>Keluar</option>
           </select>
         </label>
         <label class="block">
           <span class="text-xs font-medium">Nominal</span>
-          <input v-model="form.nominal" type="number" min="1" step="0.01" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8]" />
+          <input v-model="form.nominal" type="number" min="1" step="0.01" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm text-krem-100" />
         </label>
         <label class="block">
           <span class="text-xs font-medium">Tanggal</span>
-          <input v-model="form.tgl_transaksi" type="date" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8]" />
+          <input v-model="form.tgl_transaksi" type="date" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm text-krem-100" />
         </label>
         <label class="block sm:col-span-2">
           <span class="text-xs font-medium">Keterangan</span>
-          <textarea v-model="form.keterangan" required rows="3" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8]"></textarea>
+          <textarea v-model="form.keterangan" required rows="3" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm text-krem-100"></textarea>
         </label>
         <div class="flex justify-end gap-2 sm:col-span-2">
           <button type="button" @click="showCreate = false" class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a]">Batal</button>
@@ -141,18 +141,18 @@
 
     <Modal v-if="showPay && canPayIuran" title="Bayar iuran" @close="showPay = false">
       <form @submit.prevent="payForm.post('/finance', { onSuccess: () => showPay = false })" class="grid gap-4">
-        <div class="rounded-xl border border-[#A7B92A]/40 bg-[#263D26] p-4">
+        <div class="rounded-xl border border-daun-400/40 bg-hutan-800 p-4">
           <p class="text-xs font-semibold text-[#A7B92B]">Pembayaran iuran wajib</p>
-          <p class="mt-1 text-xs text-[#8fa06a]">Nominal akan tercatat otomatis sebagai pemasukan kas.</p>
+          <p class="mt-1 text-xs text-krem-300">Nominal akan tercatat otomatis sebagai pemasukan kas.</p>
         </div>
         <label class="block">
           <span class="text-xs font-medium">Jumlah pembayaran</span>
-          <input v-model="payForm.nominal" type="number" min="1000" step="1000" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8]" />
+          <input v-model="payForm.nominal" type="number" min="1000" step="1000" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm text-krem-100" />
           <p v-if="payForm.errors.nominal" class="mt-1 text-xs text-[#ef4419]">{{ payForm.errors.nominal }}</p>
         </label>
         <label class="block">
           <span class="text-xs font-medium">Keterangan (opsional)</span>
-          <textarea v-model="payForm.keterangan" rows="2" placeholder="cth: Pembayaran iuran September" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm text-[#f0ead8]"></textarea>
+          <textarea v-model="payForm.keterangan" rows="2" placeholder="cth: Pembayaran iuran September" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm text-krem-100"></textarea>
         </label>
         <div class="flex justify-end gap-2">
           <button type="button" @click="showPay = false" class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a]">Batal</button>
@@ -271,7 +271,7 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 function statusClass(status) {
-  return status === 'Posted' ? 'bg-[#A7B92B]/20 text-[#A7B92B]' : status === 'Reversed' ? 'bg-[#335233] text-[#d4dc9a]' : 'bg-[#EDD330]/20 text-[#EDD330]';
+  return status === 'Posted' ? 'bg-[#A7B92B]/20 text-[#A7B92B]' : status === 'Reversed' ? 'bg-hutan-600 text-[#d4dc9a]' : 'bg-emas-400/20 text-emas-400';
 }
 </script>
 

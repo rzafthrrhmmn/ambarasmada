@@ -1,20 +1,20 @@
 <template>
-  <div class="rounded-2xl border-2 border-[#A7B92A]/40 bg-[#335233] p-4 shadow-lg">
+  <div class="rounded-2xl border-2 border-daun-400/40 bg-hutan-600 p-4 shadow-lg">
     <div class="mb-3 flex items-center justify-between">
       <button
         @click="prevMonth"
-        class="rounded-lg border-2 border-[#6F9435] p-1 text-xs text-[#d4dc9a] hover:bg-[#6F9435]/30 hover:text-[#EDD330]"
+        class="rounded-lg border-2 border-daun-500 p-1 text-xs text-[#d4dc9a] hover:bg-daun-500/30 hover:text-emas-400"
         aria-label="Bulan sebelumnya"
       >‹</button>
-      <p class="text-center text-sm font-bold text-[#f0ead8]">{{ monthYear }}</p>
+      <p class="text-center text-sm font-bold text-krem-100">{{ monthYear }}</p>
       <button
         @click="nextMonth"
-        class="rounded-lg border-2 border-[#6F9435] p-1 text-xs text-[#d4dc9a] hover:bg-[#6F9435]/30 hover:text-[#EDD330]"
+        class="rounded-lg border-2 border-daun-500 p-1 text-xs text-[#d4dc9a] hover:bg-daun-500/30 hover:text-emas-400"
         aria-label="Bulan depan"
       >›</button>
     </div>
 
-    <div class="grid grid-cols-7 gap-[2px] text-[10px] font-bold text-[#8fa06a]">
+    <div class="grid grid-cols-7 gap-[2px] text-[10px] font-bold text-krem-300">
       <p class="text-center">Min</p>
       <p class="text-center">Sen</p>
       <p class="text-center">Sel</p>
@@ -39,12 +39,12 @@
         {{ day.getDate() }}
         <span
           v-if="hasActivity(day)"
-          class="mx-auto mt-0.5 block h-1 w-1 rounded-full bg-[#EDD330]"
+          class="mx-auto mt-0.5 block h-1 w-1 rounded-full bg-emas-400"
         ></span>
       </button>
     </div>
 
-    <p v-if="!hasAnyActivity" class="mt-3 text-center text-[11px] text-[#8fa06a]">
+    <p v-if="!hasAnyActivity" class="mt-3 text-center text-[11px] text-krem-300">
       Tidak ada kegiatan latihan pada bulan ini.
     </p>
   </div>
@@ -111,11 +111,11 @@ function dayClass(day) {
     day.getMonth() === new Date().getMonth() &&
     day.getFullYear() === new Date().getFullYear();
   const has = hasActivity(day);
-  let cls = 'border-transparent text-[#d4dc9a] hover:bg-[#6F9435]/30';
+  let cls = 'border-transparent text-[#d4dc9a] hover:bg-daun-500/30';
   if (isToday) {
-    cls = 'border-[#EDD330] bg-[#6F9435]/40 text-[#EDD330]';
+    cls = 'border-emas-400 bg-daun-500/40 text-emas-400';
   } else if (has) {
-    cls = 'border-[#A7B92A]/60 bg-[#263D26] text-[#EDD330]';
+    cls = 'border-daun-400/60 bg-hutan-800 text-emas-400';
   }
   return cls;
 }

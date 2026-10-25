@@ -1,54 +1,54 @@
 <template>
   <AppLayout>
     <nav class="mb-5" aria-label="Remah roti">
-      <Link href="/attendance" class="inline-flex items-center gap-1.5 text-sm font-semibold text-[#EDD330] transition hover:gap-2.5 hover:underline">
+      <Link href="/attendance" class="inline-flex items-center gap-1.5 text-sm font-semibold text-emas-400 transition hover:gap-2.5 hover:underline">
         Kembali ke kehadiran saya
       </Link>
     </nav>
 
-    <header class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm">
+    <header class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="rounded-full bg-[#6F9435]/40 px-2.5 py-1 text-xs font-semibold text-[#d4f0a0]">Detail Sesi</span>
-        <span v-if="session.qr_dynamic" class="rounded-full bg-[#EDD330]/20 px-2.5 py-1 text-xs font-semibold text-[#EDD330]">QR dinamis</span>
+        <span class="rounded-full bg-daun-500/40 px-2.5 py-1 text-xs font-semibold text-[#d4f0a0]">Detail Sesi</span>
+        <span v-if="session.qr_dynamic" class="rounded-full bg-emas-400/20 px-2.5 py-1 text-xs font-semibold text-emas-400">QR dinamis</span>
       </div>
 
-      <h1 class="mt-3 break-words text-2xl font-bold text-[#f0ead8] sm:text-3xl">{{ session.nama }}</h1>
+      <h1 class="mt-3 break-words text-2xl font-bold text-krem-100 sm:text-3xl">{{ session.nama }}</h1>
 
       <div class="mt-3 flex flex-wrap items-center gap-2">
-        <span class="inline-flex items-center gap-1.5 rounded-lg bg-[#263D26] px-2.5 py-1 text-xs text-[#d4dc9a]">
+        <span class="inline-flex items-center gap-1.5 rounded-lg bg-hutan-800 px-2.5 py-1 text-xs text-[#d4dc9a]">
           {{ formatDate(session.tanggal) }}
         </span>
-        <span class="inline-flex items-center gap-1.5 rounded-lg bg-[#263D26] px-2.5 py-1 text-xs text-[#d4dc9a]">
+        <span class="inline-flex items-center gap-1.5 rounded-lg bg-hutan-800 px-2.5 py-1 text-xs text-[#d4dc9a]">
           {{ session.lokasi || 'Lokasi belum diisi' }}
         </span>
-        <span v-if="hasGeofence" class="inline-flex items-center gap-1.5 rounded-lg bg-[#263D26] px-2.5 py-1 text-xs text-[#d4dc9a]">
+        <span v-if="hasGeofence" class="inline-flex items-center gap-1.5 rounded-lg bg-hutan-800 px-2.5 py-1 text-xs text-[#d4dc9a]">
           Geofence {{ session.radius }} m
         </span>
       </div>
     </header>
 
     <div class="mt-5 grid gap-5 lg:grid-cols-3">
-      <section class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm lg:col-span-2">
-        <h2 class="font-semibold text-[#f0ead8]">Kehadiran saya pada sesi ini</h2>
+      <section class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm lg:col-span-2">
+        <h2 class="font-semibold text-krem-100">Kehadiran saya pada sesi ini</h2>
 
         <div v-if="myAttendance" class="mt-4 rounded-xl border p-4" :class="statusBorderClass">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="statusChipClass">
               {{ myAttendance.keterangan }}
             </span>
-            <span class="text-xs text-[#8fa06a]">Dicatat {{ formatDateTime(myAttendance.checked_at) }}</span>
+            <span class="text-xs text-krem-300">Dicatat {{ formatDateTime(myAttendance.checked_at) }}</span>
           </div>
 
           <p v-if="myAttendance.catatan" class="mt-3 text-sm text-[#d4dc9a]">Catatan: {{ myAttendance.catatan }}</p>
 
-          <p v-else class="mt-3 text-xs text-[#8fa06a]">
+          <p v-else class="mt-3 text-xs text-krem-300">
             Catatan otomatis dari pemindaian. Bila keterangan ini keliru, minta pemandu sesi memperbaikinya.
           </p>
         </div>
 
-        <div v-else class="mt-4 rounded-xl border border-dashed border-[#6F9435] bg-[#263D26] p-6 text-center">
-          <p class="text-sm font-semibold text-[#f0ead8]">Belum tercatat pada sesi ini</p>
-          <p class="mx-auto mt-1 max-w-sm text-xs text-[#8fa06a]">
+        <div v-else class="mt-4 rounded-xl border border-dashed border-[#6F9435] bg-hutan-800 p-6 text-center">
+          <p class="text-sm font-semibold text-krem-100">Belum tercatat pada sesi ini</p>
+          <p class="mx-auto mt-1 max-w-sm text-xs text-krem-300">
             Pindai QR Code yang ditampilkan pemandu agar kehadiranmu tercatat.
           </p>
           <Link
@@ -62,23 +62,23 @@
       </section>
 
       <aside class="space-y-4">
-        <section class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm">
-          <h2 class="font-semibold text-[#f0ead8]">Informasi sesi</h2>
+        <section class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm">
+          <h2 class="font-semibold text-krem-100">Informasi sesi</h2>
 
           <dl class="mt-3 space-y-2 text-xs">
             <div v-if="session.qr_token" class="flex items-start justify-between gap-3">
-              <dt class="shrink-0 text-[#8fa06a]">Kode QR</dt>
-              <dd class="break-all text-right font-mono font-semibold text-[#EDD330]">{{ session.qr_token }}</dd>
+              <dt class="shrink-0 text-krem-300">Kode QR</dt>
+              <dd class="break-all text-right font-mono font-semibold text-emas-400">{{ session.qr_token }}</dd>
             </div>
             <div class="flex items-start justify-between gap-3">
-              <dt class="shrink-0 text-[#8fa06a]">Geofence</dt>
+              <dt class="shrink-0 text-krem-300">Geofence</dt>
               <dd class="text-right text-[#d4dc9a]">
                 <template v-if="hasGeofence">Aktif, radius {{ session.radius }} m</template>
                 <template v-else>Nonaktif</template>
               </dd>
             </div>
             <div class="flex items-start justify-between gap-3">
-              <dt class="shrink-0 text-[#8fa06a]">Ambalan</dt>
+              <dt class="shrink-0 text-krem-300">Ambalan</dt>
               <dd class="text-right text-[#d4dc9a]">{{ session.ambalan?.nama || '-' }}</dd>
             </div>
           </dl>
@@ -86,19 +86,19 @@
           <Link
             v-if="canScan && scanUrl"
             :href="scanUrl"
-            class="mt-4 block rounded-lg border border-[#6F9435] px-3 py-2 text-center text-xs font-semibold text-[#d4dc9a] transition hover:bg-[#6F9435]/30"
+            class="mt-4 block rounded-lg border border-[#6F9435] px-3 py-2 text-center text-xs font-semibold text-[#d4dc9a] transition hover:bg-daun-500/30"
           >
             Buka halaman pindai QR
           </Link>
         </section>
 
-        <section v-if="session.materi_nama" class="rounded-2xl border border-[#6F9435] bg-[#335233] p-5 shadow-sm">
-          <h2 class="font-semibold text-[#f0ead8]">Materi latihan</h2>
+        <section v-if="session.materi_nama" class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm">
+          <h2 class="font-semibold text-krem-100">Materi latihan</h2>
           <p class="mt-2 truncate text-sm font-medium text-[#d4dc9a]">{{ session.materi_nama }}</p>
-          <p class="mt-0.5 text-xs text-[#8fa06a]">{{ formatFileSize(session.materi_size) }}</p>
+          <p class="mt-0.5 text-xs text-krem-300">{{ formatFileSize(session.materi_size) }}</p>
           <Link
             :href="materiUrl"
-            class="mt-4 block rounded-lg border border-[#6F9435] px-3 py-2 text-center text-xs font-semibold text-[#d4dc9a] transition hover:bg-[#6F9435]/30"
+            class="mt-4 block rounded-lg border border-[#6F9435] px-3 py-2 text-center text-xs font-semibold text-[#d4dc9a] transition hover:bg-daun-500/30"
           >
             Unduh materi
           </Link>
@@ -144,18 +144,18 @@ const statusChipClass = computed(() => {
     case 'Hadir':
       return 'bg-[#A7B92B]/25 text-[#d4f0a0]';
     case 'Izin':
-      return 'bg-[#EDD330]/20 text-[#EDD330]';
+      return 'bg-emas-400/20 text-emas-400';
     case 'Sakit':
       return 'bg-[#f0c987]/20 text-[#f0c987]';
     case 'Alpa':
       return 'bg-[#ef4419]/25 text-[#ffb4a3]';
     default:
-      return 'bg-[#263D26] text-[#8fa06a]';
+      return 'bg-hutan-800 text-krem-300';
   }
 });
 
 const statusBorderClass = computed(() =>
-  props.myAttendance?.keterangan === 'Hadir' ? 'border-[#A7B92B]/60 bg-[#2d4a2d]' : 'border-[#6F9435] bg-[#263D26]',
+  props.myAttendance?.keterangan === 'Hadir' ? 'border-[#A7B92B]/60 bg-[#2d4a2d]' : 'border-[#6F9435] bg-hutan-800',
 );
 
 function formatDate(value) {

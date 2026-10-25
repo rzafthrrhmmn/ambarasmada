@@ -2,9 +2,9 @@
   <AppLayout>
     <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <p class="text-sm font-medium text-[#EDD330]">Permusyawaratan</p>
-        <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Rapat & Musyawarah</h1>
-        <p class="mt-1 text-sm text-[#8fa06a]">Catat notulen, voting, dan keputusan rapat.</p>
+        <p class="text-sm font-medium text-emas-400">Permusyawaratan</p>
+        <h1 class="mt-1 text-2xl font-bold text-krem-100">Rapat & Musyawarah</h1>
+        <p class="mt-1 text-sm text-krem-300">Catat notulen, voting, dan keputusan rapat.</p>
       </div>
       <button v-if="canManage" type="button" class="btn-primary" @click="showCreate = true">
         <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
@@ -13,15 +13,15 @@
     </div>
 
     <div class="space-y-3">
-      <div v-for="meeting in meetings.data" :key="meeting.id" class="rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-5 transition hover:border-[#A7B92B]/60">
+      <div v-for="meeting in meetings.data" :key="meeting.id" class="rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5 transition hover:border-[#A7B92B]/60">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <h3 class="text-sm font-bold text-[#f0ead8]">{{ meeting.judul }}</h3>
-            <p class="mt-1 text-[10px] text-[#8fa06a]">{{ meeting.jenis }} • {{ formatDate(meeting.tanggal) }}</p>
-            <p class="text-[10px] text-[#8fa06a]">{{ meeting.attendees_count || 0 }} hadir</p>
+            <h3 class="text-sm font-bold text-krem-100">{{ meeting.judul }}</h3>
+            <p class="mt-1 text-[10px] text-krem-300">{{ meeting.jenis }} • {{ formatDate(meeting.tanggal) }}</p>
+            <p class="text-[10px] text-krem-300">{{ meeting.attendees_count || 0 }} hadir</p>
           </div>
           <div class="flex gap-2 shrink-0">
-            <Link :href="`/meetings/${meeting.id}`" class="rounded-lg border border-[#6F9435] px-2 py-1 text-[10px] font-bold text-[#d4dc9a] hover:bg-[#6F9435]/20">Detail</Link>
+            <Link :href="`/meetings/${meeting.id}`" class="rounded-lg border border-[#6F9435] px-2 py-1 text-[10px] font-bold text-[#d4dc9a] hover:bg-daun-500/20">Detail</Link>
           </div>
         </div>
       </div>
@@ -34,14 +34,14 @@
 
     <Modal v-if="showCreate" :title="editingMeeting ? 'Edit Rapat' : 'Tambah Rapat'" @close="reset">
       <form @submit.prevent="submit" class="grid gap-3">
-        <label class="block"><span class="text-xs font-medium">Judul</span><input v-model="form.judul" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label>
-        <label class="block"><span class="text-xs font-medium">Agenda (pisahkan per baris)</span><textarea v-model="form.agenda" rows="4" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm"></textarea></label>
+        <label class="block"><span class="text-xs font-medium">Judul</span><input v-model="form.judul" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm" /></label>
+        <label class="block"><span class="text-xs font-medium">Agenda (pisahkan per baris)</span><textarea v-model="form.agenda" rows="4" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm"></textarea></label>
         <div class="grid gap-3 sm:grid-cols-2">
-          <label class="block"><span class="text-xs font-medium">Tanggal</span><input v-model="form.tanggal" type="date" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label>
-          <label class="block"><span class="text-xs font-medium">Jenis</span><select v-model="form.jenis" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm"><option value="">Pilih</option><option value="Musyawarah">Musyawarah</option><option value="Rapat Pembina">Rapat Pembina</option><option value="Rapat Anggota">Rapat Anggota</option><option value="Sidang">Sidang</option><option value="Lainnya">Lainnya</option></select></label>
+          <label class="block"><span class="text-xs font-medium">Tanggal</span><input v-model="form.tanggal" type="date" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm" /></label>
+          <label class="block"><span class="text-xs font-medium">Jenis</span><select v-model="form.jenis" required class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm"><option value="">Pilih</option><option value="Musyawarah">Musyawarah</option><option value="Rapat Pembina">Rapat Pembina</option><option value="Rapat Anggota">Rapat Anggota</option><option value="Sidang">Sidang</option><option value="Lainnya">Lainnya</option></select></label>
         </div>
-        <label class="block"><span class="text-xs font-medium">Lokasi</span><input v-model="form.lokasi" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm" /></label>
-        <label class="block"><span class="text-xs font-medium">Status</span><select v-model="form.status" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#335233] px-3 py-2 text-sm"><option value="Draft">Draft</option><option value="Berlangsung">Berlangsung</option><option value="Selesai">Selesai</option><option value="Dibatalkan">Dibatalkan</option></select></label>
+        <label class="block"><span class="text-xs font-medium">Lokasi</span><input v-model="form.lokasi" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm" /></label>
+        <label class="block"><span class="text-xs font-medium">Status</span><select v-model="form.status" class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-600 px-3 py-2 text-sm"><option value="Draft">Draft</option><option value="Berlangsung">Berlangsung</option><option value="Selesai">Selesai</option><option value="Dibatalkan">Dibatalkan</option></select></label>
         <button type="submit" :disabled="form.processing" class="rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">{{ editingMeeting ? 'Simpan' : 'Tambah' }}</button>
       </form>
     </Modal>

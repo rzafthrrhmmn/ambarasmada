@@ -1,57 +1,57 @@
 <template>
   <AppLayout>
     <div class="mb-6">
-      <p class="text-sm font-medium text-[#EDD330]">Kegiatan</p>
-      <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">{{ event.nama }}</h1>
-      <p class="mt-1 text-sm text-[#8fa06a]">{{ event.deskripsi }}</p>
+      <p class="text-sm font-medium text-emas-400">Kegiatan</p>
+      <h1 class="mt-1 text-2xl font-bold text-krem-100">{{ event.nama }}</h1>
+      <p class="mt-1 text-sm text-krem-300">{{ event.deskripsi }}</p>
     </div>
 
     <div class="grid gap-4 mb-6 sm:grid-cols-2">
-      <div class="rounded-xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
-        <p class="text-[10px] font-medium text-[#8fa06a]">Tanggal</p>
-        <p class="text-sm font-bold text-[#f0ead8]">{{ formatDate(event.tanggal) }}</p>
+      <div class="rounded-xl border-2 border-[#6F9435]/40 bg-hutan-600 p-4">
+        <p class="text-[10px] font-medium text-krem-300">Tanggal</p>
+        <p class="text-sm font-bold text-krem-100">{{ formatDate(event.tanggal) }}</p>
       </div>
-      <div class="rounded-xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
-        <p class="text-[10px] font-medium text-[#8fa06a]">Lokasi</p>
-        <p class="text-sm font-bold text-[#f0ead8]">{{ event.lokasi || '-' }}</p>
+      <div class="rounded-xl border-2 border-[#6F9435]/40 bg-hutan-600 p-4">
+        <p class="text-[10px] font-medium text-krem-300">Lokasi</p>
+        <p class="text-sm font-bold text-krem-100">{{ event.lokasi || '-' }}</p>
       </div>
-      <div class="rounded-xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
-        <p class="text-[10px] font-medium text-[#8fa06a]">Jenis</p>
-        <p class="text-sm font-bold text-[#f0ead8]">{{ event.jenis }}</p>
+      <div class="rounded-xl border-2 border-[#6F9435]/40 bg-hutan-600 p-4">
+        <p class="text-[10px] font-medium text-krem-300">Jenis</p>
+        <p class="text-sm font-bold text-krem-100">{{ event.jenis }}</p>
       </div>
-      <div class="rounded-xl border-2 border-[#6F9435]/40 bg-[#335233] p-4">
-        <p class="text-[10px] font-medium text-[#8fa06a]">Status</p>
+      <div class="rounded-xl border-2 border-[#6F9435]/40 bg-hutan-600 p-4">
+        <p class="text-[10px] font-medium text-krem-300">Status</p>
         <p class="text-sm font-bold" :class="{
           'text-[#A7B92B]': event.status === 'Aktif',
-          'text-[#EDD330]': event.status === 'Draft',
+          'text-emas-400': event.status === 'Draft',
           'text-[#ef4419]': event.status === 'Dibatalkan',
         }">{{ event.status }}</p>
       </div>
     </div>
 
-    <section class="mb-6 rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-5">
-      <h2 class="mb-4 font-semibold text-[#f0ead8]">Daftar Peserta</h2>
+    <section class="mb-6 rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5">
+      <h2 class="mb-4 font-semibold text-krem-100">Daftar Peserta</h2>
       <div class="space-y-2">
-        <div v-for="p in participants" :key="p.id" class="flex items-center justify-between rounded-lg bg-[#263D26] px-4 py-3">
+        <div v-for="p in participants" :key="p.id" class="flex items-center justify-between rounded-lg bg-hutan-800 px-4 py-3">
           <div>
-            <p class="text-sm font-bold text-[#f0ead8]">{{ p.member?.nama_lengkap }}</p>
-            <p class="text-[10px] text-[#8fa06a]">{{ p.member?.user?.role }}</p>
+            <p class="text-sm font-bold text-krem-100">{{ p.member?.nama_lengkap }}</p>
+            <p class="text-[10px] text-krem-300">{{ p.member?.user?.role }}</p>
           </div>
           <span class="rounded-full px-2.5 py-1 text-[10px] font-bold" :class="{
-            'bg-[#EDD330]/20 text-[#EDD330]': p.status === 'Pending',
+            'bg-emas-400/20 text-emas-400': p.status === 'Pending',
             'bg-[#A7B92B]/20 text-[#A7B92B]': p.status === 'Hadir',
-            'bg-[#6F9435]/20 text-[#6F9435]': p.status === 'Izin',
+            'bg-daun-500/20 text-[#6F9435]': p.status === 'Izin',
             'bg-[#ef4419]/20 text-[#ef4419]': p.status === 'Tidak Hadir',
           }">{{ p.status }}</span>
         </div>
       </div>
     </section>
 
-    <div v-if="event.agendas?.length" class="rounded-2xl border-2 border-[#6F9435]/40 bg-[#335233] p-5">
-      <h2 class="mb-4 font-semibold text-[#f0ead8]">Agenda</h2>
+    <div v-if="event.agendas?.length" class="rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5">
+      <h2 class="mb-4 font-semibold text-krem-100">Agenda</h2>
       <div class="space-y-2">
-        <div v-for="agenda in event.agendas" :key="agenda.id" class="rounded-lg bg-[#263D26] p-3">
-          <p class="text-sm font-bold text-[#f0ead8]">{{ agenda.urutan }}. {{ agenda.judul }}</p>
+        <div v-for="agenda in event.agendas" :key="agenda.id" class="rounded-lg bg-hutan-800 p-3">
+          <p class="text-sm font-bold text-krem-100">{{ agenda.urutan }}. {{ agenda.judul }}</p>
         </div>
       </div>
     </div>

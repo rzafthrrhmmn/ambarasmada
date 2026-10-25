@@ -8,159 +8,29 @@
          menduplikasi checkbox "Tampilan Peta" di dialog unduhan. Sekarang
          jadi lima chip pendek yang keadaan aktifnya ditandai warnanya, jadi
          yang sedang aktif terlihat tanpa harus membaca teks tombolnya. -->
-    <header class="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-daun-400">Peta Kontur</p>
-        <h1 class="mt-1 text-2xl font-extrabold text-[#f0ead8] sm:text-3xl">Peta Kontur Sulawesi Selatan</h1>
-        <p class="mt-2 max-w-2xl text-sm text-[#8fa06a]">
-          Cari kabupaten, lihat batas administratif, dan jelajahi kontur topografi.
-        </p>
+    <PetaHeader
+      :layer-items="LAPISAN_PETA"
+      @toggle-layer="handleToggleLayer"
+      @download="showOfflineModal = true"
+      @toggle-legend="showElevationLegend = !showElevationLegend"
+    />
 
-        <!-- Ringkasan tetap yang selalu benar dan tidak bergantung pilihan
-             pengguna, jadi pembaca punya konteks sebelum menyentuh peta. -->
-        <dl class="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs">
-          <div class="flex items-baseline gap-1.5">
-            <dt class="text-[#8fa06a]">Jangkauan</dt>
-            <dd class="font-semibold text-[#d4dc9a]">24 kabupaten/kota</dd>
-          </div>
-          <div class="flex items-baseline gap-1.5">
-            <dt class="text-[#8fa06a]">Interval kontur</dt>
-            <dd class="font-semibold text-[#d4dc9a]">10 meter</dd>
-          </div>
-          <div class="flex items-baseline gap-1.5">
-            <dt class="text-[#8fa06a]">Kontur indeks</dt>
-            <dd class="font-semibold text-[#d4dc9a]">Setiap 50 meter</dd>
-          </div>
-          <div class="flex items-baseline gap-1.5">
-            <dt class="text-[#8fa06a]">Status data</dt>
-            <dd class="font-semibold" :class="hasPmtiles ? 'text-[#A7B92A]' : 'text-[#f87171]'">
-              {{ hasPmtiles ? 'Kontur tersedia' : 'Kontur belum tersedia' }}
-            </dd>
-          </div>
-        </dl>
-      </div>
+    <SearchPanel
+      :kabupatens="kabupatens"
+      v-model:selected-kabupaten="selectedKabupaten"
+      v-model:selected-kecamatan="selectedKecamatan"
+      :selected-kab-data="selectedKabData"
+      :selected-kec-data="selectedKecData"
+      :selected-wilayah-bbox="selectedWilayahBBox"
+      :kecamatan-options="kecamatanOptions"
+      :map-status="mapStatus"
+      :is-exporting="isExporting"
+      @print-wilayah="printWilayah"
+      @clear-selection="clearSelection"
+      @search-select="onSearchSelect"
+    />
 
-      <section class="rounded-xl border-2 border-daun-500/40 bg-hutan-600/70 p-3">
-        <div class="mb-2 flex items-center justify-between gap-2">
-          <h2 class="text-xs font-semibold uppercase tracking-wider text-[#A7B92A]">Lapisan Peta</h2>
-          <button
-            v-if="hasPmtiles"
-            @click="showOfflineModal = true"
-            class="inline-flex items-center rounded-lg border-2 border-[#A7B92A] bg-daun-400/10 px-3 py-1.5 text-xs font-bold text-[#A7B92A] transition hover:bg-daun-400/20"
-          >
-            Unduh Offline
-          </button>
-        </div>
-        <div class="flex flex-wrap gap-1.5">
-          <button
-            v-for="lapisan in LAPISAN_PETA"
-            :key="lapisan.key"
-            type="button"
-            @click="lapisan.toggle"
-            :aria-pressed="lapisan.aktif"
-            class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition"
-            :class="lapisan.aktif
-              ? 'border-emas-400 bg-emas-400/15 text-emas-400'
-              : 'border-daun-500/50 bg-hutan-800/60 text-lumut-400 hover:border-daun-500 hover:text-krem-300'"
-          >
-            <NavIcon :name="lapisan.icon" class="h-4 w-4" />
-            {{ lapisan.nama }}
-          </button>
-
-          <!-- Legenda bukan lapisan data, jadi tombolnya berdiri sendiri.
-               Dipisah supaya state-nya tidak ikutTerIkut v-for di atas. -->
-          <button
-            type="button"
-            @click="showElevationLegend = !showElevationLegend"
-            :aria-pressed="showElevationLegend"
-            class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition"
-            :class="showElevationLegend
-              ? 'border-emas-400 bg-emas-400/15 text-emas-400'
-              : 'border-daun-500/50 bg-hutan-800/60 text-lumut-400 hover:border-daun-500 hover:text-krem-300'"
-          >
-            <NavIcon name="legend" class="h-4 w-4" />
-            Legenda
-          </button>
-        </div>
-      </section>
-    </header>
-
-    <div class="mb-4 rounded-xl border-2 border-[#A7B92A]/40 bg-[#335233] p-4">
-      <label for="peta-kabupaten" class="block text-xs font-medium text-[#d4dc9a] mb-2">Cari Kabupaten</label>
-      <div class="flex flex-col gap-2 sm:flex-row">
-        <select
-          id="peta-kabupaten"
-          v-model="selectedKabupaten"
-          @change="onKabupatenSelect"
-          class="flex-1 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-2.5 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
-        >
-          <option value="">-- Pilih Kabupaten --</option>
-          <option
-            v-for="kab in kabupatens"
-            :key="kab.id_kab"
-            :value="kab.id_kab"
-          >
-            {{ kab.nama_kab }}
-          </option>
-        </select>
-
-        <!-- Dropdown kecamatan mengikuti kabupaten yang dipilih. Daftar seluruh
-             Sulawesi hampir 313 nama dan hampir semuanya di luar kabupaten
-             aktif, jadi yang ditampilkan selalu daftar milik kabupaten
-             terpilih saja. -->
-        <select
-          id="peta-kecamatan"
-          v-model="selectedKecamatan"
-          @change="onKecamatanSelect"
-          :disabled="!selectedKabupaten"
-          class="flex-1 rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-2.5 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <option value="">
-            {{ selectedKabupaten ? '-- Pilih Kecamatan --' : '-- Pilih Kabupaten dulu --' }}
-          </option>
-          <option
-            v-for="kec in kecamatanOptions"
-            :key="kec.id_kec"
-            :value="kec.id_kec"
-          >
-            {{ kec.nama_kec }}
-          </option>
-        </select>
-
-        <div class="flex shrink-0 gap-2">
-          <button
-            v-if="selectedKabupaten"
-            @click="printWilayah"
-            class="rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-3 py-2 text-xs font-bold text-[#A7B92A] transition hover:bg-daun-400/20"
-            :title="`Cetak PNG wilayah yang dipilih: ${selectedWilayah?.label ?? ''}`"
-          >
-            Cetak PNG
-          </button>
-          <button
-            v-if="selectedKabupaten"
-            @click="clearSelection"
-            class="rounded-lg border-2 border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:bg-[#6F9435]/30"
-          >
-            Hapus
-          </button>
-        </div>
-      </div>
-      <div v-if="selectedKabData" class="mt-2 flex flex-wrap gap-3 text-xs text-[#8fa06a]">
-        <span>Kabupaten: <strong class="text-[#EDD330]">{{ selectedKabData.nama_kab }}</strong></span>
-        <span v-if="selectedKecData">
-          Kecamatan:
-          <strong class="text-[#EDD330]">{{ selectedKecData.nama_kec }}</strong>
-          <span class="text-[#8fa06a]">({{ selectedKecData.id_kec }})</span>
-        </span>
-        <span>ID: {{ selectedKabData.id_kab }}</span>
-        <span v-if="selectedWilayahBBox">BBox: {{ selectedWilayahBBox.join(', ') }}</span>
-        <span v-if="selectedKabupaten && !selectedKecamatan">
-          {{ kecamatanOptions.length }} kecamatan di {{ selectedKabData.nama_kab }}
-        </span>
-      </div>
-    </div>
-
-    <div class="peta-shell relative overflow-hidden rounded-2xl border-2 border-[#A7B92A]/40 bg-[#263D26] shadow-lg">
+    <div class="peta-shell relative overflow-hidden rounded-2xl border-2 border-daun-400/40 bg-hutan-800 shadow-lg">
       <div ref="mapContainer" class="h-[70vh] w-full min-h-[400px]"></div>
 
       <!-- Pojok kiri bawah: skala 1:N dan readout koordinat.
@@ -274,43 +144,7 @@
           Mode Offline
         </div>
 
-        <!-- Search panel -->
-        <div class="flex w-full gap-2">
-          <div class="relative flex-1">
-            <input
-              v-model="searchQuery"
-              @keyup.enter="searchPlace"
-              @focus="searchFocused = true"
-              @blur="searchFocused = false"
-              placeholder="Cari tempat atau koordinat (lat, lng)..."
-              class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] pr-10"
-            />
-            <button
-              v-if="searchQuery"
-              type="button"
-              @click="searchQuery = ''"
-              class="absolute right-2 top-1/2 -translate-y-1/2 text-[#8fa06a] transition hover:text-[#EDD330]"
-              title="Bersihkan pencarian"
-            >
-              <NavIcon name="close" class="h-4 w-4" />
-            </button>
-          </div>
-          <button
-            @click="searchPlace"
-            :disabled="!searchQuery.trim()"
-            class="rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-3 py-2 text-sm font-bold text-[#A7B92A] transition hover:bg-daun-400/20 disabled:opacity-50"
-          >
-            Cari
-          </button>
-        </div>
 
-        <!-- Search results dropdown -->
-        <div v-if="searchFocused && searchResults.length > 0" class="max-h-60 w-full overflow-y-auto rounded-lg border border-[#6F9435] bg-[#263D26] shadow-lg">
-          <div v-for="result in searchResults" :key="result.place_id || result.lat + ',' + result.lon" @click="selectSearchResult(result)" class="cursor-pointer border-b border-[#6F9435]/20 px-4 py-2 last:border-0 hover:bg-[#335233]">
-            <div class="font-medium text-[#f0ead8]">{{ result.display_name || result.label }}</div>
-            <div class="text-xs text-[#8fa06a]">{{ result.lat }}, {{ result.lon }}</div>
-          </div>
-        </div>
 
         <!-- Measurement tool panel -->
         <div v-if="measurementMode !== 'none'" class="w-full rounded-lg border border-[#6F9435]/30 bg-[#1a1a1a]/90 p-3 text-xs text-[#EDD330]">
@@ -330,7 +164,7 @@
               Luas: {{ formatArea(measurementArea) }}
             </div>
           </div>
-          <button @click="finishMeasurement" class="mt-2 w-full rounded bg-[#A7B92A] px-3 py-1.5 text-xs font-bold text-white">Selesai</button>
+          <button @click="finishMeasurement" class="mt-2 w-full rounded bg-daun-400 px-3 py-1.5 text-xs font-bold text-white">Selesai</button>
         </div>
       </div>
 
@@ -441,7 +275,7 @@ yang kebetulan sedang dipilih di dropdown. -->
           <p class="mt-2 text-sm text-[#8fa06a]">{{ mapError }}</p>
           <button
             @click="initMap"
-            class="mt-4 inline-flex items-center rounded-lg border-2 border-[#A7B92A] bg-[#A7B92A]/10 px-4 py-2 text-sm font-bold text-[#A7B92A] transition hover:bg-daun-400/20"
+            class="mt-4 inline-flex items-center rounded-lg border-2 border-daun-400 bg-daun-400/10 px-4 py-2 text-sm font-bold text-daun-400 transition hover:bg-daun-400/20"
           >
             Coba Lagi
           </button>
@@ -563,307 +397,55 @@ yang kebetulan sedang dipilih di dropdown. -->
     </section>
   </AppLayout>
 
-  <Modal v-if="showOfflineModal" title="Unduh Peta Offline" @close="showOfflineModal = false">
-    <div class="space-y-4">
-      <!-- Download Mode Selection -->
-      <div class="rounded-lg border border-[#6F9435]/30 bg-[#335233] p-4">
-        <label class="block text-xs font-medium text-[#d4dc9a] mb-3">Mode Unduh</label>
-        <div class="grid gap-2 sm:grid-cols-2">
-          <label class="relative cursor-pointer">
-            <input
-              type="radio"
-              name="downloadMode"
-              value="full"
-              v-model="downloadMode"
-              class="sr-only peer"
-            />
-            <div class="relative rounded-lg border-2 border-[#6F9435] bg-[#263D26] p-4 text-center transition-all peer-checked:border-[#A7B92A] peer-checked:bg-[#A7B92A]/10 peer-checked:ring-2 peer-checked:ring-[#A7B92A]/20">
-              <div class="mx-auto mb-1 w-fit text-[#EDD330]"><NavIcon name="map" class="h-6 w-6" /></div>
-              <div class="mt-1 text-sm font-semibold text-[#f0ead8]">Seluruh Peta</div>
-              <div class="mt-1 text-xs text-[#8fa06a]">Sulawesi Selatan lengkap</div>
-            </div>
-          </label>
-          <label class="relative cursor-pointer">
-            <input
-              type="radio"
-              name="downloadMode"
-              value="region"
-              v-model="downloadMode"
-              class="sr-only peer"
-            />
-            <div class="relative rounded-lg border-2 border-[#6F9435] bg-[#263D26] p-4 text-center transition-all peer-checked:border-[#A7B92A] peer-checked:bg-[#A7B92A]/10 peer-checked:ring-2 peer-checked:ring-[#A7B92A]/20">
-              <div class="mx-auto mb-1 w-fit text-[#EDD330]"><NavIcon name="locate" class="h-6 w-6" /></div>
-              <div class="mt-1 text-sm font-semibold text-[#f0ead8]">Satu Daerah</div>
-              <div class="mt-1 text-xs text-[#8fa06a]">Pilih kabupaten/kota, lalu kecamatan</div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      <!-- Region Selection (when region mode) -->
-      <div v-if="downloadMode === 'region'" class="rounded-lg border border-[#6F9435]/30 bg-[#335233] p-4">
-        <label for="unduh-kabupaten" class="block text-xs font-medium text-[#d4dc9a] mb-2">Pilih Kabupaten/Kota</label>
-        <select
-          id="unduh-kabupaten"
-          v-model="selectedOfflineRegion"
-          class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-2.5 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
-        >
-          <option value="">-- Pilih Daerah --</option>
-          <option
-            v-for="kab in kabupatens"
-            :key="kab.id_kab"
-            :value="kab.id_kab"
-          >
-            {{ kab.nama_kab }}
-          </option>
-        </select>
-
-        <!-- Unduhan bisa dibatasi sampai satu kecamatan. Tanpa ini paket tile
-             selalu memuat seluruh kabupaten padahal yang dibutuhkan peta satu
-             kecamatan. -->
-        <label for="unduh-kecamatan" class="mt-3 block text-xs font-medium text-[#d4dc9a] mb-2">
-          Pilih Kecamatan <span class="text-[#8fa06a]">(opsional)</span>
-        </label>
-        <select
-          id="unduh-kecamatan"
-          v-model="selectedOfflineKecamatan"
-          :disabled="!selectedOfflineRegion"
-          class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-2.5 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <option value="">
-            {{ selectedOfflineRegion ? '-- Semua Kecamatan --' : '-- Pilih Kabupaten dulu --' }}
-          </option>
-          <option
-            v-for="kec in offlineKecamatanOptions"
-            :key="kec.id_kec"
-            :value="kec.id_kec"
-          >
-            {{ kec.nama_kec }}
-          </option>
-        </select>
-
-        <div v-if="selectedOfflineWilayah" class="mt-2 text-xs text-[#8fa06a]">
-          Area: {{ selectedOfflineWilayah.label }}
-          <span class="text-[#EDD330]">({{ selectedOfflineWilayah.kode }})</span>
-          <span v-if="selectedOfflineKecData && !selectedOfflineKecData.bbox" class="mt-1 block text-[#EDD330]">
-            Kecamatan ini belum punya batas sendiri, paket tile mengikuti seluruh kabupaten.
-          </span>
-        </div>
-      </div>
-
-      <!-- Mini Map Preview (when region selected) -->
-      <div v-if="showMiniMap" class="rounded-lg border border-[#6F9435]/30 bg-[#263D26] p-3">
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-xs font-medium text-[#d4dc9a]">Preview Wilayah</label>
-          <span v-if="selectedOfflineWilayah" class="text-xs text-[#EDD330]">{{ selectedOfflineWilayah.name }}</span>
-        </div>
-        <div ref="miniMapContainer" class="peta-shell h-[200px] w-full rounded-lg overflow-hidden border border-[#6F9435]/30 relative">
-          <div v-if="miniMapLoading" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/90">
-            <p class="text-sm text-[#8fa06a]">Memuat preview...</p>
-          </div>
-          <div v-if="miniMapError" class="absolute inset-0 flex items-center justify-center bg-[#263D26]/90 text-center p-4">
-            <p class="text-sm text-[#f87171]">{{ miniMapError }}</p>
-            <button @click="initMiniMap" class="mt-2 text-xs text-[#A7B92A] hover:underline">Coba lagi</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Zoom Settings -->
-      <div class="rounded-lg border border-[#6F9435]/30 bg-[#335233] p-4">
-        <label class="block text-xs font-medium text-[#d4dc9a] mb-3">Level Zoom</label>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label class="block text-xs font-medium text-[#d4dc9a] mb-1">Zoom Min</label>
-            <input
-              v-model.number="offlineZoomMin"
-              type="range"
-              :min="zoomBounds.min"
-              :max="zoomBounds.max"
-              class="w-full"
-            />
-            <p class="text-xs text-[#8fa06a] text-right">Zoom: {{ offlineZoomMin }}</p>
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-[#d4dc9a] mb-1">Zoom Max</label>
-            <input
-              v-model.number="offlineZoomMax"
-              type="range"
-              :min="zoomBounds.min"
-              :max="zoomBounds.max"
-              class="w-full"
-            />
-            <p class="text-xs text-[#8fa06a] text-right">Zoom: {{ offlineZoomMax }}</p>
-          </div>
-        </div>
-        <div class="mt-3 rounded-lg bg-[#263D26] p-3 text-xs text-[#8fa06a]">
-          <p>Estimasi tile: {{ estimatedTiles.toLocaleString() }}</p>
-          <p>Estimasi ukuran: ~{{ estimatedSize }}</p>
-          <p v-if="archiveZoom" class="mt-1">
-            Arsip peta memuat zoom {{ archiveZoom.min }}&ndash;{{ archiveZoom.max }}.
-          </p>
-        </div>
-      </div>
-
-<!-- Tampilan Peta: berlaku untuk peta utama, preview di atas, dan PNG yang
- diunduh. Ketiganya harus ikut berubah karena PNG diambil dari kanvas utama,
- jadi menyembunyikan kontur hanya di preview akan membuat berkas unduhan
- tetap berisi kontur. -->
-<div class="rounded-lg border border-[#6F9435]/30 bg-[#335233] p-4">
-<label class="block text-xs font-medium text-[#d4dc9a] mb-3">Tampilan Peta</label>
-<div class="space-y-2">
-<label class="flex items-center gap-2 cursor-pointer">
-<input
-type="checkbox"
-:checked="showContour"
-@change="toggleLayer"
-class="rounded border-[#6F9435] text-[#A7B92A] focus:ring-[#A7B92A]"
-/>
-<span class="text-sm text-[#f0ead8]">Garis Kontur</span>
-</label>
-<label class="flex items-center gap-2 cursor-pointer">
-<input
-type="checkbox"
-:checked="showHillshade"
-@change="toggleHillshade"
-class="rounded border-[#6F9435] text-[#A7B92A] focus:ring-[#A7B92A]"
-/>
-<span class="text-sm text-[#f0ead8]">Hillshade</span>
-</label>
-<label class="flex items-center gap-2 cursor-pointer">
-<input
-type="checkbox"
-:checked="showDistrictLabels"
-@change="toggleDistrictLabels"
-class="rounded border-[#6F9435] text-[#A7B92A] focus:ring-[#A7B92A]"
-/>
-<span class="text-sm text-[#f0ead8]">Label Kabupaten/Kota</span>
-</label>
-<label class="flex items-center gap-2 cursor-pointer">
-<input
-type="checkbox"
-:checked="showContourLabels"
-@change="toggleContourLabels"
-class="rounded border-[#6F9435] text-[#A7B92A] focus:ring-[#A7B92A]"
-/>
-<span class="text-sm text-[#f0ead8]">Label Kontur</span>
-</label>
-</div>
-<p class="mt-2 text-xs text-[#8fa06a]">
-Berlaku untuk peta utama, preview, dan PNG yang diunduh.
-</p>
-</div>
-
-<div class="rounded-lg border border-[#6F9435]/30 bg-[#335233] p-4">
-<label for="unduh-orientasi" class="block text-xs font-medium text-[#d4dc9a] mb-2">Format Lembar PNG</label>
-<select
-id="unduh-orientasi"
-v-model="printOrientation"
-class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-2.5 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
->
-<option v-for="option in SHEET_ORIENTATION_LIST" :key="option.value" :value="option.value">
-{{ option.label }}
-</option>
-</select>
-<p class="mt-2 text-xs text-[#8fa06a]">
-Berlaku untuk tombol Cetak dan untuk PNG yang diunduh.
-</p>
-<!-- Pratinjau format. Kotak digambar dengan rasio sisi lembar yang benar-benar dipilih,
-sehingga potrait terlihat memanjang dan landscape terlihat mendatar.
-Angkanya di bawah diambil dari fungsi yang sama dengan penggambar lembar. -->
-<div class="mt-3 flex items-start gap-4">
-<div
-class="flex shrink-0 flex-col overflow-hidden rounded border-2 border-[#A7B92A]/70 bg-[#f0ead8]"
-:style="{
-width: printFormatPreview.height <= printFormatPreview.width ? '160px' : '110px',
-aspectRatio: `${printFormatPreview.width} / ${printFormatPreview.height}`,
-}"
-aria-hidden="true"
->
-<div class="bg-[#A7B92A]/50" :style="{ height: '14%' }"></div>
-<div class="flex-1 bg-[#c9d6b0]"></div>
-<div class="bg-[#8fa06a]/40" :style="{ height: '7%' }"></div>
-</div>
-<div class="text-xs text-[#d4dc9a]">
-<p class="font-semibold text-[#EDD330]">{{ printFormatPreview.label }}</p>
-<p class="mt-1">Lembar: {{ printFormatPreview.width }} &times; {{ printFormatPreview.height }}</p>
-<p>Berkas PNG: {{ printFormatPreview.outputWidth }} &times; {{ printFormatPreview.outputHeight }} piksel</p>
-<p class="mt-1 text-[#8fa06a]">
-Area peta dipatok supaya judul dan kaki halaman tetap muat.
-</p>
-</div>
-</div>
-</div>
-
-<!-- Map Layout Options -->
-<div class="rounded-lg border border-[#6F9435]/30 bg-[#335233] p-4">
-<label class="block text-xs font-medium text-[#d4dc9a] mb-3">Komponen Peta Offline</label>
-        <div class="space-y-2">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              v-model="includeScaleBar"
-              class="rounded border-[#6F9435] text-[#A7B92A] focus:ring-[#A7B92A]"
-            />
-            <span class="text-sm text-[#f0ead8]">Scale Bar (Skala)</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              v-model="includeNorthArrow"
-              class="rounded border-[#6F9435] text-[#A7B92A] focus:ring-[#A7B92A]"
-            />
-            <span class="text-sm text-[#f0ead8]">Kompas (North Arrow)</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              v-model="includeLegend"
-              class="rounded border-[#6F9435] text-[#A7B92A] focus:ring-[#A7B92A]"
-            />
-            <span class="text-sm text-[#f0ead8]">Legenda Kontur</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              v-model="includeHistogram"
-              class="rounded border-[#6F9435] text-[#A7B92A] focus:ring-[#A7B92A]"
-            />
-            <span class="text-sm text-[#f0ead8]">Histogram Elevasi</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              v-model="includeGrid"
-              class="rounded border-[#6F9435] text-[#A7B92A] focus:ring-[#A7B92A]"
-            />
-            <span class="text-sm text-[#f0ead8]">Grid Koordinat</span>
-          </label>
-        </div>
-      </div>
-
-      <div v-if="downloadStatus" class="rounded-lg border border-[#6F9435]/30 bg-[#263D26] p-3 text-xs text-[#d4dc9a]">
-        {{ downloadStatus }}
-      </div>
-      <button
-        @click="downloadOffline"
-        :disabled="downloading || (downloadMode === 'region' && !selectedOfflineRegion)"
-        class="w-full rounded-lg bg-gradient-to-r from-[#A7B92A] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {{ downloading ? 'Mengunduh...' : 'Mulai Unduh' }}
-      </button>
-    </div>
-  </Modal>
+  <OfflineDownloadModal
+    v-if="showOfflineModal"
+    v-model:download-mode="downloadMode"
+    v-model:selected-offline-region="selectedOfflineRegion"
+    v-model:selected-offline-kecamatan="selectedOfflineKecamatan"
+    :kabupatens="kabupatens"
+    :offline-kecamatan-options="offlineKecamatanOptions"
+    :selected-offline-wilayah="selectedOfflineWilayah"
+    :selected-offline-kec-data="selectedOfflineKecData"
+    :offline-zoom-min="offlineZoomMin"
+    :offline-zoom-max="offlineZoomMax"
+    :zoom-bounds="zoomBounds"
+    :estimated-tiles="estimatedTiles"
+    :estimated-size="estimatedSize"
+    :archive-zoom="archiveZoom"
+    :download-status="downloadStatus"
+    :downloading="downloading"
+    :show-mini-map="showMiniMap"
+    :mini-map-loading="miniMapLoading"
+    :mini-map-error="miniMapError"
+    :show-contour="showContour"
+    :show-hillshade="showHillshade"
+    :show-district-labels="showDistrictLabels"
+    :show-contour-labels="showContourLabels"
+    :has-pmtiles="hasPmtiles"
+    :print-orientation="printOrientation"
+    :print-format-preview="printFormatPreview"
+    :sheet-orientation-list="SHEET_ORIENTATION_LIST"
+    @close="showOfflineModal = false"
+    @toggle-contour="toggleLayer"
+    @toggle-hillshade="toggleHillshade"
+    @toggle-district-labels="toggleDistrictLabels"
+    @toggle-contour-labels="toggleContourLabels"
+    @download-offline="downloadOffline"
+    @init-minimap="initMiniMap"
+  />
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
-import Modal from '@/Components/Modal.vue';
 import NavIcon from '@/Components/NavIcon.vue';
 import { getActiveServiceWorker, SW_PROTOCOL } from '@/ServiceWorker.js';
 import { useMapPngExport, SHEET_ORIENTATION_LIST, SHEET_LOGO_URL, describeSheet, scaleLabel } from '@/Composables/useMapPngExport.js';
 import { BASEMAPS, PRINT_BASEMAP, basemapAttribution } from '@/basemaps.js';
+import PetaHeader from '@/Components/Peta/PetaHeader.vue';
+import SearchPanel from '@/Components/Peta/SearchPanel.vue';
+import OfflineDownloadModal from '@/Components/Peta/OfflineDownloadModal.vue';
 
 const props = defineProps({
   mapConfig: Object,
@@ -893,10 +475,10 @@ const showContourLabels = ref(false);
  * navegar ke tempat berbeda.
  */
 const LAPISAN_PETA = computed(() => [
-  { key: 'contour', nama: 'Kontur', icon: 'contour', aktif: showContour.value, toggle: toggleLayer },
-  { key: 'hillshade', nama: 'Relief', icon: 'hillshade', aktif: showHillshade.value, toggle: toggleHillshade },
-  { key: 'label-kabupaten', nama: 'Label wilayah', icon: 'label', aktif: showDistrictLabels.value, toggle: toggleDistrictLabels },
-  { key: 'label-kontur', nama: 'Label kontur', icon: 'label', aktif: showContourLabels.value, toggle: toggleContourLabels },
+  { key: 'contour', nama: 'Kontur', icon: 'contour', aktif: showContour.value },
+  { key: 'hillshade', nama: 'Relief', icon: 'hillshade', aktif: showHillshade.value },
+  { key: 'label-kabupaten', nama: 'Label wilayah', icon: 'label', aktif: showDistrictLabels.value },
+  { key: 'label-kontur', nama: 'Label kontur', icon: 'label', aktif: showContourLabels.value },
 ]);
 const showOfflineModal = ref(false);
 const downloading = ref(false);
@@ -928,9 +510,6 @@ function onWindowOffline() {
   isOffline.value = true;
 }
 
-// Penanda urut pencarian, dipakai searchPlace() supaya jawaban yang sudah
-// basi tidak menimpa jawaban pencarian yang lebih baru.
-let searchSequence = 0;
 
 // Mode unduh peta offline: 'full' untuk seluruh Sulawesi Selatan,
 // 'region' untuk satu kabupaten/kota, atau satu kecamatan di dalamnya.
@@ -1033,10 +612,6 @@ const basemap = ref('osm');
 const sourceCredit = computed(() => `Sumber: ${basemapAttribution(basemap.value)}, PMTiles Kontur Sulsel`);
 
 // Search
-const searchQuery = ref('');
-const searchFocused = ref(false);
-const searchResults = ref([]);
-
 // Measurement
 const measurementMode = ref('none'); // 'none', 'distance', 'area'
 const measurementPoints = ref([]);
@@ -2091,6 +1666,38 @@ function toggleContourLabels() {
   setLayerVisibility('kontur-labels', showContourLabels.value);
 }
 
+/* Dispatch toggle lapisan dari PetaHeader (LayerSelector) ke fungsi toggel
+   yang spesifik per kunci lapisan. */
+function handleToggleLayer(key) {
+  switch (key) {
+    case 'contour':
+      toggleLayer();
+      break;
+    case 'hillshade':
+      toggleHillshade();
+      break;
+    case 'label-kabupaten':
+      toggleDistrictLabels();
+      break;
+    case 'label-kontur':
+      toggleContourLabels();
+      break;
+  }
+}
+
+/* Terima hasil pencarian (tempat atau koordinat) dari SearchPanel dan layari
+   peta ke lokasi tersebut dengan popup. State pencarian itu sendiri dikelola
+   oleh SearchPanel melalui usePetaSearch(). */
+async function onSearchSelect({ lat, lon }) {
+  if (!map.value) return;
+  map.value.flyTo({ center: [lon, lat], zoom: 14, duration: 2000 });
+  const { Popup } = await import('../../maplibre');
+  new Popup()
+    .setLngLat([lon, lat])
+    .setHTML(`<div class="p-2 text-[#1f2937]">Koordinat: ${lat.toFixed(6)}, ${lon.toFixed(6)}</div>`)
+    .addTo(map.value);
+}
+
 // Change basemap
 function changeBasemap() {
   if (!map.value) return;
@@ -2136,78 +1743,6 @@ function locateUser() {
   );
 }
 
-// Search by place name (Nominatim)
-async function searchPlace() {
-  if (!searchQuery.value.trim()) return;
-  searchFocused.value = false;
-
-  // Check if query is coordinates
-  const coordMatch = searchQuery.value.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
-  if (coordMatch) {
-    const lat = parseFloat(coordMatch[1]);
-    const lng = parseFloat(coordMatch[2]);
-    if (map.value) {
-      map.value.flyTo({ center: [lng, lat], zoom: 14, duration: 2000 });
-      new (await import('../../maplibre')).Popup()
-        .setLngLat([lng, lat])
-        .setHTML(`<div class="p-2 text-[#1f2937]">Koordinat: ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>`)
-        .addTo(map.value);
-      searchQuery.value = '';
-      return;
-    }
-  }
-
-  // Search via Nominatim
-  // Nomor urut penanda pencarian yang sedang berjalan. Dua pencarian yang
-  // tumpang tindih bisa jawabannya datang terbalik, dan hasil yang lebih lama
-  // akan menimpa hasil yang lebih baru. Hanya jawaban milik nomor terakhir
-  // yang boleh menulis ke searchResults.
-  const nomorPencarian = ++searchSequence;
-
-  try {
-    searchResults.value = [];
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery.value)}&limit=5&countrycodes=id&accept-language=id`);
-    const data = await response.json();
-
-    if (nomorPencarian !== searchSequence) return;
-
-    searchResults.value = data.map(item => ({
-      place_id: item.place_id,
-      display_name: item.display_name,
-      lat: parseFloat(item.lat),
-      lon: parseFloat(item.lon),
-    }));
-    if (searchResults.value.length === 0) {
-      mapStatus.value = 'Tidak ditemukan hasil untuk pencarian tersebut.';
-    }
-  } catch (error) {
-    if (nomorPencarian !== searchSequence) return;
-
-    console.error('Search error:', error);
-    mapStatus.value = 'Gagal mencari lokasi. Periksa koneksi internet.';
-  }
-}
-
-async function selectSearchResult(result) {
-  if (!map.value) return;
-  map.value.flyTo({ center: [result.lon, result.lat], zoom: 14, duration: 2000 });
-  const { Popup } = await import('../../maplibre');
-
-  // display_name berasal dari balasan server Nominatim, jadi ikut dirangkai
-  // sebagai HTML apa adanya bisa menyisipkan tag. Isi teksnya dibuat lewat
-  // textContent, yang tidak pernah mengartikan tag.
-  const kotak = document.createElement('div');
-  kotak.className = 'p-2 text-[#1f2937]';
-  kotak.textContent = result.display_name || result.label || '';
-
-  new Popup()
-    .setLngLat([result.lon, result.lat])
-    .setDOMContent(kotak)
-    .addTo(map.value);
-  searchQuery.value = '';
-  searchResults.value = [];
-  searchFocused.value = false;
-}
 
 // Measurement tools
 const MEASURE_SOURCE = 'measurement';
@@ -2575,7 +2110,7 @@ function popupWilayah(nama, idKab, namaProv, koordinat) {
   // Dua tombolnya memanggil fungsi yang sama dengan yang dipakai panel di luar
   // peta, jadi tidak perlu CustomEvent yang harus dicari lewat window.
   const tombolZoom = document.createElement('button');
-  tombolZoom.className = 'text-xs bg-[#A7B92A] text-white px-2 py-1 rounded';
+  tombolZoom.className = 'text-xs bg-daun-400 text-white px-2 py-1 rounded';
   tombolZoom.type = 'button';
   tombolZoom.textContent = 'Zoom';
   tombolZoom.addEventListener('click', () => {
@@ -2925,6 +2460,18 @@ watch(selectedOfflineKecamatan, () => {
 // memakai rentang yang benar-benar ada di arsip.
 watch(showOfflineModal, (open) => {
   if (open) loadArchiveZoomRange();
+});
+
+// Pilihan kabupaten di panel pencarian mengubah tampilan peta dan mereset
+// kecamatan, agar pilihan lama tidak tertahan di luar daftar kabupaten baru.
+watch(selectedKabupaten, () => {
+  selectedKecamatan.value = '';
+  onKabupatenSelect();
+});
+
+// Pilihan kecamatan memindahkan peta ke batas kecamatan yang dipilih.
+watch(selectedKecamatan, () => {
+  onKecamatanSelect();
 });
 
 onBeforeUnmount(() => {

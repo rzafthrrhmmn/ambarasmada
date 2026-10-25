@@ -1,9 +1,9 @@
 <template>
   <AppLayout>
     <div class="mb-6">
-      <p class="text-sm font-medium text-[#EDD330]">Laporan</p>
-      <h1 class="mt-1 text-2xl font-bold text-[#f0ead8]">Laporan Ambalan</h1>
-      <p class="mt-1 text-sm text-[#8fa06a]">Unduh laporan keuangan, kehadiran, dan data anggota.</p>
+      <p class="text-sm font-medium text-emas-400">Laporan</p>
+      <h1 class="mt-1 text-2xl font-bold text-krem-100">Laporan Ambalan</h1>
+      <p class="mt-1 text-sm text-krem-300">Unduh laporan keuangan, kehadiran, dan data anggota.</p>
     </div>
 
     <!-- Isi halaman mengikuti reports.view. Tautan unduh tidak memakai
@@ -16,24 +16,24 @@
           v-for="card in visibleCards"
           :key="card.href"
           :href="card.href"
-          class="group relative flex flex-col overflow-hidden rounded-2xl border-2 border-[#6F9435]/40 bg-gradient-to-br from-[#335233] to-[#2d4a2d] p-5 shadow-lg transition duration-200 hover:-translate-y-1 hover:border-[#EDD330]/70 hover:shadow-xl hover:shadow-[#EDD330]/15"
+          class="group relative flex flex-col overflow-hidden rounded-2xl border-2 border-[#6F9435]/40 bg-gradient-to-br from-[#335233] to-[#2d4a2d] p-5 shadow-lg transition duration-200 hover:-translate-y-1 hover:border-emas-400/70 hover:shadow-xl hover:shadow-[#EDD330]/15"
         >
           <span
             aria-hidden="true"
-            class="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-[#EDD330]/10 blur-2xl transition duration-300 group-hover:scale-125"
+            class="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-emas-400/10 blur-2xl transition duration-300 group-hover:scale-125"
           />
 
           <span
-            class="relative flex h-12 w-12 items-center justify-center rounded-xl border-2 border-[#6F9435]/40 bg-[#263D26] text-[#A7B92B] transition duration-200 group-hover:border-[#EDD330]/60 group-hover:text-[#EDD330]"
+            class="relative flex h-12 w-12 items-center justify-center rounded-xl border-2 border-[#6F9435]/40 bg-hutan-800 text-[#A7B92B] transition duration-200 group-hover:border-emas-400/60 group-hover:text-emas-400"
           >
             <AppIcon :name="card.icon" class="h-6 w-6" />
           </span>
 
-          <h3 class="relative mt-4 text-sm font-bold text-[#f0ead8]">{{ card.title }}</h3>
-          <p class="relative mt-1 text-[10px] leading-4 text-[#8fa06a]">{{ card.description }}</p>
+          <h3 class="relative mt-4 text-sm font-bold text-krem-100">{{ card.title }}</h3>
+          <p class="relative mt-1 text-[10px] leading-4 text-krem-300">{{ card.description }}</p>
 
           <span
-            class="relative mt-4 inline-flex items-center gap-1.5 text-[10px] font-bold text-[#A7B92B] transition group-hover:text-[#EDD330]"
+            class="relative mt-4 inline-flex items-center gap-1.5 text-[10px] font-bold text-[#A7B92B] transition group-hover:text-emas-400"
           >
             <AppIcon name="download" class="h-3.5 w-3.5" />
             {{ card.action }}

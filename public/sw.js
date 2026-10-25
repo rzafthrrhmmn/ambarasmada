@@ -1131,7 +1131,7 @@ async function generateOfflineMapHTML(db, bbox, zoomMin, zoomMax, geojsonUrl, la
         zoomMin,
         zoomMax,
         bbox,
-        areaName,
+        areaName: JSON.stringify(areaName),
         geojsonUrl,
         layoutOptions,
         elevStats,
@@ -1228,6 +1228,13 @@ async function getTileCount(db) {
 }
 
 function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, bbox, areaName, geojsonUrl, layoutOptions, elevStats, tileCount, kecamatanGeojsonUrl, highlightKecId }) {
+
+    const areaNameSafe = String(areaName ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     const scaleBarHtml = layoutOptions.scaleBar ? `
         <div id="scale-bar" class="map-control scale-bar" style="bottom: 20px; left: 20px;">
             <canvas id="scale-canvas" width="200" height="30"></canvas>
@@ -1263,7 +1270,7 @@ function generateMapHTML({ centerLon, centerLat, centerZoom, zoomMin, zoomMax, b
 // keterangan apa adanya jauh lebih jujur daripada menampilkan angka karangan.
 const histogramHtml = !layoutOptions.histogram ? '' : (elevStats ? `
         <div id="histogram" class="map-control histogram" style="top: 80px; right: 20px; width: 220px; max-height: 300px;">
-            <div class="histogram-header">Histogram Elevasi (${areaName})</div>
+            <div class="histogram-header">Histogram Elevasi (${areaNameSafe})</div>
             <div class="histogram-stats">
                 Min: ${Math.round(elevStats.min)}m | Max: ${Math.round(elevStats.max)}m | Mean: ${Math.round(elevStats.mean)}m
             </div>
@@ -1271,7 +1278,7 @@ const histogramHtml = !layoutOptions.histogram ? '' : (elevStats ? `
         </div>
     ` : `
         <div id="histogram" class="map-control histogram" style="top: 80px; right: 20px; width: 220px;">
-            <div class="histogram-header">Histogram Elevasi (${areaName})</div>
+            <div class="histogram-header">Histogram Elevasi (${areaNameSafe})</div>
             <div class="histogram-stats">
                 Data elevasi tidak ikut dalam paket ini. Histogram baru bisa dihitung
                 dari peta yang sudah diunduh, bukan dari daftar tile.
@@ -1291,7 +1298,7 @@ const histogramHtml = !layoutOptions.histogram ? '' : (elevStats ? `
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="offline-map-generator" content="${OFFLINE_MAP_GENERATOR}">
-    <title>Peta Offline - ${areaName}</title>
+    <title>Peta Offline - ${areaNameSafe}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a1a; color: #fff; overflow: hidden; }
@@ -1332,7 +1339,7 @@ const histogramHtml = !layoutOptions.histogram ? '' : (elevStats ? `
     ${gridHtml}
 
     <div class="info-panel">
-        <div class="info-row"><span class="info-label">Area:</span> <span class="info-value">${areaName}</span></div>
+        <div class="info-row"><span class="info-label">Area:</span> <span class="info-value">${areaNameSafe}</span></div>
         <div class="info-row"><span class="info-label">Tile:</span> <span class="info-value">${tileCount.toLocaleString()}</span></div>
         <div class="info-row"><span class="info-label">Zoom:</span> <span class="info-value">${zoomMin}-${zoomMax}</span></div>
         <div class="info-row"><span class="info-label">Elevasi:</span> <span class="info-value">${elevStats ? Math.round(elevStats.min)+'-'+Math.round(elevStats.max)+'m' : 'N/A'}</span></div>
@@ -1379,7 +1386,7 @@ const histogramHtml = !layoutOptions.histogram ? '' : (elevStats ? `
                         // menulisnya ke AttributionControl di atas kanvas, jadi
                         // tanpa property ini tile OSM tampil tanpa kredit sama
                         // sekali.
-                        attribution: '© OpenStreetMap contributors',
+                        attribution: 'Â© OpenStreetMap contributors',
                     }
                 },
                 layers: [

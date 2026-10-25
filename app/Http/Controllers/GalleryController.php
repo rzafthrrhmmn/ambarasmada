@@ -54,9 +54,15 @@ class GalleryController extends Controller
         return redirect()->route('galleries.index')->with('success', 'Foto berhasil diunggah.');
     }
 
-    public function destroy(Request $request, Gallery $gallery): RedirectResponse
+    public function destroy(Request $request, $id): RedirectResponse
     {
+        // Otorisasi dicek SEBELUM resolusi model agar anggota yang mencoba
+        // menghapus gallery milik orang lain (atau yang tidak ada) menerima 403
+        // alih-alih 404 dari implicit route model binding.
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+
+        $gallery = Gallery::find($id);
+        abort_if(!$gallery, 404);
 
         if ($gallery->image) {
             Storage::disk('public')->delete($gallery->image);

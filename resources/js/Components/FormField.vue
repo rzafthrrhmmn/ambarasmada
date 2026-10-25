@@ -1,14 +1,14 @@
 <template>
   <label class="block">
     <span class="text-xs font-medium text-[#d4dc9a]">
-      {{ label }}<span v-if="required" class="text-[#EDD330]"> *</span>
+      {{ label }}<span v-if="required" class="text-emas-400"> *</span>
     </span>
 
     <select
       v-if="type === 'select'"
       :value="modelValue ?? ''"
       @change="$emit('update:modelValue', selectValue($event.target.value))"
-      class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
+      class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]"
     >
       <option v-for="option in normalizedOptions" :key="String(option.value)" :value="option.value">
         {{ option.label }}
@@ -21,7 +21,7 @@
       :rows="rows"
       :placeholder="placeholder"
       @input="$emit('update:modelValue', $event.target.value)"
-      class="mt-1 w-full resize-y rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
+      class="mt-1 w-full resize-y rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]"
     ></textarea>
 
     <input
@@ -31,7 +31,7 @@
       :required="required"
       :placeholder="placeholder"
       @input="$emit('update:modelValue', $event.target.value)"
-      class="mt-1 w-full rounded-lg border border-[#6F9435] bg-[#263D26] px-3 py-2 text-sm text-[#f0ead8] outline-none focus:border-[#EDD330]"
+      class="mt-1 w-full rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]"
     />
 
     <p v-if="error" class="mt-1 text-xs text-[#ef4419]">{{ error }}</p>

@@ -344,6 +344,8 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store')->middleware('throttle:10,1');
         Route::patch('/announcements/{announcement}', [AnnouncementController::class, 'update'])->name('announcements.update')->middleware('throttle:20,1');
         Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy')->middleware('throttle:10,1');
+
+        Route::delete('/galleries/{gallery}', [GalleryController::class, 'destroy'])->name('galleries.destroy')->middleware('throttle:10,1');
     });
 
     // Finance management - Admin, Pembina, Juru Uang only (categories, periods, post, reverse)
