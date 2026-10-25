@@ -69,11 +69,13 @@ const OFFLINE_FALLBACK = '/offline.html';
 // tidak boleh di-intercept atau di-cache oleh service worker sama sekali.
 // Ini melindungi dari service worker versi lama yang masih aktif dan
 // salah-salah meng-cache/meng-halaman guest home saat user mengakses /login.
-const AUTH_PATHS = ['/login', '/register'];
+const AUTH_PATHS = ['/login', '/login', '/register', '/logout', '/forgot-password', '/reset-password', '/email'];
 
 function isAuthPath(request) {
     try {
-        return AUTH_PATHS.includes(new URL(request.url).pathname);
+        const url = new URL(request.url);
+        const path = url.pathname;
+        return AUTH_PATHS.some((authPath) => path === authPath || path.startsWith(authPath + '/') || path.startsWith('/login') || path.startsWith('/register'));
     } catch {
         return false;
     }
@@ -264,12 +266,10 @@ async function dropStaleOfflineMap() {
 
 self.addEventListener('fetch', (event) => {
     const { request } = event;
+    const url = new URL(request.url);
 
     // Halaman login dan register jangan pernah di-intercept oleh service worker.
-    // Biarkan browser mengambil langsung dari jaringan tanpa campur tangan SW
-    // sehingga halaman login/register selalu tampil segar, tanpa blink atau
-    // kembali ke halaman guest dari cache.
-    if (isAuthPath(request)) {
+    if (isAuthPath(request) || ['/login', '/register', '/forgot-password', '/reset-password'].includes(url.pathname) || url.pathname.startsWith('/email/')) {
         return;
     }
 
@@ -279,13 +279,12 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Halaman Inertia (XHR): stale-while-revalidate supaya halaman tetap
-    // tampil dari cache saat sinyal hilang, lalu diperbarui di latar belakang.
-    // Hanya GET: request Inertia non-GET adalah submit form, dan cache
-    // responsnya akan mengembalikan halaman basi alih-alih hasil terbaru.
-    if (request.headers.get('X-Inertia') === 'true' && request.method === 'GET') {
-        event.respondWith(handleInertia(request));
-        return;
+    // Inertia XHR (POST/login) - jangan pernah intercept
+    if (request.headers.get('X-Inertia') === 'true') {
+        const u = new URL(request.url);
+        if (['/login', '/register', '/logout', '/forgot-password', '/reset-password'].includes(u.pathname) || u.pathname.startsWith('/email/')) {
+            return;
+        }
     }
 
     const url = new URL(request.url);
@@ -415,10 +414,8 @@ async function handleNavigate(request) {
  */
 async function handleInertia(request) {
     // Defense-in-depth: halaman autentikasi tidak boleh disajikan dari cache
-    // sama sekali, bahkan jika pemanggilan di fetch handler melewatkan lompat
-    // karena alasan apa pun. Selalu ambil dari jaringan langsung.
     if (isAuthPath(request)) {
-        return fetch(request);
+        return fetch(request, { cache: 'no-store' });
     }
 
     const cache = await caches.open(INERTIA_CACHE);
