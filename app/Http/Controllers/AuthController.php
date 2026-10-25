@@ -7,14 +7,13 @@ use App\Models\Ambalan;
 use App\Models\Angkatan;
 use App\Models\Member;
 use App\Models\User;
+use App\Notifications\AccountActivationNotification;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -39,29 +38,23 @@ class AuthController extends Controller
     {
         $identity = $request->validated('identity');
         $password = $request->validated('password');
-        $remember = $request->validated('remember') ?? false;
+        $remember = (bool) $request->validated('remember');
 
-        // Tentukan apakah identitas adalah email atau username
         $field = filter_var($identity, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
         $user = User::where($field, $identity)->first();
 
-        // Validasi kredensial
         if (! $user || ! Hash::check($password, $user->password)) {
-            RateLimiter::hit($request->ip());
-
-            throw ValidationException::withMessages([
-                'identity' => 'Kredensial yang dimasukkan salah.',
-            ]);
+            return back()->withErrors([
+                'identity' => 'Kredensial salah.',
+            ])->onlyInput('identity');
         }
 
         // Akun yang ditolak tidak boleh login
         if ($user->status === 'rejected') {
-            Auth::logout();
-
-            throw ValidationException::withMessages([
+            return back()->withErrors([
                 'identity' => 'Akun Anda ditolak oleh Pembina. Hubungi Pembina untuk informasi lebih lanjut.',
-            ]);
+            ])->onlyInput('identity');
         }
 
         // Regenerasi session ID untuk mencegah session fixation
@@ -70,14 +63,8 @@ class AuthController extends Controller
         // Lakukan autentikasi user
         Auth::login($user, $remember);
 
-        // Pastikan session segera disimpan ke storage sebelum redirect,
-        // agar cookie session tersedia pada request berikutnya.
-        $request->session()->save();
-
-        // Jika status pending dan email BELUM diverifikasi → pending approval.
-        // Jika status pending tapi email SUDAH diverifikasi (lewat link aktivasi),
-        // izinkan akses dashboard.
-        if ($user->status === 'pending' && ! $user->hasVerifiedEmail()) {
+        // Jika status pending (terlepas verifikasi email), arahkan ke halaman persetujuan
+        if ($user->status === 'pending') {
             return redirect()->route('pending-approval');
         }
 
@@ -222,7 +209,7 @@ class AuthController extends Controller
         return Inertia::render('Auth/VerifyEmail', [
             'email' => $request->user()?->email,
             'nta' => $request->user()?->member?->nta,
-            'linkExpiryMinutes' => \App\Notifications\AccountActivationNotification::expiryMinutes(),
+            'linkExpiryMinutes' => AccountActivationNotification::expiryMinutes(),
             'ambalan' => $this->ambalanData(),
         ]);
     }
