@@ -176,13 +176,10 @@ const showResend = ref(false);
 
 function submitLogin() {
   form.post('/login', {
-    onSuccess: (page) => {
-      // Inertia mengikuti redirect dari backend. Jika halaman tidak berpindah,
-      // paksa navigasi ulang ke URL yang dikembalikan server agar browser
-      // mengirim cookie sesi pada request berikutnya.
-      if (page.url) {
-        window.location.href = page.url;
-      }
+    onSuccess: () => {
+      // Inertia otomatis mengikuti redirect dari backend ke dashboard.
+      // Tidak perlu window.location.href karena akan menyebabkan navigasi ganda
+      // dan layar berkedip.
     },
     onError: (errors) => {
       // Errors handled by Inertia ($page.props.errors)
