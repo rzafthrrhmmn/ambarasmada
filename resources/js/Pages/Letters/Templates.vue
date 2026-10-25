@@ -9,12 +9,12 @@
         </p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <Link
+        <a
           href="/letters"
           class="inline-flex items-center rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a] transition hover:bg-daun-500/20"
         >
           Kembali ke surat
-        </Link>
+        </a>
         <button
           type="button"
           data-test="btn-unggah-template"

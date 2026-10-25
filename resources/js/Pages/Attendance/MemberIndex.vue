@@ -63,9 +63,9 @@
           >
             <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
               <div class="min-w-0">
-                <Link :href="`/attendance/${session.id}`" class="font-semibold text-emas-400 hover:underline">
+                <a :href="`/attendance/${session.id}`" class="font-semibold text-emas-400 hover:underline">
                   {{ session.nama }}
-                </Link>
+                </a>
                 <p class="mt-1 text-xs text-krem-300">
                   {{ formatDate(session.tanggal) }} <span aria-hidden="true">•</span> {{ session.lokasi || 'Lokasi belum diisi' }}
                 </p>
@@ -91,20 +91,20 @@
             </p>
 
             <div class="mt-3 flex flex-wrap gap-2">
-              <Link
+              <a
                 :href="`/attendance/${session.id}`"
                 class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]"
               >
                 Detail sesi
-              </Link>
+              </a>
 
-              <Link
+              <a
                 v-if="session.can_scan"
                 :href="scanUrl(session)"
                 class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]"
               >
                 Scan QR Code
-              </Link>
+              </a>
 
               <span
                 v-else-if="session.my_attendance?.keterangan"

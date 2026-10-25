@@ -43,10 +43,10 @@
       </div>
     </section>
 
-    <Link v-if="canManage" href="/meetings" class="btn-ghost">
+    <a v-if="canManage" href="/meetings" class="btn-ghost">
       <AppIcon name="arrowLeft" class="h-4 w-4" />
       Kembali
-    </Link>
+    </a>
   </AppLayout>
 </template>
 

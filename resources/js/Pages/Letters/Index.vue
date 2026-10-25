@@ -7,13 +7,13 @@
         <p class="mt-1 text-sm text-krem-300">Unggah template, isi form surat, lalu ekspor ke Word atau PDF.</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <Link
+        <a
           v-if="can('letters.templates.manage')"
           href="/letters/templates"
           class="inline-flex items-center rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a] transition hover:bg-daun-500/20"
         >
           Kelola template
-        </Link>
+        </a>
         <button
           v-if="can('letters.templates.manage')"
           type="button"
@@ -71,7 +71,7 @@
         </div>
 
         <div class="mt-4 flex flex-wrap items-center gap-3 border-t border-[#6F9435]/40 pt-3 text-xs">
-          <Link :href="`/letters/${item.id}`" class="font-semibold text-krem-100 hover:text-emas-400">Detail</Link>
+          <a :href="`/letters/${item.id}`" class="font-semibold text-krem-100 hover:text-emas-400">Detail</a>
           <a
             :href="`/letters/${item.id}/generate?format=docx`"
             class="text-daun-400 hover:underline"

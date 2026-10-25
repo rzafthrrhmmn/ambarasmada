@@ -44,10 +44,10 @@
         </dl>
 
         <div class="relative mt-4 flex flex-wrap gap-2">
-          <Link :href="`/inventory/${item.id}/movements`" class="btn-ghost btn-sm">
+          <a :href="`/inventory/${item.id}/movements`" class="btn-ghost btn-sm">
             <AppIcon name="clipboard" class="h-3.5 w-3.5" />
             Riwayat
-          </Link>
+          </a>
           <button v-if="canManage" type="button" class="btn-primary btn-sm" @click="openLoan(item)">
             <AppIcon name="members" class="h-3.5 w-3.5" />
             Pinjam

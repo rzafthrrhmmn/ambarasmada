@@ -21,7 +21,7 @@
             <p class="text-[10px] text-krem-300">{{ meeting.attendees_count || 0 }} hadir</p>
           </div>
           <div class="flex gap-2 shrink-0">
-            <Link :href="`/meetings/${meeting.id}`" class="rounded-lg border border-[#6F9435] px-2 py-1 text-[10px] font-bold text-[#d4dc9a] hover:bg-daun-500/20">Detail</Link>
+            <a :href="`/meetings/${meeting.id}`" class="rounded-lg border border-[#6F9435] px-2 py-1 text-[10px] font-bold text-[#d4dc9a] hover:bg-daun-500/20">Detail</a>
           </div>
         </div>
       </div>

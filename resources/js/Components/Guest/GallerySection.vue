@@ -12,12 +12,12 @@
         </ScrollReveal>
       </div>
       <ScrollReveal animation="fade-up" :delay="100">
-        <Link
+        <a
           href="/galleries"
           class="text-sm font-bold text-daun-400 opacity-70 transition-opacity hover:opacity-100 hover:text-emas-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400 rounded"
         >
           Lihat semua &rarr;
-        </Link>
+        </a>
       </ScrollReveal>
     </div>
 

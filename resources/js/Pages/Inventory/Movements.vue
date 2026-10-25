@@ -10,12 +10,12 @@
           Kondisi: {{ inventory.kondisi }}
         </p>
       </div>
-      <Link
+      <a
         :href="`/inventory`"
         class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a] transition hover:bg-daun-500/20"
       >
         Kembali ke Inventaris
-      </Link>
+      </a>
     </div>
 
     <div class="rounded-2xl border-2 border-[#A7B92B]/40 bg-hutan-600 p-5 shadow-sm">

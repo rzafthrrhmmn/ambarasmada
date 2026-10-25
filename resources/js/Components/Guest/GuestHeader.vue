@@ -1,7 +1,7 @@
 <template>
   <header class="sticky top-4 z-40 mx-auto w-full max-w-[1400px] guest-container">
     <div class="glass-panel flex items-center justify-between px-4 py-2.5 sm:px-6 sm:py-3">
-      <Link
+      <a
         href="/"
         class="flex items-center gap-3 group"
         aria-label="Beranda {{ ambalanNama }}"
@@ -23,7 +23,7 @@
           <p class="text-sm font-black text-krem-100">{{ ambalanNama }}</p>
           <p class="text-[11px] font-bold text-lumut-400">Ekosistem Digital Kepramukaan</p>
         </div>
-      </Link>
+      </a>
 
       <nav class="hidden items-center gap-1 lg:flex" aria-label="Navigasi utama">
         <a

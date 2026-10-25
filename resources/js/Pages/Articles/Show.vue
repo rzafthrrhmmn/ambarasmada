@@ -2,10 +2,10 @@
   <AppLayout>
     <article class="mx-auto max-w-4xl">
       <nav class="mb-5 flex items-center gap-1.5 text-xs text-krem-300" aria-label="Remah roti">
-        <Link href="/articles" class="inline-flex items-center gap-1.5 font-semibold transition hover:text-emas-400">
+        <a href="/articles" class="inline-flex items-center gap-1.5 font-semibold transition hover:text-emas-400">
           <AppIcon name="arrowLeft" class="h-3.5 w-3.5" />
           Artikel &amp; Laporan
-        </Link>
+        </a>
         <AppIcon name="chevronRight" class="h-3 w-3 shrink-0 text-krem-300/60" />
         <span class="truncate text-[#d4dc9a]">{{ article.kategori }}</span>
       </nav>
@@ -48,10 +48,10 @@
         </div>
 
         <div v-if="canManage" class="relative mt-5 flex flex-wrap gap-2 border-t border-[#6F9435]/30 pt-4">
-          <Link href="/articles" class="btn-ghost btn-sm">
+          <a href="/articles" class="btn-ghost btn-sm">
             <AppIcon name="articles" class="h-4 w-4" />
             Semua artikel
-          </Link>
+          </a>
           <button v-if="canDelete" type="button" class="btn-danger btn-sm" @click="destroy">
             <AppIcon name="trash" class="h-4 w-4" />
             Hapus
@@ -88,10 +88,10 @@
       </footer>
 
       <div class="mt-6 flex justify-center">
-        <Link href="/articles" class="btn-ghost">
+        <a href="/articles" class="btn-ghost">
           <AppIcon name="arrowLeft" class="h-4 w-4" />
           Kembali ke daftar artikel
-        </Link>
+        </a>
       </div>
     </article>
   </AppLayout>

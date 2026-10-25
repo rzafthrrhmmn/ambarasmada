@@ -10,9 +10,9 @@
           </p>
         </div>
         <div class="flex gap-2">
-          <Link href="/letters" class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a]">
+          <a href="/letters" class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a]">
             Kembali
-          </Link>
+          </a>
           <a
             :href="`/letters/${letter.id}/generate?format=pdf`"
             class="rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-daun-400"

@@ -29,7 +29,7 @@
 
           <ul class="space-y-0.5">
             <li v-for="item in section.items" :key="item.key">
-              <Link
+              <a
                 :href="item.href"
                 class="nav-item"
                 :class="{ 'is-active': item.active }"
@@ -52,7 +52,7 @@
                 >
                   {{ formatBadge(item.badge) }}
                 </span>
-              </Link>
+              </a>
             </li>
           </ul>
         </section>
@@ -64,7 +64,7 @@
         <div v-for="section in sections" :key="section.key" class="animate-sidebar-rail">
           <span class="nav-rail-separator block" aria-hidden="true" />
 
-          <Link
+          <a
             v-for="item in section.items"
             :key="item.key"
             :href="item.href"
@@ -80,7 +80,7 @@
               {{ formatBadge(item.badge) }}
             </span>
             <span v-else-if="item.active" class="nav-rail-dot" aria-hidden="true" />
-          </Link>
+          </a>
         </div>
       </template>
     </nav>

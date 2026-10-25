@@ -30,7 +30,7 @@
             <p class="text-sm font-bold text-krem-100">{{ a.member?.nama_lengkap }}</p>
             <p class="text-[10px] text-krem-300">{{ a.periode }} • {{ a.assessor?.name }}</p>
           </div>
-          <Link :href="`/assessments/${a.id}`" class="rounded-lg border border-[#6F9435] px-2 py-1 text-[10px] font-bold text-[#d4dc9a] hover:bg-daun-500/20">Detail</Link>
+          <a :href="`/assessments/${a.id}`" class="rounded-lg border border-[#6F9435] px-2 py-1 text-[10px] font-bold text-[#d4dc9a] hover:bg-daun-500/20">Detail</a>
         </div>
         <div class="mt-2 flex gap-4">
           <span v-if="a.nilai_kehadiran" class="text-[10px] text-krem-300">Hadir: {{ a.nilai_kehadiran }}</span>

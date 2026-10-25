@@ -30,10 +30,10 @@
       </div>
     </section>
 
-    <Link href="/assessments" class="btn-ghost">
+    <a href="/assessments" class="btn-ghost">
       <AppIcon name="arrowLeft" class="h-4 w-4" />
       Kembali
-    </Link>
+    </a>
   </AppLayout>
 </template>
 

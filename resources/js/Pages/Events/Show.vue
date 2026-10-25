@@ -56,10 +56,10 @@
       </div>
     </div>
 
-    <Link v-if="canManage" href="/events" class="btn-ghost mt-4">
+    <a v-if="canManage" href="/events" class="btn-ghost mt-4">
       <AppIcon name="arrowLeft" class="h-4 w-4" />
       Kembali
-    </Link>
+    </a>
   </AppLayout>
 </template>
 

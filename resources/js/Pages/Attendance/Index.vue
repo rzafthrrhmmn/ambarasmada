@@ -74,7 +74,7 @@
                 :aria-label="`Pilih sesi ${session.nama}`"
               />
               <div>
-                <Link :href="`/attendance/${session.id}`" class="font-semibold text-emas-400 hover:underline">{{ session.nama }}</Link>
+                <a :href="`/attendance/${session.id}`" class="font-semibold text-emas-400 hover:underline">{{ session.nama }}</a>
                 <p class="mt-1 text-xs text-krem-300">{{ formatDate(session.tanggal) }} • {{ session.lokasi || '-' }} • {{ session.attendances_count }} presensi</p>
                 <p v-if="session.materi_nama" class="mt-1 text-xs text-krem-300">Materi: {{ session.materi_nama }}</p>
                 <p v-if="session.latitude !== null" class="mt-1 text-xs text-krem-300">Geofence aktif • radius {{ session.radius }} m</p>
@@ -82,7 +82,7 @@
             </div>
             <div class="flex flex-wrap gap-2 items-center">
               <span class="rounded-full bg-hutan-800 px-2.5 py-1 text-xs text-emas-400">{{ session.qr_token }}</span>
-              <Link v-if="canEdit" :href="`/attendance/${session.id}`" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Detail</Link>
+              <a v-if="canEdit" :href="`/attendance/${session.id}`" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Detail</a>
               <button v-if="canEdit" @click="openEdit(session)" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">Edit</button>
               <button v-if="canDelete" @click="openDelete(session)" class="rounded-lg border border-[#ef4419]/60 px-3 py-1.5 text-xs font-semibold text-[#ef4419]">Hapus</button>
               <button v-if="canViewQr" @click="openQr(session)" class="rounded-lg border border-[#6F9435] px-3 py-1.5 text-xs font-semibold text-[#d4dc9a]">QR Code</button>

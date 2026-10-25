@@ -20,7 +20,7 @@
     />
 
     <div class="mt-auto space-y-2 pt-1">
-      <Link
+      <a
           v-if="footer?.href && collapsed"
           :href="footer.href"
           class="sidebar-footer-cta sidebar-footer-cta--round"
@@ -29,14 +29,14 @@
           @click="emit('navigate')"
       >
         <NavIcon :name="footer.icon" class="h-4 w-4" />
-      </Link>
+      </a>
 
       <div v-else-if="footer" class="sidebar-footer-card" :class="{ 'sidebar-footer-card--warning': footer.tone === 'warning' }">
         <p class="font-bold text-emas-400">{{ footer.title }}</p>
         <p class="mt-1 text-lumut-400">{{ footer.description }}</p>
-        <Link v-if="footer.href" :href="footer.href" class="sidebar-footer-cta" @click="emit('navigate')">
+        <a v-if="footer.href" :href="footer.href" class="sidebar-footer-cta" @click="emit('navigate')">
           {{ footer.cta }}
-        </Link>
+        </a>
       </div>
 
       <button

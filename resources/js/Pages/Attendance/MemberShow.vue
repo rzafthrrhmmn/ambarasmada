@@ -1,9 +1,9 @@
 <template>
   <AppLayout>
     <nav class="mb-5" aria-label="Remah roti">
-      <Link href="/attendance" class="inline-flex items-center gap-1.5 text-sm font-semibold text-emas-400 transition hover:gap-2.5 hover:underline">
+      <a href="/attendance" class="inline-flex items-center gap-1.5 text-sm font-semibold text-emas-400 transition hover:gap-2.5 hover:underline">
         Kembali ke kehadiran saya
-      </Link>
+      </a>
     </nav>
 
     <header class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm">
@@ -51,13 +51,13 @@
           <p class="mx-auto mt-1 max-w-sm text-xs text-krem-300">
             Pindai QR Code yang ditampilkan pemandu agar kehadiranmu tercatat.
           </p>
-          <Link
+          <a
             v-if="canScan && scanUrl"
             :href="scanUrl"
             class="mt-4 inline-block rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-xs font-semibold text-white"
           >
             Scan QR Code
-          </Link>
+          </a>
         </div>
       </section>
 
@@ -83,25 +83,25 @@
             </div>
           </dl>
 
-          <Link
+          <a
             v-if="canScan && scanUrl"
             :href="scanUrl"
             class="mt-4 block rounded-lg border border-[#6F9435] px-3 py-2 text-center text-xs font-semibold text-[#d4dc9a] transition hover:bg-daun-500/30"
           >
             Buka halaman pindai QR
-          </Link>
+          </a>
         </section>
 
         <section v-if="session.materi_nama" class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm">
           <h2 class="font-semibold text-krem-100">Materi latihan</h2>
           <p class="mt-2 truncate text-sm font-medium text-[#d4dc9a]">{{ session.materi_nama }}</p>
           <p class="mt-0.5 text-xs text-krem-300">{{ formatFileSize(session.materi_size) }}</p>
-          <Link
+          <a
             :href="materiUrl"
             class="mt-4 block rounded-lg border border-[#6F9435] px-3 py-2 text-center text-xs font-semibold text-[#d4dc9a] transition hover:bg-daun-500/30"
           >
             Unduh materi
-          </Link>
+          </a>
         </section>
       </aside>
     </div>

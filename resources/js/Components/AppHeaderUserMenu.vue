@@ -44,18 +44,18 @@
 
         <p class="app-header-menu-label mt-2">Akun</p>
 
-        <Link href="/profile" class="app-header-menu-item" role="menuitem" @click="close">
+        <a href="/profile" class="app-header-menu-item" role="menuitem" @click="close">
           <NavIcon name="profile" class="h-4 w-4 shrink-0 text-lumut-400" />
           <span class="truncate">Profil Saya</span>
-        </Link>
+        </a>
 
-        <Link href="/notifications" class="app-header-menu-item" role="menuitem" @click="close">
+        <a href="/notifications" class="app-header-menu-item" role="menuitem" @click="close">
           <NavIcon name="bell" class="h-4 w-4 shrink-0 text-lumut-400" />
           <span class="truncate">Notifikasi</span>
           <span v-if="unreadNotifications > 0" class="app-header-menu-count">
             {{ unreadNotifications > 99 ? '99+' : unreadNotifications }}
           </span>
-        </Link>
+        </a>
 
         <button
             v-if="pwaInstallAvailable"

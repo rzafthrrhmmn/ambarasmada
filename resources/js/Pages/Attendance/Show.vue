@@ -1,10 +1,10 @@
 <template>
   <AppLayout>
     <nav class="mb-5" aria-label="Remah roti">
-      <Link href="/attendance" class="inline-flex items-center gap-1.5 text-sm font-semibold text-emas-400 transition hover:gap-2.5 hover:underline">
+      <a href="/attendance" class="inline-flex items-center gap-1.5 text-sm font-semibold text-emas-400 transition hover:gap-2.5 hover:underline">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
         Kembali ke daftar sesi
-      </Link>
+      </a>
     </nav>
 
     <header class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm">
@@ -193,9 +193,9 @@
               <p class="mt-0.5 text-xs text-krem-300">{{ formatFileSize(session.materi_size) }} • {{ session.materi_mime_type }}</p>
             </div>
           </div>
-          <Link :href="route('attendance.materi.download', session.id)" class="mt-4 block rounded-lg border border-[#6F9435] px-3 py-2 text-center text-xs font-semibold text-[#d4dc9a] transition hover:bg-daun-500/30">
+          <a :href="route('attendance.materi.download', session.id)" class="mt-4 block rounded-lg border border-[#6F9435] px-3 py-2 text-center text-xs font-semibold text-[#d4dc9a] transition hover:bg-daun-500/30">
             Unduh materi
-          </Link>
+          </a>
         </section>
 
         <section class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm">

@@ -51,7 +51,7 @@
       >
         <span class="card-glow" aria-hidden="true" />
 
-        <Link
+        <a
           v-if="article.image_url"
           :href="`/articles/${article.id}`"
           class="relative -mx-5 -mt-5 mb-4 block overflow-hidden"
@@ -62,7 +62,7 @@
             class="h-40 w-full object-cover transition duration-300 group-hover:scale-[1.03]"
             loading="lazy"
           />
-        </Link>
+        </a>
 
         <div class="relative flex flex-1 flex-col">
           <div class="flex flex-wrap items-center gap-2">
@@ -78,12 +78,12 @@
           </div>
 
           <h3 class="mt-2 text-base font-bold leading-snug text-krem-100">
-            <Link
+            <a
               :href="`/articles/${article.id}`"
               class="transition-colors after:absolute after:inset-0 hover:text-emas-400"
             >
               {{ article.judul }}
-            </Link>
+            </a>
           </h3>
 
           <p class="mt-2 line-clamp-3 flex-1 text-xs leading-5 text-krem-300">{{ article.konten }}</p>
@@ -104,10 +104,10 @@
           v-if="canManage"
           class="relative z-10 mt-3 flex flex-wrap gap-2"
         >
-          <Link :href="`/articles/${article.id}`" class="btn-ghost btn-sm">
+          <a :href="`/articles/${article.id}`" class="btn-ghost btn-sm">
             <AppIcon name="externalLink" class="h-3.5 w-3.5" />
             Detail
-          </Link>
+          </a>
           <button
             v-if="article.can_edit"
             type="button"

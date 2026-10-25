@@ -10,9 +10,9 @@
             <span v-if="letter.createdBy">&bull; {{ letter.createdBy.name }}</span>
           </p>
         </div>
-        <Link href="/letters" class="rounded-lg border border-[#6F9435] px-3 py-2 text-xs font-semibold text-[#d4dc9a]">
+        <a href="/letters" class="rounded-lg border border-[#6F9435] px-3 py-2 text-xs font-semibold text-[#d4dc9a]">
           Kembali
-        </Link>
+        </a>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -100,12 +100,12 @@
         >
           Ekspor PDF
         </a>
-        <Link
+        <a
           :href="`/letters/${letter.id}/print`"
           class="inline-flex items-center rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a]"
         >
           Lihat / cetak
-        </Link>
+        </a>
         <a
           v-if="letter.file_path"
           :href="`/letters/${letter.id}/download`"

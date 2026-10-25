@@ -11,7 +11,7 @@
       </div>
 <div class="flex items-center gap-2">
         <SkeletonLoader v-if="loading" variant="card" class="h-9 w-36" />
-        <Link
+        <a
           v-else
           href="/notifications"
           class="relative inline-flex items-center gap-2 rounded-lg border-2 border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:border-emas-400/70 hover:bg-daun-500/30 hover:text-emas-400"
@@ -24,16 +24,16 @@
           >
             {{ unreadCount > 99 ? '99+' : unreadCount }}
           </span>
-        </Link>
+        </a>
         <SkeletonLoader v-if="loading" variant="card" class="h-9 w-20" />
-        <Link
+        <a
           v-else
           href="/reports"
           class="inline-flex items-center gap-2 rounded-lg border-2 border-[#6F9435] px-3 py-2 text-xs font-bold text-[#d4dc9a] transition hover:border-emas-400/70 hover:bg-daun-500/30 hover:text-emas-400"
         >
           <AppIcon name="reports" class="h-4 w-4" />
           Laporan
-        </Link>
+        </a>
       </div>
     </div>
 
@@ -63,7 +63,7 @@
             <p class="text-xs font-medium text-krem-300">Antrean terbaru dari anggota ambalan</p>
           </div>
           <SkeletonLoader v-if="loading" variant="text" :lines="1" class="h-5 w-24" />
-          <Link v-else-if="!isAnggota" href="/sku" class="text-xs font-bold text-[#A7B92B] hover:text-emas-400">Lihat semua</Link>
+          <a v-else-if="!isAnggota" href="/sku" class="text-xs font-bold text-[#A7B92B] hover:text-emas-400">Lihat semua</a>
         </div>
         <div v-if="loading" class="space-y-3">
           <SkeletonLoader v-for="i in 3" :key="i" variant="list" :lines="2" class="h-14" />

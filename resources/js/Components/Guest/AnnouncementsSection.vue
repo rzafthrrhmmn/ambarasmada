@@ -64,12 +64,12 @@
 
     <!-- Lihat semua link when there are more announcements than displayed -->
     <div v-if="hasMoreAnnouncements" class="mt-8 text-center">
-      <Link
+      <a
         href="/announcements"
         class="text-sm font-bold text-daun-400 opacity-70 transition-opacity hover:opacity-100 hover:text-emas-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400 rounded"
       >
         Lihat semua pengumuman &rarr;
-      </Link>
+      </a>
     </div>
   </section>
 </template>

@@ -5,10 +5,10 @@
         <h2 class="font-extrabold text-emas-400">Aktivitas mendatang</h2>
         <p class="text-xs font-medium text-krem-300">Latihan rutin &amp; kegiatan dalam 7 hari ke depan</p>
       </div>
-      <Link
+      <a
         href="/attendance"
         class="text-xs font-bold text-daun-400 hover:text-emas-400"
-      >Lihat semua</Link>
+      >Lihat semua</a>
     </div>
 
     <ReminderPermission v-if="!permissionResolved" @granted="requestPermission" />

@@ -13,7 +13,7 @@
           <NavIcon :name="mobileMenuOpen ? 'close' : 'menu'" :stroke="2" class="h-5 w-5" />
         </button>
 
-        <Link href="/dashboard" class="app-header-brand">
+        <a href="/dashboard" class="app-header-brand">
           <span class="app-header-logo h-10 w-10 sm:h-12 sm:w-12">
             <img :src="ambalan?.logo_url || '/images/Logo_Ambalan.png'" alt="Logo Ambalan" class="h-full w-full object-contain" />
           </span>
@@ -23,7 +23,7 @@
             <span class="app-header-context">{{ context.current }}</span>
             <span class="app-header-tagline">Ekosistem Digital Ambalan</span>
           </span>
-        </Link>
+        </a>
 
         <nav class="app-header-trail" aria-label="Lokasi halaman">
           <template v-if="context.parent">
@@ -34,12 +34,12 @@
         </nav>
 
         <div class="app-header-actions">
-          <Link href="/notifications" class="app-header-button" :aria-label="notifLabel">
+          <a href="/notifications" class="app-header-button" :aria-label="notifLabel">
             <NavIcon name="bell" class="h-5 w-5" />
             <span v-if="unreadNotifications > 0" class="app-header-badge" aria-hidden="true">
               {{ unreadNotifications > 99 ? '99+' : unreadNotifications }}
             </span>
-          </Link>
+          </a>
 
           <AppHeaderUserMenu
               :user="user"
@@ -146,7 +146,7 @@
         aria-label="Navigasi bawah"
     >
       <div class="mx-auto flex h-16 max-w-lg items-stretch justify-around">
-        <Link
+        <a
             v-for="item in bottomItems"
             :key="item.key"
             :href="item.href"
@@ -157,7 +157,7 @@
           <span class="bottom-nav-indicator" aria-hidden="true" />
           <NavIcon :name="item.icon" class="h-5 w-5" />
           <span class="leading-tight">{{ item.label }}</span>
-        </Link>
+        </a>
       </div>
     </nav>
   </div>
