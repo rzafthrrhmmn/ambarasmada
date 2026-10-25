@@ -154,13 +154,13 @@ Route::get('/', GuestController::class)->name('home');
 // standard middleware; sessions use the database driver to avoid the 419
 // mismatch caused by cookie-based sessions with SameSite=None + partitioned
 // cookies on Vercel serverless.
-Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login')->middleware(['guest', 'throttle:5,1']);
-Route::post('/login', [LoginController::class, 'login'])->name('login.post')->middleware(['guest', 'throttle:5,1']);
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login')->middleware(['throttle:5,1']);
+Route::post('/login', [LoginController::class, 'login'])->name('login.post')->middleware(['throttle:5,1']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Registration
-Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register')->middleware(['guest', 'throttle:3,1']);
-Route::post('/register', [RegisterController::class, 'register'])->middleware(['guest', 'throttle:3,1']);
+Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register')->middleware(['throttle:3,1']);
+Route::post('/register', [RegisterController::class, 'register'])->middleware(['throttle:3,1']);
 
 // Password Reset
 Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request')->middleware('throttle:3,1');
