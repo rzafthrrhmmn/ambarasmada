@@ -83,11 +83,26 @@ const props = defineProps({
     type: Number,
     default: 5000,
   },
+  paused: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const currentIndex = ref(0);
 let timer = null;
-let paused = false;
+let internalPaused = false;
+
+const emit = defineEmits(['update:paused']);
+const expose = defineExpose({
+  pause: () => { internalPaused = true; },
+  resume: () => { internalPaused = false; },
+});
+
+watch(() => props.paused, (val) => {
+  internalPaused = val;
+  if (!val) resetTimer();
+});
 
 function goTo(index) {
   currentIndex.value = index;
@@ -102,18 +117,11 @@ function prev() {
   currentIndex.value = (currentIndex.value - 1 + props.slides.length) % props.slides.length;
 }
 
-function pause() {
-  paused = true;
-}
-
-function resume() {
-  paused = false;
-}
-
 function resetTimer() {
   if (timer) clearInterval(timer);
+  if (props.paused || internalPaused) return;
   timer = setInterval(() => {
-    if (!paused) next();
+    if (!internalPaused) next();
   }, props.interval);
 }
 
