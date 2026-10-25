@@ -1,5 +1,5 @@
 <template>
-  <div ref="container" class="relative min-h-screen overflow-hidden bg-hutan-800 font-sans guest-scroll">
+  <div ref="container" class="relative min-h-screen overflow-hidden bg-hutan-800 font-sans guest-scroll section-animate">
     <!-- Particle Background -->
     <ParticleBackground
       :particle-count="isMobile ? 40 : 80"

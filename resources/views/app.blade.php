@@ -16,42 +16,41 @@
     <link rel="apple-touch-icon" href="/images/icons/apple-touch-icon.png">
     <link rel="mask-icon" href="/images/icons/favicon-32.png" color="#263D26">
     <style>
-        #pwa-loading-screen {
-            position: fixed;
-            inset: 0;
-            z-index: 99999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #263D26;
-            color: #f0ead8;
-            font-family: ui-sans-serif, system-ui, sans-serif;
-            transition: opacity 0.3s ease;
-        }
-        #pwa-loading-screen.hidden {
+        /* Section slide-in animations — dipanggil via .section-animate pada root elemen halaman */
+        .section-animate > * {
             opacity: 0;
-            pointer-events: none;
+            transform: translateY(24px);
+            animation: sectionSlideIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
-        #pwa-loading-screen .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(240, 234, 216, 0.2);
-            border-top-color: #EDD330;
-            border-radius: 50%;
-            animation: pwa-spin 0.8s linear infinite;
+        .section-animate > *:nth-child(1) { animation-delay: 0.05s; }
+        .section-animate > *:nth-child(2) { animation-delay: 0.12s; }
+        .section-animate > *:nth-child(3) { animation-delay: 0.19s; }
+        .section-animate > *:nth-child(4) { animation-delay: 0.26s; }
+        .section-animate > *:nth-child(5) { animation-delay: 0.33s; }
+        .section-animate > *:nth-child(6) { animation-delay: 0.40s; }
+        .section-animate > *:nth-child(7) { animation-delay: 0.47s; }
+        .section-animate > *:nth-child(8) { animation-delay: 0.54s; }
+        .section-animate > *:nth-child(9) { animation-delay: 0.61s; }
+        .section-animate > *:nth-child(10) { animation-delay: 0.68s; }
+
+        @keyframes sectionSlideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        @keyframes pwa-spin {
-            to { transform: rotate(360deg); }
+
+        /* Fade-in untuk elemen tunggal (misal card di dalam section) */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+            opacity: 0;
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; }
         }
     </style>
 </head>
 <body class="antialiased">
-    <div id="pwa-loading-screen">
-        <div class="text-center">
-            <div class="spinner mx-auto mb-4"></div>
-            <p class="text-sm font-medium text-krem-300">Memuat aplikasi...</p>
-        </div>
-    </div>
     <noscript>
         <div style="
             position: fixed;
@@ -76,17 +75,5 @@
         </div>
     </noscript>
     @inertia
-    <script>
-        // Sembunyikan loading screen saat Vue siap.
-        // Jika Vue gagal dimuat (misal chunk tidak ter-cache saat offline),
-        // loading screen tetap terlihat sebagai fallback.
-        window.hidePwaLoadingScreen = function() {
-            var screen = document.getElementById('pwa-loading-screen');
-            if (screen) {
-                screen.classList.add('hidden');
-                setTimeout(function() { screen.remove(); }, 300);
-            }
-        };
-    </script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end section-animate">
       <div>
         <SkeletonLoader v-if="loading" variant="text" :lines="2" class="mb-1 h-6 w-40" />
         <p v-else class="text-sm font-medium text-emas-400">Dashboard</p>
