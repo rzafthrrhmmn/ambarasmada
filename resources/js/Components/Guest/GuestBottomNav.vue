@@ -44,7 +44,7 @@ const navItems = computed(() => [
 
 function onNavClick(sectionId, event) {
   if (sectionId === 'masuk') {
-    router.visit('/login');
+    window.location.href = '/login';
     return;
   }
   emit('navigate', sectionId);

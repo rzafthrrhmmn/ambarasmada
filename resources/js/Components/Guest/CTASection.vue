@@ -14,18 +14,18 @@
             Gabung sekarang dan jadilah bagian dari ekosistem informasi kepramukaan yang modern.
           </p>
           <div class="mt-8 flex flex-wrap justify-center gap-4">
-            <Link
+            <a
               href="/register"
               class="guest-focus-ring rounded-2xl bg-hutan-800 px-9 py-4 text-sm font-black text-emas-400 shadow-xl shadow-black/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-black/40 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
             >
               Bergabung Sekarang
-            </Link>
-            <Link
+            </a>
+            <a
               href="/login"
               class="guest-focus-ring rounded-2xl border-2 border-hutan-800 bg-white/10 px-9 py-4 text-sm font-black text-hutan-800 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-transparent hover:bg-white/20 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
             >
               Masuk Akun
-            </Link>
+            </a>
           </div>
         </div>
       </div>

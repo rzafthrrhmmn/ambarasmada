@@ -55,18 +55,18 @@
           Pengumuman
         </a>
         <span class="mx-2 h-4 w-px bg-daun-500/30" aria-hidden="true"></span>
-        <Link
+        <a
           href="/login"
           class="guest-focus-ring rounded-xl px-4 py-2 text-sm font-bold text-krem-300 transition hover:bg-daun-500/20 hover:text-emas-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
         >
           Masuk
-        </Link>
-        <Link
+        </a>
+        <a
           href="/register"
           class="guest-focus-ring rounded-xl bg-gradient-to-r from-daun-400 to-emas-400 px-4 py-2 text-sm font-black text-hutan-800 shadow-lg shadow-emas-400/20 transition hover:brightness-110 hover:shadow-xl hover:shadow-emas-400/30 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
         >
           Daftar
-        </Link>
+        </a>
       </nav>
 
       <button
@@ -148,20 +148,20 @@
             >
               Pengumuman
             </a>
-            <Link
+            <a
               href="/login"
               @click="emit('close-mobile-menu')"
               class="guest-focus-ring rounded-2xl border-2 border-daun-500 bg-hutan-700/50 px-4 py-3 text-center font-bold text-krem-100 transition hover:border-emas-400/50 hover:text-emas-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
             >
               Masuk
-            </Link>
-            <Link
+            </a>
+            <a
               href="/register"
               @click="emit('close-mobile-menu')"
               class="guest-focus-ring rounded-2xl bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-4 py-3 text-center font-black text-hutan-800 shadow-lg transition hover:brightness-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
             >
               Bergabung Sekarang
-            </Link>
+            </a>
           </div>
         </div>
       </div>
