@@ -37,7 +37,7 @@
           focus-visible:ring-2
           focus-visible:ring-emas-400
         >
-          <div class="absolute inset-0 rounded-3xl bg-gradient-to-br from-daun-400/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden="true"></div>
+          <div class="absolute inset-0 rounded-3xl bg-gradient-to-br from-daun-400/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none" aria-hidden="true"></div>
           <div class="relative flex items-start gap-5">
             <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-hutan-800 to-hutan-600 border-2 border-daun-500/30 text-emas-400 shadow-lg shadow-daun-500/10 transition-all duration-300 group-hover:rotate-[5deg] group-hover:border-emas-400/50 group-hover:shadow-xl group-hover:shadow-daun-500/20">
               <AppIcon :name="feature.iconName" class="h-7 w-7 transition-transform duration-300 group-hover:scale-110" aria-hidden="true" />

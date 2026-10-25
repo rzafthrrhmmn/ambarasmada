@@ -28,7 +28,7 @@
         animation="fade-up"
       >
         <article class="guest-announcement-card group">
-          <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-daun-400/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden="true"></div>
+          <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-daun-400/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none" aria-hidden="true"></div>
           <div class="relative mb-4 flex items-center justify-between">
             <span class="inline-flex items-center gap-1.5 rounded-full bg-daun-400/15 px-3 py-1 text-xs font-bold text-emas-400">
               <AppIcon :name="categoryIcon(item.kategori)" class="h-3.5 w-3.5" aria-hidden="true" />
