@@ -256,14 +256,18 @@ async function logout() {
     clearQueue();
     await purgeUserScopedCaches();
 
-    try {
-        await router.post('/logout');
-    } catch (error) {
-        // Offline atau gagal jaringan: logout dari sisi lokal dan
-        // arahkan ke halaman tamu. Server tidak bisa dihubungi, jadi
-        // session di server tetap ada sampai user online lagi;
-        // yang penting data pribadi di perangkat sudah dihapus.
-        window.location.href = '/';
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/logout';
+    const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    if (token) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = '_token';
+        input.value = token;
+        form.appendChild(input);
     }
+    document.body.appendChild(form);
+    form.submit();
 }
 </script>
