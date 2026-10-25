@@ -78,46 +78,24 @@
             </p>
           </div>
 
-          <form @submit.prevent="submitLogin" class="space-y-4">
+          <form action="/login" method="POST" class="space-y-4">
+              <input type="hidden" name="_token" :value="$page.props.csrf_token" />
             <div>
               <label class="block">
                 <span class="mb-1 block text-sm font-bold text-[#d4dc9a]">Username atau email</span>
-                <input v-model="form.identity" type="text" required autocomplete="username" placeholder="Masukkan username atau email" class="w-full rounded-lg border-2 border-daun-500 bg-hutan-800 px-4 py-3 text-sm text-krem-100 outline-none transition placeholder:text-krem-300/50 focus:border-emas-400 focus:ring-2 focus:ring-emas-400/50" />
+                <input name="identity" type="text" required autocomplete="username" placeholder="Masukkan username atau email" class="w-full rounded-lg border-2 border-daun-500 bg-hutan-800 px-4 py-3 text-sm text-krem-100 outline-none transition placeholder:text-krem-300/50 focus:border-emas-400 focus:ring-2 focus:ring-emas-400/50" />
               </label>
 <span v-if="$page.props.errors.identity" class="mt-1 block text-xs font-bold text-[#ef4419]">{{ $page.props.errors.identity }}</span>
             </div>
             <div>
               <label class="block">
                 <span class="mb-1 block text-sm font-bold text-[#d4dc9a]">Password</span>
-                <input v-model="form.password" type="password" required autocomplete="current-password" placeholder="Masukkan password" class="w-full rounded-lg border-2 border-daun-500 bg-hutan-800 px-4 py-3 text-sm text-krem-100 outline-none transition placeholder:text-krem-300/50 focus:border-emas-400 focus:ring-2 focus:ring-emas-400/50" />
+                <input name="password" type="password" required autocomplete="current-password" placeholder="Masukkan password" class="w-full rounded-lg border-2 border-daun-500 bg-hutan-800 px-4 py-3 text-sm text-krem-100 outline-none transition placeholder:text-krem-300/50 focus:border-emas-400 focus:ring-2 focus:ring-emas-400/50" />
               </label>
-              <div class="mt-1 flex items-center justify-between gap-2">
-                <span v-if="$page.props.errors.password" class="text-xs font-bold text-[#ef4419]">{{ $page.props.errors.password }}</span>
-                <span v-else></span>
-                <a href="/forgot-password" class="text-xs font-bold text-emas-400 hover:underline">Lupa Sandi?</a>
-              </div>
-            </div>
 
-            <label class="flex items-center gap-2 text-sm font-medium text-[#d4dc9a]">
-              <input id="remember" name="remember" v-model="form.remember" type="checkbox" class="rounded border-2 border-daun-500 bg-hutan-800 text-emas-400" />
-              <span for="remember" class="cursor-pointer">Ingat saya</span>
-            </label>
-
-            <button id="login-submit" name="login-submit" type="submit" :disabled="form.processing || !isOnline" :class="['group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-daun-400 to-emas-400 px-4 py-3 font-extrabold text-hutan-800 shadow-lg shadow-emas-400/30 transition hover:shadow-xl hover:shadow-emas-400/40 hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60 border-2 border-emas-400', (form.processing || !isOnline) ? 'animate-pulse shadow-emas-400/50' : '']">
+            <button id="login-submit" name="login-submit" type="submit" :disabled="!isOnline" :class="['group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-daun-400 to-emas-400 px-4 py-3 font-extrabold text-hutan-800 shadow-lg shadow-emas-400/30 transition hover:shadow-xl hover:shadow-emas-400/40 hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60 border-2 border-emas-400']">
               <span class="relative z-10 flex items-center justify-center gap-2">
-                <svg v-if="form.processing" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-5 w-5 animate-spin text-hutan-800">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" opacity="0.25"></circle>
-                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span v-if="form.processing">
-                  Masuk
-                  <span class="inline-flex gap-0.5">
-                    <span class="animate-bounce inline-block h-1.5 w-1.5 rounded-full bg-hutan-800"></span>
-                    <span class="animate-bounce inline-block h-1.5 w-1.5 rounded-full bg-hutan-800"></span>
-                    <span class="animate-bounce inline-block h-1.5 w-1.5 rounded-full bg-hutan-800"></span>
-                  </span>
-                </span>
-                <span v-else>Masuk</span>
+                <span>Masuk</span>
               </span>
             </button>
           </form>
