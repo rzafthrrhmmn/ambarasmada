@@ -79,25 +79,37 @@
           </div>
 
           <form action="/login" method="POST" class="space-y-4">
-              <input type="hidden" name="_token" :value="$page.props.csrf_token" />
+            <input type="hidden" name="_token" :value="$page.props.csrf_token" />
             <div>
               <label class="block">
                 <span class="mb-1 block text-sm font-bold text-[#d4dc9a]">Username atau email</span>
                 <input name="identity" type="text" required autocomplete="username" placeholder="Masukkan username atau email" class="w-full rounded-lg border-2 border-daun-500 bg-hutan-800 px-4 py-3 text-sm text-krem-100 outline-none transition placeholder:text-krem-300/50 focus:border-emas-400 focus:ring-2 focus:ring-emas-400/50" />
               </label>
-<span v-if="$page.props.errors.identity" class="mt-1 block text-xs font-bold text-[#ef4419]">{{ $page.props.errors.identity }}</span>
+              <span v-if="$page.props.errors.identity" class="mt-1 block text-xs font-bold text-[#ef4419]">{{ $page.props.errors.identity }}</span>
             </div>
             <div>
               <label class="block">
                 <span class="mb-1 block text-sm font-bold text-[#d4dc9a]">Password</span>
                 <input name="password" type="password" required autocomplete="current-password" placeholder="Masukkan password" class="w-full rounded-lg border-2 border-daun-500 bg-hutan-800 px-4 py-3 text-sm text-krem-100 outline-none transition placeholder:text-krem-300/50 focus:border-emas-400 focus:ring-2 focus:ring-emas-400/50" />
               </label>
+              <div class="mt-1 flex items-center justify-between gap-2">
+                <span v-if="$page.props.errors.password" class="text-xs font-bold text-[#ef4419]">{{ $page.props.errors.password }}</span>
+                <span v-else></span>
+                <a href="/forgot-password" class="text-xs font-bold text-emas-400 hover:underline">Lupa Sandi?</a>
+              </div>
+            </div>
+
+            <label class="flex items-center gap-2 text-sm font-medium text-[#d4dc9a]">
+              <input id="remember" name="remember" type="checkbox" value="1" class="rounded border-2 border-daun-500 bg-hutan-800 text-emas-400" />
+              <span for="remember" class="cursor-pointer">Ingat saya</span>
+            </label>
 
             <button id="login-submit" name="login-submit" type="submit" :disabled="!isOnline" :class="['group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-daun-400 to-emas-400 px-4 py-3 font-extrabold text-hutan-800 shadow-lg shadow-emas-400/30 transition hover:shadow-xl hover:shadow-emas-400/40 hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60 border-2 border-emas-400']">
               <span class="relative z-10 flex items-center justify-center gap-2">
                 <span>Masuk</span>
               </span>
             </button>
+          </form>
           </form>
 
           <div class="mt-4 text-center">
