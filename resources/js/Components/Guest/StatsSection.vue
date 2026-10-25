@@ -2,7 +2,7 @@
   <section class="guest-section" data-animate="stats" id="stats" aria-label="Statistik ambalan">
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <ScrollReveal
-        v-for="(stat, idx) in statsItems"
+        v-for="(stat, idx) in props.statsItems"
         :key="`stat-${stat.key}`"
         :delay="idx * 100"
         :stagger="true"
@@ -79,7 +79,7 @@ function animateCounter(target, key, duration = 1800) {
 }
 
 function startAnimations() {
-  statsItems.forEach((stat) => {
+  props.statsItems.forEach((stat) => {
     const target = typeof stat.value === 'number' ? stat.value : 0;
     animateCounter(target, stat.key);
   });
