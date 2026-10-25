@@ -24,6 +24,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { router } from '@inertiajs/vue3';
 import AppIcon from '@/Components/AppIcon.vue';
 
 const props = defineProps({
@@ -43,7 +44,7 @@ const navItems = computed(() => [
 
 function onNavClick(sectionId, event) {
   if (sectionId === 'masuk') {
-    // External link to login, let default behavior happen
+    router.visit('/login');
     return;
   }
   emit('navigate', sectionId);

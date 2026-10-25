@@ -8,7 +8,6 @@ use App\Models\Member;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -29,12 +28,8 @@ class RegisterController extends Controller
                 ->first();
     }
 
-    public function showRegistrationForm(Request $request): Response|RedirectResponse
+    public function showRegistrationForm(Request $request): Response
     {
-        if (Auth::check()) {
-            return redirect()->route('dashboard');
-        }
-
         $latestAngkatan = $this->currentAngkatan();
 
         return Inertia::render('Auth/Register', [

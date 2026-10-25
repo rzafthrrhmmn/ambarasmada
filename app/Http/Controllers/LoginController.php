@@ -14,12 +14,8 @@ use Inertia\Response;
 
 class LoginController extends Controller
 {
-    public function showLoginForm(Request $request): Response|RedirectResponse
+    public function showLoginForm(Request $request): Response
     {
-        if (Auth::check()) {
-            return redirect()->route('dashboard');
-        }
-
         return Inertia::render('Auth/Login');
     }
 
