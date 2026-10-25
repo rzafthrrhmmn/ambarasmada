@@ -119,10 +119,6 @@ class ArticleController extends Controller
 
         return Inertia::render('Articles/Show', [
             'article' => $article,
-            // Halaman detail ikut menentukan apakah tombol sunting dan hapus
-            // ditampilkan. Daftar peran di sini persis sama dengan yang dipakai
-            // update dan destroy, jadi halaman ini tidak perlu menyimpan daftar
-            // sendiri yang bisa melenceng dari server.
             'canManage' => $isPrivileged,
             'canDelete' => in_array($request->user()->role, ['Admin', 'Pembina'], true),
         ]);

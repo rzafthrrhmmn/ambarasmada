@@ -21,25 +21,23 @@ use App\Http\Controllers\HealthSafetyController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LearningMaterialController;
 use App\Http\Controllers\LetterController;
-use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberPositionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PwaController;
-use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ReminderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SkuController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SystemPointController;
 use App\Http\Controllers\SystemToolController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TkkPointController;
 use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\UserPermissionController;
-use App\Http\Controllers\SettingsController;
 use App\Models\Ambalan;
 use App\Models\Announcement;
 use App\Models\Gallery;
@@ -48,270 +46,102 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
-use Laravel\Fortify\Fortify;
-use Laravel\Fortify\Http\Controllers\ConfirmedTwoFactorAuthenticationController;
-use Laravel\Fortify\Http\Controllers\PasswordController;
-use Laravel\Fortify\Http\Controllers\ProfileInformationController;
-use Laravel\Fortify\Http\Controllers\RecoveryCodeController;
-use Laravel\Fortify\Http\Controllers\TwoFactorAuthenticatedSessionController;
-use Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController;
-use Laravel\Fortify\Http\Controllers\TwoFactorQrCodeController;
-use Laravel\Fortify\Http\Controllers\TwoFactorSecretKeyController;
-use Laravel\Passkeys\Http\Controllers\PasskeyConfirmationController;
-use Laravel\Passkeys\Http\Controllers\PasskeyLoginController;
-use Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController;
 
 Route::get('/up', fn () => response()->json(['status' => 'ok', 'time' => now()]))->name('up');
-
-Route::get('/debug/db', function () {
-    try {
-        $result = DB::select('SELECT 1 as test');
-
-        return response()->json(['success' => true, 'result' => $result]);
-    } catch (Throwable $e) {
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ], 500);
-    }
-})->name('debug.db');
-
-Route::get('/debug/api-guest', function () {
-    try {
-        $ambalan = Ambalan::first();
-        $hasKategoriColumn = Schema::hasColumn('announcements', 'kategori');
-
-        $announcements = Announcement::whereNotNull('published_at')
-            ->where('published_at', '<=', now())
-            ->latest('published_at')
-            ->take(5)
-            ->get($hasKategoriColumn ? ['id', 'judul', 'isi', 'published_at', 'kategori'] : ['id', 'judul', 'isi', 'published_at']);
-        $gallery = Gallery::whereNotNull('image')
-            ->latest('created_at')
-            ->take(12)
-            ->get();
-        $stats = [
-            'total_members' => Member::where('status_aktif', 'Aktif')->count(),
-            'total_alumni' => Member::where('status_aktif', 'Alumni')->count(),
-        ];
-
-        return response()->json([
-            'success' => true,
-            'ambalan' => $ambalan,
-            'announcements' => $announcements,
-            'gallery' => $gallery,
-            'stats' => $stats,
-        ]);
-    } catch (Throwable $e) {
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage(),
-            'class' => get_class($e),
-            'trace' => $e->getTraceAsString(),
-        ], 500);
-    }
-})->name('debug.api-guest');
-
-Route::get('/debug/cache', function () {
-    try {
-        // Test if cache table exists
-        $tableExists = DB::select("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'cache')");
-
-        // Test cache write/read
-        Cache::put('test_key', 'test_value', 60);
-        $cached = Cache::get('test_key');
-        Cache::forget('test_key');
-
-        return response()->json([
-            'success' => true,
-            'cache_table_exists' => $tableExists[0]->exists ?? false,
-            'cache_write_read' => $cached === 'test_value',
-        ]);
-    } catch (Throwable $e) {
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage(),
-            'class' => get_class($e),
-            'trace' => $e->getTraceAsString(),
-        ], 500);
-    }
-})->name('debug.cache');
-
-// Public API v1 — guest-facing JSON endpoints with CDN-friendly cache headers.
-Route::prefix('v1')->name('api.v1.')->group(function () {
-    Route::get('/guest/home', [App\Http\Controllers\Api\GuestController::class, 'home'])->name('guest.home');
-    Route::post('/guest/newsletter', [App\Http\Controllers\Api\GuestController::class, 'newsletter'])->name('guest.newsletter')->middleware('throttle:8,1');
-});
 
 Route::get('/favicon.ico', function () {
     return response()->noContent(204);
 })->name('favicon');
 
+// Landing page (guest)
 Route::get('/', GuestController::class)->name('home');
 
-// Login — simplified auth system. CSRF protection is handled by Laravel's
-// standard middleware; sessions use the database driver to avoid the 419
-// mismatch caused by cookie-based sessions with SameSite=None + partitioned
-// cookies on Vercel serverless.
-Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login')->middleware(['throttle:5,1']);
-Route::post('/login', [LoginController::class, 'login'])->name('login.post')->middleware(['throttle:5,1']);
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+// Public API v1 — guest-facing JSON endpoints.
+Route::prefix('v1')->name('api.v1.')->group(function () {
+    Route::get('/guest/home', [App\Http\Controllers\Api\GuestController::class, 'home'])->name('guest.home');
+    Route::post('/guest/newsletter', [App\Http\Controllers\Api\GuestController::class, 'newsletter'])->name('guest.newsletter')->middleware('throttle:8,1');
+});
 
-// Registration
-Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register')->middleware(['throttle:3,1']);
-Route::post('/register', [RegisterController::class, 'register'])->middleware(['throttle:3,1']);
+// ============================================================================
+// Authentication — simple, no Fortify, no 2FA, no Passkeys
+// ============================================================================
 
-// Password Reset
+Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->middleware('throttle:5,1');
+Route::post('/login', [AuthController::class, 'login'])->name('login.post')->middleware('throttle:5,1');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register')->middleware('throttle:3,1');
+Route::post('/register', [AuthController::class, 'register'])->name('register.post')->middleware('throttle:3,1');
+
+// Password reset
 Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request')->middleware('throttle:3,1');
 Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->name('password.email')->middleware('throttle:3,1');
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset')->middleware('throttle:3,1');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update')->middleware('throttle:3,1');
 
-// Kirim ulang tautan aktivasi tanpa harus login (hanya dengan knowing email).
+// Email verification (resend for guests)
 Route::post('/email/resend-activation', [AuthController::class, 'resendActivationLink'])
     ->name('verification.resend.guest')
     ->middleware('throttle:5,5');
 
-// Email Verification + Pending Approval — Layer 1: auth middleware
+// Authenticated: verification notice, verify link, resend, pending approval
 Route::middleware(['auth'])->group(function () {
     Route::get('/email/verify', [AuthController::class, 'showVerificationNotice'])->name('verification.notice');
-
-    // Middleware `signed` sengaja tidak dipakai: tautan yang kedaluwarsa akan
-    // berakhir pada halaman 403 yang tidak menyediakan jalan keluar. Validasi
-    // signature dilakukan di AuthController@verifyEmail dengan pemeriksaan
-    // HMAC yang sama, namun hasilnya ditangani ramah lewat flash message.
     Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify')->middleware('throttle:6,1');
-
     Route::post('/email/verification-notification', [AuthController::class, 'sendVerificationEmail'])->name('verification.send')->middleware('throttle:6,1');
-
     Route::get('/pending-approval', [AuthController::class, 'pendingApproval'])->name('pending-approval');
 
-    Route::middleware('pembina')->group(function () {
+    Route::middleware('role:Admin,Pembina')->group(function () {
         Route::get('/members/pending', [RegistrationController::class, 'pendingUsers'])->name('members.pending');
         Route::post('/members/pending/{user}/approve', [RegistrationController::class, 'approve'])->name('members.pending.approve');
         Route::post('/members/pending/{user}/reject', [RegistrationController::class, 'reject'])->name('members.pending.reject');
     });
 });
 
-// Protected application area — middleware applied incrementally:
-//   Layer 1: auth       — must be logged in
-//   Layer 2: approved   — must be approved by Pembina (not pending/rejected)
-//   Layer 3: verified   — email must be verified
-//   Layer 4: not-alumni — Alumni role routed to /alumni/* namespace
-Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(function () {
-    Fortify::ignoreRoutes();
-
-    Route::put('/user/profile-information', [ProfileInformationController::class, 'update'])
-        ->name('user-profile-information.update');
-
-    Route::put('/user/password', [PasswordController::class, 'update'])
-        ->name('user-password.update');
-
-    Route::post('/user/two-factor-authentication', [TwoFactorAuthenticationController::class, 'store'])
-        ->name('two-factor.enable');
-
-    Route::post('/user/confirmed-two-factor-authentication', [ConfirmedTwoFactorAuthenticationController::class, 'store'])
-        ->name('two-factor.confirm');
-
-    Route::delete('/user/two-factor-authentication', [TwoFactorAuthenticationController::class, 'destroy'])
-        ->name('two-factor.disable');
-
-    Route::get('/user/two-factor-qr-code', [TwoFactorQrCodeController::class, 'show'])
-        ->name('two-factor.qr-code');
-
-    Route::get('/user/two-factor-secret-key', [TwoFactorSecretKeyController::class, 'show'])
-        ->name('two-factor.secret-key');
-
-    Route::get('/user/two-factor-recovery-codes', [RecoveryCodeController::class, 'index'])
-        ->name('two-factor.recovery-codes');
-
-    Route::post('/user/two-factor-recovery-codes', [RecoveryCodeController::class, 'store'])
-        ->name('two-factor.regenerate-recovery-codes');
-
-    Route::get('/two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'create'])
-        ->middleware('guest:web')
-        ->name('two-factor.login');
-
-    Route::post('/two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'store'])
-        ->middleware('guest:web')
-        ->name('two-factor.login.store');
-
-    Route::get('/passkeys/login/options', [PasskeyLoginController::class, 'index'])
-        ->middleware('guest:web')
-        ->name('passkey.login-options');
-
-    Route::post('/passkeys/login', [PasskeyLoginController::class, 'store'])
-        ->middleware('guest:web')
-        ->name('passkey.login');
-
-    Route::get('/passkeys/confirm/options', [PasskeyConfirmationController::class, 'index'])
-        ->middleware('auth:web')
-        ->name('passkey.confirm-options');
-
-    Route::post('/passkeys/confirm', [PasskeyConfirmationController::class, 'store'])
-        ->middleware('auth:web')
-        ->name('passkey.confirm');
-
-    Route::get('/user/passkeys/options', [PasskeyRegistrationController::class, 'index'])
-        ->middleware('auth:web')
-        ->name('passkey.registration-options');
-
-    Route::post('/user/passkeys', [PasskeyRegistrationController::class, 'store'])
-        ->middleware('auth:web')
-        ->name('passkey.store');
-
-    Route::delete('/user/passkeys/{passkey}', [PasskeyRegistrationController::class, 'destroy'])
-        ->middleware('auth:web')
-        ->name('passkey.destroy');
-});
-
-// Gallery (public read)
-Route::get('/galleries', [GalleryController::class, 'index'])->name('galleries.index');
-
+// Protected application area — auth + approved + verified + not-alumni
 Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
-    // Public materials (accessible to all authenticated users)
+    // Public read materials
     Route::get('/materials', [LearningMaterialController::class, 'index'])->name('materials.index');
     Route::get('/materials/{material}', [LearningMaterialController::class, 'show'])->name('materials.show');
     Route::get('/materials/{material}/download', [LearningMaterialController::class, 'download'])->name('materials.download');
 
-    // Activity guides (public)
+    // Activity guides
     Route::get('/guides', [ActivityGuideController::class, 'index'])->name('guides.index');
     Route::get('/guides/{guide}', [ActivityGuideController::class, 'show'])->name('guides.show');
 
-    // Mars Ambalan media (public)
+    // Media
     Route::get('/medias', [AmbalanMediaController::class, 'index'])->name('medias.index');
     Route::get('/medias/{media}', [AmbalanMediaController::class, 'show'])->name('medias.show');
 
-    // Announcements (viewable by all authenticated users)
+    // Announcements
     Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
 
-    // Peta Kontur Sulawesi (viewable by all authenticated users)
+    // Map
     Route::get('/peta', [MapController::class, 'index'])->name('peta.index');
     Route::get('/peta/kontur', [MapController::class, 'kontur'])->name('peta.kontur');
 
-    // Attendance (viewable by all authenticated users)
+    // Attendance (read)
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
     Route::get('/attendance/{attendanceSession}', [AttendanceController::class, 'show'])->name('attendance.show');
     Route::get('/attendance/{attendanceSession}/materi', [AttendanceController::class, 'downloadMateri'])->name('attendance.materi.download');
 
-    // Finance: index viewable by all authenticated users (Anggota lihat iuran sendiri)
+    // Finance (read + store own)
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
     Route::post('/finance', [FinanceController::class, 'store'])->name('finance.store')->middleware('throttle:20,1');
 
-    // QR Code scan page for Anggota
+    // QR scan for Anggota
     Route::middleware(['role:Anggota'])->group(function () {
         Route::get('/attendance/scan/{qr_token}', [AttendanceController::class, 'scanPage'])->name('attendance.scan');
     });
 
+    // Admin, Pembina, Pengurus
     Route::middleware(['role:Admin,Pembina,Pengurus'])->group(function () {
         Route::get('/members', [MemberController::class, 'index'])->name('members.index');
         Route::post('/members', [MemberController::class, 'store'])->name('members.store')->middleware('throttle:10,1');
         Route::patch('/members/{member}', [MemberController::class, 'update'])->name('members.update')->middleware('throttle:20,1');
         Route::delete('/members/{member}', [MemberController::class, 'destroy'])->name('members.destroy')->middleware('throttle:10,1');
-        Route::post('/members/bulk-change-role', [MemberController::class, 'bulkChangeRole'])->name('members.bulk.role')->middleware('throttle:5,1');
 
         Route::get('/angkatan', [MemberController::class, 'angkatanIndex'])->name('angkatan.index');
         Route::post('/angkatan', [MemberController::class, 'angkatanStore'])->name('angkatan.store')->middleware('throttle:10,1');
@@ -319,7 +149,6 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::delete('/angkatan/{angkatan}', [MemberController::class, 'angkatanDestroy'])->name('angkatan.destroy')->middleware('throttle:5,1');
 
         Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store')->middleware('throttle:20,1');
-        Route::post('/attendance/bulk-destroy', [AttendanceController::class, 'bulkDestroySessions'])->name('attendance.bulk.destroy')->middleware('throttle:10,1');
         Route::patch('/attendance/{attendanceSession}', [AttendanceController::class, 'update'])->name('attendance.update')->middleware('throttle:20,1');
         Route::delete('/attendance/{attendanceSession}', [AttendanceController::class, 'destroy'])->name('attendance.destroy')->middleware('throttle:10,1');
         Route::post('/attendance/{attendanceSession}/records', [AttendanceController::class, 'storeAttendance'])->name('attendance.records.store')->middleware('throttle:20,1');
@@ -327,8 +156,8 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::delete('/attendance-records/{attendance}', [AttendanceController::class, 'destroyAttendance'])->name('attendance.records.destroy')->middleware('throttle:10,1');
         Route::post('/attendance-records/bulk', [AttendanceController::class, 'bulkAttendance'])->name('attendance.records.bulk')->middleware('throttle:10,1');
         Route::post('/attendance/{attendanceSession}/refresh-qr', [AttendanceController::class, 'refreshQrToken'])->name('attendance.refresh-qr')->middleware('throttle:10,1');
+        Route::post('/attendance/bulk-destroy', [AttendanceController::class, 'bulkDestroySessions'])->name('attendance.bulk.destroy')->middleware('throttle:10,1');
 
-        // Finance management - Admin, Pembina, Pengurus can update/delete own transactions
         Route::patch('/finance/{finance}', [FinanceController::class, 'update'])->name('finance.update')->middleware('throttle:20,1');
         Route::delete('/finance/{finance}', [FinanceController::class, 'destroy'])->name('finance.destroy')->middleware('throttle:10,1');
 
@@ -336,19 +165,105 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store')->middleware('throttle:10,1');
         Route::patch('/inventory/{inventory}', [InventoryController::class, 'update'])->name('inventory.update')->middleware('throttle:20,1');
         Route::delete('/inventory/{inventory}', [InventoryController::class, 'destroy'])->name('inventory.destroy')->middleware('throttle:10,1');
+        Route::get('/inventory/{inventory}/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
         Route::post('/inventory-loans', [InventoryController::class, 'loan'])->name('inventory.loans.store')->middleware('throttle:10,1');
         Route::patch('/inventory-loans/{inventoryLoan}/return', [InventoryController::class, 'returnLoan'])->name('inventory.loans.return')->middleware('throttle:10,1');
-        Route::post('/inventory-adjustments', [InventoryController::class, 'adjustment'])->name('inventory.adjustments.store')->middleware('throttle:10,1');
-        Route::get('/inventory/{inventory}/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
 
         Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store')->middleware('throttle:10,1');
         Route::patch('/announcements/{announcement}', [AnnouncementController::class, 'update'])->name('announcements.update')->middleware('throttle:20,1');
         Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy')->middleware('throttle:10,1');
 
-        Route::delete('/galleries/{gallery}', [GalleryController::class, 'destroy'])->name('galleries.destroy')->middleware('throttle:10,1');
+        Route::get('/letters', [LetterController::class, 'index'])->name('letters.index');
+        Route::post('/letters', [LetterController::class, 'store'])->name('letters.store')->middleware('throttle:10,1');
+        Route::get('/letters/templates', [LetterController::class, 'templates'])->name('letters.templates');
+        Route::post('/letters/templates', [LetterController::class, 'storeTemplate'])->name('letters.templates.store')->middleware('throttle:5,1');
+        Route::get('/letters/templates/{template}/download', [LetterController::class, 'downloadTemplate'])->name('letters.templates.download');
+        Route::delete('/letters/templates/{template}', [LetterController::class, 'destroyTemplate'])->name('letters.templates.destroy')->middleware('throttle:5,1');
+        Route::get('/letters/{letter}', [LetterController::class, 'show'])->name('letters.show');
+        Route::patch('/letters/{letter}', [LetterController::class, 'update'])->name('letters.update')->middleware('throttle:20,1');
+        Route::delete('/letters/{letter}', [LetterController::class, 'destroy'])->name('letters.destroy')->middleware('throttle:10,1');
+        Route::get('/letters/{letter}/print', [LetterController::class, 'print'])->name('letters.print');
+        Route::get('/letters/{letter}/download', [LetterController::class, 'download'])->name('letters.download');
+        Route::get('/letters/{letter}/generate', [LetterController::class, 'generate'])->name('letters.generate')->middleware('throttle:20,1');
+        Route::post('/letters/preview', [LetterController::class, 'preview'])->name('letters.preview')->middleware('throttle:20,1');
+
+        Route::post('/members/{member}/position', [MemberPositionController::class, 'store'])->name('members.position.store')->middleware('throttle:10,1');
+        Route::delete('/members/{member}/position/{position}', [MemberPositionController::class, 'destroy'])->name('members.position.destroy')->middleware('throttle:10,1');
+
+        Route::get('/events', [EventController::class, 'index'])->name('events.index');
+        Route::post('/events', [EventController::class, 'store'])->name('events.store')->middleware('throttle:10,1');
+        Route::patch('/events/{event}', [EventController::class, 'update'])->name('events.update')->middleware('throttle:20,1');
+        Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy')->middleware('throttle:10,1');
+        Route::post('/events/{event}/join', [EventController::class, 'join'])->name('events.join')->middleware('throttle:10,1');
+
+        Route::get('/meetings', [MeetingController::class, 'index'])->name('meetings.index');
+        Route::post('/meetings', [MeetingController::class, 'store'])->name('meetings.store')->middleware('throttle:10,1');
+        Route::patch('/meetings/{meeting}', [MeetingController::class, 'update'])->name('meetings.update')->middleware('throttle:20,1');
+        Route::delete('/meetings/{meeting}', [MeetingController::class, 'destroy'])->name('meetings.destroy')->middleware('throttle:10,1');
+
+        Route::post('/teams/{team}/task', [TeamController::class, 'createTask'])->name('teams.task.store')->middleware('throttle:10,1');
+        Route::patch('/teams/task/{task}', [TeamController::class, 'updateTask'])->name('teams.task.update')->middleware('throttle:20,1');
+
+        // Teams
+        Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
+        Route::post('/teams', [TeamController::class, 'store'])->name('teams.store')->middleware('throttle:10,1');
+        Route::patch('/teams/{team}', [TeamController::class, 'update'])->name('teams.update')->middleware('throttle:20,1');
+        Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy')->middleware('throttle:10,1');
+        Route::post('/teams/{team}/member', [TeamController::class, 'addMember'])->name('teams.member.store')->middleware('throttle:10,1');
+        Route::delete('/teams/{team}/member/{teamMember}', [TeamController::class, 'removeMember'])->name('teams.member.destroy')->middleware('throttle:10,1');
+        Route::post('/teams/{team}/task', [TeamController::class, 'createTask'])->name('teams.task.store')->middleware('throttle:10,1');
+        Route::patch('/teams/task/{task}', [TeamController::class, 'updateTask'])->name('teams.task.update')->middleware('throttle:20,1');
+
+        // Reminders
+        Route::post('/teams/{team}/member', [TeamController::class, 'addMember'])->name('teams.member.store')->middleware('throttle:10,1');
+        Route::delete('/teams/{team}/member/{teamMember}', [TeamController::class, 'removeMember'])->name('teams.member.destroy')->middleware('throttle:10,1');
+        Route::post('/teams/{team}/task', [TeamController::class, 'createTask'])->name('teams.task.store')->middleware('throttle:10,1');
+        Route::patch('/teams/task/{task}', [TeamController::class, 'updateTask'])->name('teams.task.update')->middleware('throttle:20,1');
+
+        Route::get('/assessments', [AssessmentController::class, 'index'])->name('assessments.index');
+        Route::post('/assessments', [AssessmentController::class, 'store'])->name('assessments.store')->middleware('throttle:10,1');
+        Route::patch('/assessments/{assessment}', [AssessmentController::class, 'update'])->name('assessments.update')->middleware('throttle:20,1');
+        Route::delete('/assessments/{assessment}', [AssessmentController::class, 'destroy'])->name('assessments.destroy')->middleware('throttle:10,1');
+        Route::post('/assessments/{assessment}/detail', [AssessmentController::class, 'storeDetail'])->name('assessments.detail.store')->middleware('throttle:10,1');
+
+        Route::get('/certificates', [CertificateController::class, 'index'])->name('certificates.index');
+        Route::post('/certificates', [CertificateController::class, 'store'])->name('certificates.store')->middleware('throttle:10,1');
+        Route::patch('/certificates/{certificate}', [CertificateController::class, 'update'])->name('certificates.update')->middleware('throttle:20,1');
+        Route::get('/certificates/{certificate}/download', [CertificateController::class, 'download'])->name('certificates.download');
+
+        Route::get('/field-guides', [FieldGuideController::class, 'index'])->name('field-guides.index');
+        Route::post('/field-guides', [FieldGuideController::class, 'store'])->name('field-guides.store')->middleware('throttle:10,1');
+        Route::patch('/field-guides/{guide}', [FieldGuideController::class, 'update'])->name('field-guides.update')->middleware('throttle:20,1');
+        Route::delete('/field-guides/{guide}', [FieldGuideController::class, 'destroy'])->name('field-guides.destroy')->middleware('throttle:10,1');
+
+        Route::get('/health/safety/records', [HealthSafetyController::class, 'healthRecords'])->name('health.records.index');
+        Route::post('/health/safety/records', [HealthSafetyController::class, 'storeHealthRecord'])->name('health.records.store');
+        Route::patch('/health/safety/records/{record}', [HealthSafetyController::class, 'updateHealthRecord'])->name('health.records.update');
+        Route::delete('/health/safety/records/{record}', [HealthSafetyController::class, 'destroyHealthRecord'])->name('health.records.destroy')->middleware('throttle:10,1');
+
+        Route::get('/system/points', [SystemPointController::class, 'index'])->name('system.points.index');
+        Route::post('/system/points', [SystemPointController::class, 'store'])->name('system.points.store');
+        Route::delete('/system/points/{point}', [SystemPointController::class, 'destroy'])->name('system.points.destroy');
+
+        Route::get('/trainings', [TrainingController::class, 'index'])->name('trainings.index');
+        Route::post('/trainings', [TrainingController::class, 'store'])->name('trainings.store');
+        Route::patch('/trainings/{training}', [TrainingController::class, 'update'])->name('trainings.update');
+        Route::delete('/trainings/{training}', [TrainingController::class, 'destroy'])->name('trainings.destroy');
+
+        Route::get('/candidates', [CandidateController::class, 'index'])->name('candidates.index');
+        Route::post('/candidates', [CandidateController::class, 'store'])->name('candidates.store');
+        Route::patch('/candidates/{candidate}', [CandidateController::class, 'update'])->name('candidates.update');
+        Route::delete('/candidates/{candidate}', [CandidateController::class, 'destroy'])->name('candidates.destroy');
     });
 
-    // Finance management - Admin, Pembina, Juru Uang only (categories, periods, post, reverse)
+    // Articles — accessible to all authenticated users (no role restriction)
+    Route::get('/articles', [ArticleController::class, 'index'])->name('articles.index')->middleware('auth');
+    Route::get('/articles/{article}', [ArticleController::class, 'show'])->name('articles.show')->middleware('auth');
+    Route::post('/articles', [ArticleController::class, 'store'])->name('articles.store')->middleware(['auth', 'throttle:10,1']);
+    Route::patch('/articles/{article}', [ArticleController::class, 'update'])->name('articles.update')->middleware(['auth', 'throttle:20,1']);
+    Route::delete('/articles/{article}', [ArticleController::class, 'destroy'])->name('articles.destroy')->middleware(['auth', 'throttle:10,1']);
+
+    // Juru Uang (finance post/reverse, categories, periods)
     Route::middleware(['juru-uang'])->group(function () {
         Route::post('/finance/{finance}/post', [FinanceController::class, 'post'])->name('finance.post')->middleware('throttle:10,1');
         Route::post('/finance/{finance}/reverse', [FinanceController::class, 'reverse'])->name('finance.reverse')->middleware('throttle:10,1');
@@ -366,49 +281,27 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::delete('/finance/periods/{period}', [FinanceController::class, 'destroyPeriod'])->name('finance.periods.destroy')->middleware('throttle:10,1');
     });
 
-    Route::middleware(['role:Admin,Pembina,Pengurus'])->group(function () {
-        Route::get('/letters', [LetterController::class, 'index'])->name('letters.index');
-        Route::post('/letters', [LetterController::class, 'store'])->name('letters.store')->middleware('throttle:10,1');
-        Route::get('/letters/templates', [LetterController::class, 'templates'])->name('letters.templates');
-        Route::post('/letters/templates', [LetterController::class, 'storeTemplate'])->name('letters.templates.store')->middleware('throttle:5,1');
-        Route::get('/letters/templates/{template}/download', [LetterController::class, 'downloadTemplate'])->name('letters.templates.download');
-        Route::delete('/letters/templates/{template}', [LetterController::class, 'destroyTemplate'])->name('letters.templates.destroy')->middleware('throttle:5,1');
-        Route::post('/letters/preview', [LetterController::class, 'preview'])->name('letters.preview')->middleware('throttle:20,1');
-        Route::get('/letters/{letter}', [LetterController::class, 'show'])->name('letters.show');
-        Route::patch('/letters/{letter}', [LetterController::class, 'update'])->name('letters.update')->middleware('throttle:20,1');
-        Route::delete('/letters/{letter}', [LetterController::class, 'destroy'])->name('letters.destroy')->middleware('throttle:10,1');
-        Route::get('/letters/{letter}/print', [LetterController::class, 'print'])->name('letters.print');
-        Route::get('/letters/{letter}/download', [LetterController::class, 'download'])->name('letters.download');
-        Route::get('/letters/{letter}/generate', [LetterController::class, 'generate'])->name('letters.generate')->middleware('throttle:20,1');
-    });
-
-    Route::middleware(['role:Admin,Pembina,Pengurus'])->group(function () {
-        Route::post('/members/{member}/position', [MemberPositionController::class, 'store'])->name('members.position.store')->middleware('throttle:10,1');
-        Route::delete('/members/{member}/position/{position}', [MemberPositionController::class, 'destroy'])->name('members.position.destroy')->middleware('throttle:10,1');
-        Route::post('/members/bulk-position', [MemberPositionController::class, 'bulkAssign'])->name('members.position.bulk')->middleware('throttle:5,1');
-    });
-
+    // SKU & TKK (Anggota + Admin + Pembina + Pengurus)
     Route::middleware(['role:Anggota,Admin,Pembina,Pengurus'])->group(function () {
         Route::get('/sku', [SkuController::class, 'index'])->name('sku.index');
         Route::post('/sku', [SkuController::class, 'store'])->name('sku.store')->middleware('throttle:10,1');
         Route::post('/sku/{skuSubmission}/approve', [SkuController::class, 'approve'])->name('sku.approve')->middleware('throttle:20,1');
         Route::post('/sku/{skuSubmission}/reject', [SkuController::class, 'reject'])->name('sku.reject')->middleware('throttle:20,1');
-        Route::post('/sku/{skuSubmission}/cancel', [SkuController::class, 'cancel'])->name('sku.cancel')->middleware('throttle:10,1');
 
         Route::post('/tkk/points', [TkkPointController::class, 'store'])->name('tkk.points.store')->middleware('throttle:10,1');
         Route::patch('/tkk/points/{tkkPoint}', [TkkPointController::class, 'update'])->name('tkk.points.update')->middleware('throttle:20,1');
     });
 
-    // Presensi mandiri. Rute ini khusus anggota: bila tetap di dalam kelompok
-    // bersama SKU, daftar perannya menjadi lebih longgar dari yang sebenarnya
-    // diizinkan controller.
+    // Member self check-in
     Route::middleware(['role:Anggota'])->group(function () {
         Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.member.check-in')->middleware('throttle:30,1');
     });
 
+    // Profile
     Route::get('/profile', [MemberController::class, 'profile'])->name('member.profile.show');
     Route::patch('/profile', [MemberController::class, 'updateProfile'])->name('member.profile.update')->middleware('throttle:10,1');
 
+    // PWA
     Route::post('/pwa/devices', [PwaController::class, 'registerDevice'])->name('pwa.devices.store')->middleware('throttle:20,1');
 
     // Notifications
@@ -421,72 +314,6 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update')->middleware('throttle:10,1');
     Route::patch('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update')->middleware('throttle:5,1');
-    Route::post('/notifications/broadcast', [NotificationController::class, 'createNotificationForUsers'])->name('notifications.broadcast')->middleware('throttle:5,1');
-
-    // Events/Kegiatan
-    Route::get('/events', [EventController::class, 'index'])->name('events.index');
-    Route::post('/events', [EventController::class, 'store'])->name('events.store')->middleware('throttle:10,1');
-    Route::patch('/events/{event}', [EventController::class, 'update'])->name('events.update')->middleware('throttle:20,1');
-    Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy')->middleware('throttle:10,1');
-    Route::post('/events/{event}/join', [EventController::class, 'join'])->name('events.join')->middleware('throttle:10,1');
-    Route::patch('/events/{event}/participant', [EventController::class, 'updateParticipant'])->name('events.participant.update')->middleware('throttle:20,1');
-
-    // Meetings/Permusyawaratan
-    Route::get('/meetings', [MeetingController::class, 'index'])->name('meetings.index');
-    Route::post('/meetings', [MeetingController::class, 'store'])->name('meetings.store')->middleware('throttle:10,1');
-    Route::patch('/meetings/{meeting}', [MeetingController::class, 'update'])->name('meetings.update')->middleware('throttle:20,1');
-    Route::delete('/meetings/{meeting}', [MeetingController::class, 'destroy'])->name('meetings.destroy')->middleware('throttle:10,1');
-    Route::post('/meetings/{meeting}/agenda', [MeetingController::class, 'addAgenda'])->name('meetings.agenda.store')->middleware('throttle:10,1');
-    Route::post('/meetings/{meeting}/minute', [MeetingController::class, 'storeMinute'])->name('meetings.minute.store')->middleware('throttle:10,1');
-    Route::post('/meetings/{meeting}/vote', [MeetingController::class, 'vote'])->name('meetings.vote')->middleware('throttle:10,1');
-    Route::post('/meetings/{meeting}/attendee', [MeetingController::class, 'toggleAttendee'])->name('meetings.attendee.toggle')->middleware('throttle:10,1');
-
-    // Assessments/Penilaian
-    Route::get('/assessments', [AssessmentController::class, 'index'])->name('assessments.index');
-    Route::post('/assessments', [AssessmentController::class, 'store'])->name('assessments.store')->middleware('throttle:10,1');
-    Route::patch('/assessments/{assessment}', [AssessmentController::class, 'update'])->name('assessments.update')->middleware('throttle:20,1');
-    Route::delete('/assessments/{assessment}', [AssessmentController::class, 'destroy'])->name('assessments.destroy')->middleware('throttle:10,1');
-    Route::post('/assessments/{assessment}/detail', [AssessmentController::class, 'storeDetail'])->name('assessments.detail.store')->middleware('throttle:10,1');
-
-    // Certificates/Sertifikat
-    Route::get('/certificates', [CertificateController::class, 'index'])->name('certificates.index');
-    Route::post('/certificates', [CertificateController::class, 'store'])->name('certificates.store')->middleware('throttle:10,1');
-    Route::patch('/certificates/{certificate}', [CertificateController::class, 'update'])->name('certificates.update')->middleware('throttle:20,1');
-    Route::get('/certificates/{certificate}/download', [CertificateController::class, 'download'])->name('certificates.download');
-    Route::get('/certificates/{certificate}/pdf', [CertificateController::class, 'generatePdf'])->name('certificates.pdf');
-    Route::get('/certificates/{certificate}/preview-pdf', [CertificateController::class, 'previewPdf'])->name('certificates.preview-pdf');
-
-    // Field Guides/Buku Saku
-    Route::get('/field-guides', [FieldGuideController::class, 'index'])->name('field-guides.index');
-    Route::post('/field-guides', [FieldGuideController::class, 'store'])->name('field-guides.store')->middleware('throttle:10,1');
-    Route::patch('/field-guides/{guide}', [FieldGuideController::class, 'update'])->name('field-guides.update')->middleware('throttle:20,1');
-    Route::delete('/field-guides/{guide}', [FieldGuideController::class, 'destroy'])->name('field-guides.destroy')->middleware('throttle:10,1');
-
-    // Articles/Blog
-    Route::get('/articles', [ArticleController::class, 'index'])->name('articles.index');
-    // `show` pernah ada di controller tapi rutenya tidak pernah didaftarkan,
-    // jadi setiap tautan ke /articles/{id} berakhir 404.
-    Route::get('/articles/{article}', [ArticleController::class, 'show'])->name('articles.show');
-    Route::post('/articles', [ArticleController::class, 'store'])->name('articles.store')->middleware('throttle:10,1');
-    Route::patch('/articles/{article}', [ArticleController::class, 'update'])->name('articles.update')->middleware('throttle:20,1');
-    Route::delete('/articles/{article}', [ArticleController::class, 'destroy'])->name('articles.destroy')->middleware('throttle:10,1');
-
-    // Teams/Gugus Depan
-    Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
-    Route::post('/teams', [TeamController::class, 'store'])->name('teams.store')->middleware('throttle:10,1');
-    Route::patch('/teams/{team}', [TeamController::class, 'update'])->name('teams.update')->middleware('throttle:20,1');
-    Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy')->middleware('throttle:10,1');
-    Route::post('/teams/{team}/member', [TeamController::class, 'addMember'])->name('teams.member.store')->middleware('throttle:10,1');
-    Route::delete('/teams/{team}/member/{teamMember}', [TeamController::class, 'removeMember'])->name('teams.member.destroy')->middleware('throttle:10,1');
-    Route::post('/teams/{team}/task', [TeamController::class, 'createTask'])->name('teams.task.store')->middleware('throttle:10,1');
-    Route::patch('/teams/task/{task}', [TeamController::class, 'updateTask'])->name('teams.task.update')->middleware('throttle:20,1');
-
-    // Reminders
-    Route::get('/reminders', [ReminderController::class, 'index'])->name('reminders.index');
-    Route::post('/reminders', [ReminderController::class, 'store'])->name('reminders.store')->middleware('throttle:10,1');
-    Route::patch('/reminders/{reminder}', [ReminderController::class, 'update'])->name('reminders.update')->middleware('throttle:20,1');
-    Route::delete('/reminders/{reminder}', [ReminderController::class, 'destroy'])->name('reminders.destroy')->middleware('throttle:10,1');
-    Route::post('/reminders/{reminder}/sent', [ReminderController::class, 'markAsSent'])->name('reminders.sent')->middleware('throttle:10,1');
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
@@ -495,7 +322,7 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
     Route::get('/reports/attendance/pdf', [ReportController::class, 'attendancePdf'])->name('reports.attendance.pdf');
     Route::get('/reports/sku/pdf', [ReportController::class, 'skuPdf'])->name('reports.sku.pdf');
 
-    // User Permissions
+    // User Permissions (Admin only)
     Route::middleware(['role:Admin'])->group(function () {
         Route::get('/permissions', [UserPermissionController::class, 'index'])->name('permissions.index');
         Route::post('/permissions', [UserPermissionController::class, 'store'])->name('permissions.store');
@@ -503,38 +330,12 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::delete('/permissions/{permission}', [UserPermissionController::class, 'destroy'])->name('permissions.destroy');
     });
 
-    // Audit Logs
+    // Audit Logs (Admin only)
     Route::middleware(['role:Admin'])->group(function () {
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     });
 
-    // Trainings
-    Route::middleware(['role:Admin,Pembina'])->group(function () {
-        Route::get('/trainings', [TrainingController::class, 'index'])->name('trainings.index');
-        Route::post('/trainings', [TrainingController::class, 'store'])->name('trainings.store');
-        Route::patch('/trainings/{training}', [TrainingController::class, 'update'])->name('trainings.update');
-        Route::delete('/trainings/{training}', [TrainingController::class, 'destroy'])->name('trainings.destroy');
-    });
-
-    // Health & Safety
-    Route::middleware(['role:Admin,Pembina,Pengurus'])->group(function () {
-        Route::get('/health/safety/records', [HealthSafetyController::class, 'healthRecords'])->name('health.records.index');
-        Route::post('/health/safety/records', [HealthSafetyController::class, 'storeHealthRecord'])->name('health.records.store');
-        Route::patch('/health/safety/records/{record}', [HealthSafetyController::class, 'updateHealthRecord'])->name('health.records.update');
-        Route::delete('/health/safety/records/{record}', [HealthSafetyController::class, 'destroyHealthRecord'])->name('health.records.destroy')->middleware('throttle:10,1');
-        Route::get('/health/safety/checks', [HealthSafetyController::class, 'safetyChecks'])->name('health.checks.index');
-        Route::post('/health/safety/checks', [HealthSafetyController::class, 'storeSafetyCheck'])->name('health.checks.store');
-    });
-
-    // Candidates
-    Route::middleware(['role:Admin,Pembina'])->group(function () {
-        Route::get('/candidates', [CandidateController::class, 'index'])->name('candidates.index');
-        Route::post('/candidates', [CandidateController::class, 'store'])->name('candidates.store');
-        Route::patch('/candidates/{candidate}', [CandidateController::class, 'update'])->name('candidates.update');
-        Route::delete('/candidates/{candidate}', [CandidateController::class, 'destroy'])->name('candidates.destroy');
-    });
-
-    // System Tools
+    // System Tools (Admin only)
     Route::middleware(['role:Admin'])->group(function () {
         Route::get('/system/tools/backups', [SystemToolController::class, 'backups'])->name('system.backups.index');
         Route::post('/system/tools/backup', [SystemToolController::class, 'createBackup'])->name('system.backups.create');
@@ -545,14 +346,19 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::delete('/system/tools/webhooks/{webhook}', [SystemToolController::class, 'deleteWebhook'])->name('system.webhooks.destroy');
     });
 
-    // System Points
-    Route::middleware(['role:Admin,Pembina,Pengurus'])->group(function () {
-        Route::get('/system/points', [SystemPointController::class, 'index'])->name('system.points.index');
-        Route::post('/system/points', [SystemPointController::class, 'store'])->name('system.points.store');
-        Route::delete('/system/points/{point}', [SystemPointController::class, 'destroy'])->name('system.points.destroy');
-    });
+    // Gallery
+    Route::get('/galleries', [GalleryController::class, 'index'])->name('galleries.index');
+    Route::delete('/galleries/{gallery}', [GalleryController::class, 'destroy'])->name('galleries.destroy')->middleware('throttle:10,1');
+
+    // Reminders
+    Route::get('/reminders', [ReminderController::class, 'index'])->name('reminders.index');
+    Route::post('/reminders', [ReminderController::class, 'store'])->name('reminders.store')->middleware('throttle:10,1');
+    Route::patch('/reminders/{reminder}', [ReminderController::class, 'update'])->name('reminders.update')->middleware('throttle:20,1');
+    Route::delete('/reminders/{reminder}', [ReminderController::class, 'destroy'])->name('reminders.destroy')->middleware('throttle:10,1');
+    Route::post('/reminders/{reminder}/sent', [ReminderController::class, 'markAsSent'])->name('reminders.sent')->middleware('throttle:10,1');
 });
 
+// Alumni routes
 Route::middleware(['auth', 'verified', 'role:Alumni'])->prefix('alumni')->name('alumni.')->group(function () {
     Route::get('/dashboard', [AlumniController::class, 'dashboard'])->name('dashboard');
     Route::patch('/profile', [AlumniController::class, 'updateProfile'])->name('profile.update')->middleware('throttle:10,1');
