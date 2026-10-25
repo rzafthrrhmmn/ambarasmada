@@ -3,7 +3,7 @@
 // cache versi sebelumnya tidak boleh dipakai ulang. v1.5.1 menambahkan lambang
 // urutan organisasi Kepramukaan ke precache supaya header lembar PNG tetap ada
 // saat peta diunduh tanpa jaringan.
-const CACHE_VERSION = 'v1.5.6';
+const CACHE_VERSION = 'v1.5.7';
 const CACHE_NAME = 'jaya-jaya-jaya-' + CACHE_VERSION;
 const ASSETS_CACHE = 'jaya-jaya-jaya-assets-' + CACHE_VERSION;
 const TILES_CACHE = 'jaya-jaya-jaya-tiles-' + CACHE_VERSION;
@@ -251,19 +251,11 @@ async function dropStaleOfflineMap() {
 self.addEventListener('fetch', (event) => {
     const { request } = event;
 
-    // Halaman login dan register jangan pernah disajikan dari cache.
-    // Selalu ambil langsung dari jaringan supaya pengguna yang sudah
-    // terautentikasi tetap melihat halaman login/register alih-alih
-    // halaman guest yang tersimpan cache sebelumnya.
+    // Halaman login dan register jangan pernah di-intercept oleh service worker.
+    // Biarkan browser mengambil langsung dari jaringan tanpa campur tangan SW
+    // sehingga halaman login/register selalu tampil segar, tanpa blink atau
+    // kembali ke halaman guest dari cache.
     if (new URL(request.url).pathname === '/login' || new URL(request.url).pathname === '/register') {
-        event.respondWith(
-            fetch(request).catch(() => {
-                return new Response(
-                    JSON.stringify({ error: 'offline' }),
-                    { status: 503, headers: { 'Content-Type': 'application/json' } }
-                );
-            })
-        );
         return;
     }
 
