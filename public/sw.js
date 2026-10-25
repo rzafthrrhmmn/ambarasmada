@@ -255,8 +255,7 @@ self.addEventListener('fetch', (event) => {
     // Selalu ambil langsung dari jaringan supaya pengguna yang sudah
     // terautentikasi tetap melihat halaman login/register alih-alih
     // halaman guest yang tersimpan cache sebelumnya.
-    const url = new URL(request.url);
-    if (url.pathname === '/login' || url.pathname === '/register') {
+    if (new URL(request.url).pathname === '/login' || new URL(request.url).pathname === '/register') {
         event.respondWith(
             fetch(request).catch(() => {
                 return new Response(
