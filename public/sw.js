@@ -281,13 +281,10 @@ self.addEventListener('fetch', (event) => {
 
     // Inertia XHR (POST/login) - jangan pernah intercept
     if (request.headers.get('X-Inertia') === 'true') {
-        const u = new URL(request.url);
-        if (['/login', '/register', '/logout', '/forgot-password', '/reset-password'].includes(u.pathname) || u.pathname.startsWith('/email/')) {
+        if (['/login', '/register', '/logout', '/forgot-password', '/reset-password'].includes(url.pathname) || url.pathname.startsWith('/email/')) {
             return;
         }
     }
-
-    const url = new URL(request.url);
 
     // Handle external map library requests (unpkg.com) for offline use
     if (url.origin === 'https://unpkg.com' && EXTERNAL_LIBS.includes(request.url)) {
