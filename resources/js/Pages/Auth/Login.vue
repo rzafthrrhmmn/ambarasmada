@@ -110,7 +110,6 @@
               </span>
             </button>
           </form>
-          </form>
 
           <div class="mt-4 text-center">
             <p class="text-sm text-[#8fa06a]">
