@@ -3,7 +3,7 @@
 // cache versi sebelumnya tidak boleh dipakai ulang. v1.5.1 menambahkan lambang
 // urutan organisasi Kepramukaan ke precache supaya header lembar PNG tetap ada
 // saat peta diunduh tanpa jaringan.
-const CACHE_VERSION = 'v1.5.7';
+const CACHE_VERSION = 'v1.5.8';
 const CACHE_NAME = 'jaya-jaya-jaya-' + CACHE_VERSION;
 const ASSETS_CACHE = 'jaya-jaya-jaya-assets-' + CACHE_VERSION;
 const TILES_CACHE = 'jaya-jaya-jaya-tiles-' + CACHE_VERSION;
@@ -64,6 +64,20 @@ const EXTERNAL_LIBS = [
 ];
 
 const OFFLINE_FALLBACK = '/offline.html';
+
+// Path autentikasi yang HANYAK boleh dilayani langsung dari jaringan,
+// tidak boleh di-intercept atau di-cache oleh service worker sama sekali.
+// Ini melindungi dari service worker versi lama yang masih aktif dan
+// salah-salah meng-cache/meng-halaman guest home saat user mengakses /login.
+const AUTH_PATHS = ['/login', '/register'];
+
+function isAuthPath(request) {
+    try {
+        return AUTH_PATHS.includes(new URL(request.url).pathname);
+    } catch {
+        return false;
+    }
+}
 
 async function precacheViteBuildAssets(cache) {
     try {
@@ -255,7 +269,7 @@ self.addEventListener('fetch', (event) => {
     // Biarkan browser mengambil langsung dari jaringan tanpa campur tangan SW
     // sehingga halaman login/register selalu tampil segar, tanpa blink atau
     // kembali ke halaman guest dari cache.
-    if (new URL(request.url).pathname === '/login' || new URL(request.url).pathname === '/register') {
+    if (isAuthPath(request)) {
         return;
     }
 
@@ -400,6 +414,13 @@ async function handleNavigate(request) {
  * perangkat yang sama.
  */
 async function handleInertia(request) {
+    // Defense-in-depth: halaman autentikasi tidak boleh disajikan dari cache
+    // sama sekali, bahkan jika pemanggilan di fetch handler melewatkan lompat
+    // karena alasan apa pun. Selalu ambil dari jaringan langsung.
+    if (isAuthPath(request)) {
+        return fetch(request);
+    }
+
     const cache = await caches.open(INERTIA_CACHE);
 
     try {
