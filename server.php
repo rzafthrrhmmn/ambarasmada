@@ -39,7 +39,7 @@ $queueConnection = trim((string) getenv('QUEUE_CONNECTION')) ?: 'sync';
 $dbPreparedStatements = trim((string) getenv('DB_PREPARED_STATEMENTS'));
 
 $sessionSameSite = trim((string) getenv('SESSION_SAMESITE')) ?: 'lax';
-$sessionSecureCookie = trim((string) getenv('SESSION_SECURE_COOKIE')) ?: 'true';
+$sessionSecureCookie = trim((string) getenv('SESSION_SECURE_COOKIE')) ?: 'false';
 $sessionDomain = trim((string) getenv('SESSION_DOMAIN'));
 
 putenv('SESSION_DRIVER='.$sessionDriver);

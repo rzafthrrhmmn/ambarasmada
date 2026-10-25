@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LoginRequest;
 use App\Models\Ambalan;
 use App\Models\Angkatan;
 use App\Models\Member;
@@ -34,18 +35,19 @@ class AuthController extends Controller
         ]);
     }
 
-    public function login(Request $request): RedirectResponse
+    public function login(LoginRequest $request): RedirectResponse
     {
-        $credentials = $request->validate([
-            'identity' => ['required', 'string', 'max:255'],
-            'password' => ['required', 'string'],
-            'remember' => ['nullable', 'boolean'],
-        ]);
+        $identity = $request->validated('identity');
+        $password = $request->validated('password');
+        $remember = $request->validated('remember') ?? false;
 
-        $field = filter_var($credentials['identity'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
-        $user = User::where($field, $credentials['identity'])->first();
+        // Tentukan apakah identitas adalah email atau username
+        $field = filter_var($identity, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+        $user = User::where($field, $identity)->first();
+
+        // Validasi kredensial
+        if (! $user || ! Hash::check($password, $user->password)) {
             RateLimiter::hit($request->ip());
 
             throw ValidationException::withMessages([
@@ -53,6 +55,7 @@ class AuthController extends Controller
             ]);
         }
 
+        // Akun yang ditolak tidak boleh login
         if ($user->status === 'rejected') {
             Auth::logout();
 
@@ -61,26 +64,30 @@ class AuthController extends Controller
             ]);
         }
 
+        // Regenerasi session ID untuk mencegah session fixation
         $request->session()->regenerate();
-        Auth::login($user, $credentials['remember'] ?? false);
 
-        $hasIntendedUrl = $request->session()->has('url.intended');
+        // Lakukan autentikasi user
+        Auth::login($user, $remember);
 
-        if ($hasIntendedUrl) {
-            return redirect()->intended(
-                $user->role === 'Alumni' ? route('alumni.dashboard') : route('dashboard')
-            );
-        }
+        // Pastikan session segera disimpan ke storage sebelum redirect,
+        // agar cookie session tersedia pada request berikutnya.
+        $request->session()->save();
 
-        if ($user->status === 'pending') {
+        // Jika status pending dan email BELUM diverifikasi → pending approval.
+        // Jika status pending tapi email SUDAH diverifikasi (lewat link aktivasi),
+        // izinkan akses dashboard.
+        if ($user->status === 'pending' && ! $user->hasVerifiedEmail()) {
             return redirect()->route('pending-approval');
         }
 
+        // Jika email belum diverifikasi, arahkan ke halaman verifikasi
         if (! $user->hasVerifiedEmail()) {
             return redirect()->route('verification.notice')
                 ->with('success', 'Email aktivasi Anda belum diverifikasi. Silakan periksa kotak masuk atau folder spam.');
         }
 
+        // Arahkan ke dashboard berdasarkan role (intended URL jika ada)
         return redirect()->intended(
             $user->role === 'Alumni' ? route('alumni.dashboard') : route('dashboard')
         );
@@ -222,33 +229,27 @@ class AuthController extends Controller
 
     public function verifyEmail(Request $request): RedirectResponse
     {
-        $user = $request->user();
-
-        if ($user === null) {
-            return redirect()->route('login')->with('error', 'Silakan masuk terlebih dahulu untuk menyelesaikan aktivasi akun.');
-        }
-
+        // Validasi signature URL (signed URL dari activation email).
+        // Tidak memerlukan login — link sudah terlindungi oleh signature.
         if (! $request->hasValidSignature()) {
-            return redirect()->route('verification.notice')->with(
+            return redirect()->route('login')->with(
                 'error',
                 'Link verifikasi tidak valid atau sudah kedaluwarsa. Silakan tekan "Kirim Ulang Verifikasi" untuk meminta tautan baru.'
             );
         }
 
         $targetId = (int) $request->route('id');
+        $hash = (string) $request->route('hash');
 
-        if ($targetId !== (int) $user->getKey()) {
-            return redirect()->route('verification.notice')->with(
-                'error',
-                'Link verifikasi ini bukan milik akun yang sedang masuk.'
-            );
+        // Cari user berdasarkan ID dari URL (tanpa perlu auth)
+        $user = User::find($targetId);
+
+        if (! $user) {
+            return redirect()->route('login')->with('error', 'Akun tidak ditemukan.');
         }
 
-        if (! hash_equals((string) $request->route('hash'), sha1($user->getEmailForVerification()))) {
-            return redirect()->route('verification.notice')->with(
-                'error',
-                'Link verifikasi tidak cocok dengan email akun Anda.'
-            );
+        if (! hash_equals($hash, sha1($user->getEmailForVerification()))) {
+            return redirect()->route('login')->with('error', 'Link verifikasi tidak cocok dengan akun ini.');
         }
 
         if (! $user->hasVerifiedEmail()) {
@@ -256,7 +257,12 @@ class AuthController extends Controller
             event(new Verified($user));
         }
 
-        return redirect()->intended(route('dashboard'))->with('success', 'Email berhasil diverifikasi. Akun Anda sudah aktif.');
+        // Jika sudah login, arahkan ke dashboard. Jika belum, arahkan ke login.
+        if ($request->user()) {
+            return redirect()->intended(route('dashboard'))->with('success', 'Email berhasil diverifikasi. Selamat datang kembali.');
+        }
+
+        return redirect()->route('login')->with('success', 'Email berhasil diverifikasi. Silakan masuk untuk mengakses dashboard.');
     }
 
     public function sendVerificationEmail(Request $request): RedirectResponse

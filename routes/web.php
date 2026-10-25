@@ -84,10 +84,14 @@ Route::post('/email/resend-activation', [AuthController::class, 'resendActivatio
     ->name('verification.resend.guest')
     ->middleware('throttle:5,5');
 
-// Authenticated: verification notice, verify link, resend, pending approval
+// Email verification link (public — signed URL, tidak memerlukan login)
+// Digunakan saat klik link aktivasi dari email. Setelah verifikasi,
+// diarahkan ke halaman login.
+Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify')->middleware('throttle:6,1');
+
+// Authenticated: verification notice, resend, pending approval
 Route::middleware(['auth'])->group(function () {
     Route::get('/email/verify', [AuthController::class, 'showVerificationNotice'])->name('verification.notice');
-    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify')->middleware('throttle:6,1');
     Route::post('/email/verification-notification', [AuthController::class, 'sendVerificationEmail'])->name('verification.send')->middleware('throttle:6,1');
     Route::get('/pending-approval', [AuthController::class, 'pendingApproval'])->name('pending-approval');
 
