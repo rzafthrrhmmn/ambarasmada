@@ -9,7 +9,7 @@
       </div>
 
       <nav class="flex flex-wrap items-center justify-center gap-6 text-xs font-medium text-lumut-400">
-        <Link href="/privacy" class="transition hover:text-emas-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400 rounded">Kebijakan Privasi</Link>
+          <a href="/privacy" class="transition hover:text-emas-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400 rounded">Kebijakan Privasi</a>
         <span class="h-3 w-px bg-daun-500/30" aria-hidden="true"></span>
         <a :href="mailtoLink" class="transition hover:text-emas-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400 rounded">Hubungi Admin</a>
       </nav>
