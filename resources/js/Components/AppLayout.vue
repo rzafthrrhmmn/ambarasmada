@@ -53,8 +53,7 @@
     </header>
 
     <div
-        class="app-body mx-auto grid w-full transition-[grid-template-columns] duration-300 ease-out lg:px-[50px]"
-        :class="collapsed ? 'lg:grid-cols-[5.25rem_1fr]' : 'lg:grid-cols-[17.5rem_1fr]'"
+        class="app-body mx-auto grid w-full lg:px-[50px]"
       >
       <transition
           enter-active-class="transition ease-out duration-300"
@@ -118,21 +117,6 @@
         </aside>
       </transition>
 
-      <aside
-          class="app-header-offset app-rail-height hidden lg:sticky lg:flex lg:flex-col lg:overflow-hidden lg:border-r-2 lg:border-daun-400/15 lg:py-5 lg:pr-4"
-      >
-        <AppSidebar
-            v-model:query="query"
-            :user="user"
-            :sections="sections"
-            :footer="footer"
-            :collapsed="collapsed"
-            :no-results="noResults"
-            :result-count="resultCount"
-            @toggle-collapse="toggleCollapsed"
-        />
-      </aside>
-
       <main class="min-w-0 px-4 sm:px-6 lg:px-8 pt-[70px] sm:pt-[80px] lg:pt-[90px] pb-20 sm:pb-20 lg:pb-6 section-animate animate-fade-up">
         <OfflineBanner />
         <FlashMessage />
@@ -190,14 +174,12 @@ const pwaInstallAvailable = ref(!!window.pwaInstallAvailable);
 const {
     user,
     query,
-    collapsed,
     sections,
     bottomItems,
     footer,
     context,
     noResults,
     resultCount,
-    toggleCollapsed,
 } = useNavigation(page);
 
 function closeMobileMenu() {

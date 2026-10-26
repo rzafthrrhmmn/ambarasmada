@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end section-animate animate-fade-up">
       <div>
         <p class="text-sm font-medium text-emas-400">Notifikasi</p>
         <h1 class="mt-1 text-2xl font-bold text-krem-100">Pusat Notifikasi</h1>
@@ -19,7 +19,7 @@
       Anda memiliki <strong>{{ unreadCount }}</strong> notifikasi belum dibaca.
     </div>
 
-    <div class="space-y-3">
+    <div class="space-y-3 section-animate animate-fade-up" style="animation-delay: 0.1s;">
       <div v-for="notif in notifications.data" :key="notif.id" class="rounded-xl border-2 p-4 transition" :class="notif.is_read ? 'border-[#6F9435]/30 bg-hutan-600' : 'border-emas-400/50 bg-hutan-600/80'">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">

@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end section-animate animate-fade-up">
       <div>
         <p class="text-sm font-medium text-emas-400">Pelatihan</p>
         <h1 class="mt-1 text-2xl font-bold text-krem-100">Modul Pelatihan</h1>
@@ -38,7 +38,7 @@
       </form>
     </div>
 
-    <div class="mb-4 grid gap-3 sm:grid-cols-2">
+    <div class="mb-4 grid gap-3 sm:grid-cols-2 section-animate animate-fade-up" style="animation-delay: 0.1s;">
       <input v-model="filters.kategori" placeholder="Cari kategori..." class="rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]" />
       <select v-model="filters.status" class="rounded-lg border border-[#6F9435] bg-hutan-800 px-3 py-2 text-sm text-krem-100 outline-none focus:border-[#EDD330]">
         <option value="">Semua status</option>
@@ -48,7 +48,7 @@
       </select>
     </div>
 
-    <div class="grid gap-6 xl:grid-cols-3">
+    <div class="grid gap-6 xl:grid-cols-3 section-animate animate-stagger-reveal" style="animation-delay: 0.2s;">
       <section class="xl:col-span-2 rounded-2xl border-2 border-[#A7B92B]/40 bg-hutan-600 p-5 shadow-sm">
         <h2 class="mb-4 font-semibold text-krem-100">Daftar Pelatihan</h2>
         <SkeletonLoader v-if="!trainings || !trainings.data" variant="list" class="h-auto" />

@@ -30,8 +30,8 @@
       @search-select="onSearchSelect"
     />
 
-    <div class="peta-shell relative overflow-hidden rounded-2xl border-2 border-daun-400/40 bg-hutan-800 shadow-lg">
-      <div ref="mapContainer" class="h-[70vh] w-full min-h-[400px]"></div>
+    <div class="peta-shell relative overflow-hidden rounded-2xl border-2 border-daun-400/40 bg-hutan-800 shadow-lg section-animate animate-fade-up">
+      <div ref="mapContainer" class="h-[60vh] w-full min-h-[400px] max-h-[55vh]"></div>
 
       <!-- Pojok kiri bawah: skala 1:N dan readout koordinat.
            Keduanya duduk dalam satu wadah flex column dengan satu titik jangkar,
@@ -283,7 +283,7 @@ yang kebetulan sedang dipilih di dropdown. -->
       </div>
     </div>
 
-    <div v-if="mapStatus" class="mt-3 rounded-lg border border-[#6F9435]/30 bg-[#335233] p-3 text-xs text-[#d4dc9a]">
+    <div v-if="mapStatus" class="mt-3 rounded-lg border border-[#6F9435]/30 bg-[#335233] p-3 text-xs text-[#d4dc9a] section-animate animate-fade-up" style="animation-delay: 0.1s;">
       {{ mapStatus }}
     </div>
 
@@ -293,7 +293,7 @@ yang kebetulan sedang dipilih di dropdown. -->
          interval kontur, cara membacanya, dan urutan zamannya. Bagian ini
          membuat halaman tetap punya penjelasan ketika peta gagal dimuat,
          karena tidak bergantung pada apa pun milik peta. -->
-    <section class="mt-5 grid gap-4 lg:grid-cols-3" aria-labelledby="peta-tentang-judul">
+    <section class="mt-5 grid gap-4 lg:grid-cols-3 section-animate animate-fade-up" aria-labelledby="peta-tentang-judul" style="animation-delay: 0.2s;">
       <div class="peta-kartu">
         <h2 id="peta-tentang-judul" class="peta-kartu-judul">
           <NavIcon name="layers" class="h-4 w-4" />

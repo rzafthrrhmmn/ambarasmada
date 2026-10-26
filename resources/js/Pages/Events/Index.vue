@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end section-animate animate-fade-up">
       <div>
         <p class="text-sm font-medium text-emas-400">Kegiatan</p>
         <h1 class="mt-1 text-2xl font-bold text-krem-100">Manajemen Kegiatan</h1>
@@ -12,7 +12,7 @@
       </button>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 section-animate animate-stagger-reveal" style="animation-delay: 0.1s;">
       <div v-for="event in events.data" :key="event.id" class="rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5 shadow-lg transition hover:border-[#A7B92B]/60">
         <div class="mb-3 flex items-center justify-between">
           <span class="rounded-full bg-daun-500/20 px-2.5 py-1 text-[10px] font-bold text-emas-400">{{ event.jenis }}</span>

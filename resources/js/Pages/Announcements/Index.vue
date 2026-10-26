@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end section-animate animate-fade-up">
       <div>
         <p class="text-sm font-medium text-emas-400">Informasi Ambalan</p>
         <h1 class="mt-1 text-2xl font-bold text-krem-100">Pengumuman</h1>
@@ -11,7 +11,7 @@
         Pengumuman
       </button>
     </div>
-    <div class="grid gap-4 md:grid-cols-2">
+    <div class="grid gap-4 md:grid-cols-2 section-animate animate-stagger-reveal" style="animation-delay: 0.1s;">
       <article v-for="item in announcements.data" :key="item.id" class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm">
         <div v-if="item.image_url" class="mb-3">
           <img :src="item.image_url" alt="Gambar pengumuman" class="h-48 w-full rounded-lg object-cover border-2 border-[#6F9435]/30" />

@@ -1,10 +1,10 @@
 <template>
   <AppLayout>
-    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end section-animate animate-fade-up">
       <div>
-        <p class="text-sm font-medium text-[#EDD330]">Peta Kontur</p>
-        <h1 class="mt-1 text-2xl font-extrabold text-[#f0ead8]">Peta Kontur Sulawesi</h1>
-        <p class="mt-1 text-sm text-[#8fa06a]">Visualisasi garis kontur elevasi Pulau Sulawesi dengan dukungan offline.</p>
+        <p class="text-sm font-medium text-emas-400">Peta Kontur</p>
+        <h1 class="mt-1 text-2xl font-extrabold text-krem-100">Peta Kontur Sulawesi</h1>
+        <p class="mt-1 text-sm text-krem-300">Visualisasi garis kontur elevasi Pulau Sulawesi dengan dukungan offline.</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <button
@@ -29,8 +29,8 @@
       </div>
     </div>
 
-    <div class="peta-shell relative overflow-hidden rounded-2xl border-2 border-daun-400/40 bg-hutan-800 shadow-lg">
-      <div ref="mapContainer" class="h-[70vh] w-full min-h-[400px]"></div>
+    <div class="peta-shell relative overflow-hidden rounded-2xl border-2 border-daun-400/40 bg-hutan-800 shadow-lg section-animate animate-fade-up" style="animation-delay: 0.1s;">
+      <div ref="mapContainer" class="h-[60vh] w-full min-h-[400px] max-h-[55vh]"></div>
 
       <!-- Coordinate display on mouse hover.
            Diletakkan di atas bilah skala bawaan MapLibre di pojok kiri bawah.
@@ -113,17 +113,17 @@
 
       <div v-if="!hasPmtiles" class="absolute inset-0 z-30 flex items-center justify-center bg-[#263D26]/90 backdrop-blur-sm">
         <div class="text-center p-6">
-          <p class="text-2xl font-bold text-[#EDD330]">Peta Belum Tersedia</p>
-          <p class="mt-2 text-sm text-[#8fa06a]">File PMTiles belum diunggah ke server.</p>
+          <p class="text-2xl font-bold text-emas-400">Peta Belum Tersedia</p>
+          <p class="mt-2 text-sm text-krem-300">File PMTiles belum diunggah ke server.</p>
         </div>
       </div>
       <div v-if="loading" class="absolute inset-0 z-30 flex items-center justify-center bg-[#263D26]/70 backdrop-blur-sm">
-        <p class="text-lg font-bold text-[#EDD330]">Memuat peta...</p>
+        <p class="text-lg font-bold text-emas-400">Memuat peta...</p>
       </div>
       <div v-if="mapError" class="absolute inset-0 z-30 flex items-center justify-center bg-[#263D26]/90 backdrop-blur-sm">
         <div class="text-center p-6">
           <p class="text-2xl font-bold text-[#f87171]">Gagal Memuat Peta</p>
-          <p class="mt-2 text-sm text-[#8fa06a]">{{ mapError }}</p>
+          <p class="mt-2 text-sm text-krem-300">{{ mapError }}</p>
           <button
             @click="initMap"
             class="mt-4 inline-flex items-center rounded-lg border-2 border-daun-400 bg-daun-400/10 text-daun-400 transition hover:bg-daun-400/20"
@@ -134,7 +134,7 @@
       </div>
     </div>
 
-    <div v-if="mapStatus" class="mt-3 rounded-lg border border-[#6F9435]/30 bg-[#335233] p-3 text-xs text-[#d4dc9a]">
+      <div v-if="mapStatus" class="mt-3 rounded-lg border border-[#6F9435]/30 bg-[#335233] p-3 text-xs text-[#d4dc9a] section-animate animate-fade-up" style="animation-delay: 0.2s;">
       {{ mapStatus }}
     </div>
   </AppLayout>
