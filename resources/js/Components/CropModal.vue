@@ -43,7 +43,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import Cropper from 'cropperjs';
+import { Cropper } from 'cropperjs';
 
 const props = defineProps({
   show: Boolean,

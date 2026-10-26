@@ -32,7 +32,6 @@ class NotificationController extends Controller
         abort_unless($notification->user_id === $request->user()->id, 403);
         $notification->update([
             'is_read' => true,
-            'read_at' => now(),
         ]);
 
         return back()->with('success', 'Notifikasi ditandai sudah dibaca.');
@@ -42,7 +41,6 @@ class NotificationController extends Controller
     {
         Notification::where('user_id', $request->user()->id)->where('is_read', false)->update([
             'is_read' => true,
-            'read_at' => now(),
         ]);
 
         return back()->with('success', 'Semua notifikasi ditandai sudah dibaca.');

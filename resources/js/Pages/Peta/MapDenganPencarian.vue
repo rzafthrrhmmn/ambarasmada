@@ -2421,7 +2421,8 @@ async function downloadOffline() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await nextTick();
   initMap();
   observeMapSize();
 });
