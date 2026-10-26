@@ -40,7 +40,7 @@
           </div>
 
           <form action="/login" method="POST" class="space-y-4">
-            <input type="hidden" name="_token" :value="$page.props.csrf_token || ''" />
+            <input type="hidden" name="_token" :value="$page.props.csrf_token || document.querySelector('meta[name=csrf-token]')?.content" />
 
             <div>
               <label class="block">
