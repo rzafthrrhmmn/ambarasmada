@@ -268,8 +268,9 @@ self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // Halaman login dan register jangan pernah di-intercept oleh service worker.
-    if (isAuthPath(request) || ['/login', '/register', '/forgot-password', '/reset-password'].includes(url.pathname) || url.pathname.startsWith('/email/')) {
+    // Semua request ke route auth - biarkan browser langsung handle
+    const authPaths = ['/login', '/logout', '/register', '/forgot-password', '/reset-password'];
+    if (authPaths.includes(url.pathname) || url.pathname.startsWith('/email/')) {
         return;
     }
 
@@ -281,7 +282,7 @@ self.addEventListener('fetch', (event) => {
 
     // Inertia XHR (POST/login) - jangan pernah intercept
     if (request.headers.get('X-Inertia') === 'true') {
-        if (['/login', '/register', '/logout', '/forgot-password', '/reset-password'].includes(url.pathname) || url.pathname.startsWith('/email/')) {
+        if (authPaths.includes(url.pathname) || url.pathname.startsWith('/email/')) {
             return;
         }
     }
@@ -293,6 +294,7 @@ self.addEventListener('fetch', (event) => {
     }
 
     if (request.method !== 'GET' || url.origin !== location.origin) {
+        if (['/login', '/logout', '/register'].includes(url.pathname)) return;
         return;
     }
 
