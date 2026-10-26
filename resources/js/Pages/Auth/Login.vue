@@ -109,15 +109,17 @@
 
 <script setup>
 function onSubmit(e) {
-  const tokenInput = e.target.querySelector('input[name="_token"]');
+  const formEl = e.target;
+  if (!formEl) return;
+  let tokenInput = formEl.querySelector('input[name="_token"]');
   if (!tokenInput || !tokenInput.value) {
     const meta = document.querySelector('meta[name="csrf-token"]');
-    if (meta) {
+    if (meta && meta.content) {
       const input = document.createElement('input');
       input.type = 'hidden';
       input.name = '_token';
       input.value = meta.content;
-      e.target.appendChild(input);
+      formEl.appendChild(input);
     }
   }
 }
