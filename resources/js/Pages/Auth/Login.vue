@@ -39,7 +39,7 @@
             </p>
           </div>
 
-          <form action="/login" method="POST" class="space-y-4">
+          <form action="/login" method="POST" class="space-y-4" @submit="onSubmit">
             <input type="hidden" name="_token" :value="$page.props.csrf_token || document.querySelector('meta[name=csrf-token]')?.content" />
 
             <div>
@@ -108,4 +108,17 @@
 </template>
 
 <script setup>
+function onSubmit(e) {
+  const tokenInput = e.target.querySelector('input[name="_token"]');
+  if (!tokenInput || !tokenInput.value) {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = '_token';
+      input.value = meta.content;
+      e.target.appendChild(input);
+    }
+  }
+}
 </script>
