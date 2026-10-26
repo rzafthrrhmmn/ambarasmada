@@ -1,7 +1,7 @@
 ﻿<template>
   <div class="min-h-screen bg-hutan-800 text-krem-100">
     <header class="app-header">
-      <div class="app-header-inner px-3 sm:px-6 lg:px-[50px] py-3 sm:py-3.5">
+      <div class="app-header-inner px-4 sm:px-6 lg:px-[50px] py-3 sm:py-3.5">
         <button
             type="button"
             class="app-header-button lg:hidden"
@@ -19,9 +19,9 @@
           </span>
 
           <span class="min-w-0">
-            <span class="app-header-name">{{ ambalan?.nama || 'Pramuka SMAN 2 Maros' }}</span>
-            <span class="app-header-context">{{ context.current }}</span>
-            <span class="app-header-tagline">Ekosistem Digital Ambalan</span>
+            <span class="app-header-name truncate">{{ ambalan?.nama || 'Pramuka SMAN 2 Maros' }}</span>
+            <span class="app-header-context truncate text-[10px]">{{ context.current }}</span>
+            <span class="app-header-tagline truncate text-[10px]">Ekosistem Digital Ambalan</span>
           </span>
         </a>
 
@@ -66,7 +66,7 @@
       >
         <div
             v-if="mobileMenuOpen"
-            class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+            class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden mobile-drawer-overlay"
             @click="closeMobileMenu"
         ></div>
       </transition>
@@ -81,7 +81,7 @@
       >
         <aside
             v-if="mobileMenuOpen"
-            class="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r-2 border-daun-400/30 bg-hutan-800 shadow-nav lg:hidden"
+            class="fixed inset-y-0 left-0 z-50 flex w-[260px] max-w-[90vw] flex-col border-r-2 border-daun-400/30 bg-hutan-800 shadow-nav lg:hidden"
         >
           <div class="flex items-center justify-between gap-3 border-b-2 border-daun-400/20 px-4 py-3">
             <div class="flex min-w-0 items-center gap-2.5">
@@ -133,7 +133,7 @@
         />
       </aside>
 
-      <main class="min-w-0 px-4 sm:px-6 lg:px-8 pt-[72px] sm:pt-[80px] lg:pt-[90px] pb-24 sm:pb-24 lg:pb-6 section-animate animate-fade-up">
+      <main class="min-w-0 px-4 sm:px-6 lg:px-8 pt-[70px] sm:pt-[80px] lg:pt-[90px] pb-20 sm:pb-20 lg:pb-6 section-animate animate-fade-up">
         <OfflineBanner />
         <FlashMessage />
         <slot />

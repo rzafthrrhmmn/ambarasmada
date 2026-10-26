@@ -11,14 +11,14 @@
     >
       <span class="app-header-avatar" aria-hidden="true">{{ initials }}</span>
 
-      <span class="app-header-user-meta">
+      <span class="app-header-user-meta hidden sm:flex">
         <span class="app-header-user-name">{{ user?.name || 'Pengguna' }}</span>
         <span class="app-header-user-role">{{ user?.role || '-' }}</span>
       </span>
 
       <NavIcon
           name="chevronDown"
-          class="hidden h-4 w-4 text-lumut-400 transition-transform duration-150 sm:block"
+          class="h-4 w-4 text-lumut-400 transition-transform duration-150 flex-shrink-0"
           :class="{ 'rotate-180': open }"
       />
     </button>
