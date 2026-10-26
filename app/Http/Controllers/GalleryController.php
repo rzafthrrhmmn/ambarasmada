@@ -43,11 +43,14 @@ class GalleryController extends Controller
             'kategori' => ['required', 'string', 'max:100'],
         ]);
 
-        $data['image'] = $request->file('image')->store('gallery', 'public');
+        $stored = $request->file('image')->store('gallery', 'public');
+        abort_unless($stored, 500, 'Gagal menyimpan berkas galeri.');
+
+        $data['image'] = $stored;
 
         Gallery::create([
             ...$data,
-            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
+            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::value('id') ?? 1,
             'uploaded_by' => $request->user()->id,
         ]);
 

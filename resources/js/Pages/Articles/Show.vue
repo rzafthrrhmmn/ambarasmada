@@ -99,7 +99,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import AppIcon from '@/Components/AppIcon.vue';
 

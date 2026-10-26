@@ -162,7 +162,7 @@ import AppLayout from '@/Components/AppLayout.vue';
 import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import { Html5Qrcode } from 'html5-qrcode';
-import { enqueue } from '@/OfflineQueue.js';
+import { enqueue } from '@/offline-queue';
 import { useNetworkStatus } from '@/Composables/useNetworkStatus.js';
 import { useAccess } from '@/Composables/useAccess.js';
 import {
@@ -302,7 +302,7 @@ function watchPermission(name, target) {
         };
 
         status.addEventListener?.('change', onChange);
-        permissionWatchers.push(status, onChange);
+        permissionWatchers.push({ status, onChange });
       })
       .catch(() => {});
   } catch {
@@ -647,10 +647,12 @@ onBeforeUnmount(() => {
   disposed = true;
   stopScan();
 
-  // Listener izin dilepas agar halaman yang sudah ditutup tidak tetap
-  // menerima perubahan status Permissions-Policy.
-  permissionWatchers.forEach((item) => item?.removeEventListener?.('change', item));
-  permissionWatchers.length = 0;
+// Listener izin dilepas agar halaman yang sudah ditutup tidak tetap
+// menerima perubahan status Permissions-Policy.
+permissionWatchers.forEach(({ status, onChange }) => {
+  status?.removeEventListener?.('change', onChange);
+});
+permissionWatchers.length = 0;
 });
 </script>
 

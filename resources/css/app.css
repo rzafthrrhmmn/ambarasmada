@@ -1123,3 +1123,237 @@ html, body {
 .bottom-nav-item[aria-current="page"] svg {
   color: var(--color-emas-400);
 }
+
+/* ============================================================================
+   ARTICLES PAGE UTILITY CLASSES
+   ============================================================================ */
+
+/* Page header */
+.page-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.page-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-emas-400);
+}
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--color-krem-100);
+  line-height: 1.2;
+}
+.page-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-krem-300);
+}
+
+/* Cards */
+.card {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-hutan-600);
+  border: 1px solid rgba(167, 185, 43, 0.2);
+  border-radius: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-glow {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 0;
+}
+.card:hover .card-glow {
+  opacity: 1;
+}
+.card-accent {
+  position: relative;
+  overflow: hidden;
+  background: rgba(167, 185, 43, 0.08);
+  border: 1px solid rgba(167, 185, 43, 0.3);
+  border-radius: 1rem;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.badge-neutral {
+  background: rgba(240, 234, 216, 0.1);
+  border: 1px solid rgba(240, 234, 216, 0.2);
+  color: var(--color-krem-300);
+}
+.badge-approved {
+  background: rgba(167, 185, 43, 0.15);
+  border: 1px solid rgba(167, 185, 43, 0.3);
+  color: var(--color-daun-400);
+}
+.badge-pending {
+  background: rgba(237, 211, 48, 0.15);
+  border: 1px solid rgba(237, 211, 48, 0.3);
+  color: var(--color-emas-400);
+}
+
+/* Form fields */
+.field {
+  width: 100%;
+  background: var(--color-hutan-800);
+  border: 1px solid rgba(167, 185, 43, 0.3);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--color-krem-100);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.field::placeholder {
+  color: rgba(240, 234, 216, 0.4);
+}
+.field:focus {
+  border-color: var(--color-emas-400);
+}
+.field-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-lumut-400);
+  margin-bottom: 0.25rem;
+}
+
+/* Button variants */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(167, 185, 43, 0.3);
+  background: transparent;
+  color: var(--color-krem-300);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+.btn-ghost:hover {
+  background: rgba(167, 185, 43, 0.1);
+  border-color: var(--color-daun-500);
+  color: var(--color-krem-100);
+}
+.btn-ghost.btn-sm {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+}
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(239, 68, 25, 0.4);
+  background: rgba(239, 68, 25, 0.1);
+  color: #ef4419;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+.btn-danger:hover {
+  background: rgba(239, 68, 25, 0.2);
+  border-color: #ef4419;
+}
+.btn-danger.btn-sm {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* Table empty cell */
+.empty-cell {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--color-krem-300);
+  font-size: 0.875rem;
+}
+
+/* Article content prose */
+.prose-artikel {
+  color: var(--color-krem-300);
+  line-height: 1.7;
+}
+.prose-artikel p {
+  margin-bottom: 1rem;
+}
+
+/* Button: accent (yellow/gold fill, dark text) */
+.btn-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: var(--color-emas-400);
+  color: var(--color-hutan-800);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+.btn-accent:hover {
+  background: #f5d440;
+  transform: translateY(-1px);
+}
+
+/* Button: danger solid (filled red) */
+.btn-danger-solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: #ef4419;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+.btn-danger-solid:hover {
+  background: #dc2626;
+}
+
+/* Badge: rejected */
+.badge-rejected {
+  background: rgba(239, 68, 25, 0.15);
+  border: 1px solid rgba(239, 68, 25, 0.3);
+  color: #ef4419;
+}

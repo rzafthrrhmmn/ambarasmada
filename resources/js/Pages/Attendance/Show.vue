@@ -350,7 +350,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { Link, useForm } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import AppIcon from '@/Components/AppIcon.vue';
 import Modal from '@/Components/Modal.vue';

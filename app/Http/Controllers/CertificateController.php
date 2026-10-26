@@ -58,7 +58,7 @@ class CertificateController extends Controller
 
         Certificate::create([
             ...$data,
-            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
+            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::value('id') ?? 1,
             'nomor_sertifikat' => $nomor,
             'issued_by' => $request->user()->id,
             'tanggal_diterbitkan' => $data['tanggal_diterbitkan'],
@@ -94,7 +94,10 @@ class CertificateController extends Controller
     {
         abort_unless($certificate->file_path, 404);
 
-        return response()->download(storage_path('app/public/'.$certificate->file_path));
+        $path = storage_path('app/public/'.$certificate->file_path);
+        abort_unless(file_exists($path), 404);
+
+        return response()->download($path);
     }
 
     public function show(Certificate $certificate): Response

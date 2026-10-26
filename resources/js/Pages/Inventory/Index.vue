@@ -22,7 +22,7 @@
     </p>
 
     <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      <article v-for="item in items.data" :key="item.id" class="card flex flex-col">
+      <article v-for="item in (items?.data || [])" :key="item.id" class="card flex flex-col">
         <span class="card-glow" aria-hidden="true" />
 
         <div class="relative flex items-start justify-between gap-3">

@@ -53,7 +53,7 @@
 
     <div v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       <article
-        v-for="item in letters.data"
+        v-for="item in (letters?.data || [])"
         :key="item.id"
         class="flex flex-col rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm"
       >

@@ -13,7 +13,7 @@
     </div>
 
     <div class="space-y-3">
-      <div v-for="meeting in meetings.data" :key="meeting.id" class="rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5 transition hover:border-[#A7B92B]/60">
+      <div v-for="meeting in (meetings?.data || [])" :key="meeting.id" class="rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5 transition hover:border-[#A7B92B]/60">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <h3 class="text-sm font-bold text-krem-100">{{ meeting.judul }}</h3>

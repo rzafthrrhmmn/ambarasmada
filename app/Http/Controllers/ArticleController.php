@@ -24,6 +24,7 @@ class ArticleController extends Controller
         }
 
         $user = $request->user();
+        abort_unless($user, 403);
 
         /*
          * Penentuan siapa boleh menyunting atau menghapus setiap kartu
@@ -64,8 +65,8 @@ class ArticleController extends Controller
 
         Article::create([
             ...$data,
-            'ambalan_id' => $request->user()->member?->ambalan_id ?? Ambalan::first()?->id,
-            'author_id' => $request->user()->id,
+            'ambalan_id' => $user->member?->ambalan_id ?? Ambalan::value('id') ?? 1,
+            'author_id' => $user->id,
         ]);
 
         return redirect()->route('articles.index')->with('success', 'Artikel berhasil dibuat.');

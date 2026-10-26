@@ -125,11 +125,22 @@ export function isOfflineSubmissionSupported() {
     return 'serviceWorker' in navigator && 'indexedDB' in window;
 }
 
+// Alias for queueSubmission to maintain compatibility with different call patterns
+export async function enqueue(submission, options = {}) {
+    const item = {
+        ...submission,
+        ...(options.url ? { url: options.url } : {}),
+        ...(options.method ? { method: options.method } : { method: options.method || 'POST' })
+    };
+    return queueSubmission(item);
+}
+
 // Auto-flush on online — ditangani oleh useNetworkStatus.js sebagai single source of truth.
 // Listener di sini dihapus untuk menghindari duplikasi dengan useNetworkStatus.initialise().
 
 export default {
     queueSubmission,
+    enqueue,
     registerSync,
     flushQueue,
     getPendingCount,

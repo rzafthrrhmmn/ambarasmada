@@ -338,12 +338,12 @@ class MemberController extends Controller
 
             $member = Member::create([
                 'user_id' => $request->user()->id,
-                'nta' => $request->user()->username,
+                'nta' => $request->user()->username ?? 'USER-'.$request->user()->id,
                 'angkatan' => $currentAngkatan->nomor,
                 'nomor_urut' => 999,
-                'nta_username' => $request->user()->username,
-                'nama_lengkap' => $request->user()->name,
-                'ambalan_id' => Ambalan::first()?->id,
+                'nta_username' => $request->user()->username ?? 'USER-'.$request->user()->id,
+                'nama_lengkap' => $request->user()->name ?? 'Pengguna '.$request->user()->id,
+                'ambalan_id' => Ambalan::value('id') ?? 1,
                 'kelas' => '-',
                 'tingkatan' => 'Tamu',
                 'tahun_lulus' => null,
@@ -386,12 +386,12 @@ class MemberController extends Controller
 
             $member = Member::create([
                 'user_id' => $request->user()->id,
-                'nta' => $request->user()->username,
+                'nta' => $request->user()->username ?? 'USER-'.$request->user()->id,
                 'angkatan' => $currentAngkatan->nomor,
                 'nomor_urut' => 999,
-                'nta_username' => $request->user()->username,
-                'nama_lengkap' => $request->user()->name,
-                'ambalan_id' => Ambalan::first()?->id,
+                'nta_username' => $request->user()->username ?? 'USER-'.$request->user()->id,
+                'nama_lengkap' => $request->user()->name ?? 'Pengguna '.$request->user()->id,
+                'ambalan_id' => Ambalan::value('id') ?? 1,
                 'kelas' => '-',
                 'tingkatan' => 'Tamu',
                 'tahun_lulus' => null,

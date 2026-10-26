@@ -71,8 +71,8 @@ function reset() {
   form.reset();
 }
 const filteredGalleries = computed(() => {
-  if (!filterKategori.value) return galleries.value?.data || [];
-  return (galleries.value?.data || []).filter(g => g.kategori === filterKategori.value);
+  if (!filterKategori.value) return galleries?.data || [];
+  return (galleries?.data || []).filter(g => g.kategori === filterKategori.value);
 });
 </script>
 

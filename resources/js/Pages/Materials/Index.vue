@@ -26,7 +26,7 @@
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <article v-for="item in materials.data" :key="item.id" class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm border-[#6F9435]">
+      <article v-for="item in (materials?.data || [])" :key="item.id" class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm border-[#6F9435]">
         <div class="flex items-start justify-between gap-3">
           <span v-if="item.is_restricted" class="rounded-full bg-emas-400/20 px-2.5 py-1 text-xs font-medium text-emas-400">Terbatas</span>
           <span v-else class="rounded-full bg-daun-400/20 px-2.5 py-1 text-xs font-medium text-daun-400">Publik</span>

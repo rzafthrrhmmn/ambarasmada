@@ -28,7 +28,7 @@
       <section class="rounded-2xl border border-daun-500 bg-hutan-600 p-5 shadow-sm border-daun-500 xl:col-span-2">
         <h2 class="mb-4 font-semibold text-[#f0ead8]">Antrean pengajuan</h2>
         <div class="space-y-3">
-          <div v-for="item in submissions.data" :key="item.id" class="flex flex-col gap-3 rounded-xl border border-[#6F9435] p-4 border-[#6F9435] sm:flex-row sm:items-center sm:justify-between">
+          <div v-for="item in (submissions?.data || [])" :key="item.id" class="flex flex-col gap-3 rounded-xl border border-[#6F9435] p-4 border-[#6F9435] sm:flex-row sm:items-center sm:justify-between">
             <div class="min-w-0">
               <p class="truncate text-sm font-semibold">{{ item.member?.nama_lengkap }}</p>
               <p class="mt-1 text-xs text-[#8fa06a]">{{ item.sku_point?.tingkatan }} • Poin {{ item.sku_point?.nomor_poin }} • {{ item.status }}</p>

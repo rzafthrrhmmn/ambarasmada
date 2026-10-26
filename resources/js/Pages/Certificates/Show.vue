@@ -54,10 +54,10 @@
         <div class="rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5">
           <h3 class="mb-3 text-sm font-bold text-krem-100">Aksi</h3>
           <div class="flex flex-col gap-2">
-            <button @click="generatePdf" :disabled="generatingPdf" class="w-full rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-              {{ generatingPdf ? 'Menghasilkan PDF...' : 'Generate & Download PDF' }}
+            <button @click="generatePdf" class="w-full rounded-lg bg-gradient-to-r from-[#A7B92B] to-[#6F9435] px-4 py-2 text-sm font-semibold text-white">
+              Generate & Download PDF
             </button>
-            <button @click="previewPdf" :disabled="generatingPdf" class="w-full rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a] hover:bg-daun-500/20 disabled:opacity-50">
+            <button @click="previewPdf" class="w-full rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a] hover:bg-daun-500/20">
               Preview PDF
             </button>
             <a v-if="canManage" href="/certificates" class="w-full text-center rounded-lg border border-[#6F9435] px-4 py-2 text-sm font-semibold text-[#d4dc9a] hover:bg-daun-500/20">Kembali ke Daftar</a>
@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import AppLayout from '@/Components/AppLayout.vue';
 import { useAccess } from '@/Composables/useAccess.js';
 
@@ -78,16 +78,13 @@ const { can } = useAccess();
 // Dulu selalu true sehingga tombol terbit muncul untuk semua orang, lalu
 // ditolak 403 saat dikirim.
 const canManage = computed(() => can('certificates.manage'));
-const generatingPdf = ref(false);
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
 }
 
 function generatePdf() {
-  generatingPdf.value = true;
   window.open(`/certificates/${certificate.id}/pdf`, '_blank');
-  generatingPdf.value = false;
 }
 
 function previewPdf() {

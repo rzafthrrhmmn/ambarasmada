@@ -39,9 +39,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
-import AppIcon from '@/Components/AppIcon.vue';
 
 defineProps({ assessment: Object });
 const labels = computed(() => ({

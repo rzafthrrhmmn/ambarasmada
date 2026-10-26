@@ -130,7 +130,7 @@ const props = defineProps({
 const { can } = useAccess();
 const canScan = computed(() => can('attendance.self.scan') && props.session.can_scan === true);
 
-const hasGeofence = computed(() => props.session.radius !== null && props.session.radius !== undefined);
+const hasGeofence = computed(() => props.session.latitude !== null && props.session.latitude !== undefined && props.session.longitude !== null && props.session.longitude !== undefined && props.session.radius !== null && props.session.radius !== undefined);
 // Server hanya mengirim qr_token untuk sesi hari ini yang belum tercatat dan
 // tidak memakai QR dinamis. Token yang tidak ada karena itu disengaja, bukan
 // bug, jadi tautan pemindai ikut disembunyikan.

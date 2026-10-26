@@ -17,7 +17,7 @@
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <article v-for="item in medias.data" :key="item.id" class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm border-[#6F9435]">
+      <article v-for="item in (medias?.data || [])" :key="item.id" class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm border-[#6F9435]">
         <h2 class="text-lg font-semibold text-krem-100">{{ item.judul }}</h2>
         <div class="mt-4 flex gap-2">
           <button @click="router.visit(`/medias/${item.id}`)" class="rounded-lg bg-gradient-to-r from-daun-400 to-[#6F9435] px-3 py-2 text-xs font-semibold text-white">Lihat</button>

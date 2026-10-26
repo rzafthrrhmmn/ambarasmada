@@ -9,7 +9,7 @@
     <section class="mb-6 rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5">
       <h2 class="mb-3 font-semibold text-krem-100">Daftar Hadir</h2>
       <div class="space-y-2">
-        <div v-for="att in meeting.attendees" :key="att.id" class="flex items-center justify-between rounded-lg bg-hutan-800 px-4 py-2">
+        <div v-for="att in (meeting.attendees || [])" :key="att.id" class="flex items-center justify-between rounded-lg bg-hutan-800 px-4 py-2">
           <p class="text-sm text-krem-100">{{ att.member?.nama_lengkap }}</p>
           <span class="rounded-full px-2 py-0.5 text-[10px] font-bold" :class="{
             'bg-[#A7B92B]/20 text-[#A7B92B]': att.status === 'Hadir',

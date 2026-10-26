@@ -21,8 +21,8 @@
             </p>
           </div>
           <div class="flex gap-2 shrink-0">
-            <button v-if="!r.is_sent && canManage" @click="$inertia.post(`/reminders/${r.id}/sent`)" class="rounded-lg border border-[#6F9435] px-2 py-1 text-[10px] font-bold text-[#d4dc9a] hover:bg-daun-500/20">Kirim</button>
-            <button v-if="!r.is_sent" @click="$inertia.delete(`/reminders/${r.id}`)" class="rounded-lg border border-[#ef4419]/50 px-2 py-1 text-[10px] font-bold text-[#ef4419] hover:bg-[#ef4419]/20">Hapus</button>
+            <button v-if="!r.is_sent && canManage" @click="router.post(`/reminders/${r.id}/sent`)" class="rounded-lg border border-[#6F9435] px-2 py-1 text-[10px] font-bold text-[#d4dc9a] hover:bg-daun-500/20">Kirim</button>
+            <button v-if="!r.is_sent" @click="router.delete(`/reminders/${r.id}`)" class="rounded-lg border border-[#ef4419]/50 px-2 py-1 text-[10px] font-bold text-[#ef4419] hover:bg-[#ef4419]/20">Hapus</button>
           </div>
         </div>
       </div>
@@ -49,7 +49,7 @@
 
 <script setup>
 import { computed, ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';

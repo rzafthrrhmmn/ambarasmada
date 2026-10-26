@@ -27,7 +27,7 @@
         <p class="text-[10px] text-krem-300">{{ cert.tanggal_diterbitkan ? formatDate(cert.tanggal_diterbitkan) : '-' }}</p>
         <div class="mt-2 flex gap-2">
           <a v-if="cert.file_path" :href="`/certificates/${cert.id}/download`" target="_blank" class="text-[10px] rounded border border-[#6F9435] px-2 py-1 text-[#d4dc9a] hover:bg-daun-500/20">Download</a>
-          <button v-if="canManage" @click="cert.status === 'Diterbitkan' ? cert.status = 'Dibatalkan' : cert.status = 'Diterbitkan'" class="text-[10px] rounded border border-[#6F9435] px-2 py-1 text-[#d4dc9a] hover:bg-daun-500/20">
+          <button v-if="canManage" @click="toggleStatus(cert)" class="text-[10px] rounded border border-[#6F9435] px-2 py-1 text-[#d4dc9a] hover:bg-daun-500/20">
             {{ cert.status === 'Diterbitkan' ? 'Cabut' : 'Terbitkan' }}
           </button>
         </div>
@@ -55,16 +55,18 @@
 
 <script setup>
 import { computed, ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
 import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useAccess } from '@/Composables/useAccess.js';
+import { useToast } from 'vue-toastification';
 
 defineProps({ certificates: Object, members: Array });
 const { can } = useAccess();
+const toast = useToast();
 // Dulu selalu true sehingga tombol terbit muncul untuk semua orang, lalu
 // ditolak 403 saat dikirim.
 const canManage = computed(() => can('certificates.manage'));
@@ -77,6 +79,13 @@ function submit() {
 function reset() {
   showCreate.value = false;
   form.reset();
+}
+function toggleStatus(cert) {
+  const next = cert.status === 'Diterbitkan' ? 'Dibatalkan' : 'Diterbitkan';
+  router.patch(`/certificates/${cert.id}/status`, { status: next }, {
+    onSuccess: () => { cert.status = next; },
+    onError: () => { toast.error('Gagal memperbarui status sertifikat.'); },
+  });
 }
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
