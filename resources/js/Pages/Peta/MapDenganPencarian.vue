@@ -1027,7 +1027,7 @@ function clearSelection() {
 function initMiniMap() {
   // Wadah harus berupa elemen DOM asli.
   const wilayah = selectedOfflineWilayah.value;
-  if (!miniMapContainer.value || miniMapContainer.value.nodeType !== 1 || !wilayah?.bbox || !hasPmtiles.value) return;
+  if (!miniMapContainer.value || !(miniMapContainer.value instanceof HTMLElement) || !wilayah?.bbox || !hasPmtiles.value) return;
   if (miniMap.value) {
     miniMap.value.remove();
     miniMap.value = null;
@@ -1256,7 +1256,7 @@ async function initMap() {
   // Wadah harus berupa elemen DOM asli. Jika null, undefined, atau bukan
   // elemen (misal saat transisi halaman Inertia belum selesai menyatukan DOM),
   // MapLibre akan melempar "container must be a String or HTMLElement".
-  if (!mapContainer.value || mapContainer.value.nodeType !== 1) {
+  if (!mapContainer.value || !(mapContainer.value instanceof HTMLElement)) {
     mapError.value = 'Wadah peta tidak tersedia.';
     loading.value = false;
     return;
