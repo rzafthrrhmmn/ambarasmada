@@ -133,7 +133,7 @@
         />
       </aside>
 
-      <main class="min-w-0 px-4 sm:px-6 lg:px-8 pb-24 pt-6 section-animate animate-fade-up lg:pb-6">
+      <main class="min-w-0 px-4 sm:px-6 lg:px-8 pt-[72px] sm:pt-[80px] lg:pt-[90px] pb-24 sm:pb-24 lg:pb-6 section-animate animate-fade-up">
         <OfflineBanner />
         <FlashMessage />
         <slot />
