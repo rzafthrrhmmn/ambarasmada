@@ -1,7 +1,7 @@
 ﻿<template>
   <div class="min-h-screen bg-hutan-800 text-krem-100">
     <header class="app-header">
-      <div class="app-header-inner px-4 sm:px-6 lg:px-[50px] py-3 sm:py-3.5">
+      <div class="app-header-inner px-4 sm:px-6 lg:px-8 xl:px-10 py-3 sm:py-3.5">
         <button
             type="button"
             class="app-header-button lg:hidden"
@@ -25,7 +25,7 @@
           </span>
         </a>
 
-        <nav class="app-header-trail" aria-label="Lokasi halaman">
+        <nav class="app-header-trail hidden lg:flex" aria-label="Lokasi halaman">
           <template v-if="context.parent">
             <span class="app-header-trail-parent">{{ context.parent }}</span>
             <NavIcon name="chevronRight" class="app-header-trail-sep h-3.5 w-3.5" />
@@ -34,7 +34,7 @@
         </nav>
 
         <div class="app-header-actions">
-          <a href="/notifications" class="app-header-button" :aria-label="notifLabel">
+          <a href="/notifications" class="app-header-button hidden sm:flex" :aria-label="notifLabel">
             <NavIcon name="bell" class="h-5 w-5" />
             <span v-if="unreadNotifications > 0" class="app-header-badge" aria-hidden="true">
               {{ unreadNotifications > 99 ? '99+' : unreadNotifications }}
@@ -53,7 +53,7 @@
     </header>
 
     <div
-        class="app-body mx-auto grid w-full lg:px-[50px]"
+        class="app-body mx-auto grid w-full lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)] lg:px-6 xl:px-10"
       >
       <transition
           enter-active-class="transition ease-out duration-300"
@@ -80,7 +80,7 @@
       >
         <aside
             v-if="mobileMenuOpen"
-            class="fixed inset-y-0 left-0 z-50 flex w-[260px] max-w-[90vw] flex-col border-r-2 border-daun-400/30 bg-hutan-800 shadow-nav lg:hidden"
+            class="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[90vw] flex-col border-r-2 border-daun-400/30 bg-hutan-800 shadow-nav lg:hidden"
         >
           <div class="flex items-center justify-between gap-3 border-b-2 border-daun-400/20 px-4 py-3">
             <div class="flex min-w-0 items-center gap-2.5">
@@ -117,7 +117,21 @@
         </aside>
       </transition>
 
-      <main class="min-w-0 px-4 sm:px-6 lg:px-8 pt-[96px] sm:pt-[108px] lg:pt-[120px] pb-20 sm:pb-20 lg:pb-6 section-animate animate-fade-up">
+      <aside class="hidden lg:flex lg:flex-col lg:sticky lg:top-[80px] lg:h-[calc(100vh-80px)] lg:overflow-y-auto border-r border-daun-400/20 bg-hutan-800/40">
+        <div class="flex flex-col h-full px-4 py-4">
+          <AppSidebar
+              v-model:query="query"
+              :user="user"
+              :sections="sections"
+              :footer="footer"
+              :no-results="noResults"
+              :result-count="resultCount"
+              :show-toggle="false"
+          />
+        </div>
+      </aside>
+
+      <main class="min-w-0 px-4 sm:px-6 lg:px-8 xl:px-10 pt-[100px] sm:pt-[112px] lg:pt-[112px] xl:pt-[116px] pb-24 sm:pb-20 lg:pb-8 section-animate animate-fade-up">
         <OfflineBanner />
         <FlashMessage />
         <slot />

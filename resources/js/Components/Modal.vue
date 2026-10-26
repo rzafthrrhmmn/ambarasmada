@@ -1,7 +1,7 @@
 <template>
-  <div class="fixed inset-0 z-50 flex items-end justify-center bg-[#1f3320]/85 p-3 sm:items-center sm:p-5">
-    <div class="w-full max-w-2xl rounded-2xl border-2 border-daun-400/50 bg-hutan-600 shadow-2xl shadow-[#1f3320]/70 sm:p-6">
-      <div class="mb-4 flex items-start justify-between gap-4">
+  <div class="fixed inset-0 z-[999] flex items-end justify-center bg-[#1f3320]/85 p-3 sm:items-center sm:p-5">
+    <div class="w-full max-w-2xl rounded-2xl border-2 border-daun-400/50 bg-hutan-600 shadow-2xl shadow-[#1f3320]/70 max-h-[90vh] flex flex-col overflow-hidden sm:max-h-[85vh]">
+      <div class="flex items-start justify-between gap-4 border-b border-daun-400/30 px-4 py-3 sm:px-6 sm:py-4">
         <div>
           <p class="text-xs font-bold uppercase tracking-wide text-emas-400">Formulir</p>
           <h2 class="mt-1 text-xl font-extrabold text-krem-100">
@@ -17,7 +17,7 @@
           <AppIcon name="close" :stroke="2" class="h-5 w-5" />
         </button>
       </div>
-      <div class="max-h-[75vh] overflow-y-auto"><slot /></div>
+      <div class="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5"><slot /></div>
     </div>
   </div>
 </template>

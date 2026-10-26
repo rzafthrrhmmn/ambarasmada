@@ -1,33 +1,30 @@
 <template>
   <AppLayout>
-    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end section-animate animate-fade-up">
-      <div>
-        <p class="text-sm font-medium text-emas-400">Peta Kontur</p>
-        <h1 class="mt-1 text-2xl font-extrabold text-krem-100">Peta Kontur Sulawesi</h1>
-        <p class="mt-1 text-sm text-krem-300">Visualisasi garis kontur elevasi Pulau Sulawesi dengan dukungan offline.</p>
-      </div>
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-if="hasPmtiles"
-          @click="showOfflineModal = true"
-          class="inline-flex items-center rounded-lg border-2 border-daun-400 bg-daun-400/10 text-daun-400 transition hover:bg-daun-400/20"
-        >
-          Unduh Peta Offline
-        </button>
-        <button
-          @click="toggleLayer"
-          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
-        >
-          {{ showContour ? 'Sembunyikan Kontur' : 'Tampilkan Kontur' }}
-        </button>
-        <button
-          @click="toggleHillshade"
-          class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
-        >
-          {{ showHillshade ? 'Sembunyikan Hillshade' : 'Tampilkan Hillshade' }}
-        </button>
-      </div>
-    </div>
+    <PageHeader eyebrow="Peta Kontur" title="Peta Kontur Sulawesi" subtitle="Visualisasi garis kontur elevasi Pulau Sulawesi dengan dukungan offline">
+      <template #actions>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-if="hasPmtiles"
+            @click="showOfflineModal = true"
+            class="inline-flex items-center rounded-lg border-2 border-daun-400 bg-daun-400/10 px-4 py-2 text-sm font-bold text-daun-400 transition hover:bg-daun-400/20"
+          >
+            Unduh Peta Offline
+          </button>
+          <button
+            @click="toggleLayer"
+            class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
+          >
+            {{ showContour ? 'Sembunyikan Kontur' : 'Tampilkan Kontur' }}
+          </button>
+          <button
+            @click="toggleHillshade"
+            class="inline-flex items-center rounded-lg border-2 border-[#6F9435] px-4 py-2 text-sm font-bold text-[#EDD330] transition hover:bg-[#6F9435]/30"
+          >
+            {{ showHillshade ? 'Sembunyikan Hillshade' : 'Tampilkan Hillshade' }}
+          </button>
+        </div>
+      </template>
+    </PageHeader>
 
     <div class="peta-shell relative overflow-hidden rounded-2xl border-2 border-daun-400/40 bg-hutan-800 shadow-lg section-animate animate-fade-up" style="animation-delay: 0.1s;">
       <div ref="mapContainer" class="h-[60vh] w-full min-h-[400px] max-h-[55vh]"></div>
@@ -177,6 +174,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 import Modal from '@/Components/Modal.vue';
 import NavIcon from '@/Components/NavIcon.vue';
 import { getActiveServiceWorker, SW_PROTOCOL } from '@/ServiceWorker.js';

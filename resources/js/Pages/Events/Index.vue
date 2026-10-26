@@ -1,16 +1,13 @@
 <template>
   <AppLayout>
-    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end section-animate animate-fade-up">
-      <div>
-        <p class="text-sm font-medium text-emas-400">Kegiatan</p>
-        <h1 class="mt-1 text-2xl font-bold text-krem-100">Manajemen Kegiatan</h1>
-        <p class="mt-1 text-sm text-krem-300">Buat, kelola, dan pantau seluruh kegiatan ambalan.</p>
-      </div>
-      <button v-if="canManage" @click="showCreate = true" class="btn-primary">
-        <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
-        Kegiatan Baru
-      </button>
-    </div>
+    <PageHeader eyebrow="Kegiatan" title="Manajemen Kegiatan" subtitle="Buat, kelola, dan pantau seluruh kegiatan ambalan">
+      <template #actions>
+        <button v-if="canManage" @click="showCreate = true" class="btn-primary">
+          <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
+          Kegiatan Baru
+        </button>
+      </template>
+    </PageHeader>
 
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 section-animate animate-stagger-reveal" style="animation-delay: 0.1s;">
       <div v-for="event in events.data" :key="event.id" class="rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5 shadow-lg transition hover:border-[#A7B92B]/60">
@@ -75,6 +72,7 @@
 import { ref, computed } from 'vue';
 import { useForm, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';

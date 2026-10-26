@@ -1,16 +1,13 @@
 <template>
   <AppLayout>
-    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-      <div>
-        <p class="text-sm font-medium text-emas-400">Permusyawaratan</p>
-        <h1 class="mt-1 text-2xl font-bold text-krem-100">Rapat & Musyawarah</h1>
-        <p class="mt-1 text-sm text-krem-300">Catat notulen, voting, dan keputusan rapat.</p>
-      </div>
-      <button v-if="canManage" type="button" class="btn-primary" @click="showCreate = true">
-        <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
-        Rapat Baru
-      </button>
-    </div>
+    <PageHeader eyebrow="Permusyawaratan" title="Rapat & Musyawarah" subtitle="Catat notulen, voting, dan keputusan rapat">
+      <template #actions>
+        <button v-if="canManage" type="button" class="btn-primary" @click="showCreate = true">
+          <AppIcon name="plus" :stroke="2.2" class="h-4 w-4" />
+          Rapat Baru
+        </button>
+      </template>
+    </PageHeader>
 
     <div class="space-y-3">
       <div v-for="meeting in (meetings?.data || [])" :key="meeting.id" class="rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5 transition hover:border-[#A7B92B]/60">
@@ -52,6 +49,7 @@
 import { ref, computed } from 'vue';
 import { useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Components/AppLayout.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
