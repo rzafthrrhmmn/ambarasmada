@@ -39,12 +39,14 @@
             </p>
           </div>
 
-          <form @submit.prevent="submitLogin" class="space-y-4">
+          <form action="/login" method="POST" class="space-y-4">
+            <input type="hidden" name="_token" :value="$page.props.csrf_token" />
+
             <div>
               <label class="block">
                 <span class="mb-1 block text-sm font-bold text-[#d4dc9a]">Username atau email</span>
                 <input
-                  v-model="form.identity"
+                  name="identity"
                   type="text"
                   required
                   autocomplete="username"
@@ -54,11 +56,12 @@
               </label>
               <span v-if="$page.props.errors.identity" class="mt-1 block text-xs font-bold text-[#ef4419]">{{ $page.props.errors.identity }}</span>
             </div>
+
             <div>
               <label class="block">
                 <span class="mb-1 block text-sm font-bold text-[#d4dc9a]">Password</span>
                 <input
-                  v-model="form.password"
+                  name="password"
                   type="password"
                   required
                   autocomplete="current-password"
@@ -73,25 +76,15 @@
             </div>
 
             <label class="flex items-center gap-2 text-sm font-medium text-[#d4dc9a]">
-              <input v-model="form.remember" type="checkbox" value="1" class="rounded border-2 border-daun-500 bg-hutan-800 text-emas-400" />
+              <input name="remember" type="checkbox" value="1" class="rounded border-2 border-daun-500 bg-hutan-800 text-emas-400" />
               <span class="cursor-pointer">Ingat saya</span>
             </label>
 
             <button
               type="submit"
-              :disabled="form.processing"
-              :class="['group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-daun-400 to-emas-400 px-4 py-3 font-extrabold text-hutan-800 shadow-lg shadow-emas-400/30 transition hover:shadow-xl hover:shadow-emas-400/40 hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60 border-2 border-emas-400', form.processing ? 'animate-pulse' : '']"
+              class="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-daun-400 to-emas-400 px-4 py-3 font-extrabold text-hutan-800 shadow-lg shadow-emas-400/30 transition hover:shadow-xl hover:shadow-emas-400/40 hover:-translate-y-0.5 border-2 border-emas-400"
             >
-              <span class="relative z-10 flex items-center justify-center gap-2">
-                <span v-if="form.processing" class="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-5 w-5 animate-spin text-hutan-800">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" opacity="0.25"></circle>
-                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Masuk...
-                </span>
-                <span v-else>Masuk</span>
-              </span>
+              <span class="relative z-10 flex items-center justify-center gap-2">Masuk</span>
             </button>
           </form>
 
@@ -100,57 +93,6 @@
               Belum punya akun?
               <a href="/register" class="font-bold text-[#EDD330] hover:underline">Daftar Akun</a>
             </p>
-          </div>
-
-          <div class="mt-3 rounded-xl border-2 border-[#6F9435]/30 bg-[#263D26]/40 p-4">
-            <button
-              type="button"
-              @click="showResend = !showResend"
-              class="flex w-full items-center justify-center gap-2 text-left text-sm font-bold text-emas-400"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-              </svg>
-              {{ showResend ? 'Tutup' : 'Tidak menerima email aktivasi?' }}
-            </button>
-          </div>
-
-          <div v-if="showResend" class="mt-3 rounded-xl border-2 border-[#6F9435]/30 bg-[#263D26]/40 p-4">
-            <div class="mt-3">
-              <p class="mb-3 text-xs leading-relaxed text-[#8fa06a]">
-                Masukkan email yang Anda gunakan saat mendaftar. Kami akan mengirim ulang tautan aktivasi.
-              </p>
-              <form @submit.prevent="submitResend" class="space-y-3">
-                <div>
-                  <label class="block">
-                    <span class="mb-1 block text-sm font-bold text-[#d4dc9a]">Email terdaftar</span>
-                    <input
-                      v-model="resendForm.email"
-                      type="email"
-                      required
-                      autocomplete="email"
-                      placeholder="contoh@email.com"
-                      class="w-full rounded-lg border-2 border-[#6F9435] bg-[#263D26] px-4 py-3 text-sm text-[#f0ead8] outline-none transition placeholder:text-[#8fa06a]/50 focus:border-[#EDD330] focus:ring-2 focus:ring-[#EDD330]/50"
-                    />
-                  </label>
-                  <span v-if="resendErrors.email" class="mt-1 block text-xs font-bold text-[#ef4419]">{{ resendErrors.email }}</span>
-                </div>
-                <button
-                  type="submit"
-                  :disabled="resendForm.processing"
-                  class="w-full rounded-lg border-2 border-daun-500 bg-hutan-600 px-4 py-2.5 text-sm font-extrabold text-emas-400 transition hover:-translate-y-0.5 hover:bg-daun-500/20 disabled:cursor-wait disabled:opacity-60"
-                >
-                  <span v-if="resendForm.processing" class="inline-flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-4 w-4 animate-spin">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" opacity="0.25"></circle>
-                      <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Mengirim...
-                  </span>
-                  <span v-else>Kirim Ulang Email Aktivasi</span>
-                </button>
-              </form>
-            </div>
           </div>
 
           <div class="mt-5 border-t-2 border-[#6F9435]/20 pt-5 text-center">
@@ -166,36 +108,4 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useForm, router } from '@inertiajs/vue3';
-
-const form = useForm({ identity: '', password: '', remember: false });
-const resendForm = useForm({ email: '' });
-const resendErrors = ref({});
-const showResend = ref(false);
-
-function submitLogin() {
-  form.post('/login', {
-    onSuccess: () => {
-      // Inertia otomatis mengikuti redirect dari backend ke dashboard.
-      // Tidak perlu window.location.href karena akan menyebabkan navigasi ganda
-      // dan layar berkedip.
-    },
-    onError: (errors) => {
-      // Errors handled by Inertia ($page.props.errors)
-    },
-  });
-}
-
-function submitResend() {
-  resendForm.post('/email/resend-activation', {
-    onSuccess: () => {
-      resendForm.reset();
-      resendErrors.value = {};
-    },
-    onError: (errors) => {
-      resendErrors.value = errors;
-    },
-  });
-}
 </script>
