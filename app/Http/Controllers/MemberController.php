@@ -47,7 +47,7 @@ class MemberController extends Controller
 
         $members = $query->orderBy('nama_lengkap')->paginate(20)->withQueryString();
         $ambalans = Ambalan::orderBy('nama')->get();
-        $angkatanOptions = Angkatan::where('is_active', true)->orderBy('angkatan')->get();
+        $angkatanOptions = Angkatan::whereBoolean('is_active', true)->orderBy('angkatan')->get();
         $angkatanList = Angkatan::orderBy('angkatan')->get();
         $gudepPrefix = (string) config('app.gudep_prefix', '31082008');
         $positions = MemberPosition::with('position')->get()->groupBy('member_id');
@@ -295,7 +295,7 @@ class MemberController extends Controller
     {
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
         if ($angkatan->is_current) {
-            $replacement = Angkatan::where('is_active', true)
+            $replacement = Angkatan::whereBoolean('is_active', true)
                 ->where('id', '!=', $angkatan->id)
                 ->orderByDesc('is_current')
                 ->first();
@@ -316,11 +316,11 @@ class MemberController extends Controller
 
         if (! $member) {
             $currentAngkatan = Angkatan::query()
-                ->where('is_active', true)
-                ->where('is_current', true)
+                ->whereBoolean('is_active', true)
+                ->whereBoolean('is_current', true)
                 ->first()
                 ?? Angkatan::query()
-                    ->where('is_active', true)
+                    ->whereBoolean('is_active', true)
                     ->orderByDesc('nomor')
                     ->first();
 
@@ -364,11 +364,11 @@ class MemberController extends Controller
 
         if (! $member) {
             $currentAngkatan = Angkatan::query()
-                ->where('is_active', true)
-                ->where('is_current', true)
+                ->whereBoolean('is_active', true)
+                ->whereBoolean('is_current', true)
                 ->first()
                 ?? Angkatan::query()
-                    ->where('is_active', true)
+                    ->whereBoolean('is_active', true)
                     ->orderByDesc('nomor')
                     ->first();
 

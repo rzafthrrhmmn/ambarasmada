@@ -22,7 +22,7 @@ class NotificationController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $unreadCount = Notification::where('user_id', $userId)->where('is_read', false)->count();
+        $unreadCount = Notification::where('user_id', $userId)->whereBoolean('is_read', false)->count();
 
         return Inertia::render('Notifications/Index', [
             'notifications' => $notifications,
@@ -42,7 +42,7 @@ class NotificationController extends Controller
 
     public function markAllAsRead(Request $request): RedirectResponse
     {
-        Notification::where('user_id', $request->user()->id)->where('is_read', false)->update([
+        Notification::where('user_id', $request->user()->id)->whereBoolean('is_read', false)->update([
             'is_read' => true,
         ]);
 
@@ -59,7 +59,7 @@ class NotificationController extends Controller
 
     public function getUnreadCount(Request $request): Response
     {
-        $count = Notification::where('user_id', $request->user()->id)->where('is_read', false)->count();
+        $count = Notification::where('user_id', $request->user()->id)->whereBoolean('is_read', false)->count();
 
         return response()->json(['unread_count' => $count]);
     }
@@ -78,7 +78,7 @@ class NotificationController extends Controller
         $users = User::query()
             ->whereIn('role', $data['target_roles'])
             ->where('status', 'approved')
-            ->where('is_active', true)
+            ->whereBoolean('is_active', true)
             ->get();
 
         foreach ($users as $user) {

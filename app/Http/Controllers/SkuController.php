@@ -60,7 +60,7 @@ class SkuController extends Controller
         $tkkPointsWithStatus = [];
 
         if ($user->role === 'Anggota' && $member && $member->tingkatan === 'Laksana') {
-            $activeTkkCount = TkkPoint::where('is_active', true)->count();
+            $activeTkkCount = TkkPoint::whereBoolean('is_active', true)->count();
             $approvedTkkCount = $member->tkkSubmissions()
                 ->where('status', 'Approved')
                 ->count();
@@ -75,7 +75,7 @@ class SkuController extends Controller
                 ? $member->tkkSubmissions()->pluck('status', 'tkk_point_id')
                 : [];
 
-            $tkkPoints = TkkPoint::where('is_active', true)
+            $tkkPoints = TkkPoint::whereBoolean('is_active', true)
                 ->orderBy('nama')
                 ->get();
 

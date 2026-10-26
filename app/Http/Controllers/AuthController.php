@@ -96,11 +96,11 @@ class AuthController extends Controller
     public function showRegisterForm(Request $request): Response
     {
         $latestAngkatan = Angkatan::query()
-            ->where('is_active', true)
-            ->where('is_current', true)
+            ->whereBoolean('is_active', true)
+            ->whereBoolean('is_current', true)
             ->first()
             ?? Angkatan::query()
-                ->where('is_active', true)
+                ->whereBoolean('is_active', true)
                 ->orderByDesc('nomor')
                 ->first();
 
@@ -127,11 +127,11 @@ class AuthController extends Controller
         }
 
         $latestAngkatan = Angkatan::query()
-            ->where('is_active', true)
-            ->where('is_current', true)
+            ->whereBoolean('is_active', true)
+            ->whereBoolean('is_current', true)
             ->first()
             ?? Angkatan::query()
-                ->where('is_active', true)
+                ->whereBoolean('is_active', true)
                 ->orderByDesc('nomor')
                 ->first();
 

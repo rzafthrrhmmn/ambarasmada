@@ -23,10 +23,10 @@ class CreateAdminUserSeeder extends Seeder
 
         $prefix = (string) config('app.gudep_prefix', '31082008');
         $latestAngkatan = Angkatan::query()
-            ->where('is_active', true)
-            ->where('is_current', true)
+            ->whereBoolean('is_active', true)
+            ->whereBoolean('is_current', true)
             ->first() ?? Angkatan::query()
-            ->where('is_active', true)
+            ->whereBoolean('is_active', true)
             ->orderByDesc('nomor')
             ->first();
 

@@ -20,8 +20,8 @@ class DemoUsersSeeder extends Seeder
             'status' => 'Aktif',
         ]);
 
-        $currentAngkatan = Angkatan::where('is_current', true)->first()
-            ?? Angkatan::where('is_active', true)->orderByDesc('nomor')->first();
+        $currentAngkatan = Angkatan::whereBoolean('is_current', true)->first()
+            ?? Angkatan::whereBoolean('is_active', true)->orderByDesc('nomor')->first();
 
         $angkatanNomor = $currentAngkatan?->nomor ?? '018';
 
