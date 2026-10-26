@@ -1025,11 +1025,9 @@ function clearSelection() {
 }
 
 function initMiniMap() {
-  // Preview mengikuti wilayah yang dipilih di dialog, bukan hanya kabupatennya.
-  // Kalau hanya kabupaten yang dipakai, preview untuk kecamatan yang lebih kecil
-  // akan menampilkan potongan yang jauh lebih luas daripada yang diunduh.
+  // Wadah harus berupa elemen DOM asli.
   const wilayah = selectedOfflineWilayah.value;
-  if (!miniMapContainer.value || !wilayah?.bbox || !hasPmtiles.value) return;
+  if (!miniMapContainer.value || miniMapContainer.value.nodeType !== 1 || !wilayah?.bbox || !hasPmtiles.value) return;
   if (miniMap.value) {
     miniMap.value.remove();
     miniMap.value = null;
@@ -1255,7 +1253,14 @@ function stopObservingMapSize() {
 }
 
 async function initMap() {
-  if (!mapContainer.value) return;
+  // Wadah harus berupa elemen DOM asli. Jika null, undefined, atau bukan
+  // elemen (misal saat transisi halaman Inertia belum selesai menyatukan DOM),
+  // MapLibre akan melempar "container must be a String or HTMLElement".
+  if (!mapContainer.value || mapContainer.value.nodeType !== 1) {
+    mapError.value = 'Wadah peta tidak tersedia.';
+    loading.value = false;
+    return;
+  }
 
   try {
     const { Map, addProtocol, Popup, ScaleControl, NavigationControl, GLYPHS_URL } = await import('../../maplibre');

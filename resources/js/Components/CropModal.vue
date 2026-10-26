@@ -45,7 +45,7 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import Cropper from 'cropperjs';
 
-defineProps({
+const props = defineProps({
   show: Boolean,
   imageUrl: String,
 });
