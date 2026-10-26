@@ -126,7 +126,7 @@ class PetaKecamatanDropdownTest extends TestCase
 
         $this->assertStringContainsString(
             'v-for="kec in offlineKecamatanOptions"',
-            $source . $modal,
+            $source.$modal,
             'Opsi dropdown kedua harus looping daftar kecamatan kabupaten terpilih.'
         );
     }
@@ -159,7 +159,7 @@ class PetaKecamatanDropdownTest extends TestCase
 
         $this->assertStringContainsString(
             ':disabled="!selectedOfflineRegion"',
-            $source . $modal,
+            $source.$modal,
             'Dropdown kecamatan harus nonaktif selama belum ada kabupaten, karena isinya belum diketahui.'
         );
     }
@@ -243,13 +243,13 @@ class PetaKecamatanDropdownTest extends TestCase
 
         $this->assertStringContainsString(
             'v-model:selected-offline-kecamatan',
-            $source . $modal,
+            $source.$modal,
             'Dialog unduhan offline harus punya pemilih kecamatan.'
         );
 
         $this->assertStringContainsString(
             ':disabled="!selectedOfflineRegion"',
-            $source . $modal,
+            $source.$modal,
             'Pemilih kecamatan di dialog harus nonaktif sebelum kabupaten dipilih.'
         );
 

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -15,7 +14,7 @@ class SettingsController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user()->load('member');
-        
+
         $defaultSettings = [
             'theme' => 'dark',
             'language' => 'id',
@@ -25,9 +24,9 @@ class SettingsController extends Controller
             ],
             'sidebar_collapsed' => false,
         ];
-        
+
         $settings = array_merge($defaultSettings, $user->settings ?? []);
-        
+
         return Inertia::render('Settings/Index', [
             'user' => $user,
             'settings' => $settings,
@@ -43,12 +42,12 @@ class SettingsController extends Controller
             'notifications.browser' => ['nullable', 'boolean'],
             'sidebar_collapsed' => ['nullable', 'boolean'],
         ]);
-        
+
         $user = $request->user();
         $currentSettings = $user->settings ?? [];
         $user->settings = array_merge($currentSettings, $validated);
         $user->save();
-        
+
         return redirect()->back()->with('success', 'Pengaturan berhasil disimpan.');
     }
 
@@ -58,11 +57,11 @@ class SettingsController extends Controller
             'current_password' => ['required', 'current_password'],
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
-        
+
         $user = $request->user();
         $user->password = Hash::make($validated['password']);
         $user->save();
-        
+
         return redirect()->back()->with('success', 'Kata sandi berhasil diubah.');
     }
 }

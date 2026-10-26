@@ -30,22 +30,17 @@ use App\Http\Controllers\PwaController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ReminderController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\SkuController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\SkuController;
 use App\Http\Controllers\SystemPointController;
 use App\Http\Controllers\SystemToolController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TkkPointController;
 use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\UserPermissionController;
-use App\Models\Ambalan;
-use App\Models\Announcement;
 use App\Models\Gallery;
 use App\Models\Member;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schema;
 
 Route::get('/up', fn () => response()->json(['status' => 'ok', 'time' => now()]))->name('up');
 

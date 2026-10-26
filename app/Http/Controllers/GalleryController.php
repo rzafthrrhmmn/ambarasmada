@@ -65,7 +65,7 @@ class GalleryController extends Controller
         abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
 
         $gallery = Gallery::find($id);
-        abort_if(!$gallery, 404);
+        abort_if(! $gallery, 404);
 
         if ($gallery->image) {
             Storage::disk('public')->delete($gallery->image);

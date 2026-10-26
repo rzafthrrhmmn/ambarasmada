@@ -1586,7 +1586,7 @@ class MapPngExportTest extends TestCase
         $modal = file_get_contents(base_path('resources/js/Components/Peta/OfflineDownloadModal.vue'));
         $this->assertStringContainsString(
             'aspectRatio: `${printFormatPreview.width} / ${printFormatPreview.height}`',
-            $pencarian . $modal,
+            $pencarian.$modal,
             'Kotak pratinjau harus memakai rasio sisi lembar yang dipilih.'
         );
 
@@ -1594,7 +1594,7 @@ class MapPngExportTest extends TestCase
         // memberitahu berapa resolusi yang sebenarnya diterima pengguna.
         $this->assertStringContainsString(
             '{{ printFormatPreview.outputWidth }} &times; {{ printFormatPreview.outputHeight }} piksel',
-            $pencarian . $modal,
+            $pencarian.$modal,
             'Pratinjau harus menyebut ukuran berkas PNG hasilnya.'
         );
 
@@ -1897,7 +1897,7 @@ class MapPngExportTest extends TestCase
 
         $this->assertStringContainsString(
             ':checked="showContour"',
-            $pencarian . $modal,
+            $pencarian.$modal,
             'Checkbox dialog harus menampilkan keadaan kontur yang sedang aktif.'
         );
 

@@ -54,7 +54,7 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         try {
-            $this->notify(new AccountActivationNotification());
+            $this->notify(new AccountActivationNotification);
 
             Log::info('[activation-email] Terkirim ke '.$this->email, [
                 'user_id' => $this->getKey(),

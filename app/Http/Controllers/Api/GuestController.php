@@ -28,7 +28,7 @@ class GuestController extends Controller
                         (int) (Announcement::max('updated_at')?->timestamp ?? 0),
                         (int) (Gallery::max('updated_at')?->timestamp ?? 0)
                     );
-                    $cached = Cache::remember('guest.home.api.' . $cacheVersion, 300, function () {
+                    $cached = Cache::remember('guest.home.api.'.$cacheVersion, 300, function () {
                         return $this->buildGuestHomeData();
                     });
 
@@ -83,6 +83,7 @@ class GuestController extends Controller
     private function sanitize(?string $html): string
     {
         $clean = strip_tags((string) $html);
+
         return trim(preg_replace('/\s+/', ' ', $clean));
     }
 

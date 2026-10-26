@@ -186,4 +186,3 @@ class DashboardController extends Controller
             ->toArray();
     }
 }
-

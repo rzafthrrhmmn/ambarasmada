@@ -446,7 +446,7 @@ class MemberController extends Controller
             $this->validateFileContent($file);
             // Additional client-side tampering check
             $allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
-            if (!in_array($file->getMimeType(), $allowedMimes, true)) {
+            if (! in_array($file->getMimeType(), $allowedMimes, true)) {
                 throw ValidationException::withMessages(['foto' => 'Tipe file tidak diizinkan.']);
             }
             if ($file->getSize() > 2 * 1024 * 1024) {
