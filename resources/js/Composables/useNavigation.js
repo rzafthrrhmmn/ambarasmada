@@ -62,18 +62,15 @@ function humanizeSegment(segment) {
 
 function readCollapsedPreference() {
     try {
-        return window.localStorage.getItem(COLLAPSE_STORAGE_KEY) === '1';
+        return false;
     } catch {
-        // Penyimpanan bisa dinonaktifkan, misalnya pada mode privat.
         return false;
     }
 }
 
 function writeCollapsedPreference(collapsed) {
     try {
-        window.localStorage.setItem(COLLAPSE_STORAGE_KEY, collapsed ? '1' : '0');
     } catch {
-        // Tanpa penyimpanan, preferensi hanya berlaku selama sesi ini.
     }
 }
 
