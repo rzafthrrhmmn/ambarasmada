@@ -69,6 +69,10 @@ class SkuController extends Controller
         }
 
         if (! $completed) {
+            $memberTkkSubmissions = $user->role === 'Anggota' && $member
+                ? $member->tkkSubmissions()->pluck('status', 'tkk_point_id')
+                : [];
+
             $tkkPoints = TkkPoint::where('is_active', true)
                 ->orderBy('nama')
                 ->get();

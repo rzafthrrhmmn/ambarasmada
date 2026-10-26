@@ -53,7 +53,7 @@ import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Modal from '@/Components/Modal.vue';
 import { useAccess } from '@/Composables/useAccess.js';
 
-defineProps({ galleries: Object });
+const props = defineProps({ galleries: Object });
 const { can } = useAccess();
 // Dulu selalu true sehingga tombol terbit muncul untuk semua orang, lalu
 // ditolak 403 saat dikirim.
@@ -71,8 +71,8 @@ function reset() {
   form.reset();
 }
 const filteredGalleries = computed(() => {
-  if (!filterKategori.value) return galleries?.data || [];
-  return (galleries?.data || []).filter(g => g.kategori === filterKategori.value);
+  if (!filterKategori.value) return props.galleries?.data || [];
+  return (props.galleries?.data || []).filter(g => g.kategori === filterKategori.value);
 });
 </script>
 

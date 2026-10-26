@@ -85,12 +85,12 @@ import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useAccess } from '@/Composables/useAccess.js';
 
-defineProps({ points: Object, totalPoints: Number, filters: Object, allMembers: Array });
+const props = defineProps({ points: Object, totalPoints: Number, filters: Object, allMembers: Array });
 
 const { can } = useAccess();
 const canManagePoints = computed(() => can('points.manage'));
 
-const categories = computed(() => [...new Set(points.data.map(p => p.kategori))]);
+const categories = computed(() => [...new Set(props.points.data.map(p => p.kategori))]);
 
 const form = useForm({ member_id: '', kategori: '', deskripsi: '', poin: 0 });
 

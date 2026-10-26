@@ -37,14 +37,14 @@ import AppLayout from '@/Components/AppLayout.vue';
 import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
 
-defineProps({ guides: Object });
+const props = defineProps({ guides: Object });
 const search = ref('');
 const page = usePage();
 
 const filteredGuides = computed(() => {
-  if (!search.value) return guides.value?.data || [];
+  if (!search.value) return props.guides?.data || [];
   const q = search.value.toLowerCase();
-  return (guides.value?.data || []).filter(g =>
+  return (props.guides?.data || []).filter(g =>
     g.judul.toLowerCase().includes(q) ||
     g.konten.toLowerCase().includes(q) ||
     g.kategori.toLowerCase().includes(q)
