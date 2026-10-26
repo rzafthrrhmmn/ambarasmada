@@ -273,6 +273,14 @@ function trapFocus(event) {
   if (event.key === 'Escape') closeMobileMenu();
 }
 
+function onBottomNavNavigate(sectionId) {
+  activeSection.value = sectionId;
+  const el = document.getElementById(sectionId);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
 function dismissOfflineBanner() {
   offlineBannerDismissed.value = true;
 }

@@ -142,24 +142,24 @@
 
     <nav
         v-show="!mobileMenuOpen"
-        class="fixed inset-x-0 bottom-0 z-50 border-t-2 border-daun-500 bg-hutan-900/98 backdrop-blur-md lg:hidden"
+        class="fixed inset-x-0 bottom-0 z-50 border-t border-daun-500/30 bg-hutan-900/96 backdrop-blur-md shadow-2xl shadow-black/20 lg:hidden"
         aria-label="Navigasi bawah"
       >
-        <div class="mx-auto flex h-16 max-w-lg items-stretch justify-around px-3 sm:px-0">
+        <div class="mx-auto flex max-w-md items-stretch justify-between px-2 sm:px-4">
           <a
               v-for="item in bottomItems"
               :key="item.key"
               :href="item.href"
-              class="bottom-nav-item flex flex-col items-center justify-center gap-0.5 px-3 py-2 text-xs font-medium transition-all duration-200"
+              class="bottom-nav-item flex flex-col items-center justify-center gap-1 px-3 py-2.5 text-xs font-medium transition-all duration-200 relative"
               :class="{
                 'text-emas-400': item.active,
                 'text-lumut-400': !item.active,
               }"
               :aria-current="item.active ? 'page' : undefined"
           >
-            <span class="bottom-nav-indicator" aria-hidden="true" />
-            <NavIcon :name="item.icon" class="h-5 w-5 transition-transform duration-200" :class="{ 'scale-110': item.active }" />
-            <span class="leading-tight">{{ item.label }}</span>
+            <span class="bottom-nav-indicator absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-emas-400 opacity-0 transition-opacity duration-200" :class="{ 'opacity-100': item.active }" aria-hidden="true" />
+            <NavIcon :name="item.icon" class="h-5 w-5 transition-transform duration-200" :class="{ 'scale-110': item.active, 'text-emas-400': item.active, 'text-lumut-400': !item.active }" />
+            <span class="leading-none" :class="{ 'font-black': item.active, 'font-medium': !item.active }">{{ item.label }}</span>
           </a>
         </div>
       </nav>
