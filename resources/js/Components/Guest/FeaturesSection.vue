@@ -1,5 +1,5 @@
 <template>
-  <section id="fitur" class="guest-section scroll-mt-24" aria-label="Layanan unggulan ambalan">
+  <section :id="sectionId || 'fitur'" class="guest-section scroll-mt-24" aria-label="Layanan unggulan ambalan">
     <div class="mb-8 sm:mb-12 text-center">
       <ScrollReveal animation="fade-up">
         <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
@@ -60,6 +60,7 @@ import ScrollReveal from '@/Components/ScrollReveal.vue';
 
 const props = defineProps({
   features: { type: Array, default: () => [] },
+  sectionId: { type: String, default: '' },
 });
 
 const emit = defineEmits(['feature-click']);

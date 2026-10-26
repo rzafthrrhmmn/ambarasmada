@@ -48,19 +48,19 @@
       <StatsSection :stats-items="statsItems" :enable-repeat-animation="false" />
 
       <!-- How It Works Section -->
-      <HowItWorksSection :steps="howItWorks" />
+      <HowItWorksSection :steps="howItWorks" section-id="dokumentasi" />
 
       <!-- Gallery Section -->
-      <GallerySection :gallery="guestStore.gallery" @gallery-item-click="handleGalleryItemClick" />
+      <GallerySection :gallery="guestStore.gallery" @gallery-item-click="handleGalleryItemClick" section-id="galeri" />
 
       <!-- Features Section -->
-      <FeaturesSection :features="features" @feature-click="handleFeatureClick" />
+      <FeaturesSection :features="features" @feature-click="handleFeatureClick" section-id="fitur" />
 
       <!-- Testimonials Section -->
-      <TestimonialsSection :testimonials="testimonials" />
+      <TestimonialsSection :testimonials="testimonials" section-id="testimoni" />
 
       <!-- Announcements Section -->
-      <AnnouncementsSection :announcements="guestStore.announcements" :display-limit="6" />
+      <AnnouncementsSection :announcements="guestStore.announcements" :display-limit="6" section-id="pengumatan" />
 
       <!-- CTA Section -->
       <CTASection />

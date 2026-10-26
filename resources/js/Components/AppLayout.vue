@@ -1,7 +1,7 @@
 ﻿<template>
   <div class="min-h-screen bg-hutan-800 text-krem-100">
     <header class="app-header">
-      <div class="app-header-inner">
+      <div class="app-header-inner px-3 sm:px-6 lg:px-[50px] py-3 sm:py-3.5">
         <button
             type="button"
             class="app-header-button lg:hidden"
@@ -55,7 +55,7 @@
     <div
         class="app-body mx-auto grid w-full transition-[grid-template-columns] duration-300 ease-out lg:px-[50px]"
         :class="collapsed ? 'lg:grid-cols-[5.25rem_1fr]' : 'lg:grid-cols-[17.5rem_1fr]'"
-    >
+      >
       <transition
           enter-active-class="transition ease-out duration-300"
           enter-from-class="opacity-0"
@@ -133,7 +133,7 @@
         />
       </aside>
 
-      <main class="min-w-0 px-4 pb-24 pt-6 sm:px-6 lg:px-8 lg:pb-6">
+      <main class="min-w-0 px-4 sm:px-6 lg:px-8 pb-24 pt-6 section-animate animate-fade-up lg:pb-6">
         <OfflineBanner />
         <FlashMessage />
         <slot />
@@ -142,24 +142,27 @@
 
     <nav
         v-show="!mobileMenuOpen"
-        class="fixed inset-x-0 bottom-0 z-50 border-t-2 border-daun-500 bg-hutan-900/98 backdrop-blur lg:hidden"
+        class="fixed inset-x-0 bottom-0 z-50 border-t-2 border-daun-500 bg-hutan-900/98 backdrop-blur-md lg:hidden"
         aria-label="Navigasi bawah"
-    >
-      <div class="mx-auto flex h-16 max-w-lg items-stretch justify-around">
-        <a
-            v-for="item in bottomItems"
-            :key="item.key"
-            :href="item.href"
-            class="bottom-nav-item"
-            :class="{ 'is-active': item.active }"
-            :aria-current="item.active ? 'page' : undefined"
-        >
-          <span class="bottom-nav-indicator" aria-hidden="true" />
-          <NavIcon :name="item.icon" class="h-5 w-5" />
-          <span class="leading-tight">{{ item.label }}</span>
-        </a>
-      </div>
-    </nav>
+      >
+        <div class="mx-auto flex h-16 max-w-lg items-stretch justify-around px-3 sm:px-0">
+          <a
+              v-for="item in bottomItems"
+              :key="item.key"
+              :href="item.href"
+              class="bottom-nav-item flex flex-col items-center justify-center gap-0.5 px-3 py-2 text-xs font-medium transition-all duration-200"
+              :class="{
+                'text-emas-400': item.active,
+                'text-lumut-400': !item.active,
+              }"
+              :aria-current="item.active ? 'page' : undefined"
+          >
+            <span class="bottom-nav-indicator" aria-hidden="true" />
+            <NavIcon :name="item.icon" class="h-5 w-5 transition-transform duration-200" :class="{ 'scale-110': item.active }" />
+            <span class="leading-tight">{{ item.label }}</span>
+          </a>
+        </div>
+      </nav>
   </div>
 </template>
 

@@ -16,22 +16,28 @@
     <link rel="apple-touch-icon" href="/images/icons/apple-touch-icon.png">
     <link rel="mask-icon" href="/images/icons/favicon-32.png" color="#263D26">
     <style>
-        /* Section slide-in animations — dipanggil via .section-animate pada root elemen halaman */
-        .section-animate > * {
-            opacity: 0;
-            transform: translateY(24px);
-            animation: sectionSlideIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        /* Prevent white blink on load — ensure dark background before CSS hydrates */
+        html, body {
+            background-color: #263D26 !important;
+            color: #f0ead8;
         }
-        .section-animate > *:nth-child(1) { animation-delay: 0.05s; }
-        .section-animate > *:nth-child(2) { animation-delay: 0.12s; }
-        .section-animate > *:nth-child(3) { animation-delay: 0.19s; }
-        .section-animate > *:nth-child(4) { animation-delay: 0.26s; }
-        .section-animate > *:nth-child(5) { animation-delay: 0.33s; }
-        .section-animate > *:nth-child(6) { animation-delay: 0.40s; }
-        .section-animate > *:nth-child(7) { animation-delay: 0.47s; }
-        .section-animate > *:nth-child(8) { animation-delay: 0.54s; }
-        .section-animate > *:nth-child(9) { animation-delay: 0.61s; }
-        .section-animate > *:nth-child(10) { animation-delay: 0.68s; }
+
+        /* Gentle section reveal — no initial opacity:0 so no white flash */
+        .section-animate > * {
+            transform: translateY(12px);
+            opacity: 0.92;
+            animation: sectionSlideIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        .section-animate > *:nth-child(1) { animation-delay: 0.04s; }
+        .section-animate > *:nth-child(2) { animation-delay: 0.10s; }
+        .section-animate > *:nth-child(3) { animation-delay: 0.16s; }
+        .section-animate > *:nth-child(4) { animation-delay: 0.22s; }
+        .section-animate > *:nth-child(5) { animation-delay: 0.28s; }
+        .section-animate > *:nth-child(6) { animation-delay: 0.34s; }
+        .section-animate > *:nth-child(7) { animation-delay: 0.40s; }
+        .section-animate > *:nth-child(8) { animation-delay: 0.46s; }
+        .section-animate > *:nth-child(9) { animation-delay: 0.52s; }
+        .section-animate > *:nth-child(10) { animation-delay: 0.58s; }
 
         @keyframes sectionSlideIn {
             to {
@@ -43,14 +49,14 @@
         /* Fade-in untuk elemen tunggal (misal card di dalam section) */
         .fade-in {
             animation: fadeIn 0.5s ease-out forwards;
-            opacity: 0;
+            opacity: 0.92;
         }
         @keyframes fadeIn {
             to { opacity: 1; }
         }
     </style>
 </head>
-<body class="antialiased">
+<body class="antialiased" style="background-color:#263D26;">
     <noscript>
         <div style="
             position: fixed;
