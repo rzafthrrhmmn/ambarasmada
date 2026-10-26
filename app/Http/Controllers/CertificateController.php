@@ -16,7 +16,8 @@ class CertificateController extends Controller
 {
     public function index(Request $request): Response
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        $user = $request->user();
+        abort_unless($user && in_array($user->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
 
         $query = Certificate::query()
             ->with(['member', 'issuedBy'])
@@ -39,7 +40,8 @@ class CertificateController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina'], true), 403);
+        $user = $request->user();
+        abort_unless($user && in_array($user->role, ['Admin', 'Pembina'], true), 403);
 
         $data = $request->validate([
             'member_id' => ['required', 'exists:members,id'],
@@ -78,7 +80,8 @@ class CertificateController extends Controller
 
     public function update(Request $request, Certificate $certificate): RedirectResponse
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina'], true), 403);
+        $user = $request->user();
+        abort_unless($user && in_array($user->role, ['Admin', 'Pembina'], true), 403);
 
         $data = $request->validate([
             'status' => ['required', 'in:Diterbitkan,Dibatalkan'],

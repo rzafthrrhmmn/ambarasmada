@@ -13,13 +13,16 @@ class NotificationController extends Controller
 {
     public function index(Request $request): Response
     {
+        $user = $request->user();
+        $userId = $user ? $user->id : 0;
+
         $notifications = Notification::query()
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $userId)
             ->orderByDesc('created_at')
             ->paginate(20)
             ->withQueryString();
 
-        $unreadCount = Notification::where('user_id', $request->user()->id)->where('is_read', false)->count();
+        $unreadCount = Notification::where('user_id', $userId)->where('is_read', false)->count();
 
         return Inertia::render('Notifications/Index', [
             'notifications' => $notifications,

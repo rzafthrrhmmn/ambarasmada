@@ -48,6 +48,7 @@ class MeetingController extends Controller
             'waktu_mulai' => ['nullable', 'date_format:H:i'],
             'waktu_selesai' => ['nullable', 'date_format:H:i'],
             'lokasi' => ['nullable', 'string', 'max:255'],
+            'google_meet_link' => ['nullable', 'url', 'max:500'],
             'jenis' => ['required', 'in:Musyawarah,Rapat Pembina,Rapat Anggota,Sidang,Lainnya'],
         ]);
 
@@ -90,6 +91,7 @@ class MeetingController extends Controller
             'waktu_mulai' => ['nullable', 'date_format:H:i'],
             'waktu_selesai' => ['nullable', 'date_format:H:i'],
             'lokasi' => ['nullable', 'string', 'max:255'],
+            'google_meet_link' => ['nullable', 'url', 'max:500'],
             'jenis' => ['required', 'in:Musyawarah,Rapat Pembina,Rapat Anggota,Sidang,Lainnya'],
             'status' => ['required', 'in:Draft,Berlangsung,Selesai,Dibatalkan'],
         ]);

@@ -82,7 +82,7 @@ function reset() {
 }
 function toggleStatus(cert) {
   const next = cert.status === 'Diterbitkan' ? 'Dibatalkan' : 'Diterbitkan';
-  router.patch(`/certificates/${cert.id}/status`, { status: next }, {
+  router.patch(`/certificates/${cert.id}`, { status: next }, {
     onSuccess: () => { cert.status = next; },
     onError: () => { toast.error('Gagal memperbarui status sertifikat.'); },
   });

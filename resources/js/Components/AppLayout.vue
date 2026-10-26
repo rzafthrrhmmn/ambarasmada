@@ -117,7 +117,7 @@
         </aside>
       </transition>
 
-      <main class="min-w-0 px-4 sm:px-6 lg:px-8 pt-[70px] sm:pt-[80px] lg:pt-[90px] pb-20 sm:pb-20 lg:pb-6 section-animate animate-fade-up">
+      <main class="min-w-0 px-4 sm:px-6 lg:px-8 pt-[96px] sm:pt-[108px] lg:pt-[120px] pb-20 sm:pb-20 lg:pb-6 section-animate animate-fade-up">
         <OfflineBanner />
         <FlashMessage />
         <slot />

@@ -3,7 +3,13 @@
     <div class="mb-6">
       <p class="text-sm font-medium text-emas-400">Permusyawaratan</p>
       <h1 class="mt-1 text-2xl font-bold text-krem-100">{{ meeting.judul }}</h1>
-      <p class="mt-1 text-sm text-krem-300">{{ meeting.jenis }} • {{ formatDate(meeting.tanggal) }}</p>
+      <p class="mt-1 text-sm text-krem-300">{{ meeting.jenis }} • {{ formatDate(meeting.tanggal) }} {{ meeting.waktu_mulai ? '• ' + meeting.waktu_mulai : '' }}</p>
+      <div v-if="meeting.google_meet_link" class="mt-3 flex items-center gap-2">
+        <AppIcon name="meetings" class="h-4 w-4 text-emas-400" />
+        <a :href="meeting.google_meet_link" target="_blank" rel="noopener" class="text-sm text-[#A7B92B] hover:text-emas-400 underline">
+          Google Meet: {{ meeting.google_meet_link }}
+        </a>
+      </div>
     </div>
 
     <section class="mb-6 rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5">

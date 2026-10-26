@@ -20,6 +20,8 @@ class SkuController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
+        abort_unless($user, 403);
+
         $member = Member::where('user_id', $user->id)->first();
 
         $query = SkuSubmission::query()

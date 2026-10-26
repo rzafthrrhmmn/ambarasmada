@@ -140,6 +140,11 @@ const confirmCrop = async () => {
   cropping.value = true;
   
   try {
+    const data = cropper.getData();
+    if (!data || !data.width || !data.height) {
+      throw new Error('Cropper belum siap');
+    }
+    
     const canvas = cropper.getCroppedCanvas({
       width: 300,
       height: 400,

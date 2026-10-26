@@ -23,7 +23,8 @@ class MemberController extends Controller
 {
     public function index(Request $request): Response
     {
-        abort_unless(in_array($request->user()->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
+        $user = $request->user();
+        abort_unless($user && in_array($user->role, ['Admin', 'Pembina', 'Pengurus'], true), 403);
 
         $query = Member::query()
             ->with(['user', 'ambalan'])

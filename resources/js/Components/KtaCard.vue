@@ -19,14 +19,14 @@
 
         <div class="kta-body">
           <div class="kta-photo">
-            <img
-              v-if="photoSrc"
-              :src="photoSrc"
-              alt="Foto anggota"
-              class="kta-photo-img"
-              loading="lazy"
-              @error="photoFailed = true"
-            />
+              <img
+                v-if="photoSrc"
+                :src="photoSrc"
+                alt="Foto anggota"
+                class="kta-photo-img"
+                loading="eager"
+                @error="photoFailed = true"
+              />
             <span v-else class="kta-photo-initial">{{ initials }}</span>
             <span class="kta-photo-tag">FOTO 3×4</span>
           </div>

@@ -311,6 +311,7 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
 
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::get('/ambalan', [SettingsController::class, 'index'])->name('ambalan.index');
     Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update')->middleware('throttle:10,1');
     Route::patch('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update')->middleware('throttle:5,1');
 

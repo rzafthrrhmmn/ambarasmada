@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import AppLayout from '@/Components/AppLayout.vue';
 import { useAccess } from '@/Composables/useAccess.js';
 

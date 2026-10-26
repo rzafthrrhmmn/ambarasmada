@@ -15,7 +15,7 @@
       </div>
       <div class="rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5 shadow-lg">
         <p class="text-xs font-bold uppercase tracking-wide text-krem-300">Jumlah Data</p>
-        <p class="mt-2 text-3xl font-extrabold text-emas-400">{{ points.total }}</p>
+        <p class="mt-2 text-3xl font-extrabold text-emas-400">{{ points?.total ?? 0 }}</p>
       </div>
       <div class="rounded-2xl border-2 border-[#6F9435]/40 bg-hutan-600 p-5 shadow-lg">
         <p class="text-xs font-bold uppercase tracking-wide text-krem-300">Kategori</p>
@@ -52,8 +52,8 @@
 
     <div class="rounded-2xl border-2 border-[#A7B92B]/40 bg-hutan-600 p-5 shadow-sm">
       <h2 class="mb-4 font-semibold text-krem-100">Daftar Poin</h2>
-      <div v-if="points.data.length" class="space-y-3">
-        <div v-for="p in points.data" :key="p.id" class="rounded-xl border border-[#6F9435] p-4">
+      <div v-if="points?.data?.length" class="space-y-3">
+        <div v-for="p in points?.data || []" :key="p.id" class="rounded-xl border border-[#6F9435] p-4">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div class="min-w-0">
               <p class="text-sm font-semibold text-krem-100">{{ p.member?.nama_lengkap || 'Tidak diketahui' }}</p>
@@ -66,7 +66,7 @@
             </div>
           </div>
         </div>
-        <Pagination :links="points.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
+        <Pagination :links="points?.links" class="mt-4 border-t border-[#6F9435] p-3 border-[#6F9435]" />
       </div>
       <p v-else class="empty-state">
         <AppIcon name="points" class="empty-state-icon h-6 w-6" />
@@ -90,7 +90,7 @@ const props = defineProps({ points: Object, totalPoints: Number, filters: Object
 const { can } = useAccess();
 const canManagePoints = computed(() => can('points.manage'));
 
-const categories = computed(() => [...new Set(props.points.data.map(p => p.kategori))]);
+const categories = computed(() => [...new Set((props.points?.data || []).map(p => p.kategori))]);
 
 const form = useForm({ member_id: '', kategori: '', deskripsi: '', poin: 0 });
 

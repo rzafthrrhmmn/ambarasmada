@@ -20,7 +20,7 @@
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <article v-for="item in props.guides.data" :key="item.id" class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm border-[#6F9435]">
+      <article v-for="item in props.guides?.data || []" :key="item.id" class="rounded-2xl border border-[#6F9435] bg-hutan-600 p-5 shadow-sm border-[#6F9435]">
         <span class="rounded-full bg-hutan-600 px-2.5 py-1 text-xs font-medium text-emas-400">{{ item.kecamatan }}</span>
         <h2 class="mt-3 text-lg font-semibold text-krem-100">{{ item.nama }}</h2>
         <div class="mt-4 flex gap-2">
@@ -29,12 +29,12 @@
         </div>
       </article>
     </div>
-    <p v-if="!props.guides.data.length" class="empty-state">
+    <p v-if="!props.guides?.data?.length" class="empty-state">
       <AppIcon name="guides" class="empty-state-icon h-6 w-6" />
       <span class="empty-state-text">Belum ada panduan.</span>
     </p>
 
-    <Pagination :links="props.guides.links" />
+    <Pagination :links="props.guides?.links" />
 
     <Modal v-if="showCreate" :title="editItem ? 'Edit panduan' : 'Nama panduan'" @close="reset">
       <form @submit.prevent="submitForm" class="grid gap-3">
