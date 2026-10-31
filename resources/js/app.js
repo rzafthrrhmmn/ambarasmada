@@ -10,6 +10,7 @@ import PageTransition from './Components/PageTransition.vue';
 import { createPinia } from 'pinia';
 
 import { VueQueryPlugin, QueryClient } from '@tanstack/vue-query';
+import { inject } from '@vercel/analytics';
 
 const appName = import.meta.env.VITE_APP_NAME || 'AMBARA-SISTEM DIGITAL';
 const queryClient = new QueryClient({
@@ -47,6 +48,9 @@ createInertiaApp({
         delay: 16,
     },
 });
+
+// Initialize Vercel Web Analytics
+inject();
 
 // Enable instant navigation - visit pages immediately, then update props
 router.on('navigate', (event) => {
