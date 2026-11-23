@@ -44,6 +44,62 @@
         @logo-error="handleLogoError"
       />
 
+      <!-- Sambutan Pradana/Pembina -->
+      <section id="sambutan" class="mb-12">
+        <div class="card p-8 sm:p-12 text-center">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-daun-500/20 border border-daun-500/30 mb-4 inline-block">
+            <AppIcon name="profile" class="h-4 w-4 text-emas-400" />
+            <span class="text-xs font-bold uppercase tracking-wider text-daun-100">Sambutan Pembina</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-bold text-krem-100 mb-4">
+            Sambutan dari Pembina {{ ambalanNama }}
+          </h2>
+          <p class="text-krem-300 leading-relaxed max-w-2xl mx-auto mb-6">
+            {{ sambutanPembina || defaultSambutan }}
+          </p>
+          <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <button type="button" class="btn-primary px-6 py-2.5" onclick="location.href='/daftar'">
+              <AppIcon name="users" class="h-4 w-4 shrink-0 mr-2" />
+              Daftar Anggota Baru
+            </button>
+            <button type="button" class="btn-ghost px-6 py-2.5 border border-daun-400/50" onclick="location.href='/login'">
+              <AppIcon name="login" class="h-4 w-4 shrink-0 mr-2" />
+              Masuk Portal
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Profil Singkat Ambalan -->
+      <section id="profil-ambalan" class="mb-12 grid gap-8 md:grid-cols-2 items-center">
+        <div class="space-y-6">
+          <div class="flex items-center gap-3 mb-2">
+            <AppIcon name="map-pin" class="h-5 w-5 text-emas-400" />
+            <h3 class="text-xl font-bold text-krem-100">Profil Ambalan</h3>
+          </div>
+          <p class="text-krem-300 leading-relaxed">
+            {{ ambalanProfile || 'Ambalan ' + ambalanNama + ' adalah wadah pengembangan kepemudaan dan kepramukaan yang berkembang di SMA 2 Maros, berkomitmen untuk membentuk generasi muda yang berakhlak, berpenghasilan, dan berjasa.' }}
+          </p>
+          <div class="grid gap-3">
+            <div class="flex items-center gap-2 text-sm text-krem-300">
+              <AppIcon name="calendar" class="h-4 w-4 shrink-0 text-daun-400" />
+              <span><span class="text-krem-100 font-medium">{{ ambalanStats?.members }}</span> anggota aktif</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm text-krem-300">
+              <AppIcon name="alumni" class="h-4 w-4 shrink-0 text-daun-400" />
+              <span><span class="text-krem-100 font-medium">{{ ambalanStats?.alumni }}</span> purna ambalan tercatat</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm text-krem-300">
+              <AppIcon name="groups" class="h-4 w-4 shrink-0 text-daun-400" />
+              <span>Beberapa sangga aktif</span>
+            </div>
+          </div>
+        </div>
+        <div class="rounded-2xl overflow-hidden border border-daun-500/30 shadow-lg bg-hutan-700/50 h-64 flex items-center justify-center">
+          <AppIcon name="groups" class="h-16 w-16 text-daun-400/30" />
+        </div>
+      </section>
+
       <!-- Stats Section -->
       <StatsSection :stats-items="statsItems" :enable-repeat-animation="false" />
 
@@ -143,6 +199,17 @@ const ambalanNama = computed(() => {
 const logoUrl = computed(() => {
   return page.props?.ambalan?.logo_url || '/images/Logo_Ambalan.png';
 });
+
+const sambutanPembina = computed(() => page.props?.ambalan?.sambutan_pembina || null);
+
+const ambalanProfile = computed(() => page.props?.ambalan?.profil_singkat || null);
+
+const ambalanStats = computed(() => ({
+  members: guestStore.stats.value?.members ?? props.stats.members,
+  alumni: guestStore.stats.value?.alumni ?? props.stats.alumni,
+}));
+
+const defaultSambutan = computed(() => `Selamat datang di Ambalan ${ambalanNama.value}. Mari bersama-sama membina generasi muda yang berakhlak mulia, disiplin, dan siap berjasa melalui kegiatan kepramukaan.`);
 
 const statsItems = computed(() => [
   {
