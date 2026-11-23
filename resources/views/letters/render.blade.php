@@ -6,12 +6,12 @@
     <style>
         /* Hanya font bawaan dompdf (DejaVu) supaya pratinjau dan PDF
            menghasilkan tata letak yang sama persis. */
-        @page { size: A4 portrait; margin: 2cm; }
+        @page { size: A4 portrait; margin: 2.5cm 2.5cm 2.5cm 3.5cm; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'DejaVu Sans', sans-serif;
-            font-size: 11pt;
-            line-height: 1.45;
+            font-family: 'Times', serif;
+            font-size: 12pt;
+            line-height: 1.5;
             color: #1f2b1f;
             background: #fff;
             padding: 0;

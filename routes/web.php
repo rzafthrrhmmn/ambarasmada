@@ -314,6 +314,9 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
     Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update')->middleware('throttle:10,1');
     Route::patch('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update')->middleware('throttle:5,1');
 
+    // Global search
+    Route::get('/search', [SearchController::class, 'index'])->name('search.index')->middleware('throttle:30,1');
+
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/finance/pdf', [ReportController::class, 'financePdf'])->name('reports.finance.pdf');

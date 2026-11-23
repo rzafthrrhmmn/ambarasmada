@@ -21,6 +21,19 @@ body {
   color: var(--color-krem-100);
 }
 
+/* Light theme overrides */
+html.light-theme {
+  --color-hutan-800: #f0ead8;
+  --color-hutan-700: #e8dfd1;
+  --color-hutan-600: #d1c7b8;
+  --color-krem-100: #263D26;
+  --color-krem-300: #6b7a5c;
+  --color-daun-500: #4a6b3a;
+  --color-daun-400: #6F9435;
+  --color-emas-400: #B8860B;
+  --color-lumut-400: #8fa06a;
+}
+
 /* Prevent white flash on initial load before CSS hydrates */
 html, body {
   background: var(--color-hutan-800) !important;

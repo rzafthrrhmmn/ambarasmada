@@ -50,6 +50,8 @@
         <NavIcon :name="collapsed ? 'expand' : 'collapse'" class="h-4 w-4" />
         <span v-if="!collapsed">Ciutkan</span>
       </button>
+
+      <ThemeToggle class="sidebar-toggle mt-2" />
     </div>
   </div>
 </template>
@@ -59,6 +61,7 @@ import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import NavIcon from '@/Components/NavIcon.vue';
 import SidebarNav from '@/Components/SidebarNav.vue';
+import ThemeToggle from '@/Components/ThemeToggle.vue';
 
 /**
  * Cangkang sidebar yang dipakai bersama oleh sidebar desktop dan drawer mobile.
