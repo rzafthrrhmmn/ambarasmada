@@ -6,6 +6,7 @@ use App\Models\AlumniProfile;
 use App\Models\Announcement;
 use App\Models\AuditLog;
 use App\Models\Donation;
+use App\Models\Meeting;
 use App\Models\Member;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -127,5 +128,30 @@ class AlumniController extends Controller
         ]);
 
         return redirect()->route('alumni.dashboard')->with('success', 'Donasi berhasil diverifikasi.');
+    }
+
+    public function directory(Request $request): Response
+    {
+        $directory = Member::query()
+            ->where('status_aktif', 'Alumni')
+            ->with(['alumniProfile', 'user', 'sangga'])
+            ->orderBy('nama_lengkap')
+            ->paginate(20);
+
+        return Inertia::render('Alumni/Directory', [
+            'directory' => $directory,
+        ]);
+    }
+
+    public function history(Request $request): Response
+    {
+        $meetings = Meeting::query()
+            ->with(['ambalan', 'createdBy'])
+            ->orderByDesc('tanggal')
+            ->paginate(20);
+
+        return Inertia::render('Alumni/History', [
+            'meetings' => $meetings,
+        ]);
     }
 }

@@ -392,6 +392,8 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
 // Alumni routes
 Route::middleware(['auth', 'approved', 'verified', 'role:Alumni'])->prefix('alumni')->name('alumni.')->group(function () {
     Route::get('/dashboard', [AlumniController::class, 'dashboard'])->name('dashboard');
+    Route::get('/direktori', [AlumniController::class, 'directory'])->name('directory');
+    Route::get('/arsip-kepengurusan', [AlumniController::class, 'history'])->name('history');
     Route::patch('/profile', [AlumniController::class, 'updateProfile'])->name('profile.update')->middleware('throttle:10,1');
     Route::post('/donations', [AlumniController::class, 'storeDonation'])->name('donations.store')->middleware('throttle:5,1');
     Route::post('/donations/{donation}/cancel', [AlumniController::class, 'cancelDonation'])->name('donations.cancel')->middleware('throttle:5,1');
