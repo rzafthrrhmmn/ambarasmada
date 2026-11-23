@@ -24,6 +24,7 @@ const SW_PROTOCOL = 2;
 
 const STATIC_ASSETS = [
     '/',
+    '/guides',
     '/manifest.webmanifest',
     '/images/icons/favicon.ico',
     '/images/icons/favicon-16.png',

@@ -794,6 +794,24 @@ class AttendanceController extends Controller
             }
         }
 
+        // QR dinamis kadaluwarsa setelah 30 detik agar foto layar tidak bisa
+        // digunakan untuk presensi di luar waktu sesi yang sah.
+        if ($session->qr_dynamic && $session->qr_refreshed_at) {
+            $qrAge = now()->diffInSeconds($session->qr_refreshed_at);
+            if ($qrAge > 30) {
+                $message = 'Kode QR dinamis sudah kadaluwarsa. Tunggu kode baru ditampilkan oleh pembantu, lalu pindai ulang.';
+
+                if ($wantsJson) {
+                    return response()->json([
+                        'message' => $message,
+                        'errors' => ['qr_token' => $message],
+                    ], 422);
+                }
+
+                return back()->withErrors(['qr_token' => $message]);
+            }
+        }
+
         // updateOrCreate membuat endpoint ini idempoten: pengiriman ulang dari
         // antrean offline memperbarui baris yang sama, bukan membuat duplikat.
         $catatan = $scannedMember
@@ -834,6 +852,20 @@ class AttendanceController extends Controller
         return response()->json([
             'qr_token' => $attendanceSession->qr_token,
             'refreshed_at' => $attendanceSession->qr_refreshed_at?->toISOString(),
+        ]);
+    }
+
+    public function qrToken(Request $request, AttendanceSession $attendanceSession): JsonResponse
+    {
+        $this->guardManage($request->user());
+
+        return response()->json([
+            'qr_token' => $attendanceSession->qr_token,
+            'qr_dynamic' => $attendanceSession->qr_dynamic,
+            'qr_refreshed_at' => $attendanceSession->qr_refreshed_at?->toISOString(),
+            'expires_at' => $attendanceSession->qr_dynamic && $attendanceSession->qr_refreshed_at
+                ? $attendanceSession->qr_refreshed_at->addSeconds(30)->toISOString()
+                : null,
         ]);
     }
 

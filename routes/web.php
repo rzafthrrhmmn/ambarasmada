@@ -155,6 +155,7 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::delete('/attendance-records/{attendance}', [AttendanceController::class, 'destroyAttendance'])->name('attendance.records.destroy')->middleware('throttle:10,1');
         Route::post('/attendance-records/bulk', [AttendanceController::class, 'bulkAttendance'])->name('attendance.records.bulk')->middleware('throttle:10,1');
         Route::post('/attendance/{attendanceSession}/refresh-qr', [AttendanceController::class, 'refreshQrToken'])->name('attendance.refresh-qr')->middleware('throttle:10,1');
+        Route::get('/attendance/{attendanceSession}/qr-token', [AttendanceController::class, 'qrToken'])->name('attendance.qr-token')->middleware('throttle:30,1');
         Route::post('/attendance/bulk-destroy', [AttendanceController::class, 'bulkDestroySessions'])->name('attendance.bulk.destroy')->middleware('throttle:10,1');
 
         Route::patch('/finance/{finance}', [FinanceController::class, 'update'])->name('finance.update')->middleware('throttle:20,1');
@@ -193,7 +194,7 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::post('/events', [EventController::class, 'store'])->name('events.store')->middleware('throttle:10,1');
         Route::patch('/events/{event}', [EventController::class, 'update'])->name('events.update')->middleware('throttle:20,1');
         Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy')->middleware('throttle:10,1');
-        Route::post('/events/{event}/join', [EventController::class, 'join'])->name('events.join')->middleware('throttle:10,1');
+        Route::post('/events/{event}/join', [EventController::class, 'join'])->name('events.join')->middleware(['role:Anggota,Admin,Pembina,Pengurus', 'throttle:10,1']);
 
         Route::get('/meetings', [MeetingController::class, 'index'])->name('meetings.index');
         Route::post('/meetings', [MeetingController::class, 'store'])->name('meetings.store')->middleware('throttle:10,1');
@@ -210,14 +211,6 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy')->middleware('throttle:10,1');
         Route::post('/teams/{team}/member', [TeamController::class, 'addMember'])->name('teams.member.store')->middleware('throttle:10,1');
         Route::delete('/teams/{team}/member/{teamMember}', [TeamController::class, 'removeMember'])->name('teams.member.destroy')->middleware('throttle:10,1');
-        Route::post('/teams/{team}/task', [TeamController::class, 'createTask'])->name('teams.task.store')->middleware('throttle:10,1');
-        Route::patch('/teams/task/{task}', [TeamController::class, 'updateTask'])->name('teams.task.update')->middleware('throttle:20,1');
-
-        // Reminders
-        Route::post('/teams/{team}/member', [TeamController::class, 'addMember'])->name('teams.member.store')->middleware('throttle:10,1');
-        Route::delete('/teams/{team}/member/{teamMember}', [TeamController::class, 'removeMember'])->name('teams.member.destroy')->middleware('throttle:10,1');
-        Route::post('/teams/{team}/task', [TeamController::class, 'createTask'])->name('teams.task.store')->middleware('throttle:10,1');
-        Route::patch('/teams/task/{task}', [TeamController::class, 'updateTask'])->name('teams.task.update')->middleware('throttle:20,1');
 
         Route::get('/assessments', [AssessmentController::class, 'index'])->name('assessments.index');
         Route::post('/assessments', [AssessmentController::class, 'store'])->name('assessments.store')->middleware('throttle:10,1');
@@ -236,23 +229,23 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::delete('/field-guides/{guide}', [FieldGuideController::class, 'destroy'])->name('field-guides.destroy')->middleware('throttle:10,1');
 
         Route::get('/health/safety/records', [HealthSafetyController::class, 'healthRecords'])->name('health.records.index');
-        Route::post('/health/safety/records', [HealthSafetyController::class, 'storeHealthRecord'])->name('health.records.store');
-        Route::patch('/health/safety/records/{record}', [HealthSafetyController::class, 'updateHealthRecord'])->name('health.records.update');
+        Route::post('/health/safety/records', [HealthSafetyController::class, 'storeHealthRecord'])->name('health.records.store')->middleware('throttle:10,1');
+        Route::patch('/health/safety/records/{record}', [HealthSafetyController::class, 'updateHealthRecord'])->name('health.records.update')->middleware('throttle:20,1');
         Route::delete('/health/safety/records/{record}', [HealthSafetyController::class, 'destroyHealthRecord'])->name('health.records.destroy')->middleware('throttle:10,1');
 
         Route::get('/system/points', [SystemPointController::class, 'index'])->name('system.points.index');
-        Route::post('/system/points', [SystemPointController::class, 'store'])->name('system.points.store');
-        Route::delete('/system/points/{point}', [SystemPointController::class, 'destroy'])->name('system.points.destroy');
+        Route::post('/system/points', [SystemPointController::class, 'store'])->name('system.points.store')->middleware('throttle:10,1');
+        Route::delete('/system/points/{point}', [SystemPointController::class, 'destroy'])->name('system.points.destroy')->middleware('throttle:10,1');
 
         Route::get('/trainings', [TrainingController::class, 'index'])->name('trainings.index');
-        Route::post('/trainings', [TrainingController::class, 'store'])->name('trainings.store');
-        Route::patch('/trainings/{training}', [TrainingController::class, 'update'])->name('trainings.update');
-        Route::delete('/trainings/{training}', [TrainingController::class, 'destroy'])->name('trainings.destroy');
+        Route::post('/trainings', [TrainingController::class, 'store'])->name('trainings.store')->middleware('throttle:10,1');
+        Route::patch('/trainings/{training}', [TrainingController::class, 'update'])->name('trainings.update')->middleware('throttle:20,1');
+        Route::delete('/trainings/{training}', [TrainingController::class, 'destroy'])->name('trainings.destroy')->middleware('throttle:10,1');
 
         Route::get('/candidates', [CandidateController::class, 'index'])->name('candidates.index');
-        Route::post('/candidates', [CandidateController::class, 'store'])->name('candidates.store');
-        Route::patch('/candidates/{candidate}', [CandidateController::class, 'update'])->name('candidates.update');
-        Route::delete('/candidates/{candidate}', [CandidateController::class, 'destroy'])->name('candidates.destroy');
+        Route::post('/candidates', [CandidateController::class, 'store'])->name('candidates.store')->middleware('throttle:10,1');
+        Route::patch('/candidates/{candidate}', [CandidateController::class, 'update'])->name('candidates.update')->middleware('throttle:20,1');
+        Route::delete('/candidates/{candidate}', [CandidateController::class, 'destroy'])->name('candidates.destroy')->middleware('throttle:10,1');
     });
 
     // Articles — accessible to all authenticated users (no role restriction)
@@ -280,12 +273,15 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::delete('/finance/periods/{period}', [FinanceController::class, 'destroyPeriod'])->name('finance.periods.destroy')->middleware('throttle:10,1');
     });
 
-    // SKU & TKK (Anggota + Admin + Pembina + Pengurus)
+    // SKU & TKK (Anggota submit, Admin/Pembina/Pengurus approve)
     Route::middleware(['role:Anggota,Admin,Pembina,Pengurus'])->group(function () {
         Route::get('/sku', [SkuController::class, 'index'])->name('sku.index');
         Route::post('/sku', [SkuController::class, 'store'])->name('sku.store')->middleware('throttle:10,1');
-        Route::post('/sku/{skuSubmission}/approve', [SkuController::class, 'approve'])->name('sku.approve')->middleware('throttle:20,1');
-        Route::post('/sku/{skuSubmission}/reject', [SkuController::class, 'reject'])->name('sku.reject')->middleware('throttle:20,1');
+
+        Route::middleware(['role:Admin,Pembina,Pengurus'])->group(function () {
+            Route::post('/sku/{skuSubmission}/approve', [SkuController::class, 'approve'])->name('sku.approve')->middleware('throttle:20,1');
+            Route::post('/sku/{skuSubmission}/reject', [SkuController::class, 'reject'])->name('sku.reject')->middleware('throttle:20,1');
+        });
 
         Route::post('/tkk/points', [TkkPointController::class, 'store'])->name('tkk.points.store')->middleware('throttle:10,1');
         Route::patch('/tkk/points/{tkkPoint}', [TkkPointController::class, 'update'])->name('tkk.points.update')->middleware('throttle:20,1');
@@ -348,6 +344,8 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
 
     // Gallery
     Route::get('/galleries', [GalleryController::class, 'index'])->name('galleries.index');
+    Route::post('/galleries', [GalleryController::class, 'store'])->name('galleries.store')->middleware('throttle:10,1');
+    Route::patch('/galleries/{gallery}', [GalleryController::class, 'update'])->name('galleries.update')->middleware('throttle:20,1');
     Route::delete('/galleries/{gallery}', [GalleryController::class, 'destroy'])->name('galleries.destroy')->middleware('throttle:10,1');
 
     // Reminders
@@ -359,7 +357,7 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
 });
 
 // Alumni routes
-Route::middleware(['auth', 'verified', 'role:Alumni'])->prefix('alumni')->name('alumni.')->group(function () {
+Route::middleware(['auth', 'approved', 'verified', 'role:Alumni'])->prefix('alumni')->name('alumni.')->group(function () {
     Route::get('/dashboard', [AlumniController::class, 'dashboard'])->name('dashboard');
     Route::patch('/profile', [AlumniController::class, 'updateProfile'])->name('profile.update')->middleware('throttle:10,1');
     Route::post('/donations', [AlumniController::class, 'storeDonation'])->name('donations.store')->middleware('throttle:5,1');

@@ -162,7 +162,27 @@
           <dl class="mt-4 space-y-3 text-sm">
             <div class="flex items-start justify-between gap-3">
               <dt class="shrink-0 text-xs text-krem-300">Kode QR</dt>
-              <dd class="break-all text-right font-mono text-xs font-semibold text-emas-400">{{ session.qr_token }}</dd>
+              <dd class="text-right">
+                <div v-if="session.qr_dynamic" class="flex items-end gap-1 mb-1">
+                  <span class="text-xs text-krem-300">Kadaluarsa dalam</span>
+                  <span class="font-mono text-xs font-bold text-emas-400">{{ countdown }}</span>
+                  <span class="text-xs text-krem-300">detik</span>
+                </div>
+                <div class="flex items-end gap-2">
+                  <div v-if="qrSvg" v-html="qrSvg" class="w-14 h-14 shrink-0" />
+                  <div class="min-w-0 flex-1">
+                    <p class="break-all text-right font-mono text-xs font-semibold text-emas-400">{{ qrToken }}</p>
+                    <button
+                      v-if="session.qr_dynamic"
+                      @click="refreshQrToken"
+                      :disabled="refreshing"
+                      class="mt-1 w-full rounded border border-[#6F9435] px-2 py-1 text-[10px] font-semibold text-[#d4dc9a] transition hover:bg-daun-500/30 disabled:opacity-50"
+                    >
+                      {{ refreshing ? 'Mengubah...' : 'Segarkan QR' }}
+                    </button>
+                  </div>
+                </div>
+              </dd>
             </div>
             <div class="flex items-start justify-between gap-3">
               <dt class="shrink-0 text-xs text-krem-300">Geofence</dt>
@@ -349,8 +369,9 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { useForm, router } from '@inertiajs/vue3';
+import QRCode from 'qrcode';
 import AppLayout from '@/Components/AppLayout.vue';
 import AppIcon from '@/Components/AppIcon.vue';
 import Modal from '@/Components/Modal.vue';
@@ -367,6 +388,93 @@ import { useAccess } from '@/Composables/useAccess.js';
 const props = defineProps({ session: Object, members: { type: Array, default: () => [] } });
 
 const { can } = useAccess();
+
+// --- QR Code dinamis ---
+const qrSvg = ref('');
+const qrToken = ref(session?.qr_token ?? '');
+const countdown = ref(30);
+let qrTimer = null;
+let refreshTimer = null;
+const refreshing = ref(false);
+
+async function generateQrSvg(token) {
+  try {
+    const svg = await QRCode.toString(token, {
+      type: 'svg',
+      width: 128,
+      margin: 1,
+      color: {
+        dark: '#263D26',
+        light: '#f0ead8',
+      },
+    });
+    qrSvg.value = svg;
+  } catch {
+    qrSvg.value = '';
+  }
+}
+
+function startCountdown() {
+  if (qrTimer) clearInterval(qrTimer);
+  countdown.value = 30;
+  qrTimer = setInterval(() => {
+    countdown.value -= 1;
+    if (countdown.value <= 0) {
+      countdown.value = 30;
+      pollQrToken();
+    }
+  }, 1000);
+}
+
+async function pollQrToken() {
+  try {
+    const res = await fetch(route('attendance.qr-token', session.id));
+    const data = await res.json();
+    if (data.qr_token && data.qr_token !== qrToken.value) {
+      qrToken.value = data.qr_token;
+      await generateQrSvg(data.qr_token);
+    }
+    countdown.value = 30;
+  } catch {
+    // Gagal polling, biarkan countdown tetap berjalan
+  }
+}
+
+async function refreshQrToken() {
+  if (refreshing.value) return;
+  refreshing.value = true;
+  try {
+    const res = await fetch(route('attendance.refresh-qr', session.id), {
+      method: 'POST',
+    });
+    const data = await res.json();
+    if (data.qr_token) {
+      qrToken.value = data.qr_token;
+      await generateQrSvg(data.qr_token);
+      countdown.value = 30;
+      router.visit(route('attendance.show', session.id), { preserveState: true });
+    }
+  } catch {
+    // Biarkan error ditangani toast jika ada
+  } finally {
+    refreshing.value = false;
+  }
+}
+
+if (session?.qr_token) {
+  generateQrSvg(session.qr_token);
+}
+
+if (session?.qr_dynamic) {
+  startCountdown();
+  refreshTimer = setInterval(pollQrToken, 5000);
+}
+
+onBeforeUnmount(() => {
+  if (qrTimer) clearInterval(qrTimer);
+  if (refreshTimer) clearInterval(refreshTimer);
+});
+// --- akhir QR Code dinamis ---
 
 const canManageRecords = computed(() => can('attendance.record.manage'));
 const canEditSession = computed(() => can('attendance.session.edit'));

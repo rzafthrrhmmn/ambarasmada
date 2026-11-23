@@ -566,13 +566,26 @@ protected function convertDocxToPdfWithLibreOffice(string $docxPath): string
     $outputDir = dirname($docxPath);
     $binary = (string) (config('letters.libreoffice_binary') ?: 'soffice');
 
+if (! is_file($binary) && ! shell_exec('where soffice 2>nul')) {
+    foreach ([
+        'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
+        'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe',
+    ] as $candidate) {
+        if (is_file($candidate)) {
+            $binary = $candidate;
+            break;
+        }
+    }
+}
+
     $command = escapeshellarg($binary).' --headless --convert-to pdf --outdir '.escapeshellarg($outputDir).' '.escapeshellarg($docxPath);
     @shell_exec($command.' 2>&1');
 
     $pdfPath = preg_replace('/\.docx$/i', '.pdf', $docxPath);
-
     return is_file($pdfPath) ? $pdfPath : '';
 }
+
+public function exportPdf(Letter $letter): SymfonyResponse
 {
     // Coba gunakan LibreOffice headless untuk konversi .docx -> .pdf agar
     // tata letak dokumen (termasuk template) tetap akurat. Jika tidak
