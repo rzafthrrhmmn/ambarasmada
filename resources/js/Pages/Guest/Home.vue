@@ -1,5 +1,5 @@
 <template>
-  <div ref="container" class="relative min-h-screen overflow-hidden bg-hutan-800 font-sans text-krem-100 section-animate">
+  <div ref="container" class="relative min-h-screen bg-hutan-800 font-sans text-krem-100 section-animate">
     <!-- Particle Background -->
     <ParticleBackground
       :particle-count="isMobile ? 40 : 80"
@@ -35,7 +35,7 @@
     <!-- Offline Banner -->
     <OfflineBanner :is-online="isOnline" :can-dismiss="true" @dismiss="dismissOfflineBanner" />
 
-    <main id="main-content" class="relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8">
+    <main id="main-content" class="relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24">
       <!-- ========== HERO SECTION ========== -->
       <section id="hero" class="relative pt-16 sm:pt-24 pb-20 sm:pb-32 overflow-hidden scroll-mt-24" data-parallax-hero>
         <div class="mx-auto max-w-3xl text-center">
