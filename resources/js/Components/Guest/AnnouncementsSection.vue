@@ -44,9 +44,7 @@
               class="mt-4 inline-flex items-center gap-1 text-xs font-bold text-daun-400 transition-all duration-300 group-hover:text-emas-400 group-hover:translate-x-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400 rounded"
             >
               Baca selengkapnya tentang {{ item.judul }}
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-3.5 w-3.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
+              <AppIcon name="arrowRight" class="h-3.5 w-3.5" aria-hidden="true" />
             </a>
           </div>
         </article>
@@ -54,9 +52,7 @@
 
       <div v-if="!visibleAnnouncements.length" class="empty-state md:col-span-2 lg:col-span-3">
         <div class="empty-state-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-          </svg>
+          <AppIcon name="announcements" class="h-6 w-6" aria-hidden="true" />
         </div>
         <p class="empty-state-text">Belum ada pengumuman.</p>
       </div>

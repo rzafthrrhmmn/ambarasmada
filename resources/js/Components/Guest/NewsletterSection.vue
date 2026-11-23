@@ -24,10 +24,7 @@
             class="btn-primary rounded-xl px-6 py-3 text-sm font-black transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
           >
             <span v-if="newsletterLoading" class="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-4 w-4 animate-spin">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" opacity="0.25"></circle>
-                <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
+              <AppIcon name="spinner" class="h-4 w-4 animate-spin" aria-hidden="true" />
               Mengirim…
             </span>
             <span v-else>Berlangganan</span>
@@ -35,15 +32,11 @@
         </form>
 
         <div v-if="newsletterSubscribed" class="mt-3 flex items-center justify-center gap-2 text-xs font-bold text-daun-400" role="status" aria-live="polite">
-          <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
+          <AppIcon name="checkCircle" class="h-3 w-3" aria-hidden="true" />
           <span>Terima kasih, Anda berhasil berlangganan.</span>
         </div>
         <div v-else-if="newsletterError" class="mt-3 flex items-center justify-center gap-2 text-xs font-bold text-[#ef4419]" role="alert" aria-live="assertive" id="newsletter-error">
-          <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
+          <AppIcon name="xCircle" class="h-3 w-3" aria-hidden="true" />
           <span>{{ newsletterError }}</span>
         </div>
       </div>

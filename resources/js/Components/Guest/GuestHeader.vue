@@ -77,9 +77,7 @@
         aria-controls="mobile-menu-overlay"
         aria-label="Buka menu navigasi"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-5 w-5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-        </svg>
+        <AppIcon name="menu" class="h-5 w-5" aria-hidden="true" />
       </button>
     </div>
   </header>
@@ -110,9 +108,7 @@
               class="guest-focus-ring flex h-10 w-10 items-center justify-center rounded-full border-2 border-daun-500 text-krem-300 transition hover:text-emas-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
               aria-label="Tutup menu navigasi"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="h-5 w-5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-              </svg>
+              <AppIcon name="close" class="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
           <div class="flex flex-col gap-3">
