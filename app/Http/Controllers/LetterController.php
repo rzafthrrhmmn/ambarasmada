@@ -525,112 +525,113 @@ class LetterController extends Controller
             ->deleteFileAfterSend();
     }
 
-protected function buildDocxPath(Letter $letter): string
-{
-    $placeholders = $letter->template?->placeholderList() ?? [];
+    protected function buildDocxPath(Letter $letter): string
+    {
+        $placeholders = $letter->template?->placeholderList() ?? [];
 
-    if ($letter->template?->file_path && $placeholders !== [] && $this->templateFileExists($letter->template)) {
-        $resolved = $this->values->forTemplate($letter, $placeholders, $letter->placeholder_values ?? []);
+        if ($letter->template?->file_path && $placeholders !== [] && $this->templateFileExists($letter->template)) {
+            $resolved = $this->values->forTemplate($letter, $placeholders, $letter->placeholder_values ?? []);
+            $path = $this->temporaryPath('docx');
+
+            $this->docx->fill($this->templatePath($letter->template), $resolved['values'], $path);
+
+            return $path;
+        }
+
+        $extra = $letter->placeholder_values ?? [];
+        $body = $this->defaultBody($letter, $extra);
+
+        $document = new PhpWord;
+        $section = $document->addSection([
+            'margin_top' => 1000,
+            'margin_right' => 1000,
+            'margin_bottom' => 1000,
+            'margin_left' => 1000,
+        ]);
+
+        $font = ['name' => 'DejaVu Sans', 'size' => 11];
+
+        foreach ($this->blocks($body) as $block) {
+            $section->addText($block, $font, ['spaceAfter' => 160]);
+        }
+
         $path = $this->temporaryPath('docx');
-
-        $this->docx->fill($this->templatePath($letter->template), $resolved['values'], $path);
+        IOFactory::createWriter($document, 'Word2007')->save($path);
 
         return $path;
     }
 
-    $extra = $letter->placeholder_values ?? [];
-    $body = $this->defaultBody($letter, $extra);
+    protected function convertDocxToPdfWithLibreOffice(string $docxPath): string
+    {
+        $outputDir = dirname($docxPath);
+        $binary = (string) (config('letters.libreoffice_binary') ?: 'soffice');
 
-    $document = new PhpWord;
-    $section = $document->addSection([
-        'margin_top' => 1000,
-        'margin_right' => 1000,
-        'margin_bottom' => 1000,
-        'margin_left' => 1000,
-    ]);
-
-    $font = ['name' => 'DejaVu Sans', 'size' => 11];
-
-    foreach ($this->blocks($body) as $block) {
-        $section->addText($block, $font, ['spaceAfter' => 160]);
-    }
-
-    $path = $this->temporaryPath('docx');
-    IOFactory::createWriter($document, 'Word2007')->save($path);
-
-    return $path;
-}
-
-protected function convertDocxToPdfWithLibreOffice(string $docxPath): string
-{
-    $outputDir = dirname($docxPath);
-    $binary = (string) (config('letters.libreoffice_binary') ?: 'soffice');
-
-if (! is_file($binary) && ! shell_exec('where soffice 2>nul')) {
-    foreach ([
-        'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
-        'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe',
-    ] as $candidate) {
-        if (is_file($candidate)) {
-            $binary = $candidate;
-            break;
+        if (! is_file($binary) && ! shell_exec('where soffice 2>nul')) {
+            foreach ([
+                'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
+                'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe',
+            ] as $candidate) {
+                if (is_file($candidate)) {
+                    $binary = $candidate;
+                    break;
+                }
+            }
         }
+
+        $command = escapeshellarg($binary).' --headless --convert-to pdf --outdir '.escapeshellarg($outputDir).' '.escapeshellarg($docxPath);
+        @shell_exec($command.' 2>&1');
+
+        $pdfPath = preg_replace('/\.docx$/i', '.pdf', $docxPath);
+
+        return is_file($pdfPath) ? $pdfPath : '';
     }
-}
 
-    $command = escapeshellarg($binary).' --headless --convert-to pdf --outdir '.escapeshellarg($outputDir).' '.escapeshellarg($docxPath);
-    @shell_exec($command.' 2>&1');
+    public function exportPdf(Letter $letter): SymfonyResponse
+    {
+        // Coba gunakan LibreOffice headless untuk konversi .docx -> .pdf agar
+        // tata letak dokumen (termasuk template) tetap akurat. Jika tidak
+        // tersedia, gunakan renderer PDF bawaan sebagai cadangan.
+        try {
+            $docxPath = $this->buildDocxPath($letter);
+            $pdfPath = $this->convertDocxToPdfWithLibreOffice($docxPath);
 
-    $pdfPath = preg_replace('/\.docx$/i', '.pdf', $docxPath);
-    return is_file($pdfPath) ? $pdfPath : '';
-}
+            if (is_file($pdfPath)) {
+                $content = (string) file_get_contents($pdfPath);
+                @unlink($docxPath);
+                @unlink($pdfPath);
 
-public function exportPdf(Letter $letter): SymfonyResponse
-{
-    // Coba gunakan LibreOffice headless untuk konversi .docx -> .pdf agar
-    // tata letak dokumen (termasuk template) tetap akurat. Jika tidak
-    // tersedia, gunakan renderer PDF bawaan sebagai cadangan.
-    try {
-        $docxPath = $this->buildDocxPath($letter);
-        $pdfPath = $this->convertDocxToPdfWithLibreOffice($docxPath);
+                return response($content, 200, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'attachment; filename="'.$this->filename($letter, 'pdf').'"',
+                    'Content-Length' => (string) strlen($content),
+                ]);
+            }
+        } catch (Throwable $exception) {
+            report($exception);
+        }
 
-        if (is_file($pdfPath)) {
-            $content = (string) file_get_contents($pdfPath);
-            @unlink($docxPath);
-            @unlink($pdfPath);
+        [$body, $unfilled] = $this->renderLetter($letter, $letter->placeholder_values ?? []);
 
-            return response($content, 200, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="'.$this->filename($letter, 'pdf').'"',
-                'Content-Length' => (string) strlen($content),
+        $pdf = PDF::loadHTML(view('letters.render', [
+            'title' => 'Surat - '.$letter->perihal,
+            'body' => $body,
+            'unfilled' => $unfilled,
+        ])->render())
+            ->setPaper('A4', 'portrait')
+            ->setOptions([
+                'isRemoteEnabled' => false,
+                'isHtml5ParserEnabled' => true,
+                'defaultFont' => 'DejaVu Sans',
             ]);
-        }
-    } catch (Throwable $exception) {
-        report($exception);
-    }
 
-    [$body, $unfilled] = $this->renderLetter($letter, $letter->placeholder_values ?? []);
+        $content = $pdf->output();
 
-    $pdf = PDF::loadHTML(view('letters.render', [
-        'title' => 'Surat - '.$letter->perihal,
-        'body' => $body,
-        'unfilled' => $unfilled,
-    ])->render())
-        ->setPaper('A4', 'portrait')
-        ->setOptions([
-            'isRemoteEnabled' => false,
-            'isHtml5ParserEnabled' => true,
-            'defaultFont' => 'DejaVu Sans',
+        return response($content, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$this->filename($letter, 'pdf').'"',
+            'Content-Length' => (string) strlen($content),
         ]);
-
-    $content = $pdf->output();
-
-    return response($content, 200, [
-        'Content-Type' => 'application/pdf',
-        'Content-Disposition' => 'attachment; filename="'.$this->filename($letter, 'pdf').'"',
-        'Content-Length' => (string) strlen($content),
-    ]);
-}
+    }
 
     /**
      * Surat While-dibuat dari isian form, tanpa menyentuh basis data.

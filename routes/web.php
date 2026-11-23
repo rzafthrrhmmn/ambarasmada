@@ -9,6 +9,7 @@ use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BroadcastingController;
 use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\DashboardController;
@@ -306,7 +307,7 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
     Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
     // Broadcasting (real-time notifications)
-    Route::post('/broadcasting/auth', [\App\Http\Controllers\BroadcastingController::class, 'authenticate'])->name('broadcasting.auth')->middleware('throttle:30,1');
+    Route::post('/broadcasting/auth', [BroadcastingController::class, 'authenticate'])->name('broadcasting.auth')->middleware('throttle:30,1');
 
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
