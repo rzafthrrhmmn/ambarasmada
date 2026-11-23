@@ -1,5 +1,5 @@
 <template>
-  <header class="sticky top-4 z-40 mx-auto w-full max-w-[1400px] guest-container">
+  <header class="lg:sticky lg:top-4 z-40 mx-auto w-full max-w-[1400px] guest-container">
     <div class="glass-panel flex items-center justify-between px-4 py-2.5 sm:px-6 sm:py-3">
       <a
         href="/"
