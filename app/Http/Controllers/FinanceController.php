@@ -62,7 +62,7 @@ class FinanceController extends Controller
         }
 
         $transactions = $query->paginate(20)->withQueryString();
-        $categories = FinanceCategory::where('is_active', true)->orderBy('nama')->get();
+        $categories = FinanceCategory::where('is_active', '=', true)->orderBy('nama')->get();
         $periods = FinancePeriod::where('is_closed', false)->orderByDesc('starts_at')->get();
 
         // Direktori anggota tidak pernah dibutuhkan anggota: nama lengkap
