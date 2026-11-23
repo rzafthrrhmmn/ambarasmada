@@ -162,7 +162,7 @@
 
               <ScrollReveal animation="fade-left" :delay="150">
                 <p class="text-lg sm:text-xl leading-relaxed font-medium text-krem-300/90">
-                  {{ ambalanProfile || 'Ambalan ' + ambalanNama + ' adalah wadah pengembangan kepemudaan dan kepramukaan yang berkembang di SMA 2 Maros, berkomitmen untuk membentuk generasi muda yang berakhlak mulia, berdisiplin, dan siap berjasa melalui kegiatan kepramukaan.' }}
+                  {{ ambalanProfile || 'Ambalan ' + ambalanNama + ' adalah wadah pengembangan kepemudaan dan kepramukaan yang berdiri sejak 31 Agustus 2008 di SMAN 2 Maros, berkomitmen untuk membentuk generasi muda yang berakhlak mulia, berdisiplin, dan siap berjasa melalui kegiatan kepramukaan.' }}
                 </p>
               </ScrollReveal>
 
@@ -173,7 +173,8 @@
                   </div>
                   <div>
                     <p class="text-xs font-bold uppercase tracking-wide text-lumut-400">Terdiri sejak</p>
-                    <p class="text-xl font-extrabold text-krem-100">SMA 2 Maros</p>
+                    <p class="text-xl font-extrabold text-krem-100">31 Agustus 2008</p>
+                    <p class="text-xs text-krem-300/70">SMAN 2 Maros</p>
                   </div>
                 </div>
               </ScrollReveal>
@@ -480,7 +481,10 @@ function navigateTo(path) {
 function toggleMobileMenu() {
   uiStore.setMobileMenuOpen(true);
   lastFocusedElement = document.activeElement;
+  document.documentElement.style.overflow = 'hidden';
   document.body.style.overflow = 'hidden';
+  document.body.style.position = 'fixed';
+  document.body.style.width = '100%';
   nextTick(() => {
     const closeBtn = document.getElementById('mobile-menu-close');
     if (closeBtn) closeBtn.focus();
@@ -489,7 +493,10 @@ function toggleMobileMenu() {
 
 function closeMobileMenu() {
   uiStore.setMobileMenuOpen(false);
+  document.documentElement.style.overflow = '';
   document.body.style.overflow = '';
+  document.body.style.position = '';
+  document.body.style.width = '';
   if (lastFocusedElement) lastFocusedElement.focus();
 }
 
@@ -672,10 +679,13 @@ onUnmounted(() => {
   if (offlineHandler) window.removeEventListener('offline', offlineHandler);
   revealObserver?.disconnect();
   window.removeEventListener('keydown', trapFocus);
-document.body.style.overflow = '';
-if (motionMediaQuery) {
-  motionMediaQuery.removeEventListener('change', () => {});
-}
+  document.documentElement.style.overflow = '';
+  document.body.style.overflow = '';
+  document.body.style.position = '';
+  document.body.style.width = '';
+  if (motionMediaQuery) {
+    motionMediaQuery.removeEventListener('change', () => {});
+  }
 });
 </script>
 
