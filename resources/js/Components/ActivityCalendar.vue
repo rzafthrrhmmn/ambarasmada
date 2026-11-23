@@ -73,7 +73,13 @@ const daysInMonth = computed(() => {
 });
 
 const allDayStrings = computed(() =>
-  props.sessions.map((s) => new Date(s.tanggal).toISOString().slice(0, 10)),
+  props.sessions
+    .map((s) => {
+      if (!s.tanggal) return null;
+      const d = new Date(s.tanggal);
+      return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+    })
+    .filter(Boolean),
 );
 
 function hasActivity(day) {

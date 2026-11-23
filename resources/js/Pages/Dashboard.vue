@@ -156,10 +156,12 @@ const { can, isAnggota } = useAccess();
 
 const canViewMetrics = computed(() => can('dashboard.view_metrics'));
 
-const loading = computed(() => !page.props.stats && !page.props.pendingSku && !page.props.announcements);
+const loading = computed(() => page.props.stats === undefined && page.props.pendingSku === undefined && page.props.announcements === undefined);
 const labels = { members: 'Total anggota', attendance: 'Rekap kehadiran', sku: 'Pengajuan SKU', finance: 'Transaksi kas' };
 const icons = { members: 'members', attendance: 'attendance', sku: 'audit', finance: 'wallet' };
 function formatDate(value) {
-  return value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+  if (!value) return '-';
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 </script>

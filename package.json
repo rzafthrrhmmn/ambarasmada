@@ -44,5 +44,6 @@
   },
   "optionalDependencies": {
     "@laravel/multiplex": "^0.4.1"
-  }
+  },
+  "packageManager": "yarn@4.19.0"
 }

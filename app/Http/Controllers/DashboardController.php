@@ -53,7 +53,7 @@ class DashboardController extends Controller
         $teams = Team::whereHas('ambalan')->orderBy('nama')->get();
 
         $unreadCount = Notification::where('user_id', $user->id)
-            ->whereRaw('is_read = false')
+            ->where('is_read', false)
             ->count();
 
         $attendedSessionIds = $member
@@ -116,7 +116,7 @@ class DashboardController extends Controller
             return [];
         }
 
-        return TkkPoint::whereRaw('is_active = true')
+        return TkkPoint::where('is_active', true)
             ->orderBy('nama')
             ->get()
             ->map(function ($point) {
@@ -159,7 +159,7 @@ class DashboardController extends Controller
 
     private function skuPointsByLevel(): array
     {
-        return SkuPoint::whereRaw('is_active = true')
+        return SkuPoint::where('is_active', true)
             ->orderBy('tingkatan')
             ->orderBy('nomor_poin')
             ->get()
