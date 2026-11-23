@@ -118,6 +118,7 @@
     "MAIL_FROM_NAME": "AMBARA-SISTEM DIGITAL",
     "AWS_DEFAULT_REGION": "ap-southeast-1",
     "AWS_USE_PATH_STYLE_ENDPOINT": "true",
+    "PMTILES_URL": "https://ugbpqikqduptseeslfri.supabase.co/storage/v1/object/public/maps/sulsel_kontur.pmtiles",
 
     "SENTRY_TRACES_SAMPLE_RATE": "1.0",
     "SENTRY_PROFILES_SAMPLE_RATE": "1.0",
