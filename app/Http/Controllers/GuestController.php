@@ -76,4 +76,39 @@ class GuestController extends Controller
             ]),
         ]);
     }
+
+    public function about(Request $request): Response
+    {
+        $ambalan = Ambalan::first();
+
+        return Inertia::render('Guest/About', [
+            'ambalan' => $ambalan ? [
+                'id' => $ambalan->id,
+                'nama' => $ambalan->nama,
+                'kode' => $ambalan->kode,
+                'logo_path' => $ambalan->logo_path,
+                'logo_url' => $ambalan->logo_url ?: asset('images/Logo_Ambalan.png'),
+                'sejarah' => $ambalan->sejarah ?? '',
+                'visi' => $ambalan->visi ?? '',
+                'misi' => $ambalan->misi ?? '',
+            ] : null,
+        ]);
+    }
+
+    public function adatSandi(Request $request): Response
+    {
+        $ambalan = Ambalan::first();
+
+        return Inertia::render('Guest/AdatSandi', [
+            'ambalan' => $ambalan ? [
+                'id' => $ambalan->id,
+                'nama' => $ambalan->nama,
+                'kode' => $ambalan->kode,
+                'logo_path' => $ambalan->logo_path,
+                'logo_url' => $ambalan->logo_url ?: asset('images/Logo_Ambalan.png'),
+                'sandi_amalan' => $ambalan->sandi_amalan ?? '',
+                'aturan_tata_krama' => $ambalan->aturan_tata_krama ?? '',
+            ] : null,
+        ]);
+    }
 }

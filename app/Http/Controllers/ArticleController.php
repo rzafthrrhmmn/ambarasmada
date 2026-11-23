@@ -122,6 +122,46 @@ class ArticleController extends Controller
             'article' => $article,
             'canManage' => $isPrivileged,
             'canDelete' => in_array($request->user()->role, ['Admin', 'Pembina'], true),
+            'isPublic' => false,
+        ]);
+    }
+
+    public function publicIndex(Request $request): Response
+    {
+        $query = Article::query()
+            ->with(['ambalan', 'author'])
+            ->where('is_published', true)
+            ->orderByDesc('created_at');
+
+        if ($request->string('kategori')->isNotEmpty()) {
+            $query->where('kategori', $request->string('kategori'));
+        }
+
+        $articles = $query->paginate(15)->withQueryString();
+        $articles->getCollection()->transform(fn (Article $article) => $article->setAttribute('can_edit', false));
+        $articles->getCollection()->transform(fn (Article $article) => $article->setAttribute('can_delete', false));
+
+        $categories = ['Laporan Kegiatan', 'Artikel', 'Berita', 'Tips & Trik', 'Lainnya'];
+
+        return Inertia::render('Articles/Index', [
+            'articles' => $articles,
+            'categories' => $categories,
+            'filters' => $request->only(['kategori']),
+            'isPublic' => true,
+        ]);
+    }
+
+    public function publicShow(Request $request, Article $article): Response
+    {
+        abort_unless($article->is_published, 404);
+
+        $article->load(['ambalan', 'author']);
+
+        return Inertia::render('Articles/Show', [
+            'article' => $article,
+            'canManage' => false,
+            'canDelete' => false,
+            'isPublic' => true,
         ]);
     }
 }

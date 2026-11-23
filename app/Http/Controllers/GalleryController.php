@@ -29,6 +29,48 @@ class GalleryController extends Controller
             'galleries' => $galleries,
             'categories' => $categories,
             'filters' => $request->only(['kategori']),
+            'isPublic' => false,
+        ]);
+    }
+
+    public function publicIndex(Request $request): Response
+    {
+        $query = Gallery::query()
+            ->with(['ambalan', 'uploadedBy'])
+            ->orderByDesc('created_at');
+
+        if ($request->string('kategori')->isNotEmpty()) {
+            $query->where('kategori', $request->string('kategori'));
+        }
+
+        $galleries = $query->paginate(20)->withQueryString();
+        $categories = ['Umum', 'Kegiatan', 'Latihan', 'Outbound', 'Jambore', 'Peringatan'];
+
+        return Inertia::render('Galleries/Index', [
+            'galleries' => $galleries,
+            'categories' => $categories,
+            'filters' => $request->only(['kategori']),
+            'isPublic' => true,
+        ]);
+    }
+
+    public function publicShow(Request $request, Gallery $gallery): Response
+    {
+        $gallery->load(['ambalan', 'uploadedBy']);
+
+        return Inertia::render('Galleries/Show', [
+            'gallery' => $gallery,
+            'isPublic' => true,
+        ]);
+    }
+
+    public function show(Request $request, Gallery $gallery): Response
+    {
+        $gallery->load(['ambalan', 'uploadedBy']);
+
+        return Inertia::render('Galleries/Show', [
+            'gallery' => $gallery,
+            'isPublic' => false,
         ]);
     }
 

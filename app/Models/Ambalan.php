@@ -9,12 +9,12 @@ use Illuminate\Support\Facades\Storage;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
-#[Fillable(['nama', 'kode', 'alamat', 'status', 'logo_path'])]
+#[Fillable(['nama', 'kode', 'alamat', 'status', 'logo_path', 'sejarah', 'visi', 'misi', 'sandi_amalan', 'aturan_tata_krama'])]
 class Ambalan extends Model implements HasMedia
 {
     use InteractsWithMedia;
 
-    protected $fillable = ['nama', 'kode', 'alamat', 'status', 'logo_path'];
+    protected $fillable = ['nama', 'kode', 'alamat', 'status', 'logo_path', 'sejarah', 'visi', 'misi', 'sandi_amalan', 'aturan_tata_krama'];
 
     public function getLogoUrlAttribute(): ?string
     {

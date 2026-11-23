@@ -53,6 +53,20 @@ Route::get('/favicon.ico', function () {
 // Landing page (guest)
 Route::get('/', GuestController::class)->name('home');
 
+// Public informational pages
+Route::get('/tentang', [GuestController::class, 'about'])->name('guest.about');
+Route::get('/adat-sandi', [GuestController::class, 'adatSandi'])->name('guest.adat-sandi');
+
+// Public articles & gallery (read-only, no login)
+Route::get('/berita', [ArticleController::class, 'publicIndex'])->name('articles.public.index');
+Route::get('/berita/{article}', [ArticleController::class, 'publicShow'])->name('articles.public.show');
+Route::get('/galeri', [GalleryController::class, 'publicIndex'])->name('galleries.public.index');
+Route::get('/galeri/{gallery}', [GalleryController::class, 'publicShow'])->name('galleries.public.show');
+
+// Open recruitment (public registration)
+Route::get('/daftar', [RegistrationController::class, 'publicForm'])->name('registration.public');
+Route::post('/daftar', [RegistrationController::class, 'publicStore'])->name('registration.public.store')->middleware('throttle:5,1');
+
 // Public API v1 — guest-facing JSON endpoints.
 Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('/guest/home', [App\Http\Controllers\Api\GuestController::class, 'home'])->name('guest.home');

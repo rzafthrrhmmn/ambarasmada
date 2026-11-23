@@ -90,4 +90,61 @@ class RegistrationController extends Controller
 
         return redirect()->route('members.pending')->with('success', "Akun {$user->email} ditolak.");
     }
+
+    public function publicForm(Request $request): Response
+    {
+        $ambalan = Ambalan::first();
+
+        return Inertia::render('Registration/PublicForm', [
+            'ambalan' => $ambalan ? [
+                'id' => $ambalan->id,
+                'nama' => $ambalan->nama,
+                'kode' => $ambalan->kode,
+                'logo_path' => $ambalan->logo_path,
+                'logo_url' => $ambalan->logo_url ?: asset('images/Logo_Ambalan.png'),
+            ] : null,
+        ]);
+    }
+
+    public function publicStore(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'nama_lengkap' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'username' => ['required', 'string', 'max:255', 'unique:users,username'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'tempat_lahir' => ['required', 'string', 'max:100'],
+            'tanggal_lahir' => ['required', 'date'],
+            'jenis_kelamin' => ['required', 'string', 'in:Laki-laki,Perempuan'],
+            'kelas' => ['required', 'string', 'max:50'],
+            'tingkatan' => ['required', 'string', 'in:Tamu,Bantara,Laksana'],
+            'no_hp' => ['required', 'string', 'max:20'],
+            'riwayat_pramuka' => ['nullable', 'string'],
+            'alasan_gabung' => ['required', 'string'],
+        ]);
+
+        $user = User::create([
+            'name' => $data['nama_lengkap'],
+            'email' => $data['email'],
+            'username' => $data['username'],
+            'password' => bcrypt($data['password']),
+            'role' => 'Anggota',
+            'status' => 'pending',
+        ]);
+
+        Member::create([
+            'user_id' => $user->id,
+            'ambalan_id' => Ambalan::value('id') ?? 1,
+            'nama_lengkap' => $data['nama_lengkap'],
+            'tempat_lahir' => $data['tempat_lahir'],
+            'tanggal_lahir' => $data['tanggal_lahir'],
+            'jenis_kelamin' => $data['jenis_kelamin'],
+            'kelas' => $data['kelas'],
+            'tingkatan' => $data['tingkatan'],
+            'no_hp' => $data['no_hp'],
+            'status_aktif' => 'Aktif',
+        ]);
+
+        return redirect()->route('registration.public')->with('success', 'Pendaftaran berhasil dikirim. Tunggu konfirmasi dari Pembina.');
+    }
 }
