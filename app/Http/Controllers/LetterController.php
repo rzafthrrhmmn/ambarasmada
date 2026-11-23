@@ -525,30 +525,99 @@ class LetterController extends Controller
             ->deleteFileAfterSend();
     }
 
-    protected function exportPdf(Letter $letter): SymfonyResponse
-    {
-        [$body, $unfilled] = $this->renderLetter($letter, $letter->placeholder_values ?? []);
+protected function buildDocxPath(Letter $letter): string
+{
+    $placeholders = $letter->template?->placeholderList() ?? [];
 
-        $pdf = PDF::loadHTML(view('letters.render', [
-            'title' => 'Surat - '.$letter->perihal,
-            'body' => $body,
-            'unfilled' => $unfilled,
-        ])->render())
-            ->setPaper('A4', 'portrait')
-            ->setOptions([
-                'isRemoteEnabled' => false,
-                'isHtml5ParserEnabled' => true,
-                'defaultFont' => 'DejaVu Sans',
-            ]);
+    if ($letter->template?->file_path && $placeholders !== [] && $this->templateFileExists($letter->template)) {
+        $resolved = $this->values->forTemplate($letter, $placeholders, $letter->placeholder_values ?? []);
+        $path = $this->temporaryPath('docx');
 
-        $content = $pdf->output();
+        $this->docx->fill($this->templatePath($letter->template), $resolved['values'], $path);
 
-        return response($content, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="'.$this->filename($letter, 'pdf').'"',
-            'Content-Length' => (string) strlen($content),
-        ]);
+        return $path;
     }
+
+    $extra = $letter->placeholder_values ?? [];
+    $body = $this->defaultBody($letter, $extra);
+
+    $document = new PhpWord;
+    $section = $document->addSection([
+        'margin_top' => 1000,
+        'margin_right' => 1000,
+        'margin_bottom' => 1000,
+        'margin_left' => 1000,
+    ]);
+
+    $font = ['name' => 'DejaVu Sans', 'size' => 11];
+
+    foreach ($this->blocks($body) as $block) {
+        $section->addText($block, $font, ['spaceAfter' => 160]);
+    }
+
+    $path = $this->temporaryPath('docx');
+    IOFactory::createWriter($document, 'Word2007')->save($path);
+
+    return $path;
+}
+
+protected function convertDocxToPdfWithLibreOffice(string $docxPath): string
+{
+    $outputDir = dirname($docxPath);
+    $binary = (string) (config('letters.libreoffice_binary') ?: 'soffice');
+
+    $command = escapeshellarg($binary).' --headless --convert-to pdf --outdir '.escapeshellarg($outputDir).' '.escapeshellarg($docxPath);
+    @shell_exec($command.' 2>&1');
+
+    $pdfPath = preg_replace('/\.docx$/i', '.pdf', $docxPath);
+
+    return is_file($pdfPath) ? $pdfPath : '';
+}
+{
+    // Coba gunakan LibreOffice headless untuk konversi .docx -> .pdf agar
+    // tata letak dokumen (termasuk template) tetap akurat. Jika tidak
+    // tersedia, gunakan renderer PDF bawaan sebagai cadangan.
+    try {
+        $docxPath = $this->buildDocxPath($letter);
+        $pdfPath = $this->convertDocxToPdfWithLibreOffice($docxPath);
+
+        if (is_file($pdfPath)) {
+            $content = (string) file_get_contents($pdfPath);
+            @unlink($docxPath);
+            @unlink($pdfPath);
+
+            return response($content, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="'.$this->filename($letter, 'pdf').'"',
+                'Content-Length' => (string) strlen($content),
+            ]);
+        }
+    } catch (Throwable $exception) {
+        report($exception);
+    }
+
+    [$body, $unfilled] = $this->renderLetter($letter, $letter->placeholder_values ?? []);
+
+    $pdf = PDF::loadHTML(view('letters.render', [
+        'title' => 'Surat - '.$letter->perihal,
+        'body' => $body,
+        'unfilled' => $unfilled,
+    ])->render())
+        ->setPaper('A4', 'portrait')
+        ->setOptions([
+            'isRemoteEnabled' => false,
+            'isHtml5ParserEnabled' => true,
+            'defaultFont' => 'DejaVu Sans',
+        ]);
+
+    $content = $pdf->output();
+
+    return response($content, 200, [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => 'attachment; filename="'.$this->filename($letter, 'pdf').'"',
+        'Content-Length' => (string) strlen($content),
+    ]);
+}
 
     /**
      * Surat While-dibuat dari isian form, tanpa menyentuh basis data.
