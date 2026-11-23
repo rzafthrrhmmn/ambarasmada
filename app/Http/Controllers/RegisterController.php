@@ -19,11 +19,11 @@ class RegisterController extends Controller
     private function currentAngkatan(): ?Angkatan
     {
         return Angkatan::query()
-            ->where('is_active', true)
-            ->where('is_current', true)
+            ->whereRaw('"is_active" = true')
+            ->whereRaw('"is_current" = true')
             ->first()
             ?? Angkatan::query()
-                ->where('is_active', true)
+                ->whereRaw('"is_active" = true')
                 ->orderByDesc('nomor')
                 ->first();
     }

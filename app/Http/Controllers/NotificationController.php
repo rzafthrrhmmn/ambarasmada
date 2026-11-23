@@ -78,7 +78,7 @@ class NotificationController extends Controller
         $users = User::query()
             ->whereIn('role', $data['target_roles'])
             ->where('status', 'approved')
-            ->where('is_active', true)
+            ->whereRaw('"is_active" = true')
             ->get();
 
         foreach ($users as $user) {
