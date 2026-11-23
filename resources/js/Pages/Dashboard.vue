@@ -1,7 +1,7 @@
 <template>
   <AppLayout>
     <PageHeader
-      eyebrow="Dashboard"
+      eyebrow="Pangkalan"
       title="Pantau Ambalan"
       subtitle="Semua aktivitas ambalan dalam satu layar."
     >
@@ -10,10 +10,10 @@
           <a
             href="/notifications"
             class="relative inline-flex items-center gap-2 rounded-lg border-2 border-daun-400/40 px-3 py-2 text-xs font-bold text-krem-300 transition-all duration-300 hover:border-daun-400/70 hover:bg-daun-500/30 hover:text-krem-100 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-daun-500/20 active:scale-95"
-            :aria-label="`Notifikasi, ${unreadCount} belum dibaca`"
+            :aria-label="`Pemberitahuan, ${unreadCount} belum dibaca`"
           >
             <AppIcon name="bell" class="h-4 w-4 transition-transform duration-300 group-hover:rotate-6" />
-            Notifikasi
+            Pemberitahuan
             <span
               v-if="unreadCount > 0"
               class="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-emas-400 px-1 text-[10px] font-bold text-[#263D26] animate-soft-pulse"
