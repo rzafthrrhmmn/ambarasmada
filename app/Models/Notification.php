@@ -24,11 +24,11 @@ class Notification extends Model
 
     public function scopeUnread($query)
     {
-        return $query->where('is_read', false);
+        return $query->whereRaw('"is_read" = false');
     }
 
     public function scopeRead($query)
     {
-        return $query->where('is_read', true);
+        return $query->whereRaw('"is_read" = true');
     }
 }
