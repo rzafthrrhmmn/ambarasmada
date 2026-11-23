@@ -1,6 +1,6 @@
 <template>
-  <section v-if="gallery.length > 0" :id="sectionId || 'dokumentasi'" class="guest-section scroll-mt-24" aria-label="Galeri dokumentasi kegiatan">
-    <div class="mb-8 flex items-end justify-between">
+  <section v-if="gallery.length > 0" class="guest-section scroll-mt-24" aria-label="Galeri dokumentasi kegiatan">
+    <div class="mb-8 flex items-end justify-between" v-if="showHeader">
       <div>
         <ScrollReveal animation="fade-up">
           <span class="section-eyebrow text-daun-400">Dokumentasi Kegiatan</span>
@@ -130,6 +130,7 @@ import ScrollReveal from '@/Components/ScrollReveal.vue';
 const props = defineProps({
   gallery: { type: Array, default: () => [] },
   sectionId: { type: String, default: '' },
+  showHeader: { type: Boolean, default: true },
 });
 
 const emit = defineEmits(['gallery-item-click']);

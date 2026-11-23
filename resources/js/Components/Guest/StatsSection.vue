@@ -1,5 +1,5 @@
 <template>
-  <section class="guest-section" data-animate="stats" id="stats" aria-label="Statistik ambalan">
+  <section class="guest-section" data-animate="stats" aria-label="Statistik ambalan">
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <ScrollReveal
         v-for="(stat, idx) in props.statsItems"

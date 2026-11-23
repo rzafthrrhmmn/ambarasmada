@@ -1,6 +1,6 @@
 <template>
-  <section :id="sectionId || 'pengumatan'" class="guest-section scroll-mt-24" aria-label="Pengumuman terbaru">
-    <div class="mb-8 sm:mb-12 text-center">
+  <section class="guest-section scroll-mt-24" aria-label="Pengumuman terbaru">
+    <div class="mb-8 sm:mb-12 text-center" v-if="showHeader">
       <ScrollReveal animation="fade-up">
         <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-bold text-emas-400">
           <span class="h-1.5 w-1.5 rounded-full bg-emas-400 animate-pulse" aria-hidden="true"></span>
@@ -84,6 +84,7 @@ const props = defineProps({
   announcements: { type: Array, default: () => [] },
   displayLimit: { type: Number, default: 6 },
   sectionId: { type: String, default: '' },
+  showHeader: { type: Boolean, default: true },
 });
 
 const visibleAnnouncements = computed(() => props.announcements.slice(0, props.displayLimit));
