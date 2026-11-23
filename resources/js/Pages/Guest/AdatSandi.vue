@@ -8,7 +8,7 @@
       @close-mobile-menu="closeMobileMenu"
     />
 
-    <main class="relative mx-auto w-full px-4 py-8 sm:px-6 sm:py-12 lg:px-[50px] lg:py-20 pt-20 sm:pt-24">
+    <main class="relative mx-auto w-full px-4 py-8 sm:px-6 sm:py-12 lg:px-[50px] lg:py-20 pt-24 sm:pt-28 lg:pt-32 pb-20 sm:pb-0">
       <!-- Hero Section -->
       <section class="mb-12">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-daun-500/20 border border-daun-500/30 mb-4">

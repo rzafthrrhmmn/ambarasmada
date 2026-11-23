@@ -1,5 +1,5 @@
 <template>
-  <div ref="container" class="relative min-h-screen bg-hutan-800 font-sans text-krem-100 section-animate">
+  <div ref="container" class="relative min-h-screen bg-hutan-800 font-sans text-krem-100 section-animate overflow-x-hidden">
     <!-- Particle Background -->
     <ParticleBackground
       :particle-count="isMobile ? 40 : 80"
@@ -12,10 +12,10 @@
     />
 
     <!-- Decorative Background Blobs -->
-    <div class="pointer-events-none absolute inset-0" aria-hidden="true">
-      <div class="absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full bg-gradient-to-br from-daun-400/10 via-daun-400/5 to-transparent blur-[120px] will-change-transform" data-parallax-bg></div>
-      <div class="absolute -right-40 top-10 h-[500px] w-[500px] rounded-full bg-gradient-to-br from-emas-400/10 via-emas-400/5 to-transparent blur-[100px] will-change-transform"></div>
-      <div class="absolute -bottom-40 left-1/4 h-[450px] w-[450px] rounded-full bg-gradient-to-br from-daun-500/10 to-transparent blur-[100px] will-change-transform"></div>
+    <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      <div class="absolute -top-40 -left-40 h-[600px] max-w-[80vw] w-[600px] rounded-full bg-gradient-to-br from-daun-400/10 via-daun-400/5 to-transparent blur-[120px] will-change-transform" data-parallax-bg></div>
+      <div class="absolute -right-40 top-10 h-[500px] max-w-[80vw] w-[500px] rounded-full bg-gradient-to-br from-emas-400/10 via-emas-400/5 to-transparent blur-[100px] will-change-transform"></div>
+      <div class="absolute -bottom-40 left-1/4 h-[450px] max-w-[80vw] w-[450px] rounded-full bg-gradient-to-br from-daun-500/10 to-transparent blur-[100px] will-change-transform"></div>
       <div class="guest-noise-overlay absolute inset-0 opacity-40" aria-hidden="true"></div>
     </div>
 
@@ -35,7 +35,7 @@
     <!-- Offline Banner -->
     <OfflineBanner :is-online="isOnline" :can-dismiss="true" @dismiss="dismissOfflineBanner" />
 
-    <main id="main-content" class="relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24">
+    <main id="main-content" class="relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 lg:pt-32 pb-20 sm:pb-0">
       <!-- ========== HERO SECTION ========== -->
       <section id="hero" class="relative pt-16 sm:pt-24 pb-20 sm:pb-32 overflow-hidden scroll-mt-24" data-parallax-hero>
         <div class="mx-auto max-w-3xl text-center">
@@ -68,16 +68,7 @@
               >
                 <span class="relative z-10 flex items-center gap-2">
                   Bergabung Sekarang
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="2.5"
-                    stroke="currentColor"
-                    class="h-5 w-5 transition group-hover:translate-x-1"
-                  >
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                  </svg>
+                  <AppIcon name="arrowRight" class="h-5 w-5 transition group-hover:translate-x-1" />
                 </span>
               </a>
               <a

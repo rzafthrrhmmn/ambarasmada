@@ -4,7 +4,7 @@
     class="guest-bottom-nav fixed bottom-0 left-0 right-0 z-50 bg-hutan-900/96 backdrop-blur-md border-t border-daun-500/30 shadow-2xl shadow-black/20"
     aria-label="Navigasi bawah"
   >
-    <div class="mx-auto flex max-w-md items-stretch justify-between px-2 sm:px-4">
+    <div class="mx-auto flex w-full items-stretch justify-between px-2 sm:px-4">
       <a
         v-for="(item, index) in navItems"
         :key="item.id"
