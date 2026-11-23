@@ -25,7 +25,7 @@
       <div class="relative">
         <div
           ref="galleryContainer"
-          class="guest-gallery-track overflow-x-auto scroll-smooth hide-scrollbar"
+          class="guest-gallery-track overflow-x-auto scroll-smooth snap-x snap-mandatory hide-scrollbar"
           @scroll="onGalleryScroll"
           @touchstart="onTouchStart"
           @touchmove="onTouchMove"
@@ -34,7 +34,7 @@
           <button
             v-for="(item, idx) in gallery"
             :key="`gallery-item-${item.id}`"
-            class="guest-gallery-item group block"
+            class="guest-gallery-item group block snap-align-start"
             style="width: min(300px, 90vw);"
             @click="openLightbox(idx)"
             :aria-label="`Lihat ${item.title || 'foto'}`"
@@ -108,6 +108,24 @@
           </svg>
         </button>
       </div>
+
+      <!-- Pagination dots (mobile) -->
+      <div v-if="gallery.length > 1" class="mx-auto flex gap-1.5 mt-6 sm:mt-8 justify-center">
+        <button
+          v-for="(dot, idx) in totalDots"
+          :key="`gallery-dot-${idx}`"
+          @click="scrollToDot(idx)"
+          :class="[
+            'relative h-1.5 w-3 rounded-full transition-all duration-300',
+            activeDot === idx ? 'bg-emas-400 w-6' : 'bg-daun-500/30 w-3',
+          ]"
+          :aria-label="`Lihat galeri halaman ${idx + 1}`"
+          :aria-current="activeDot === idx ? 'true' : 'false'"
+          type="button"
+        >
+          <span class="sr-only">{{ activeDot === idx ? 'Aktif' : 'Tidak aktif' }}</span>
+        </button>
+      </div>
     </ScrollReveal>
   </section>
 
@@ -122,7 +140,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import LightboxModal from '@/Components/LightboxModal.vue';
 import ScrollReveal from '@/Components/ScrollReveal.vue';
@@ -141,12 +159,37 @@ const galleryScrollRight = ref(0);
 const lightboxOpen = ref(false);
 const lightboxIndex = ref(0);
 let touchStartX = 0;
+let scrollTimeout = null;
+
+const ITEMS_PER_VIEW = 2;
+
+const totalDots = computed(() => Math.max(1, Math.ceil(gallery.length / ITEMS_PER_VIEW)));
+const activeDot = computed(() => {
+  if (!galleryContainer.value) return 0;
+  const { scrollLeft, clientWidth } = galleryContainer.value;
+  if (clientWidth === 0) return 0;
+  return Math.min(totalDots.value - 1, Math.round(scrollLeft / clientWidth));
+});
 
 function onGalleryScroll() {
   if (!galleryContainer.value) return;
   const { scrollLeft, scrollWidth, clientWidth } = galleryContainer.value;
   galleryScrollLeft.value = scrollLeft;
   galleryScrollRight.value = Math.max(0, scrollWidth - clientWidth - scrollLeft);
+
+  if (scrollTimeout) clearTimeout(scrollTimeout);
+  scrollTimeout = setTimeout(() => {
+    scrollTimeout = null;
+  }, 150);
+}
+
+function scrollToDot(dotIndex) {
+  if (!galleryContainer.value) return;
+  const targetScrollLeft = dotIndex * galleryContainer.value.clientWidth;
+  galleryContainer.value.scrollTo({
+    left: targetScrollLeft,
+    behavior: 'smooth',
+  });
 }
 
 function scrollGallery(direction) {

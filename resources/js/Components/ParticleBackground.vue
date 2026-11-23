@@ -13,6 +13,7 @@ const props = defineProps({
   interactive: { type: Boolean, default: true },
   connectionDistance: { type: Number, default: 120 },
   mouseInfluence: { type: Number, default: 150 },
+  reducedMotion: { type: Boolean, default: false },
 });
 
 const canvasContainer = ref(null);
@@ -175,7 +176,7 @@ function handleVisibilityChange() {
 }
 
 onMounted(() => {
-  prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  prefersReducedMotion = props.reducedMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   
   if (!canvas.value) return;
   
@@ -189,6 +190,10 @@ onMounted(() => {
   canvasContainer.value.addEventListener('mousemove', handleMouseMove);
   canvasContainer.value.addEventListener('mouseleave', handleMouseLeave);
   document.addEventListener('visibilitychange', handleVisibilityChange);
+});
+
+watch(() => props.reducedMotion, (val) => {
+  prefersReducedMotion = val;
 });
 
 onUnmounted(() => {

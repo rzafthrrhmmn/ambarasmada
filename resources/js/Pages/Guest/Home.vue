@@ -4,9 +4,10 @@
     <ParticleBackground
       :particle-count="isMobile ? 40 : 80"
       :colors="['#A7B92B', '#EDD330', '#6F9435', '#f0ead8']"
-      :interactive="true"
+      :interactive="true && !prefersReducedMotion.value"
       :connection-distance="140"
       :mouse-influence="180"
+      :reduced-motion="prefersReducedMotion.value"
       class="absolute inset-0"
     />
 
@@ -36,7 +37,7 @@
 
     <main id="main-content" class="relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8">
       <!-- ========== HERO SECTION ========== -->
-      <section id="hero" class="relative pt-16 sm:pt-24 pb-20 sm:pb-32 overflow-hidden" data-parallax-hero>
+      <section id="hero" class="relative pt-16 sm:pt-24 pb-20 sm:pb-32 overflow-hidden scroll-mt-24" data-parallax-hero>
         <div class="mx-auto max-w-3xl text-center">
           <ScrollReveal animation="fade-up" :delay="50">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-daun-500/40 bg-hutan-800/50 backdrop-blur-sm mb-6 sm:mb-8">
@@ -94,7 +95,7 @@
       </section>
 
       <!-- ========== SAMBUTAN PEMBINA ========== -->
-      <section id="sambutan" class="py-20 sm:py-28" aria-label="Sambutan pembina">
+      <section id="sambutan" class="py-20 sm:py-28 scroll-mt-24" aria-label="Sambutan pembina">
         <div class="mx-auto max-w-4xl">
           <div class="relative rounded-3xl overflow-hidden border border-daun-500/30 bg-hutan-700/60 shadow-2xl shadow-daun-500/10">
             <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=1200')] bg-cover bg-center bg-no-repeat opacity-30 blend-mode-multiply" aria-hidden="true"></div>
@@ -124,7 +125,7 @@
                   <button
                     type="button"
                     class="guest-focus-ring group relative isolate overflow-hidden rounded-2xl bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-8 py-4 text-base font-black text-hutan-800 shadow-xl shadow-emas-400/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 before:absolute before:inset-0 before:bg-white before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-20 w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
-                    onclick="location.href='/daftar'"
+                    @click="navigateTo('/daftar')"
                   >
                     <span class="relative z-10 flex items-center gap-2">
                       Daftar Anggota Baru
@@ -134,7 +135,7 @@
                   <button
                     type="button"
                     class="guest-focus-ring rounded-2xl border-2 border-daun-500/50 bg-hutan-800/40 px-8 py-4 text-base font-bold text-krem-300 backdrop-blur-sm transition-all duration-300 hover:border-daun-500 hover:bg-daun-500/20 hover:text-emas-400 hover:-translate-y-1 active:scale-95 w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
-                    onclick="location.href='/login'"
+                    @click="navigateTo('/login')"
                   >
                     Masuk Portal
                   </button>
@@ -146,7 +147,7 @@
       </section>
 
       <!-- ========== PROFIL AMBALAN ========== -->
-      <section id="profil-ambalan" class="py-20 sm:py-28 bg-hutan-700/30" aria-label="Profil ambalan">
+      <section id="profil-ambalan" class="py-20 sm:py-28 bg-hutan-700/30 scroll-mt-24" aria-label="Profil ambalan">
         <div class="mx-auto max-w-7xl">
           <div class="grid gap-12 sm:gap-16 md:grid-cols-2 items-center">
             <div class="space-y-8">
@@ -166,33 +167,13 @@
               </ScrollReveal>
 
               <ScrollReveal animation="fade-left" :delay="250">
-                <div class="grid gap-4 sm:grid-cols-2">
-                  <div class="flex items-center gap-3 p-4 rounded-2xl border border-daun-500/30 bg-hutan-800/40 group hover:border-daun-500/50 transition-colors">
-                    <div class="h-10 w-10 rounded-xl bg-daun-500/20 flex items-center justify-center text-emas-400 group-hover:bg-daun-500 transition-colors">
-                      <AppIcon name="calendar" class="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p class="text-xs font-bold uppercase tracking-wide text-lumut-400 group-hover:text-daun-400 transition-colors">Anggota Aktif</p>
-                      <p class="text-xl font-extrabold text-krem-100">{{ ambalanStats?.members }}</p>
-                    </div>
+                <div class="flex items-center gap-4 p-6 rounded-2xl border border-daun-500/30 bg-hutan-800/40">
+                  <div class="h-12 w-12 rounded-2xl bg-daun-500/20 flex items-center justify-center text-emas-400">
+                    <AppIcon name="calendar" class="h-6 w-6" />
                   </div>
-                  <div class="flex items-center gap-3 p-4 rounded-2xl border border-daun-500/30 bg-hutan-800/40 group hover:border-daun-500/50 transition-colors">
-                    <div class="h-10 w-10 rounded-xl bg-daun-500/20 flex items-center justify-center text-emas-400 group-hover:bg-daun-500 transition-colors">
-                      <AppIcon name="alumni" class="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p class="text-xs font-bold uppercase tracking-wide text-lumut-400 group-hover:text-daun-400 transition-colors">Purna Ambalan</p>
-                      <p class="text-xl font-extrabold text-krem-100">{{ ambalanStats?.alumni }}</p>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-3 p-4 rounded-2xl border border-daun-500/30 bg-hutan-800/40 group hover:border-daun-500/50 transition-colors">
-                    <div class="h-10 w-10 rounded-xl bg-daun-500/20 flex items-center justify-center text-emas-400 group-hover:bg-daun-500 transition-colors">
-                      <AppIcon name="groups" class="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p class="text-xs font-bold uppercase tracking-wide text-lumut-400 group-hover:text-daun-400 transition-colors">Sangga Aktif</p>
-                      <p class="text-xl font-extrabold text-krem-100">Beberapa</p>
-                    </div>
+                  <div>
+                    <p class="text-xs font-bold uppercase tracking-wide text-lumut-400">Terdiri sejak</p>
+                    <p class="text-xl font-extrabold text-krem-100">SMA 2 Maros</p>
                   </div>
                 </div>
               </ScrollReveal>
@@ -277,7 +258,7 @@
             </div>
             <div class="text-right sm:text-left">
               <ScrollReveal animation="fade-up" :delay="200">
-                <button type="button" class="guest-focus-ring rounded-xl border border-daun-500/40 bg-hutan-800/40 px-4 py-2.5 text-sm font-bold text-krem-300 hover:bg-daun-500/20 hover:text-emas-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400" onclick="location.href='/galeri'">
+                <button type="button" class="guest-focus-ring rounded-xl border border-daun-500/40 bg-hutan-800/40 px-4 py-2.5 text-sm font-bold text-krem-300 hover:bg-daun-500/20 hover:text-emas-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400" @click="navigateTo('/galeri')">
                   Lihat Semua Galeri
                   <AppIcon name="arrow-right" class="h-4 w-4 ml-1 transition group-hover:translate-x-1" />
                 </button>
@@ -328,7 +309,7 @@
       </section>
 
       <!-- ========== CTA ========== -->
-      <section id="cta" class="py-24 sm:py-32 relative overflow-hidden" aria-label="Akses cepat">
+      <section id="cta" class="py-24 sm:py-32 relative overflow-hidden scroll-mt-24" aria-label="Akses cepat">
         <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=1600')] bg-cover bg-center bg-no-repeat opacity-25 blend-mode-multiply" aria-hidden="true"></div>
         <div class="absolute inset-0 bg-gradient-to-r from-hutan-800 via-hutan-800/80 to-hutan-800" aria-hidden="true"></div>
         <div class="relative mx-auto max-w-4xl rounded-3xl overflow-hidden border border-daun-500/40 shadow-2xl shadow-daun-500/20 p-8 sm:p-12 text-center z-10">
@@ -342,7 +323,7 @@
           </ScrollReveal>
           <ScrollReveal animation="fade-up" :delay="200">
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button type="button" class="guest-focus-ring group relative isolate overflow-hidden rounded-2xl bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-10 py-5 text-lg font-black text-hutan-800 shadow-2xl shadow-emas-400/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-emas-400/40 active:scale-95 before:absolute before:inset-0 before:bg-white before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-20 w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400" onclick="location.href='/daftar'">
+              <button type="button" class="guest-focus-ring group relative isolate overflow-hidden rounded-2xl bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-10 py-5 text-lg font-black text-hutan-800 shadow-2xl shadow-emas-400/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-emas-400/40 active:scale-95 before:absolute before:inset-0 before:bg-white before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-20 w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400" @click="navigateTo('/daftar')">
                 <span class="relative z-10 flex items-center gap-2">
                   Daftar Sekarang
                   <AppIcon name="arrow-right" class="h-5 w-5 transition group-hover:translate-x-1" />
@@ -394,11 +375,13 @@ import TestimonialsSection from '@/Components/Guest/TestimonialsSection.vue';
 import AnnouncementsSection from '@/Components/Guest/AnnouncementsSection.vue';
 import GuestFooter from '@/Components/Guest/GuestFooter.vue';
 import GuestBottomNav from '@/Components/Guest/GuestBottomNav.vue';
+import NewsletterSection from '@/Components/Guest/NewsletterSection.vue';
 
 // Shared Components
 import AppIcon from '@/Components/AppIcon.vue';
 import ScrollReveal from '@/Components/ScrollReveal.vue';
 import ParticleBackground from '@/Components/ParticleBackground.vue';
+import { categoryIcon, formatDate } from '@/utils/guest';
 
 const guestStore = useGuestStore();
 const uiStore = useUIStore();
@@ -418,11 +401,15 @@ const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true)
 const offlineBannerDismissed = ref(false);
 const activeSection = ref('');
 const newsletterEmail = ref('');
+const prefersReducedMotion = ref(
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+);
 let scrollHandler = null;
 let revealObserver = null;
 let lastFocusedElement = null;
 let onlineHandler = null;
 let offlineHandler = null;
+let motionMediaQuery = null;
 
 // Computed
 const ambalanNama = computed(() => {
@@ -436,11 +423,6 @@ const logoUrl = computed(() => {
 const sambutanPembina = computed(() => page.props?.ambalan?.sambutan_pembina || null);
 
 const ambalanProfile = computed(() => page.props?.ambalan?.profil_singkat || null);
-
-const ambalanStats = computed(() => ({
-  members: guestStore.stats.value?.members ?? props.stats.members,
-  alumni: guestStore.stats.value?.alumni ?? props.stats.alumni,
-}));
 
 const defaultSambutan = computed(() => `Selamat datang di Ambalan ${ambalanNama.value}. Mari bersama-sama membina generasi muda yang berakhlak mulia, disiplin, dan siap berjasa melalui kegiatan kepramukaan.`);
 
@@ -456,18 +438,6 @@ const statsItems = computed(() => [
     key: 'alumni',
     value: guestStore.stats.value?.alumni ?? props.stats.alumni,
     icon: 'alumni',
-  },
-  {
-    label: 'Layanan Digital',
-    key: 'services',
-    value: '5+',
-    icon: 'tools',
-  },
-  {
-    label: 'Akses PWA',
-    key: 'access',
-    value: 'PWA',
-    icon: 'download',
   },
 ]);
 
@@ -487,22 +457,6 @@ const testimonials = [
 ];
 
 // Helper Functions
-function categoryIcon(kategori) {
-  const map = {
-    'Kegiatan': 'events',
-    'Latihan': 'assessments',
-    'Outbound': 'map',
-    'Jambore': 'teams',
-    'Peringatan': 'announcements',
-    'Umum': 'announcements',
-  };
-  return map[kategori] || 'announcements';
-}
-
-function formatDate(value) {
-  return value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-}
-
 function handleLogoError() {
   console.warn('[Guest/Home] Logo image failed to load, using fallback.');
 }
@@ -517,6 +471,10 @@ function handleNewsletterSubscribe(email) {
 
 function handleGalleryItemClick(idx) {
   console.log(`[Guest/Home] Gallery item ${idx} clicked.`);
+}
+
+function navigateTo(path) {
+  window.location.href = path;
 }
 
 function toggleMobileMenu() {
@@ -563,11 +521,6 @@ function onBottomNavNavigate(sectionId) {
 
 function dismissOfflineBanner() {
   offlineBannerDismissed.value = true;
-}
-
-function scrollToSection(id) {
-  const el = document.getElementById(id);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function handleResize() {
@@ -631,14 +584,13 @@ function setMetaTags() {
 
 function updateActiveSection() {
   if (!container.value) return;
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (prefersReducedMotion) return;
+  if (prefersReducedMotion.value) return;
 
   const scrollY = window.scrollY;
   const viewMiddle = scrollY + window.innerHeight * 0.4;
   let current = '';
 
-  const sections = ['fitur', 'galeri', 'testimoni', 'pengumatan'];
+  const sections = ['hero', 'sambutan', 'profil-ambalan', 'stats', 'fitur', 'galeri', 'testimoni', 'pengumatan', 'cta', 'newsletter'];
   sections.forEach((id) => {
     const el = document.getElementById(id);
     if (el && el.offsetTop <= viewMiddle) current = id;
@@ -648,8 +600,7 @@ function updateActiveSection() {
 
 function handleScroll() {
   if (!container.value) return;
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (prefersReducedMotion) return;
+  if (prefersReducedMotion.value) return;
 
   const scrollY = window.scrollY;
   const bg = container.value.querySelector('[data-parallax-bg]');
@@ -659,6 +610,8 @@ function handleScroll() {
 }
 
 function setupIntersectionObserver() {
+  if (prefersReducedMotion.value) return;
+
   const observerOptions = { threshold: 0.1 };
   revealObserver = new IntersectionObserver(
     (entries) => {
@@ -705,6 +658,11 @@ onMounted(() => {
   window.addEventListener('scroll', scrollHandler, { passive: true });
   window.addEventListener('keydown', trapFocus);
   requestAnimationFrame(() => handleScroll());
+
+  motionMediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  motionMediaQuery.addEventListener('change', (e) => {
+    prefersReducedMotion.value = e.matches;
+  });
 });
 
 onUnmounted(() => {
@@ -714,14 +672,11 @@ onUnmounted(() => {
   if (offlineHandler) window.removeEventListener('offline', offlineHandler);
   revealObserver?.disconnect();
   window.removeEventListener('keydown', trapFocus);
-  document.body.style.overflow = '';
+document.body.style.overflow = '';
+if (motionMediaQuery) {
+  motionMediaQuery.removeEventListener('change', () => {});
+}
 });
-
-// Watch gallery length changes for scroll state
-watch(
-  () => guestStore.gallery.length,
-  () => nextTick(() => {})
-);
 </script>
 
 <style scoped>

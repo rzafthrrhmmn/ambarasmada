@@ -39,7 +39,7 @@ const emit = defineEmits(['navigate']);
 
 const navItems = computed(() => [
   { id: 'fitur', label: 'Fitur', icon: 'tools', href: '#fitur' },
-  { id: 'dokumentasi', label: 'Galeri', icon: 'galleries', href: '#dokumentasi' },
+  { id: 'galeri', label: 'Galeri', icon: 'galleries', href: '#galeri' },
   { id: 'testimoni', label: 'Testimoni', icon: 'star', href: '#testimoni' },
   { id: 'pengumatan', label: 'Pengumuman', icon: 'bell', href: '#pengumatan' },
   { id: 'masuk', label: 'Masuk', icon: 'login', href: '/login' },

@@ -79,6 +79,7 @@ import { computed } from 'vue';
 import AppIcon from '@/Components/AppIcon.vue';
 import { Link } from '@inertiajs/vue3';
 import ScrollReveal from '@/Components/ScrollReveal.vue';
+import { categoryIcon, formatDate } from '@/utils/guest';
 
 const props = defineProps({
   announcements: { type: Array, default: () => [] },
@@ -89,22 +90,6 @@ const props = defineProps({
 
 const visibleAnnouncements = computed(() => props.announcements.slice(0, props.displayLimit));
 const hasMoreAnnouncements = computed(() => props.announcements.length > props.displayLimit);
-
-function categoryIcon(kategori) {
-  const map = {
-    'Kegiatan': 'events',
-    'Latihan': 'assessments',
-    'Outbound': 'map',
-    'Jambore': 'teams',
-    'Peringatan': 'announcements',
-    'Umum': 'announcements',
-  };
-  return map[kategori] || 'announcements';
-}
-
-function formatDate(value) {
-  return value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-}
 </script>
 
 <style scoped>
