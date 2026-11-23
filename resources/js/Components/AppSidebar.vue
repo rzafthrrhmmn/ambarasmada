@@ -19,7 +19,7 @@
         @navigate="emit('navigate', $event)"
     />
 
-    <div class="mt-auto space-y-2 pt-1">
+    <div class="mt-auto space-y-2 pt-3 pb-2">
       <a
           v-if="footer?.href && collapsed"
           :href="footer.href"
@@ -32,9 +32,9 @@
       </a>
 
       <div v-else-if="footer" class="sidebar-footer-card" :class="{ 'sidebar-footer-card--warning': footer.tone === 'warning' }">
-        <p class="font-bold text-emas-400">{{ footer.title }}</p>
-        <p class="mt-1 text-lumut-400">{{ footer.description }}</p>
-        <a v-if="footer.href" :href="footer.href" class="sidebar-footer-cta" @click="emit('navigate')">
+        <p class="font-bold text-emas-400 text-sm">{{ footer.title }}</p>
+        <p class="mt-1 text-lumut-400 text-xs leading-tight">{{ footer.description }}</p>
+        <a v-if="footer.href" :href="footer.href" class="sidebar-footer-cta mt-2 block text-center" @click="emit('navigate')">
           {{ footer.cta }}
         </a>
       </div>

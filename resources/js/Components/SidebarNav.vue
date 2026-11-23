@@ -4,14 +4,14 @@
       <NavIcon name="search" class="h-4 w-4" />
 
       <input
-        ref="searchInput"
-        v-model="query"
-        type="search"
-        class="sidebar-search-input"
-        placeholder="Cari menu..."
-        aria-label="Cari menu di sidebar"
-        autocomplete="off"
-        spellcheck="false"
+          ref="searchInput"
+          v-model="query"
+          type="search"
+          class="sidebar-search-input"
+          placeholder="Cari menu..."
+          aria-label="Cari menu di sidebar"
+          autocomplete="off"
+          spellcheck="false"
       />
 
       <button v-if="searching" type="button" class="nav-clear" aria-label="Bersihkan pencarian" @click="clear">
@@ -30,12 +30,12 @@
           <ul class="space-y-0.5">
             <li v-for="item in section.items" :key="item.key">
               <a
-                :href="item.href"
-                class="nav-item"
-                :class="{ 'is-active': item.active }"
-                :title="item.hint || item.label"
-                :aria-current="item.active ? 'page' : undefined"
-                @click="emit('navigate', item)"
+                  :href="item.href"
+                  class="nav-item"
+                  :class="{ 'is-active': item.active }"
+                  :title="item.hint || item.label"
+                  :aria-current="item.active ? 'page' : undefined"
+                  @click="emit('navigate', item)"
               >
                 <span class="nav-rail" aria-hidden="true" />
 
@@ -46,9 +46,9 @@
                 <span class="nav-label">{{ item.label }}</span>
 
                 <span
-                  v-if="item.badge > 0"
-                  class="nav-badge animate-nav-badge"
-                  :aria-label="`${item.badge} belum ditangani`"
+                    v-if="item.badge > 0"
+                    class="nav-badge animate-nav-badge"
+                    :aria-label="`${item.badge} belum ditangani`"
                 >
                   {{ formatBadge(item.badge) }}
                 </span>
@@ -65,15 +65,15 @@
           <span class="nav-rail-separator block" aria-hidden="true" />
 
           <a
-            v-for="item in section.items"
-            :key="item.key"
-            :href="item.href"
-            class="nav-rail-item"
-            :class="{ 'is-active': item.active }"
-            :title="item.hint || item.label"
-            :aria-label="item.label"
-            :aria-current="item.active ? 'page' : undefined"
-            @click="emit('navigate', item)"
+              v-for="item in section.items"
+              :key="item.key"
+              :href="item.href"
+              class="nav-rail-item"
+              :class="{ 'is-active': item.active }"
+              :title="item.hint || item.label"
+              :aria-label="item.label"
+              :aria-current="item.active ? 'page' : undefined"
+              @click="emit('navigate', item)"
           >
             <NavIcon :name="item.icon" class="h-5 w-5" />
             <span v-if="item.badge > 0" class="nav-rail-badge" aria-hidden="true">

@@ -1,7 +1,9 @@
 ﻿<template>
-  <div class="min-h-screen bg-hutan-800 text-krem-100">
-    <header class="app-header">
+  <div class="min-h-screen bg-hutan-800 text-krem-100 selection:bg-daun-500/30 selection:text-krem-100">
+    <!-- Header -->
+    <header class="app-header z-40">
       <div class="app-header-inner px-4 sm:px-6 lg:px-8 xl:px-10 py-3 sm:py-3.5">
+        <!-- Mobile menu toggle -->
         <button
             type="button"
             class="app-header-button lg:hidden"
@@ -13,8 +15,9 @@
           <NavIcon :name="mobileMenuOpen ? 'close' : 'menu'" :stroke="2" class="h-5 w-5" />
         </button>
 
+        <!-- Brand -->
         <a href="/dashboard" class="app-header-brand">
-          <span class="app-header-logo h-10 w-10 sm:h-12 sm:w-12">
+          <span class="app-header-logo h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
             <img :src="ambalan?.logo_url || '/images/Logo_Ambalan.png'" alt="Logo Ambalan" class="h-full w-full object-contain" />
           </span>
 
@@ -25,16 +28,18 @@
           </span>
         </a>
 
+        <!-- Breadcrumb trail -->
         <nav class="app-header-trail hidden lg:flex" aria-label="Lokasi halaman">
           <template v-if="context.parent">
-            <span class="app-header-trail-parent">{{ context.parent }}</span>
+            <span class="app-header-trail-parent truncate">{{ context.parent }}</span>
             <NavIcon name="chevronRight" class="app-header-trail-sep h-3.5 w-3.5" />
           </template>
-          <span class="app-header-trail-current">{{ context.current }}</span>
+          <span class="app-header-trail-current truncate">{{ context.current }}</span>
         </nav>
 
-        <div class="app-header-actions">
-          <a href="/notifications" class="app-header-button hidden sm:flex" :aria-label="notifLabel">
+        <!-- Header actions -->
+        <div class="app-header-actions flex items-center gap-2">
+          <a href="/notifications" class="app-header-button hidden sm:flex" :aria-label="notifLabel" :title="notifLabel">
             <NavIcon name="bell" class="h-5 w-5" />
             <span v-if="unreadNotifications > 0" class="app-header-badge" aria-hidden="true">
               {{ unreadNotifications > 99 ? '99+' : unreadNotifications }}
@@ -52,9 +57,11 @@
       </div>
     </header>
 
+    <!-- Body: sidebar + main -->
     <div
         class="app-body mx-auto grid w-full lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)] lg:px-6 xl:px-10"
-      >
+    >
+      <!-- Mobile drawer overlay -->
       <transition
           enter-active-class="transition ease-out duration-300"
           enter-from-class="opacity-0"
@@ -65,11 +72,12 @@
       >
         <div
             v-if="mobileMenuOpen"
-            class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden mobile-drawer-overlay"
+            class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden mobile-drawer-overlay"
             @click="closeMobileMenu"
         ></div>
       </transition>
 
+      <!-- Mobile drawer -->
       <transition
           enter-active-class="transition ease-out duration-300 transform"
           enter-from-class="-translate-x-full"
@@ -117,7 +125,8 @@
         </aside>
       </transition>
 
-      <aside class="hidden lg:flex lg:flex-col lg:sticky lg:top-[80px] lg:h-[calc(100vh-80px)] lg:overflow-y-auto border-r border-daun-400/20 bg-hutan-800/40">
+      <!-- Desktop sidebar -->
+      <aside class="hidden lg:flex lg:flex-col lg:sticky lg:top-[82px] lg:h-[calc(100vh-82px)] lg:overflow-y-auto border-r border-daun-400/20 bg-hutan-800/40 backdrop-blur-sm">
         <div class="flex flex-col h-full px-4 py-4">
           <AppSidebar
               v-model:query="query"
@@ -131,42 +140,44 @@
         </div>
       </aside>
 
-      <main class="min-w-0 px-4 sm:px-6 lg:px-8 xl:px-10 pt-[100px] sm:pt-[112px] lg:pt-[112px] xl:pt-[116px] pb-24 sm:pb-20 lg:pb-8 section-animate animate-fade-up">
+      <!-- Main content -->
+      <main class="min-w-0 px-4 sm:px-6 lg:px-8 xl:px-10 pt-[112px] sm:pt-[124px] lg:pt-[124px] xl:pt-[128px] pb-24 sm:pb-20 lg:pb-8 section-animate animate-fade-up">
         <OfflineBanner />
         <FlashMessage />
         <slot />
       </main>
     </div>
 
+    <!-- Mobile bottom nav -->
     <nav
         v-show="!mobileMenuOpen"
         class="fixed inset-x-0 bottom-0 z-50 border-t border-daun-500/30 bg-hutan-900/96 backdrop-blur-md shadow-2xl shadow-black/20 lg:hidden"
         aria-label="Navigasi bawah"
-      >
-        <div class="mx-auto flex max-w-md items-stretch justify-between px-2 sm:px-4">
-          <a
-              v-for="item in bottomItems"
-              :key="item.key"
-              :href="item.href"
-              class="bottom-nav-item flex flex-col items-center justify-center gap-1 px-3 py-2.5 text-xs font-medium transition-all duration-200 relative"
-              :class="{
-                'text-emas-400': item.active,
-                'text-lumut-400': !item.active,
-              }"
-              :aria-current="item.active ? 'page' : undefined"
-          >
-            <span class="bottom-nav-indicator absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-emas-400 opacity-0 transition-opacity duration-200" :class="{ 'opacity-100': item.active }" aria-hidden="true" />
-            <NavIcon :name="item.icon" class="h-5 w-5 transition-transform duration-200" :class="{ 'scale-110': item.active, 'text-emas-400': item.active, 'text-lumut-400': !item.active }" />
-            <span class="leading-none" :class="{ 'font-black': item.active, 'font-medium': !item.active }">{{ item.label }}</span>
-          </a>
-        </div>
-      </nav>
+    >
+      <div class="mx-auto flex max-w-md items-stretch justify-between px-2 sm:px-4 py-2.5">
+        <a
+            v-for="item in bottomItems"
+            :key="item.key"
+            :href="item.href"
+            class="bottom-nav-item flex flex-col items-center justify-center gap-1 px-3 py-2.5 text-xs font-medium transition-all duration-200 relative"
+            :class="{
+              'text-emas-400': item.active,
+              'text-lumut-400': !item.active,
+            }"
+            :aria-current="item.active ? 'page' : undefined"
+        >
+          <span class="bottom-nav-indicator absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-emas-400 opacity-0 transition-opacity duration-200" :class="{ 'opacity-100': item.active }" aria-hidden="true" />
+          <NavIcon :name="item.icon" class="h-5 w-5 transition-transform duration-200" :class="{ 'scale-110': item.active, 'text-emas-400': item.active, 'text-lumut-400': !item.active }" />
+          <span class="leading-none" :class="{ 'font-black': item.active, 'font-medium': !item.active }">{{ item.label }}</span>
+        </a>
+      </div>
+    </nav>
   </div>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { Link, router, usePage } from '@inertiajs/vue3';
+import { usePage } from '@inertiajs/vue3';
 import AppHeaderUserMenu from '@/Components/AppHeaderUserMenu.vue';
 import AppSidebar from '@/Components/AppSidebar.vue';
 import FlashMessage from '@/Components/FlashMessage.vue';
@@ -230,8 +241,6 @@ function handleResize() {
     }
 }
 
-// Laci menu menutup halaman di belakangnya; gulir harus dikunci selama drawer
-// terbuka, dan dilepas lagi saat komponen dilepas.
 watch(mobileMenuOpen, (open) => {
     document.body.style.overflow = open ? 'hidden' : '';
 });
