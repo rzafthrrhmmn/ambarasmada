@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Notification;
 use App\Models\User;
+use App\Events\NotificationSent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -82,13 +83,16 @@ class NotificationController extends Controller
             ->get();
 
         foreach ($users as $user) {
-            Notification::create([
+            $notification = Notification::create([
                 'user_id' => $user->id,
                 'type' => 'manual',
                 'title' => $data['title'],
                 'message' => $data['message'],
                 'data' => $data['data'] ?? null,
             ]);
+
+            // Kirim notifikasi real-time melalui saluran private pengguna.
+            broadcast(new NotificationSent($user, $data['title'], $data['message'], $data['data'] ?? null))->toOthers();
         }
 
         return back()->with('success', 'Notifikasi berhasil dikirim ke '.$users->count().' pengguna.');

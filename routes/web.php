@@ -305,6 +305,9 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
+    // Broadcasting (real-time notifications)
+    Route::post('/broadcasting/auth', [\App\Http\Controllers\BroadcastingController::class, 'authenticate'])->name('broadcasting.auth')->middleware('throttle:30,1');
+
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::get('/ambalan', [SettingsController::class, 'index'])->name('ambalan.index');

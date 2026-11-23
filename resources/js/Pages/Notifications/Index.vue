@@ -44,8 +44,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted, onBeforeUnmount } from 'vue';
 import { useForm, usePage, router } from '@inertiajs/vue3';
+import { useToast } from 'vue-toastification';
 import AppLayout from '@/Components/AppLayout.vue';
 import AppIcon from '@/Components/AppIcon.vue';
 import SkeletonLoader from '@/Components/SkeletonLoader.vue';
@@ -55,6 +56,7 @@ import { useAccess } from '@/Composables/useAccess.js';
 defineProps({ notifications: Object, unreadCount: Number });
 const page = usePage();
 const form = useForm({});
+const toast = useToast();
 
 /**
  * Halaman ini untuk semua akun aktif, sesuai kelompok middleware
@@ -62,6 +64,36 @@ const form = useForm({});
  */
 const { can } = useAccess();
 const canAccessNotifications = computed(() => can('notifications.access'));
+
+let pollTimer = null;
+
+function startUnreadPolling() {
+  // Poll setiap 30 detik untuk mendeteksi notifikasi baru secara real-time.
+  pollTimer = setInterval(async () => {
+    try {
+      const res = await fetch('/notifications/unread-count', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const newCount = data.unread_count ?? 0;
+      const currentCount = props.unreadCount ?? 0;
+      if (newCount > currentCount) {
+        toast.info(`Anda memiliki ${newCount} notifikasi belum dibaca.`);
+      }
+    } catch {
+      // Swallow polling errors silently.
+    }
+  }, 30000);
+}
+
+onMounted(() => {
+  startUnreadPolling();
+});
+
+onBeforeUnmount(() => {
+  if (pollTimer) clearInterval(pollTimer);
+});
 
 function markRead(notif) {
   form.patch(`/notifications/${notif.id}/read`, {
