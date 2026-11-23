@@ -100,6 +100,10 @@ export const CAPABILITIES = {
   /** Mengubah kelas, tingkatan, dan status aktif anggota di halaman profil. */
   'members.profile.edit_academic': APPROVER,
 
+  /* Sangga */
+  'sanggas.access': MANAGEMENT,
+  'sanggas.manage': MANAGEMENT,
+
   /* Kegiatan, rapat, dan pengingat */
   'events.access': ACTIVE,
   'events.manage': MANAGEMENT,

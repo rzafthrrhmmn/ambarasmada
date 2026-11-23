@@ -31,6 +31,7 @@ use App\Http\Controllers\PwaController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ReminderController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SanggaController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SkuController;
 use App\Http\Controllers\SystemPointController;
@@ -212,6 +213,17 @@ Route::middleware(['auth', 'approved', 'verified', 'not-alumni'])->group(functio
         Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy')->middleware('throttle:10,1');
         Route::post('/teams/{team}/member', [TeamController::class, 'addMember'])->name('teams.member.store')->middleware('throttle:10,1');
         Route::delete('/teams/{team}/member/{teamMember}', [TeamController::class, 'removeMember'])->name('teams.member.destroy')->middleware('throttle:10,1');
+
+        // Sangga
+        Route::get('/sanggas', [SanggaController::class, 'index'])->name('sanggas.index');
+        Route::get('/sanggas/create', [SanggaController::class, 'create'])->name('sanggas.create');
+        Route::post('/sanggas', [SanggaController::class, 'store'])->name('sanggas.store')->middleware('throttle:10,1');
+        Route::get('/sanggas/{sangga}', [SanggaController::class, 'show'])->name('sanggas.show');
+        Route::get('/sanggas/{sangga}/edit', [SanggaController::class, 'edit'])->name('sanggas.edit');
+        Route::patch('/sanggas/{sangga}', [SanggaController::class, 'update'])->name('sanggas.update')->middleware('throttle:20,1');
+        Route::delete('/sanggas/{sangga}', [SanggaController::class, 'destroy'])->name('sanggas.destroy')->middleware('throttle:10,1');
+        Route::post('/sanggas/{sangga}/members', [SanggaController::class, 'assignMember'])->name('sanggas.members.assign')->middleware('throttle:10,1');
+        Route::delete('/sanggas/{sangga}/members/{member}', [SanggaController::class, 'unassignMember'])->name('sanggas.members.unassign')->middleware('throttle:10,1');
 
         Route::get('/assessments', [AssessmentController::class, 'index'])->name('assessments.index');
         Route::post('/assessments', [AssessmentController::class, 'store'])->name('assessments.store')->middleware('throttle:10,1');

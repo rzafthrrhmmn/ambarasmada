@@ -117,6 +117,15 @@ export const navigationModel = [
                 capabilities: ['members.access'],
                 keywords: ['gugus', 'unit', 'tim', 'departemen'],
             },
+            {
+                key: 'sanggas',
+                href: '/sanggas',
+                label: 'Sangga',
+                hint: 'Satuan anak anggota ambalan',
+                icon: 'groups',
+                capabilities: ['sanggas.access'],
+                keywords: ['sangga', 'satuan anak', 'kelompok', 'tim kecil'],
+            },
         ],
     },
     {

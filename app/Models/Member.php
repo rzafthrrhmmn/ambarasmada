@@ -10,10 +10,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-#[Fillable(['ambalan_id', 'user_id', 'nta', 'angkatan', 'nomor_urut', 'nta_username', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'kelas', 'tingkatan', 'tahun_lulus', 'status_aktif', 'no_hp', 'qr_code'])]
+#[Fillable(['ambalan_id', 'sanga_id', 'user_id', 'nta', 'angkatan', 'nomor_urut', 'nta_username', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'kelas', 'tingkatan', 'tahun_lulus', 'status_aktif', 'no_hp', 'qr_code'])]
 class Member extends Model
 {
-    protected $fillable = ['ambalan_id', 'user_id', 'nta', 'angkatan', 'nomor_urut', 'nta_username', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'kelas', 'tingkatan', 'tahun_lulus', 'status_aktif', 'no_hp', 'qr_code'];
+    protected $fillable = ['ambalan_id', 'sanga_id', 'user_id', 'nta', 'angkatan', 'nomor_urut', 'nta_username', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'kelas', 'tingkatan', 'tahun_lulus', 'status_aktif', 'no_hp', 'qr_code'];
 
     use SoftDeletes;
 
@@ -69,6 +69,11 @@ class Member extends Model
     public function ambalan(): BelongsTo
     {
         return $this->belongsTo(Ambalan::class);
+    }
+
+    public function sanga(): BelongsTo
+    {
+        return $this->belongsTo(Sangga::class);
     }
 
     public function user(): BelongsTo
