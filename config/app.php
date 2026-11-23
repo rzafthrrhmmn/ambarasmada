@@ -13,6 +13,7 @@ use Illuminate\Encryption\EncryptionServiceProvider;
 use Illuminate\Filesystem\FilesystemServiceProvider;
 use Illuminate\Foundation\Providers\ConsoleSupportServiceProvider;
 use Illuminate\Foundation\Providers\FoundationServiceProvider;
+use Illuminate\Foundation\Vite;
 use Illuminate\Hashing\HashServiceProvider;
 use Illuminate\Mail\MailServiceProvider;
 use Illuminate\Notifications\NotificationServiceProvider;
@@ -143,6 +144,7 @@ return [
         'Str' => Str::class,
         'URL' => URL::class,
         'Validator' => Validator::class,
+        'vite' => Vite::class,
         'View' => View::class,
     ],
 ];

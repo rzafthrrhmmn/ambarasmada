@@ -35,6 +35,13 @@ echo "Running package:discover..."
 rm -f bootstrap/cache/packages.php bootstrap/cache/services.php
 $PHP_BIN -c $INI_FILE -d extension_dir="$PHP_INI_EXTENSION_DIR" ./artisan package:discover --ansi || true
 
+# Build frontend assets
+echo "Building frontend assets..."
+npm run build
+
+# Remove hot file if it exists (prevents Vite from thinking dev server is running)
+rm -f public/hot
+
 # Create a node_modules package to bundle vendor/ + app files via @vercel/nft
 # vendor/ has ~16000 files (exceeds Vercel's 15000 file limit), so we tar it.
 # Application PHP files are also tar'd since @vercel/nft only traces JS imports.

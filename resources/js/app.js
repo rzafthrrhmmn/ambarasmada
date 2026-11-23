@@ -11,6 +11,9 @@ import { createPinia } from 'pinia';
 
 import { VueQueryPlugin, QueryClient } from '@tanstack/vue-query';
 
+// Import global styles
+import '../css/app.css';
+
 const appName = import.meta.env.VITE_APP_NAME || 'AMBARA-SISTEM DIGITAL';
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -13,7 +13,9 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Sentry\Laravel\Integration;
 
-return Application::configure(basePath: dirname(__DIR__))
+$basePath = dirname(__DIR__);
+
+$app = Application::configure(basePath: $basePath)
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
@@ -55,3 +57,5 @@ return Application::configure(basePath: dirname(__DIR__))
 
         error_log('[VERCEL-BOOT] Exception handler configured');
     })->create();
+
+return $app;
