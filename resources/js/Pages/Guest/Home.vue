@@ -13,10 +13,9 @@
 
     <!-- Decorative Background Blobs -->
     <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      <div class="absolute -top-40 -left-40 h-[700px] w-[700px] max-w-[85vw] rounded-full bg-gradient-to-br from-daun-400/15 via-daun-400/8 to-transparent blur-[140px] will-change-transform" data-parallax-bg></div>
-      <div class="absolute -right-40 top-20 h-[600px] w-[600px] max-w-[85vw] rounded-full bg-gradient-to-br from-emas-400/15 via-emas-400/8 to-transparent blur-[120px] will-change-transform"></div>
-      <div class="absolute -bottom-40 left-1/4 h-[550px] w-[550px] max-w-[85vw] rounded-full bg-gradient-to-br from-daun-500/15 to-transparent blur-[110px] will-change-transform"></div>
-      <div class="absolute -bottom-20 right-1/5 h-[400px] w-[400px] rounded-full bg-gradient-to-br from-emas-600/10 to-transparent blur-[100px] will-change-transform"></div>
+      <div class="absolute -top-40 -left-40 h-[600px] w-[600px] max-w-[85vw] rounded-full bg-gradient-to-br from-daun-400/10 via-daun-400/5 to-transparent blur-[120px] will-change-transform" data-parallax-bg></div>
+      <div class="absolute -right-40 top-20 h-[500px] w-[500px] max-w-[85vw] rounded-full bg-gradient-to-br from-emas-400/10 via-emas-400/5 to-transparent blur-[100px] will-change-transform"></div>
+      <div class="absolute -bottom-40 left-1/4 h-[450px] w-[450px] max-w-[85vw] rounded-full bg-gradient-to-br from-daun-500/10 to-transparent blur-[100px] will-change-transform"></div>
       <div class="guest-noise-overlay absolute inset-0 opacity-30" aria-hidden="true"></div>
     </div>
 
@@ -36,117 +35,112 @@
     <!-- Offline Banner -->
     <OfflineBanner :is-online="isOnline" :can-dismiss="true" @dismiss="dismissOfflineBanner" />
 
-    <main id="main-content" class="relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 lg:pt-32 pb-20 sm:pb-0">
+    <main id="main-content" class="relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 lg:pt-32 pb-16 sm:pb-0">
       <!-- ========== HERO SECTION ========== -->
-      <section id="hero" class="relative pt-16 sm:pt-24 pb-20 sm:pb-32 overflow-hidden scroll-mt-24" data-parallax-hero>
+      <section id="hero" class="relative pt-12 sm:pt-20 pb-16 sm:pb-24 overflow-hidden scroll-mt-20" data-parallax-hero>
         <div class="mx-auto max-w-3xl text-center z-10 relative">
           <ScrollReveal animation="fade-up" :delay="50">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-daun-500/40 bg-hutan-800/60 backdrop-blur-sm mb-6 sm:mb-8">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-daun-500/40 bg-hutan-800/60 backdrop-blur-sm mb-4 sm:mb-6">
               <AppIcon name="sparkles" class="h-4 w-4 text-emas-400" />
               <span class="text-xs sm:text-sm font-black uppercase tracking-wider text-daun-400">Sistem Digital Kepramukaan</span>
             </div>
           </ScrollReveal>
 
           <ScrollReveal animation="fade-up" :delay="150">
-            <h1 class="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tight text-transparent mb-8 leading-[1.05]" aria-level="1">
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-transparent mb-6 sm:mb-8 leading-[1.1]" aria-level="1">
               <span class="guest-text-gradient block">Satya dan Darma</span>
               <span class="relative inline-block guest-text-gradient-gold">dalam satu genggaman.</span>
             </h1>
           </ScrollReveal>
 
           <ScrollReveal animation="fade-up" :delay="250">
-            <p class="mx-auto mt-6 sm:mt-8 max-w-2xl text-lg sm:text-xl leading-relaxed font-medium text-krem-300/90">
+            <p class="mx-auto mt-4 sm:mt-6 max-w-2xl text-base sm:text-lg leading-relaxed font-medium text-krem-300/90">
               Ekosistem digital terpadu untuk anggota, pembina, pengurus, dan alumni. Kelola SKU, presensi, kas, inventaris, dan kabar ambalan dengan lebih tertib dan transparan.
             </p>
           </ScrollReveal>
 
           <ScrollReveal animation="fade-up" :delay="350">
-            <div class="mt-10 sm:mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div class="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
               <a
                 href="/daftar"
-                class="guest-focus-ring group relative isolate overflow-hidden rounded-3xl bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-8 sm:px-12 py-5 text-base sm:text-lg font-black text-hutan-800 shadow-xl shadow-emas-400/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-emas-400/40 active:scale-95 before:absolute before:inset-0 before:bg-white before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-20 w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
+                class="guest-focus-ring group relative isolate overflow-hidden rounded-[1.25rem] bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-6 sm:px-10 py-3.5 sm:py-4.5 text-sm sm:text-base font-black text-hutan-800 shadow-xl shadow-emas-400/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emas-400/40 active:scale-95 w-full sm:w-auto before:absolute before:inset-0 before:bg-white before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
               >
-                <span class="relative z-10 flex items-center gap-2">
+                <span class="relative z-10 flex items-center gap-1.5">
                   Bergabung Sekarang
-                  <AppIcon name="arrowRight" class="h-5 w-5 transition group-hover:translate-x-1" />
+                  <AppIcon name="arrowRight" class="h-4 w-4 sm:h-5 sm:w-5 transition group-hover:translate-x-1" />
                 </span>
               </a>
               <a
                 href="/login"
-                class="guest-focus-ring rounded-3xl border-2 border-daun-500 bg-hutan-800/40 px-8 sm:px-12 py-5 text-base sm:text-lg font-bold text-krem-300 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-emas-400 hover:bg-daun-500/20 hover:text-emas-400 hover:shadow-2xl hover:shadow-daun-500/20 active:scale-95 w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
+                class="guest-focus-ring rounded-[1.25rem] border-2 border-daun-500 bg-hutan-800/40 px-6 sm:px-10 py-3.5 sm:py-4.5 text-sm sm:text-base font-bold text-krem-300 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-emas-400 hover:bg-daun-500/20 hover:text-emas-400 hover:shadow-2xl hover:shadow-daun-500/20 active:scale-95 w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
               >
                 Masuk Portal
               </a>
             </div>
           </ScrollReveal>
 
-          <!-- Hero Stat Badge -->
+          <!-- Hero Stat Badge (real data only) -->
           <ScrollReveal animation="fade-up" :delay="450">
-            <div class="mt-12 sm:mt-16 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 p-6 sm:p-8 rounded-3xl border border-daun-500/20 bg-hutan-800/40 backdrop-blur-lg shadow-2xl shadow-black/30">
+            <div class="mt-10 sm:mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 p-4 sm:p-6 rounded-[1.5rem] border border-daun-500/20 bg-hutan-800/40 backdrop-blur-lg shadow-xl shadow-black/30">
               <div class="text-center sm:text-left">
-                <span class="text-xs sm:text-sm font-black uppercase tracking-wider text-lumut-400">Anggota Aktif</span>
-                <span class="text-2xl sm:text-3xl font-black text-krem-100 mt-1 block font-variant-numeric tabular-nums">{{ statsItems[0]?.value }}</span>
+                <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-lumut-400">Anggota Aktif</span>
+                <span class="text-xl sm:text-2xl font-black text-krem-100 mt-1 block font-variant-numeric tabular-nums">{{ statsItems[0]?.value }}</span>
               </div>
-              <div class="w-px h-8 sm:h-12 bg-daun-500/30 mx-auto sm:mx-0"></div>
+              <div class="w-px h-6 sm:h-8 bg-daun-500/30 mx-auto sm:mx-0"></div>
               <div class="text-center sm:text-left">
-                <span class="text-xs sm:text-sm font-black uppercase tracking-wider text-lumut-400">Purna Ambalan</span>
-                <span class="text-2xl sm:text-3xl font-black text-krem-100 mt-1 block font-variant-numeric tabular-nums">{{ statsItems[1]?.value }}</span>
-              </div>
-              <div class="w-px h-8 sm:h-12 bg-daun-500/30 mx-auto sm:mx-0"></div>
-              <div class="text-center sm:text-left">
-                <span class="text-xs sm:text-sm font-black uppercase tracking-wider text-lumut-400">Transaksi Bulanan</span>
-                <span class="text-2xl sm:text-3xl font-black text-emas-400 mt-1 block font-variant-numeric tabular-nums">Rp 48,5 jt</span>
+                <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-lumut-400">Purna Ambalan</span>
+                <span class="text-xl sm:text-2xl font-black text-krem-100 mt-1 block font-variant-numeric tabular-nums">{{ statsItems[1]?.value }}</span>
               </div>
             </div>
           </ScrollReveal>
         </div>
 
         <!-- Decorative hero glow -->
-        <div class="absolute top-0 left-1/2 -translate-x-1/2 h-[600px] w-[600px] rounded-full bg-daun-400/10 blur-[120px] -z-10" aria-hidden="true"></div>
-        <div class="absolute bottom-10 right-10 h-[400px] w-[400px] rounded-full bg-emas-400/10 blur-[120px] -z-10" aria-hidden="true"></div>
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 h-[500px] w-[500px] rounded-full bg-daun-400/10 blur-[100px] -z-10" aria-hidden="true"></div>
+        <div class="absolute bottom-10 right-10 h-[350px] w-[350px] rounded-full bg-emas-400/10 blur-[100px] -z-10" aria-hidden="true"></div>
       </section>
 
       <!-- ========== SAMBUTAN PEMBINA ========== -->
-      <section id="sambutan" class="py-20 sm:py-28 scroll-mt-24" aria-label="Sambutan pembina">
+      <section id="sambutan" class="py-16 sm:py-20 lg:py-28 scroll-mt-20" aria-label="Sambutan pembina">
         <div class="mx-auto max-w-5xl">
-          <div class="relative rounded-[2rem] overflow-hidden border border-daun-500/30 bg-hutan-700/50 shadow-2xl shadow-daun-500/10">
+          <div class="relative rounded-[1.75rem] overflow-hidden border border-daun-500/30 bg-hutan-700/50 shadow-2xl shadow-daun-500/10">
             <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=1600')] bg-cover bg-center bg-no-repeat opacity-35 blend-mode-multiply" aria-hidden="true"></div>
             <div class="absolute inset-0 bg-gradient-to-t from-hutan-800 via-hutan-800/70 to-transparent" aria-hidden="true"></div>
-            <div class="relative p-8 sm:p-12 lg:p-16 text-center z-10">
+            <div class="relative p-6 sm:p-10 lg:p-16 text-center z-10">
               <ScrollReveal animation="fade-up">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-daun-500/40 bg-daun-500/12 mb-6 inline-block">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-daun-500/40 bg-daun-500/12 mb-4 sm:mb-6 inline-block">
                   <AppIcon name="profile" class="h-4 w-4 text-emas-400" />
-                  <span class="text-xs sm:text-sm font-black uppercase tracking-wider text-daun-400">Sambutan Pembina</span>
+                  <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-daun-400">Sambutan Pembina</span>
                 </div>
               </ScrollReveal>
 
               <ScrollReveal animation="fade-up" :delay="100">
-                <h2 class="text-4xl sm:text-5xl font-extrabold text-transparent mb-6 sm:mb-8 guest-text-gradient">
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-transparent mb-4 sm:mb-6 guest-text-gradient">
                   Sambutan dari Pembina {{ ambalanNama }}
                 </h2>
               </ScrollReveal>
 
               <ScrollReveal animation="fade-up" :delay="200">
-                <p class="mx-auto mt-4 sm:mt-6 max-w-2xl text-lg sm:text-xl leading-relaxed font-medium text-krem-300/90">
+                <p class="mx-auto mt-2 sm:mt-4 max-w-2xl text-base sm:text-lg leading-relaxed font-medium text-krem-300/90">
                   {{ sambutanPembina || defaultSambutan }}
                 </p>
               </ScrollReveal>
 
               <ScrollReveal animation="fade-up" :delay="300">
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mt-8 sm:mt-10">
                   <button
                     type="button"
-                    class="guest-focus-ring group relative isolate overflow-hidden rounded-[1.5rem] bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-8 sm:px-12 py-4.5 text-base sm:text-lg font-black text-hutan-800 shadow-xl shadow-emas-400/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emas-400/40 active:scale-95 w-full sm:w-auto before:absolute before:inset-0 before:bg-white before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
+                    class="guest-focus-ring group relative isolate overflow-hidden rounded-[1.25rem] bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-6 sm:px-10 py-3.5 sm:py-4.5 text-sm sm:text-base font-black text-hutan-800 shadow-xl shadow-emas-400/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emas-400/40 active:scale-95 w-full sm:w-auto before:absolute before:inset-0 before:bg-white before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
                     @click="navigateTo('/daftar')"
                   >
-                    <span class="relative z-10 flex items-center gap-2">
+                    <span class="relative z-10 flex items-center gap-1.5">
                       Daftar Anggota Baru
-                      <AppIcon name="arrow-right" class="h-5 w-5 transition group-hover:translate-x-1" />
+                      <AppIcon name="arrow-right" class="h-4 w-4 sm:h-5 sm:w-5 transition group-hover:translate-x-1" />
                     </span>
                   </button>
                   <button
                     type="button"
-                    class="guest-focus-ring rounded-[1.5rem] border-2 border-daun-500/50 bg-hutan-800/30 px-8 sm:px-12 py-4.5 text-base sm:text-lg font-bold text-krem-300 backdrop-blur-sm transition-all duration-300 hover:border-daun-500 hover:bg-daun-500/20 hover:text-emas-400 hover:-translate-y-1 active:scale-95 w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
+                    class="guest-focus-ring rounded-[1.25rem] border-2 border-daun-500/50 bg-hutan-800/30 px-6 sm:px-10 py-3.5 sm:py-4.5 text-sm sm:text-base font-bold text-krem-300 backdrop-blur-sm transition-all duration-300 hover:border-daun-500 hover:bg-daun-500/20 hover:text-emas-400 hover:-translate-y-1 active:scale-95 w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
                     @click="navigateTo('/login')"
                   >
                     Masuk Portal
@@ -159,36 +153,36 @@
       </section>
 
       <!-- ========== PROFIL AMBALAN ========== -->
-      <section id="profil-ambalan" class="py-20 sm:py-28 bg-hutan-700/20 scroll-mt-24" aria-label="Profil ambalan">
+      <section id="profil-ambalan" class="py-16 sm:py-20 lg:py-28 bg-hutan-700/20 scroll-mt-20" aria-label="Profil ambalan">
         <div class="mx-auto max-w-6xl">
-          <div class="grid gap-12 sm:gap-16 lg:gap-24 md:grid-cols-2 items-center">
-            <div class="space-y-8">
+          <div class="grid gap-8 sm:gap-12 lg:gap-16 md:grid-cols-2 items-center">
+            <div class="space-y-6 sm:space-y-8">
               <ScrollReveal animation="fade-left" :delay="50">
                 <div class="flex items-center gap-3">
-                  <div class="h-14 w-14 rounded-[1.5rem] bg-gradient-to-br from-daun-400 to-emas-400 flex items-center justify-center shadow-xl shadow-daun-500/25">
-                    <AppIcon name="map-pin" class="h-7 w-7 text-hutan-800" />
+                  <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-daun-400 to-emas-400 flex items-center justify-center shadow-lg shadow-daun-500/20">
+                    <AppIcon name="map-pin" class="h-6 w-6 text-hutan-800" />
                   </div>
-                  <h3 class="text-3xl font-extrabold text-krem-100 tracking-tight">Profil Ambalan</h3>
+                  <h3 class="text-2xl sm:text-3xl font-extrabold text-krem-100 tracking-tight">Profil Ambalan</h3>
                 </div>
               </ScrollReveal>
 
               <ScrollReveal animation="fade-left" :delay="150">
-                <p class="text-lg sm:text-xl leading-relaxed font-medium text-krem-300/90">
-                  {{ ambalanProfile || 'Ambalan ' + ambalanNama + ' adalah wadah pengembangan kepemudaan dan kepramukaan yang berdiri sejak 31 Agustus 2008 di SMAN 2 Maros, berkomitmen untuk membentuk generasi muda yang berakhlak mulia, berdisiplin, dan siap berjasa melalui kegiatan kepramukaan.' }}
+                <p class="text-base sm:text-lg leading-relaxed font-medium text-krem-300/90">
+                  {{ ambalanProfile || 'Ambalan ' + ambalanNama + ' adalah wadah pengembangan kepemudaan dan kepramukaan di SMAN 2 Maros, berkomitmen untuk membentuk generasi muda yang berakhlak mulia, berdisiplin, dan siap berjasa melalui kegiatan kepramukaan.' }}
                 </p>
               </ScrollReveal>
 
               <ScrollReveal animation="fade-left" :delay="250">
-                <div class="grid gap-6">
-                  <div class="p-6 rounded-2xl border border-daun-500/20 bg-hutan-800/30 shadow-lg shadow-daun-500/10">
-                    <div class="flex items-center gap-4 mb-3">
-                      <div class="h-10 w-10 rounded-xl bg-daun-500/20 flex items-center justify-center text-emas-400">
-                        <AppIcon name="calendar" class="h-5 w-5" />
+                <div class="grid gap-4 sm:gap-6">
+                  <div class="p-4 sm:p-6 rounded-xl border border-daun-500/20 bg-hutan-800/30 shadow-lg shadow-daun-500/10">
+                    <div class="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-3">
+                      <div class="h-8 sm:h-10 w-8 sm:w-10 rounded-lg bg-daun-500/20 flex items-center justify-center text-emas-400">
+                        <AppIcon name="calendar" class="h-4 sm:h-5 w-4 sm:w-5" />
                       </div>
                       <div>
-                        <p class="text-xs font-black uppercase tracking-wider text-lumut-400">Terdiri sejak</p>
-                        <p class="text-2xl font-extrabold text-krem-100">31 Agustus 2008</p>
-                        <p class="text-xs text-krem-300/70">SMAN 2 Maros</p>
+                        <p class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-lumut-400">Terdiri sejak</p>
+                        <p class="text-lg sm:text-xl font-extrabold text-krem-100">{{ ambalanTanggalBerdiri }}</p>
+                        <p class="text-[10px] sm:text-xs text-krem-300/70">SMAN 2 Maros</p>
                       </div>
                     </div>
                   </div>
@@ -196,17 +190,17 @@
               </ScrollReveal>
             </div>
 
-            <div class="relative h-80 sm:h-[400px] rounded-[2rem] overflow-hidden border border-daun-500/30 shadow-2xl shadow-daun-500/10 group">
-              <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1544717297-fa6524885623?w=1600')] bg-cover bg-center bg-no-repeat scale-105 transition-transform duration-1000 group-hover:scale-110" aria-hidden="true"></div>
+            <div class="relative h-64 sm:h-80 lg:h-[400px] rounded-[1.75rem] overflow-hidden border border-daun-500/30 shadow-2xl shadow-daun-500/10 group">
+              <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1544717297-fa6524885623?w=1600')] bg-cover bg-center bg-no-repeat scale-105 transition-transform duration-1000 group-hover:scale-105" aria-hidden="true"></div>
               <div class="absolute inset-0 bg-gradient-to-tr from-hutan-800/80 via-hutan-800/40 to-transparent" aria-hidden="true"></div>
-              <div class="absolute bottom-8 left-8 right-8 p-8 rounded-[1.5rem] bg-hutan-800/70 backdrop-blur-md border border-daun-500/20 z-10 shadow-xl shadow-black/40">
-                <div class="flex items-start gap-4">
-                  <div class="h-12 w-12 rounded-full bg-daun-500 flex items-center justify-center text-white flex-shrink-0 shadow-lg shadow-daun-500/30">
-                    <AppIcon name="checkCircle" class="h-6 w-6" />
+              <div class="absolute bottom-6 sm:bottom-8 left-6 sm:left-8 right-6 sm:right-8 p-4 sm:p-6 rounded-[1.25rem] bg-hutan-800/70 backdrop-blur-md border border-daun-500/20 z-10 shadow-xl shadow-black/40">
+                <div class="flex items-start gap-3 sm:gap-4">
+                  <div class="h-10 sm:h-12 w-10 sm:w-12 rounded-full bg-daun-500 flex items-center justify-center text-white flex-shrink-0 shadow-lg shadow-daun-500/30">
+                    <AppIcon name="checkCircle" class="h-5 sm:h-6 w-5 sm:w-6" />
                   </div>
                   <div>
-                    <p class="text-sm font-black text-krem-100">Terpercaya oleh anggota</p>
-                    <p class="text-xs text-krem-300/80">Terdaftar dan terakreditasi sebagai wadah kepramukaan resmi</p>
+                    <p class="text-sm sm:text-base font-black text-krem-100">Terpercaya oleh anggota</p>
+                    <p class="text-[10px] sm:text-xs text-krem-300/80">Terdaftar dan terakreditasi sebagai wadah kepramukaan resmi</p>
                   </div>
                 </div>
               </div>
@@ -216,41 +210,41 @@
       </section>
 
       <!-- ========== STATISTIK ========== -->
-      <section id="stats" class="py-20 sm:py-28 scroll-mt-24" aria-label="Statistik ambalan">
+      <section id="stats" class="py-16 sm:py-20 lg:py-28 scroll-mt-20" aria-label="Statistik ambalan">
         <div class="mx-auto max-w-5xl">
-          <div class="mb-12 sm:mb-16 text-center">
+          <div class="mb-8 sm:mb-12 text-center">
             <ScrollReveal animation="fade-up">
-              <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-xs font-black text-emas-400 inline-block mb-6 backdrop-blur-sm">
+              <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/30 bg-hutan-800/50 px-4 py-1.5 text-[10px] sm:text-xs font-black text-emas-400 inline-block mb-4 sm:mb-6 backdrop-blur-sm">
                 <span class="h-1.5 w-1.5 rounded-full bg-daun-400 animate-pulse" aria-hidden="true"></span>
                 Angka Terkini
               </div>
             </ScrollReveal>
             <ScrollReveal animation="fade-up" :delay="100">
-              <h2 class="text-4xl sm:text-5xl font-extrabold text-transparent mb-4 sm:mb-6 guest-text-gradient">Statistik Ambalan</h2>
+              <h2 class="text-3xl sm:text-4xl font-extrabold text-transparent mb-3 sm:mb-5 guest-text-gradient">Statistik Ambalan</h2>
             </ScrollReveal>
           </div>
 
-          <div class="grid gap-8 sm:gap-10 lg:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="grid gap-6 sm:gap-8 lg:gap-10 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             <StatsSection :stats-items="statsItems" :enable-repeat-animation="false" />
           </div>
         </div>
       </section>
 
       <!-- ========== FITUR UNGGULAN ========== -->
-      <section id="fitur" class="py-20 sm:py-28 bg-hutan-700/20 scroll-mt-24" aria-label="Layanan unggulan ambalan">
+      <section id="fitur" class="py-16 sm:py-20 lg:py-28 bg-hutan-700/20 scroll-mt-20" aria-label="Layanan unggulan ambalan">
         <div class="mx-auto max-w-6xl">
-          <div class="mb-12 sm:mb-16 text-center">
+          <div class="mb-8 sm:mb-12 text-center">
             <ScrollReveal animation="fade-up">
-              <div class="inline-flex items-center gap-2 rounded-full border border-daun-500/40 bg-hutan-800/50 px-4 py-1.5 text-xs font-black text-daun-400 inline-block mb-6 backdrop-blur-sm">
+              <div class="inline-flex items-center gap-2 rounded-full border border-daun-500/40 bg-hutan-800/50 px-4 py-1.5 text-[10px] sm:text-xs font-black text-daun-400 inline-block mb-4 sm:mb-6 backdrop-blur-sm">
                 <AppIcon name="layers" class="h-4 w-4" />
                 Layanan Unggulan
               </div>
             </ScrollReveal>
             <ScrollReveal animation="fade-up" :delay="100">
-              <h2 class="text-4xl sm:text-5xl font-extrabold text-transparent mb-4 sm:mb-6 guest-text-gradient">Sistem Informasi Terintegrasi</h2>
+              <h2 class="text-3xl sm:text-4xl font-extrabold text-transparent mb-3 sm:mb-5 guest-text-gradient">Sistem Informasi Terintegrasi</h2>
             </ScrollReveal>
             <ScrollReveal animation="fade-up" :delay="200">
-              <p class="mx-auto mt-4 sm:mt-6 max-w-2xl text-base sm:text-lg leading-relaxed font-medium text-krem-300/80">
+              <p class="mx-auto mt-2 sm:mt-4 max-w-2xl text-sm sm:text-base leading-relaxed font-medium text-krem-300/80">
                 Lima layanan digital yang saling terhubung untuk mendukung operasional ambalan secara efisien dan transparan.
               </p>
             </ScrollReveal>
@@ -261,25 +255,25 @@
       </section>
 
       <!-- ========== GALERI KEGIATAN ========== -->
-      <section id="galeri" class="py-20 sm:py-28 scroll-mt-24" aria-label="Galeri kegiatan">
+      <section id="galeri" class="py-16 sm:py-20 lg:py-28 scroll-mt-20" aria-label="Galeri kegiatan">
         <div class="mx-auto max-w-6xl">
-          <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-12 sm:mb-16">
+          <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-6 mb-8 sm:mb-12">
             <div>
               <ScrollReveal animation="fade-up">
-                <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/40 bg-hutan-800/50 px-4 py-1.5 text-xs font-black text-emas-400 inline-block mb-6 backdrop-blur-sm">
+                <div class="inline-flex items-center gap-2 rounded-full border border-emas-400/40 bg-hutan-800/50 px-4 py-1.5 text-[10px] sm:text-xs font-black text-emas-400 inline-block mb-4 sm:mb-6 backdrop-blur-sm">
                   <AppIcon name="gallery" class="h-4 w-4" />
                   Dokumentasi Kegiatan
                 </div>
               </ScrollReveal>
               <ScrollReveal animation="fade-up" :delay="100">
-                <h2 class="text-4xl sm:text-5xl font-extrabold text-transparent mb-4 sm:mb-6 guest-text-gradient">Galeri Kegiatan</h2>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-transparent mb-3 sm:mb-5 guest-text-gradient">Galeri Kegiatan</h2>
               </ScrollReveal>
             </div>
             <div class="text-right sm:text-left">
               <ScrollReveal animation="fade-up" :delay="200">
-                <button type="button" class="guest-focus-ring rounded-xl border border-daun-500/40 bg-hutan-800/50 px-5 py-3 text-sm font-black text-krem-300 hover:bg-daun-500/20 hover:text-emas-400 hover:shadow-lg hover:shadow-daun-500/20 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400" @click="navigateTo('/galeri')">
+                <button type="button" class="guest-focus-ring rounded-xl border border-daun-500/40 bg-hutan-800/50 px-4 sm:px-5 py-2.5 sm:py-3 text-[10px] sm:text-sm font-black text-krem-300 hover:bg-daun-500/20 hover:text-emas-400 hover:shadow-lg hover:shadow-daun-500/20 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400" @click="navigateTo('/galeri')">
                   Lihat Semua Galeri
-                  <AppIcon name="arrow-right" class="h-4 w-4 ml-1 transition group-hover:translate-x-1" />
+                  <AppIcon name="arrow-right" class="h-4 w-4 ml-1 sm:ml-2 transition group-hover:translate-x-1" />
                 </button>
               </ScrollReveal>
             </div>
@@ -289,36 +283,19 @@
         </div>
       </section>
 
-      <!-- ========== TESTIMONI ========== -->
-      <section id="testimoni" class="py-20 sm:py-28 bg-hutan-700/20 scroll-mt-24" aria-label="Testimoni anggota">
-        <div class="mx-auto max-w-5xl">
-          <div class="mb-12 sm:mb-16 text-center">
-            <ScrollReveal animation="fade-up">
-              <div class="inline-flex items-center gap-2 rounded-full border border-daun-400/40 bg-hutan-800/50 px-4 py-1.5 text-xs font-black text-daun-400 inline-block mb-6 backdrop-blur-sm">
-                <AppIcon name="star" class="h-4 w-4" />
-                Apa Kata Mereka
-              </div>
-              <h2 class="text-4xl sm:text-5xl font-extrabold text-transparent mt-4 sm:mt-6 mb-4 sm:mb-6 guest-text-gradient">Testimoni</h2>
-            </ScrollReveal>
-          </div>
-
-          <TestimonialsSection :testimonials="testimonials" section-id="testimoni" :show-header="false" />
-        </div>
-      </section>
-
       <!-- ========== PENGUMUMAN TERKINI ========== -->
-      <section id="pengumatan" class="py-20 sm:py-28 scroll-mt-24" aria-label="Pengumuman terbaru">
+      <section id="pengumatan" class="py-16 sm:py-20 lg:py-28 scroll-mt-20" aria-label="Pengumuman terbaru">
         <div class="mx-auto max-w-6xl">
-          <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-12 sm:mb-16">
+          <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-6 mb-8 sm:mb-12">
             <div>
               <ScrollReveal animation="fade-up">
-                <div class="inline-flex items-center gap-2 rounded-full border border-daun-400/40 bg-hutan-800/50 px-4 py-1.5 text-xs font-black text-daun-400 inline-block mb-6 backdrop-blur-sm">
+                <div class="inline-flex items-center gap-2 rounded-full border border-daun-400/40 bg-hutan-800/50 px-4 py-1.5 text-[10px] sm:text-xs font-black text-daun-400 inline-block mb-4 sm:mb-6 backdrop-blur-sm">
                   <AppIcon name="announcements" class="h-4 w-4" />
                   Kabar Terkini
                 </div>
               </ScrollReveal>
               <ScrollReveal animation="fade-up" :delay="100">
-                <h2 class="text-4xl sm:text-5xl font-extrabold text-transparent mb-4 sm:mb-6 guest-text-gradient">Pengumuman Terbaru</h2>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-transparent mb-3 sm:mb-5 guest-text-gradient">Pengumuman Terbaru</h2>
               </ScrollReveal>
             </div>
           </div>
@@ -328,30 +305,30 @@
       </section>
 
       <!-- ========== CTA ========== -->
-      <section id="cta" class="py-24 sm:py-32 relative overflow-hidden scroll-mt-24" aria-label="Akses cepat">
+      <section id="cta" class="py-20 sm:py-24 lg:py-32 relative overflow-hidden scroll-mt-20" aria-label="Akses cepat">
         <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=1600')] bg-cover bg-center bg-no-repeat opacity-30 blend-mode-multiply" aria-hidden="true"></div>
         <div class="absolute inset-0 bg-gradient-to-r from-hutan-800 via-hutan-800/80 to-hutan-800" aria-hidden="true"></div>
-        <div class="relative mx-auto max-w-4xl rounded-[2rem] overflow-hidden border border-daun-500/40 shadow-2xl shadow-daun-500/20 p-8 sm:p-12 lg:p-16 text-center z-10">
+        <div class="relative mx-auto max-w-4xl rounded-[1.75rem] overflow-hidden border border-daun-500/40 shadow-2xl shadow-daun-500/20 p-6 sm:p-10 lg:p-16 text-center z-10">
           <ScrollReveal animation="fade-up">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-daun-500/40 bg-hutan-800/40 px-4 py-1.5 text-xs font-black text-daun-400 inline-block mb-6 backdrop-blur-sm">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-daun-500/40 bg-hutan-800/40 px-4 py-1.5 text-[10px] sm:text-xs font-black text-daun-400 inline-block mb-4 sm:mb-6 backdrop-blur-sm">
               <AppIcon name="sparkles" class="h-4 w-4 text-emas-400" />
-              <span class="text-xs sm:text-sm font-black uppercase tracking-wider text-daun-400">Siap Bergabung?</span>
+              <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-daun-400">Siap Bergabung?</span>
             </div>
           </ScrollReveal>
           <ScrollReveal animation="fade-up" :delay="100">
-            <h2 class="text-4xl sm:text-5xl font-extrabold text-transparent mb-6 sm:mb-8 guest-text-gradient">Wujudkan Prestasimu bersama Ambalan</h2>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-transparent mb-4 sm:mb-6 guest-text-gradient">Wujudkan Prestasimu bersama Ambalan</h2>
           </ScrollReveal>
           <ScrollReveal animation="fade-up" :delay="200">
-            <p class="mx-auto mt-2 sm:mt-4 max-w-xl text-lg sm:text-xl leading-relaxed font-medium text-krem-300/90 mb-10 sm:mb-12">
+            <p class="mx-auto mt-2 sm:mt-4 max-w-xl text-base sm:text-lg leading-relaxed font-medium text-krem-300/90 mb-8 sm:mb-10">
               Jadilah bagian dari generasi muda yang berakhlak, berdisiplin, dan siap berjasa. Daftarkan diri Anda sekarang dan rasakan manfaat keanggotaan digital ambalan.
             </p>
           </ScrollReveal>
           <ScrollReveal animation="fade-up" :delay="300">
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button type="button" class="guest-focus-ring group relative isolate overflow-hidden rounded-[1.5rem] bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-10 sm:px-16 py-6 text-lg sm:text-xl font-black text-hutan-800 shadow-2xl shadow-emas-400/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emas-400/40 active:scale-95 w-full sm:w-auto before:absolute before:inset-0 before:bg-white before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400" @click="navigateTo('/daftar')">
-                <span class="relative z-10 flex items-center gap-2">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+              <button type="button" class="guest-focus-ring group relative isolate overflow-hidden rounded-[1.25rem] bg-gradient-to-r from-daun-400 via-emas-400 to-daun-400 px-8 sm:px-14 py-4 sm:py-5 text-base sm:text-lg font-black text-hutan-800 shadow-2xl shadow-emas-400/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emas-400/40 active:scale-95 w-full sm:w-auto before:absolute before:inset-0 before:bg-white before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400" @click="navigateTo('/daftar')">
+                <span class="relative z-10 flex items-center gap-1.5">
                   Daftar Sekarang
-                  <AppIcon name="arrow-right" class="h-5 w-5 transition group-hover:translate-x-1" />
+                  <AppIcon name="arrow-right" class="h-4 sm:h-5 w-4 sm:w-5 transition group-hover:translate-x-1" />
                 </span>
               </button>
             </div>
@@ -360,7 +337,7 @@
       </section>
 
       <!-- ========== NEWSLETTER ========== -->
-      <section id="newsletter" class="py-20 sm:py-28 bg-hutan-700/20" aria-label="Newsletter">
+      <section id="newsletter" class="py-16 sm:py-20 lg:py-28 bg-hutan-700/20" aria-label="Newsletter">
         <div class="mx-auto max-w-3xl">
           <NewsletterSection :initial-email="newsletterEmail" @subscribe="handleNewsletterSubscribe" />
         </div>
@@ -396,7 +373,6 @@ import OfflineBanner from '@/Components/Guest/OfflineBanner.vue';
 import StatsSection from '@/Components/Guest/StatsSection.vue';
 import FeaturesSection from '@/Components/Guest/FeaturesSection.vue';
 import GallerySection from '@/Components/Guest/GallerySection.vue';
-import TestimonialsSection from '@/Components/Guest/TestimonialsSection.vue';
 import AnnouncementsSection from '@/Components/Guest/AnnouncementsSection.vue';
 import GuestFooter from '@/Components/Guest/GuestFooter.vue';
 import GuestBottomNav from '@/Components/Guest/GuestBottomNav.vue';
@@ -451,6 +427,8 @@ const sambutanPembina = computed(() => page.props?.ambalan?.sambutan_pembina || 
 
 const ambalanProfile = computed(() => page.props?.ambalan?.profil_singkat || null);
 
+const ambalanTanggalBerdiri = computed(() => page.props?.ambalan?.tanggal_berdiri || '-');
+
 const defaultSambutan = computed(() => `Selamat datang di Ambalan ${ambalanNama.value}. Mari bersama-sama membina generasi muda yang berakhlak mulia, disiplin, dan siap berjasa melalui kegiatan kepramukaan.`);
 
 const statsItems = computed(() => [
@@ -475,12 +453,6 @@ const features = [
   { iconName: 'inventory', title: 'Inventaris', description: 'Daftar barang ambalan lengkap dengan kondisi, lokasi, dan riwayat penggunaan.' },
   { iconName: 'dashboard', title: 'Pangkalan', description: 'Ringkasan visual aktivitas ambalan dalam satu pandangan.' },
   { iconName: 'profile', title: 'Profil Ambalan', description: 'Sejarah, visi, misi, dan struktur pengurus ambalan secara profesional.' },
-];
-
-const testimonials = [
-  { quote: 'Sistem ini membuat administrasi ambalan jauh lebih mudah. Semua data tersedia dalam satu platform.', name: 'Pembina A', role: 'Pembina Ambalan SMA 2 Maros', rating: 5 },
-  { quote: 'Presensi digital dan SKU elektronik sangat membantu. Tidak perlu lagi formulir kertas yang mudah hilang.', name: 'Ketua Ambalan', role: 'Pengurus Ambalan', rating: 5 },
-  { quote: 'Sebagai alumni, saya tetap bisa mengikuti perkembangan dan berkontribusi melalui fitur donasi.', name: 'Alumni B', role: 'Anggota Alumni', rating: 5 },
 ];
 
 // Helper Functions
@@ -623,7 +595,7 @@ function updateActiveSection() {
   const viewMiddle = scrollY + window.innerHeight * 0.4;
   let current = '';
 
-  const sections = ['hero', 'sambutan', 'profil-ambalan', 'stats', 'fitur', 'galeri', 'testimoni', 'pengumatan', 'cta', 'newsletter'];
+  const sections = ['hero', 'sambutan', 'profil-ambalan', 'stats', 'fitur', 'galeri', 'pengumatan', 'cta', 'newsletter'];
   sections.forEach((id) => {
     const el = document.getElementById(id);
     if (el && el.offsetTop <= viewMiddle) current = id;

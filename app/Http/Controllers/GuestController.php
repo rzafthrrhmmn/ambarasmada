@@ -68,6 +68,7 @@ class GuestController extends Controller
                 'logo_url' => $ambalan->logo_url ?: asset('images/Logo_Ambalan.png'),
                 'sambutan_pembina' => $ambalan->sambutan_pembina,
                 'profil_singkat' => $ambalan->profil_singkat,
+                'tanggal_berdiri' => $ambalan->created_at?->format('d F Y'),
             ] : null,
             'announcements' => $announcements,
             'sliderSlides' => $sliderAnnouncements->isNotEmpty() ? $sliderAnnouncements : [],

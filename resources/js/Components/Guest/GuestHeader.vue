@@ -41,13 +41,6 @@
           Galeri
         </a>
         <a
-          href="#testimoni"
-          class="guest-focus-ring rounded-xl px-3 py-2 text-sm font-bold text-krem-300 transition hover:bg-daun-500/20 hover:text-emas-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
-          scroll-margin-top="80px"
-        >
-          Testimoni
-        </a>
-        <a
           href="#pengumatan"
           class="guest-focus-ring rounded-xl px-3 py-2 text-sm font-bold text-krem-300 transition hover:bg-daun-500/20 hover:text-emas-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
           scroll-margin-top="80px"
@@ -127,14 +120,6 @@
               scroll-margin-top="80px"
             >
               Galeri
-            </a>
-            <a
-              href="#testimoni"
-              @click="emit('close-mobile-menu')"
-              class="guest-focus-ring rounded-2xl border-2 border-daun-500/30 bg-hutan-700/50 px-4 py-3 text-center font-bold text-krem-100 transition hover:border-emas-400/50 hover:text-emas-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emas-400"
-              scroll-margin-top="80px"
-            >
-              Testimoni
             </a>
             <a
               href="#pengumatan"
