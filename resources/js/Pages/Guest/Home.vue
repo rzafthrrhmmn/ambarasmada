@@ -22,16 +22,6 @@
     <!-- Skip Link -->
     <a href="#main-content" class="skip-link">Lewati ke konten utama</a>
 
-    <!-- Guest Header (Navigation + Mobile Menu) -->
-    <GuestHeader
-      :ambalan-nama="ambalanNama"
-      :logo-url="logoUrl"
-      :is-mobile-menu-open="uiStore.mobileMenuOpen"
-      @toggle-mobile-menu="toggleMobileMenu"
-      @close-mobile-menu="closeMobileMenu"
-      @logo-error="handleLogoError"
-    />
-
     <!-- Offline Banner -->
     <OfflineBanner :is-online="isOnline" :can-dismiss="true" @dismiss="dismissOfflineBanner" />
 
@@ -345,11 +335,6 @@
 
     </main>
 
-    <!-- Guest Footer (fixed bottom, outside scrollable main) -->
-    <footer class="fixed bottom-0 left-0 right-0 z-40 w-full bg-hutan-800 border-t border-daun-500/20">
-      <GuestFooter :ambalan-nama="ambalanNama" :logo-url="logoUrl" @logo-error="handleLogoError" />
-    </footer>
-
     <!-- Mobile Bottom Nav -->
     <GuestBottomNav
       :is-mobile="isMobile"
@@ -371,13 +356,11 @@ import { useGuestStore } from '@/Stores/guest';
 import { useUIStore } from '@/Stores/ui';
 
 // Section Components
-import GuestHeader from '@/Components/Guest/GuestHeader.vue';
 import OfflineBanner from '@/Components/Guest/OfflineBanner.vue';
 import StatsSection from '@/Components/Guest/StatsSection.vue';
 import FeaturesSection from '@/Components/Guest/FeaturesSection.vue';
 import GallerySection from '@/Components/Guest/GallerySection.vue';
 import AnnouncementsSection from '@/Components/Guest/AnnouncementsSection.vue';
-import GuestFooter from '@/Components/Guest/GuestFooter.vue';
 import GuestBottomNav from '@/Components/Guest/GuestBottomNav.vue';
 import NewsletterSection from '@/Components/Guest/NewsletterSection.vue';
 
