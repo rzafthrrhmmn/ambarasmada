@@ -383,8 +383,6 @@
     </template>
   </div>
 </template>
-  </div>
-</template>
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
