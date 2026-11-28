@@ -54,6 +54,28 @@
         @keyframes fadeIn {
             to { opacity: 1; }
         }
+
+        /* Guest header & footer — truly fixed, never scroll with page */
+        #guest-header {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+        }
+        #guest-footer {
+            position: fixed !important;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 40;
+        }
+        body.menu-open {
+            overflow: hidden !important;
+            position: fixed !important;
+            width: 100%;
+            top: 0;
+        }
     </style>
 </head>
 <body class="antialiased" style="background-color:#263D26;">
@@ -272,10 +294,11 @@
         function toggleMobileMenu() {
             const overlay = document.getElementById('mobile-menu-overlay');
             const btn = document.getElementById('mobile-menu-button');
-            const isOpen = overlay.classList.toggle('hidden');
-            btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
-            document.body.style.overflow = isOpen ? '' : 'hidden';
-            document.documentElement.style.overflow = isOpen ? '' : 'hidden';
+            const isNowHidden = overlay.classList.toggle('hidden');
+            const isOpen = !isNowHidden;
+            btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            document.body.classList.toggle('menu-open', isOpen);
+            document.documentElement.classList.toggle('menu-open', isOpen);
         }
 
         function closeMobileMenu() {
@@ -283,8 +306,8 @@
             const btn = document.getElementById('mobile-menu-button');
             overlay.classList.add('hidden');
             btn.setAttribute('aria-expanded', 'false');
-            document.body.style.overflow = '';
-            document.documentElement.style.overflow = '';
+            document.body.classList.remove('menu-open');
+            document.documentElement.classList.remove('menu-open');
         }
     </script>
 </body>
