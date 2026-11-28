@@ -353,7 +353,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import { usePage } from '@inertiajs/vue3';
+import { usePage, router } from '@inertiajs/vue3';
 import { useGuestStore } from '@/Stores/guest';
 import { useUIStore } from '@/Stores/ui';
 
@@ -402,6 +402,8 @@ let lastFocusedElement = null;
 let onlineHandler = null;
 let offlineHandler = null;
 let motionMediaQuery = null;
+let motionHandler = null;
+let parallaxBg = null;
 
 // Computed
 const ambalanNama = computed(() => {
@@ -466,7 +468,7 @@ function handleGalleryItemClick(idx) {
 }
 
 function navigateTo(path) {
-  window.location.href = path;
+  router.visit(path, { preserveScroll: false });
 }
 
 function toggleMobileMenu() {
@@ -601,8 +603,7 @@ function handleScroll() {
   if (prefersReducedMotion.value) return;
 
   const scrollY = window.scrollY;
-  const bg = container.value.querySelector('[data-parallax-bg]');
-  if (bg) bg.style.transform = `translateY(${scrollY * 0.2}px)`;
+  if (parallaxBg) parallaxBg.style.transform = `translateY(${scrollY * 0.2}px)`;
 
   updateActiveSection();
 }
@@ -652,15 +653,17 @@ onMounted(() => {
   }
 
   setupIntersectionObserver();
+  parallaxBg = container.value?.querySelector('[data-parallax-bg]') ?? null;
   scrollHandler = handleScroll;
   window.addEventListener('scroll', scrollHandler, { passive: true });
   window.addEventListener('keydown', trapFocus);
   requestAnimationFrame(() => handleScroll());
 
   motionMediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-  motionMediaQuery.addEventListener('change', (e) => {
+  motionHandler = (e) => {
     prefersReducedMotion.value = e.matches;
-  });
+  };
+  motionMediaQuery.addEventListener('change', motionHandler);
 });
 
 onUnmounted(() => {
@@ -674,8 +677,8 @@ onUnmounted(() => {
   document.body.style.overflow = '';
   document.body.style.position = '';
   document.body.style.width = '';
-  if (motionMediaQuery) {
-    motionMediaQuery.removeEventListener('change', () => {});
+  if (motionMediaQuery && motionHandler) {
+    motionMediaQuery.removeEventListener('change', motionHandler);
   }
 });
 </script>
