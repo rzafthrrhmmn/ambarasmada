@@ -35,7 +35,7 @@
     <!-- Offline Banner -->
     <OfflineBanner :is-online="isOnline" :can-dismiss="true" @dismiss="dismissOfflineBanner" />
 
-    <main id="main-content" class="relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 lg:pt-32 pb-16 sm:pb-0">
+    <main id="main-content" class="relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 lg:pt-32 pb-24 sm:pb-28 lg:pb-32">
       <!-- ========== HERO SECTION ========== -->
       <section id="hero" class="relative pt-12 sm:pt-20 pb-16 sm:pb-24 overflow-hidden scroll-mt-20" data-parallax-hero>
         <div class="mx-auto max-w-3xl text-center z-10 relative">
@@ -343,9 +343,12 @@
         </div>
       </section>
 
-      <!-- Guest Footer -->
-      <GuestFooter :ambalan-nama="ambalanNama" :logo-url="logoUrl" @logo-error="handleLogoError" />
     </main>
+
+    <!-- Guest Footer (fixed bottom, outside scrollable main) -->
+    <footer class="fixed bottom-0 left-0 right-0 z-40 w-full bg-hutan-800 border-t border-daun-500/20">
+      <GuestFooter :ambalan-nama="ambalanNama" :logo-url="logoUrl" @logo-error="handleLogoError" />
+    </footer>
 
     <!-- Mobile Bottom Nav -->
     <GuestBottomNav

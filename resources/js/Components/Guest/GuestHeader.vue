@@ -1,5 +1,5 @@
 <template>
-  <header class="fixed top-0 left-0 right-0 z-40 w-full guest-container">
+  <header class="fixed top-0 left-0 right-0 z-50 w-full guest-container">
     <div class="glass-panel flex items-center justify-between px-4 py-2.5 sm:px-6 sm:py-3">
       <a
         href="/"
